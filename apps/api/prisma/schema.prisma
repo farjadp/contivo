@@ -1,0 +1,297 @@
+// This is your Prisma schema file.
+// Reference: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum UserPlan {
+  FREE
+  STARTER
+  PRO
+  AGENCY
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum WorkspaceStatus {
+  PENDING
+  CRAWLING
+  ANALYZING
+  READY
+  ERROR
+}
+
+// Lowercase to match frontend form values and shared types
+enum ContentChannel {
+  linkedin
+  twitter
+  instagram
+  email
+  blog
+}
+
+enum ContentTone {
+  professional
+  friendly
+  bold
+  educational
+  persuasive
+}
+
+enum ContentType {
+  POST
+  THREAD
+  ARTICLE
+  EMAIL
+  CAPTION
+  OUTLINE
+}
+
+enum ContentStatus {
+  DRAFT
+  GENERATED
+  EDITED
+  READY
+  SCHEDULED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  ARCHIVED
+}
+
+enum JobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum JobType {
+  INSTANT_CONTENT
+  WEBSITE_CRAWL
+  BRAND_ANALYSIS
+  STRATEGY_GENERATION
+  ARTICLE_DRAFT
+}
+
+enum LedgerType {
+  ALLOCATION
+  CONSUMPTION
+  TOP_UP
+  REFUND
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  TRIALING
+  INCOMPLETE
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  clerkId      String?  @unique
+  passwordHash String?
+  email        String   @unique
+  name         String?
+  avatarUrl String?
+  plan      UserPlan @default(FREE)
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  workspaces   Workspace[]
+  creditLedger CreditLedger[]
+  contentItems ContentItem[]
+  contentJobs  ContentJob[]
+  subscription Subscription?
+  aiUsageLogs  AiUsageLog[]
+
+  @@index([clerkId])
+  @@index([email])
+  @@map("users")
+}
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  userId               String             @unique
+  stripeCustomerId     String             @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  plan                 UserPlan           @default(FREE)
+  status               SubscriptionStatus @default(ACTIVE)
+  creditAllowance      Int                @default(100)
+  currentPeriodStart   DateTime?
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([stripeCustomerId])
+  @@map("subscriptions")
+}
+
+model Workspace {
+  id               String          @id @default(cuid())
+  userId           String
+  name             String
+  websiteUrl       String?
+  status           WorkspaceStatus @default(PENDING)
+  brandSummary     Json?
+  audienceInsights Json?
+  rescrapeCount    Int             @default(0)
+  archivedSummaries Json?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contentItems ContentItem[]
+  contentJobs  ContentJob[]
+  strategyRuns StrategyRun[]
+  competitors  Competitor[]
+
+  @@index([userId])
+  @@map("workspaces")
+}
+
+model Competitor {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  name            String
+  domain          String?
+  description     String?
+  category        String?
+  audienceGuess   String?
+  source          String    @default("AI") // 'AI', 'MANUAL'
+  type            String?   // 'DIRECT', 'INDIRECT', 'ASPIRATIONAL'
+  userDecision    String?   // 'ACCEPTED', 'REJECTED'
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("competitors")
+}
+
+model StrategyRun {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  status           JobStatus @default(PENDING)
+  brandSummary     Json?
+  audienceInsights Json?
+  contentPillars   Json?
+  strategyDoc      Json?
+  generatedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@map("strategy_runs")
+}
+
+model ContentItem {
+  id          String         @id @default(cuid())
+  userId      String
+  workspaceId String?
+  type        ContentType
+  channel     ContentChannel
+  tone        ContentTone?
+  topic       String
+  content          String         @db.Text
+  status           ContentStatus  @default(DRAFT)
+  creditsCost      Int            @default(0)
+  jobId            String?
+  scheduledAtUtc   DateTime?
+  scheduledTimezone String?
+  publishedAtUtc   DateTime?
+  failedReason     String?
+  campaign         String?
+  notes            String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("content_items")
+}
+
+model ContentJob {
+  id            String    @id @default(cuid())
+  userId        String
+  workspaceId   String?
+  type          JobType
+  status        JobStatus @default(PENDING)
+  inputPayload  Json
+  outputPayload Json?
+  errorMessage  String?
+  creditsCost   Int       @default(0)
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+  updatedAt     DateTime  @updatedAt
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@map("content_jobs")
+}
+
+/// Append-only. Never update rows. Balance = SUM(amount) WHERE userId = ?
+model CreditLedger {
+  id           String     @id @default(cuid())
+  userId       String
+  type         LedgerType
+  feature      String
+  amount       Int        // positive = in, negative = out
+  balanceAfter Int
+  jobId        String?
+  createdAt    DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("credit_ledger")
+}
+
+/// Immutable AI cost audit trail.
+model AiUsageLog {
+  id               String   @id @default(cuid())
+  userId           String
+  model            String
+  feature          String
+  promptTokens     Int
+  completionTokens Int
+  totalTokens      Int
+  estimatedCostUsd Decimal  @db.Decimal(10, 6)
+  jobId            String?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("ai_usage_logs")
+}

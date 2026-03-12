@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Base Colors from Brand ID */
+    --background: 231 48% 97%; /* #F6F7FB */
+    --foreground: 228 26% 16%; /* #1F2235 Dark Gray */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 228 26% 16%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 26% 16%;
+    
+    /* Primary: Deep Indigo */
+    --primary: 239 100% 58%; /* #2B2DFF */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Secondary: Electric Violet */
+    --secondary: 251 100% 68%; /* #7A5CFF */
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Muted: Soft grays based on Neutral System */
+    --muted: 228 14% 93%;
+    --muted-foreground: 232 10% 53%; /* #7C7F93 Neutral Gray */
+    
+    /* Accent: Neon Cyan */
+    --accent: 186 100% 50%; /* #00E5FF */
+    --accent-foreground: 228 26% 16%;
+    
+    /* Destructive */
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    
+    /* Borders */
+    --border: 228 14% 90%;
+    --input: 228 14% 90%;
+    --ring: 239 100% 58%;
+    
+    /* Radii */
+    --radius: 0.75rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+    font-family: var(--font-sora), var(--font-inter), system-ui, sans-serif;
+    color: #1F2235;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    background-image: linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+}

@@ -1,0 +1,7 @@
+{
+  "extends": "@contivo/config/tsconfig.base.json",
+  "compilerOptions": {
+    "baseUrl": "."
+  },
+  "exclude": ["node_modules"]
+}
