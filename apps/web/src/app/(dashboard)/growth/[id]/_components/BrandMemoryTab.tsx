@@ -1,11 +1,11 @@
-import { Competitor, Workspace } from '@prisma/client';
+import { Workspace } from '@prisma/client';
 import { Layers3, Sparkles, UserCircle2 } from 'lucide-react';
 import type { BrandAssetsPayload } from '@/app/actions/growth-brand-assets';
 import { BrandAssetsManager } from './BrandAssetsManager';
 import { RescrapeManager } from './RescrapeManager';
 
 type WorkspaceWithCompetitors = Workspace & {
-  competitors?: Competitor[];
+  competitors?: any[];
 };
 
 export function BrandMemoryTab({
