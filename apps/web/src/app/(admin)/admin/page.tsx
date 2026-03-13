@@ -754,7 +754,7 @@ function AiSection({
         <Panel title="Framework Cost Signals" subtitle="Recent usage and quality">
           <SimpleTable
             headers={['Feature', 'Cost', 'Tokens']}
-            rows={analytics.aiCostByFeature.slice(0, 8).map((item) => [
+            rows={analytics.aiCostByFeature.slice(0, 8).map((item: any) => [
               item.feature,
               formatUsd(item.costUsd),
               item.totalTokens.toLocaleString(),
@@ -1156,13 +1156,13 @@ function AnalyticsSection({
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <Panel title="Top Frameworks" subtitle="Framework adoption over the last 30 days">
-        <SimpleTable headers={['Framework', 'Events', 'Avg Score']} rows={analytics.frameworks.map((item) => [item.frameworkName, item.events.toLocaleString(), item.avgOverallScore?.toFixed(2) || '-'])} />
+        <SimpleTable headers={['Framework', 'Events', 'Avg Score']} rows={analytics.frameworks.map((item: any) => [item.frameworkName, item.events.toLocaleString(), item.avgOverallScore?.toFixed(2) || '-'])} />
       </Panel>
       <Panel title="Top Platforms" subtitle="Distribution by content channel">
-        <SimpleTable headers={['Platform', 'Count']} rows={analytics.platforms.map((item) => [item.channel, item.count.toLocaleString()])} />
+        <SimpleTable headers={['Platform', 'Count']} rows={analytics.platforms.map((item: any) => [item.channel, item.count.toLocaleString()])} />
       </Panel>
       <Panel title="Highest Cost Features" subtitle="AI cost concentration by feature">
-        <SimpleTable headers={['Feature', 'Cost']} rows={analytics.aiCostByFeature.map((item) => [item.feature, formatUsd(item.costUsd)])} />
+        <SimpleTable headers={['Feature', 'Cost']} rows={analytics.aiCostByFeature.map((item: any) => [item.feature, formatUsd(item.costUsd)])} />
       </Panel>
     </div>
   );
@@ -1192,7 +1192,7 @@ function IntegrationsSection({
         <Panel title="AI Requests (24h)" subtitle="Recent provider load by model">
           <SimpleTable
             headers={['Model', 'Requests', 'Cost']}
-            rows={integrations.aiUsageLastDay.map((item) => [item.model, item.requests.toLocaleString(), formatUsd(item.costUsd)])}
+            rows={integrations.aiUsageLastDay.map((item: any) => [item.model, item.requests.toLocaleString(), formatUsd(item.costUsd)])}
           />
         </Panel>
       </div>
