@@ -37,7 +37,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
     return d;
   });
 
-  const itemsByDate: Record<string, FullContentItem[]> = {};
+  const itemsByDate: Record<string, ContentItem[]> = {};
   items.forEach((item) => {
     if (!item.scheduledAtUtc) return;
     const d = new Date(item.scheduledAtUtc);
