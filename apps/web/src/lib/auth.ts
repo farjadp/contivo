@@ -1,6 +1,8 @@
 import { jwtVerify, SignJWT } from 'jose';
 import { cookies } from 'next/headers';
 
+import { isUserSuspended } from '@/lib/admin-state';
+
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-default-key-change-in-production';
 const encodedKey = new TextEncoder().encode(JWT_SECRET);
 
@@ -52,5 +54,12 @@ export async function getSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get('auth-token')?.value;
   if (!token) return null;
-  return await verifyToken(token);
+  const session = await verifyToken(token);
+  if (!session) return null;
+
+  if (await isUserSuspended(session.userId)) {
+    return null;
+  }
+
+  return session;
 }

@@ -3,6 +3,7 @@
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { createSessionCookie, deleteSessionCookie } from '@/lib/auth';
+import { isUserSuspended } from '@/lib/admin-state';
 import { redirect } from 'next/navigation';
 
 export async function login(_prevState: any, formData: FormData) {
@@ -25,6 +26,10 @@ export async function login(_prevState: any, formData: FormData) {
 
   if (!isValidPassword) {
     return { error: 'Invalid credentials' };
+  }
+
+  if (await isUserSuspended(user.id)) {
+    return { error: 'This account has been suspended. Contact support.' };
   }
 
   await createSessionCookie({

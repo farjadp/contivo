@@ -47,7 +47,13 @@ pnpm install
 cp .env.example .env
 ```
 
-3. Prepare DB (API workspace):
+3. Start Postgres (Docker):
+
+```bash
+docker compose up -d
+```
+
+4. Prepare DB (API workspace):
 
 ```bash
 cd apps/api
@@ -56,7 +62,7 @@ pnpm prisma:migrate
 pnpm db:seed
 ```
 
-4. Run dev:
+5. Run dev:
 
 ```bash
 cd /Users/farjad/Downloads/Work-Studio/Contivo

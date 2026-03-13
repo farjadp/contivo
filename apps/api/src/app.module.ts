@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { PrismaModule } from './common/prisma/prisma.module';
 import { HealthModule } from './modules/health/health.module';
@@ -11,6 +12,7 @@ import { AIModule } from './modules/ai/ai.module';
 import { JobsModule } from './modules/jobs/jobs.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CreditsModule } from './modules/credits/credits.module';
+import { SocialModule } from './modules/social/social.module';
 
 @Module({
   imports: [
@@ -19,6 +21,9 @@ import { CreditsModule } from './modules/credits/credits.module';
       isGlobal: true,
       envFilePath: ['.env.local', '.env'],
     }),
+
+    // Scheduling
+    ScheduleModule.forRoot(),
 
     // Infrastructure
     PrismaModule,
@@ -35,6 +40,7 @@ import { CreditsModule } from './modules/credits/credits.module';
     WorkspacesModule,
     InstantContentModule,
     BillingModule,
+    SocialModule,
   ],
 })
 export class AppModule {}

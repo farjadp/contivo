@@ -1,0 +1,17 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    container_name: contivo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: contivo_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - contivo_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  contivo_postgres_data:

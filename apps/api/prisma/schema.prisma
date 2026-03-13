@@ -100,6 +100,34 @@ enum SubscriptionStatus {
   INCOMPLETE
 }
 
+// Social publishing enums
+enum SocialPlatform {
+  LINKEDIN
+  X
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+}
+
+enum SocialConnectionStatus {
+  CONNECTED
+  EXPIRED
+  FAILED
+  REVOKED
+  PENDING_REAUTH
+}
+
+enum SocialPublishStatus {
+  DRAFT
+  READY
+  SCHEDULED
+  PUBLISH_QUEUED
+  PUBLISHING
+  PUBLISHED
+  FAILED
+  CANCELLED
+}
+
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
@@ -164,6 +192,10 @@ model Workspace {
   contentJobs  ContentJob[]
   strategyRuns StrategyRun[]
   competitors  Competitor[]
+  competitorKeywords CompetitorKeyword[]
+  keywordOpportunities KeywordOpportunity[]
+  serpAnalyses SerpAnalysis[]
+  socialConnections SocialConnection[]
 
   @@index([userId])
   @@map("workspaces")
@@ -187,6 +219,63 @@ model Competitor {
 
   @@index([workspaceId])
   @@map("competitors")
+}
+
+// SEO Intelligence: real keyword data pulled from DataForSEO (domain_keywords API)
+// Scanned at most once per 7 days per domain to control API costs.
+model CompetitorKeyword {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  competitorDomain String
+  keyword          String
+  searchVolume     Int      @default(0)
+  difficulty       Int      @default(0)  // 0-100
+  competition      Float    @default(0)  // 0.0-1.0
+  rankingPosition  Int?     // organic rank of competitor
+  rankingUrl       String?
+  createdAt        DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, competitorDomain])
+  @@map("competitor_keywords")
+}
+
+// SEO Intelligence: gap keywords not yet owned by the client.
+// Opportunity score = (searchVolume * 0.6) + ((1 - competition) * 0.4)
+model KeywordOpportunity {
+  id               String   @id @default(cuid())
+  workspaceId      String
+  keyword          String
+  searchVolume     Int      @default(0)
+  competition      Float    @default(0)
+  opportunityScore Float    @default(0)
+  sourceCompetitor String?  // domain that ranked for this keyword
+  createdAt        DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, opportunityScore])
+  @@map("keyword_opportunities")
+}
+
+// SEO Intelligence: AI-analyzed SERP report per keyword.
+// Refreshed at most once per 24 hours per keyword.
+model SerpAnalysis {
+  id          String   @id @default(cuid())
+  workspaceId String
+  keyword     String
+  rawResults  Json     // top 10 SERP results from DataForSEO
+  analysis    String   @db.Text  // Gemini AI insight report
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+  @@index([workspaceId, keyword])
+  @@map("serp_analyses")
 }
 
 model StrategyRun {
@@ -274,6 +363,82 @@ model CreditLedger {
   @@index([userId])
   @@index([userId, createdAt])
   @@map("credit_ledger")
+}
+
+// ─── Social Publishing ────────────────────────────────────────────────────────
+
+/// Stores OAuth-connected social media accounts per workspace.
+/// Tokens are NEVER stored in plaintext — only refs to encrypted vault entries.
+model SocialConnection {
+  id                       String                 @id @default(cuid())
+  workspaceId              String
+  platform                 SocialPlatform
+  accountName              String
+  accountIdentifier        String                 // handle, page-id, or URN
+  authProvider             String                 @default("oauth2")
+  encryptedAccessTokenRef  String?                // reference to vault / env-encrypted token
+  encryptedRefreshTokenRef String?                // reference to vault / env-encrypted refresh token
+  scopesJson               Json?                  // granted OAuth scopes as JSON array
+  status                   SocialConnectionStatus @default(CONNECTED)
+  isDefault                Boolean                @default(false)
+  tokenExpiresAt           DateTime?              // when the access token expires (for proactive refresh)
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  lastSyncAt               DateTime?
+
+  workspace   Workspace          @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  publishJobs SocialPublishJob[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, platform])
+  @@map("social_connections")
+}
+
+/// A single publish job: one content item → one social destination.
+/// Must be processed by a background worker, NOT inside an HTTP request.
+model SocialPublishJob {
+  id                 String              @id @default(cuid())
+  workspaceId        String
+  contentItemId      String?             // links to ContentItem if generated by Contivo
+  socialConnectionId String
+  platform           SocialPlatform
+  scheduledAtUtc     DateTime?           // null = publish immediately
+  timezone           String?             @default("UTC")
+  status             SocialPublishStatus @default(DRAFT)
+  externalPostId     String?             // returned by platform API after publish
+  externalPostUrl    String?             // deep-link to the published post
+  lastError          String?             @db.Text
+  retryCount         Int                 @default(0)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  publishedAtUtc     DateTime?
+
+  connection SocialConnection  @relation(fields: [socialConnectionId], references: [id], onDelete: Cascade)
+  logs       SocialPublishLog[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, status])
+  @@index([socialConnectionId])
+  @@index([scheduledAtUtc, status]) // for scheduler worker queries
+  @@map("social_publish_jobs")
+}
+
+/// Append-only audit trail for every action taken on a publish job.
+/// Never update rows — only insert.
+model SocialPublishLog {
+  id              String   @id @default(cuid())
+  publishJobId    String
+  action          String   // e.g. VALIDATE, PUBLISH_ATTEMPT, RETRY, CANCELLED
+  status          String   // SUCCESS | FAILURE | SKIPPED
+  requestSummary  String?  @db.Text // sanitised request body (no tokens)
+  responseSummary String?  @db.Text // sanitised response body
+  errorMessage    String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  job SocialPublishJob @relation(fields: [publishJobId], references: [id], onDelete: Cascade)
+
+  @@index([publishJobId])
+  @@map("social_publish_logs")
 }
 
 /// Immutable AI cost audit trail.

@@ -128,6 +128,62 @@ export async function listUserActivityLogs(userId: string, limit = 80): Promise<
   return rows;
 }
 
+export async function listAllActivityLogs(
+  limit = 200,
+  actionPrefix?: string,
+): Promise<ActivityLogEntry[]> {
+  await ensureLogTables();
+
+  const rows = actionPrefix
+    ? await prisma.$queryRaw<
+        Array<{
+          id: string;
+          action: string;
+          workspaceId: string | null;
+          workspaceName: string | null;
+          detail: any;
+          createdAt: Date;
+        }>
+      >`
+        SELECT
+          l.id,
+          l.action,
+          l.workspace_id AS "workspaceId",
+          w.name AS "workspaceName",
+          l.detail,
+          l.created_at AS "createdAt"
+        FROM activity_logs l
+        LEFT JOIN workspaces w ON w.id = l.workspace_id
+        WHERE l.action LIKE ${`${actionPrefix}%`}
+        ORDER BY l.created_at DESC
+        LIMIT ${limit}
+      `
+    : await prisma.$queryRaw<
+        Array<{
+          id: string;
+          action: string;
+          workspaceId: string | null;
+          workspaceName: string | null;
+          detail: any;
+          createdAt: Date;
+        }>
+      >`
+        SELECT
+          l.id,
+          l.action,
+          l.workspace_id AS "workspaceId",
+          w.name AS "workspaceName",
+          l.detail,
+          l.created_at AS "createdAt"
+        FROM activity_logs l
+        LEFT JOIN workspaces w ON w.id = l.workspace_id
+        ORDER BY l.created_at DESC
+        LIMIT ${limit}
+      `;
+
+  return rows;
+}
+
 export async function listWorkspaceActivityLogs(
   userId: string,
   workspaceId: string,
@@ -156,6 +212,72 @@ export async function listWorkspaceActivityLogs(
     LEFT JOIN workspaces w ON w.id = l.workspace_id
     WHERE l.user_id = ${userId}
       AND l.workspace_id = ${workspaceId}
+    ORDER BY l.created_at DESC
+    LIMIT ${limit}
+  `;
+
+  return rows;
+}
+
+export async function listWorkspaceActivityLogsForAdmin(
+  workspaceId: string,
+  limit = 400,
+): Promise<ActivityLogEntry[]> {
+  await ensureLogTables();
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      action: string;
+      workspaceId: string | null;
+      workspaceName: string | null;
+      detail: any;
+      createdAt: Date;
+    }>
+  >`
+    SELECT
+      l.id,
+      l.action,
+      l.workspace_id AS "workspaceId",
+      w.name AS "workspaceName",
+      l.detail,
+      l.created_at AS "createdAt"
+    FROM activity_logs l
+    LEFT JOIN workspaces w ON w.id = l.workspace_id
+    WHERE l.workspace_id = ${workspaceId}
+    ORDER BY l.created_at DESC
+    LIMIT ${limit}
+  `;
+
+  return rows;
+}
+
+export async function listContentActivityLogs(
+  contentId: string,
+  limit = 120,
+): Promise<ActivityLogEntry[]> {
+  await ensureLogTables();
+
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      action: string;
+      workspaceId: string | null;
+      workspaceName: string | null;
+      detail: any;
+      createdAt: Date;
+    }>
+  >`
+    SELECT
+      l.id,
+      l.action,
+      l.workspace_id AS "workspaceId",
+      w.name AS "workspaceName",
+      l.detail,
+      l.created_at AS "createdAt"
+    FROM activity_logs l
+    LEFT JOIN workspaces w ON w.id = l.workspace_id
+    WHERE COALESCE(l.detail::text, '') ILIKE ${`%${contentId}%`}
     ORDER BY l.created_at DESC
     LIMIT ${limit}
   `;

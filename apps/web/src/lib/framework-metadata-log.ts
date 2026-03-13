@@ -196,6 +196,80 @@ export async function getLatestFrameworkMetadataForContentItem(
   return rows[0] || null;
 }
 
+export async function listFrameworkMetadataForContentItem(
+  contentItemId: string,
+  limit = 40,
+): Promise<FrameworkMetadataEntry[]> {
+  await ensureFrameworkMetadataTable();
+
+  return prisma.$queryRaw<FrameworkMetadataEntry[]>`
+    SELECT
+      m.id,
+      m.user_id AS "userId",
+      u.email AS "userEmail",
+      m.workspace_id AS "workspaceId",
+      w.name AS "workspaceName",
+      m.content_item_id AS "contentItemId",
+      m.event_name AS "eventName",
+      m.framework_id AS "frameworkId",
+      m.framework_name AS "frameworkName",
+      m.framework_category AS "frameworkCategory",
+      m.selection_mode AS "selectionMode",
+      m.selection_reason AS "selectionReason",
+      m.goal,
+      m.platform,
+      m.funnel_stage AS "funnelStage",
+      m.quality_scores AS "qualityScores",
+      m.fallback_used AS "fallbackUsed",
+      m.fallback_framework_id AS "fallbackFrameworkId",
+      m.metadata,
+      m.created_at AS "createdAt"
+    FROM content_framework_metadata m
+    LEFT JOIN users u ON u.id = m.user_id
+    LEFT JOIN workspaces w ON w.id = m.workspace_id
+    WHERE m.content_item_id = ${contentItemId}
+    ORDER BY m.created_at DESC
+    LIMIT ${limit}
+  `;
+}
+
+export async function listFrameworkMetadataForWorkspace(
+  workspaceId: string,
+  limit = 80,
+): Promise<FrameworkMetadataEntry[]> {
+  await ensureFrameworkMetadataTable();
+
+  return prisma.$queryRaw<FrameworkMetadataEntry[]>`
+    SELECT
+      m.id,
+      m.user_id AS "userId",
+      u.email AS "userEmail",
+      m.workspace_id AS "workspaceId",
+      w.name AS "workspaceName",
+      m.content_item_id AS "contentItemId",
+      m.event_name AS "eventName",
+      m.framework_id AS "frameworkId",
+      m.framework_name AS "frameworkName",
+      m.framework_category AS "frameworkCategory",
+      m.selection_mode AS "selectionMode",
+      m.selection_reason AS "selectionReason",
+      m.goal,
+      m.platform,
+      m.funnel_stage AS "funnelStage",
+      m.quality_scores AS "qualityScores",
+      m.fallback_used AS "fallbackUsed",
+      m.fallback_framework_id AS "fallbackFrameworkId",
+      m.metadata,
+      m.created_at AS "createdAt"
+    FROM content_framework_metadata m
+    LEFT JOIN users u ON u.id = m.user_id
+    LEFT JOIN workspaces w ON w.id = m.workspace_id
+    WHERE m.workspace_id = ${workspaceId}
+    ORDER BY m.created_at DESC
+    LIMIT ${limit}
+  `;
+}
+
 export async function listRecentFrameworkMetadata(limit = 120): Promise<FrameworkMetadataEntry[]> {
   await ensureFrameworkMetadataTable();
 

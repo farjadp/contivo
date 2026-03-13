@@ -1,4 +1,8 @@
-import { getGeminiModel } from '@/lib/app-settings';
+import {
+  getGeminiCooldownSeconds,
+  getGeminiModel,
+  getOpenAiFallbackModel,
+} from '@/lib/app-settings';
 import {
   type FrameworkId,
   type FrameworkQualityScores,
@@ -23,8 +27,6 @@ interface OpenAiCallResult {
   text: string | null;
 }
 
-const DEFAULT_OPENAI_MODEL = 'gpt-4.1';
-const GEMINI_COOLDOWN_FALLBACK_MS = 60_000;
 let geminiCooldownUntil = 0;
 let geminiCooldownReason: string | null = null;
 
@@ -94,6 +96,7 @@ async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCa
   }
 
   const model = await getGeminiModel();
+  const fallbackCooldownMs = (await getGeminiCooldownSeconds()) * 1000;
 
   try {
     const body: Record<string, unknown> = {
@@ -118,7 +121,7 @@ async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCa
       console.error('Gemini API Request Error:', errorBody);
 
       if (res.status === 429 || res.status === 503) {
-        let cooldownMs = GEMINI_COOLDOWN_FALLBACK_MS;
+        let cooldownMs = fallbackCooldownMs;
         const retryDelayMatch = errorBody.match(/"retryDelay"\s*:\s*"(\d+)s"/i);
         if (retryDelayMatch?.[1]) {
           const parsed = Number(retryDelayMatch[1]);
@@ -160,7 +163,7 @@ async function callOpenAi(
     return { ok: false, status: 0, text: null };
   }
 
-  const model = process.env.OPENAI_DEFAULT_MODEL?.trim() || DEFAULT_OPENAI_MODEL;
+  const model = await getOpenAiFallbackModel();
 
   try {
     const body: Record<string, unknown> = {
@@ -1470,4 +1473,64 @@ Required Schema:
 
   logFallback('generatePositioningInsights', gemini.status, openAi.status);
   return fallbackPositioning(brandSummary, competitors);
+}
+
+// ─── SEO Intelligence: SERP Analysis ─────────────────────────────────────────
+
+type SerpItem = {
+  rank_absolute: number;
+  title: string;
+  url: string;
+  description: string | null;
+  domain: string;
+};
+
+/**
+ * Analyze top SERP results with Gemini to extract content strategy insights.
+ * Called from the seo-intelligence server action after DataForSEO returns results.
+ *
+ * @param keyword    The target keyword phrase
+ * @param serpItems  Top 10 organic SERP results from DataForSEO
+ */
+export async function analyzeSerpResultsWithGemini(
+  keyword: string,
+  serpItems: SerpItem[],
+): Promise<string | null> {
+  const serpList = serpItems
+    .map(
+      (item, idx) =>
+        `${idx + 1}. [Rank ${item.rank_absolute}] ${item.title}\n   URL: ${item.url}\n   Domain: ${item.domain}\n   Snippet: ${item.description || 'N/A'}`,
+    )
+    .join('\n\n');
+
+  const prompt = `You are an expert SEO content strategist.
+
+Analyze the following top ${serpItems.length} Google search results for the keyword: "${keyword}"
+
+TOP SERP RESULTS:
+${serpList}
+
+Based on this analysis, generate a structured SERP Insight Report with these exact sections:
+
+1. **Content Pattern** — What is the dominant format? (listicle, how-to, comparison, etc.)
+2. **Average Content Depth** — Estimate word count range typical for these results
+3. **Main Topics Covered** — List 5-7 core topics/subtopics that appear across results
+4. **Missing Angles** — List 3-5 specific content angles NOT being served by current results
+5. **Differentiation Opportunity** — A single concrete content idea that would stand out from all current results and serve the searcher's intent better
+6. **Recommended Title** — A specific, compelling article title for a piece targeting this keyword
+
+Keep your analysis specific, actionable, and grounded in what you actually see in the SERP data.`;
+
+  const gemini = await callGemini(prompt, false);
+  if (gemini.ok && gemini.text) return gemini.text;
+
+  const openAi = await callOpenAi(
+    prompt,
+    false,
+    'You are an SEO content strategist. Be specific, data-driven, and actionable.',
+  );
+  if (openAi.ok && openAi.text) return openAi.text;
+
+  logFallback('analyzeSerpResultsWithGemini', gemini.status, openAi.status);
+  return null;
 }

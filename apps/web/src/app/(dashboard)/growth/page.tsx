@@ -12,6 +12,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { getSession } from '@/lib/auth';
+import { listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { redirect } from 'next/navigation';
 
@@ -33,6 +34,9 @@ export default async function GrowthEnginePage() {
       },
     },
   });
+
+  const archiveStates = await listWorkspaceArchiveStates(workspaces.map((workspace) => workspace.id));
+  const visibleWorkspaces = workspaces.filter((workspace) => !archiveStates.get(workspace.id)?.isArchived);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-16">
@@ -60,7 +64,7 @@ export default async function GrowthEnginePage() {
       </div>
 
       {/* Workspace Rows / Empty State */}
-      {workspaces.length === 0 ? (
+      {visibleWorkspaces.length === 0 ? (
         <div>
         <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center p-16 text-center">
           <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4 text-gray-400">
@@ -81,7 +85,7 @@ export default async function GrowthEnginePage() {
         </div>
       ) : (
         <div className="space-y-5">
-          {workspaces.map((workspace) => {
+          {visibleWorkspaces.map((workspace) => {
             const brand = (workspace.brandSummary as Record<string, any>) || {};
             const insights = (workspace.audienceInsights as Record<string, any>) || {};
             const isReady = workspace.status === 'READY';

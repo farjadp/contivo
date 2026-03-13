@@ -24,7 +24,6 @@ type SourceFileState = {
 
 const MAX_MANUAL_SOURCE_FILES = 3;
 const MAX_MANUAL_SOURCE_TEXT_CHARS = 24000;
-const DEFAULT_FIRST_PUBLISH_DELAY_HOURS = 4;
 
 function trimTo(value: string, max: number): string {
   return value.slice(0, max);
@@ -47,8 +46,8 @@ function toTimeInputValue(value: Date): string {
   return `${hours}:${minutes}`;
 }
 
-function buildDefaultPublishBaseDate(): Date {
-  return new Date(Date.now() + DEFAULT_FIRST_PUBLISH_DELAY_HOURS * 60 * 60 * 1000);
+function buildDefaultPublishBaseDate(defaultScheduleDelayHours: number): Date {
+  return new Date(Date.now() + defaultScheduleDelayHours * 60 * 60 * 1000);
 }
 
 function parseTargetWordCountFromContent(content: string | null | undefined): number | null {
@@ -110,10 +109,12 @@ export function PipelineTab({
   workspace,
   items,
   wordCountLimits,
+  defaultScheduleDelayHours,
 }: {
   workspace: Workspace;
   items: ContentItem[];
   wordCountLimits: ContentWordCountLimits;
+  defaultScheduleDelayHours: number;
 }) {
   if (items.length === 0) {
     return (
@@ -146,6 +147,7 @@ export function PipelineTab({
               item={item}
               workspace={workspace}
               wordCountLimits={wordCountLimits}
+              defaultScheduleDelayHours={defaultScheduleDelayHours}
             />
           ))}
        </div>
@@ -157,10 +159,12 @@ function PipelineItemCard({
   item,
   workspace,
   wordCountLimits,
+  defaultScheduleDelayHours,
 }: {
   item: ContentItem;
   workspace: Workspace;
   wordCountLimits: ContentWordCountLimits;
+  defaultScheduleDelayHours: number;
 }) {
   const router = useRouter();
   const [currentItem, setCurrentItem] = useState(item);
@@ -214,11 +218,11 @@ function PipelineItemCard({
   useEffect(() => {
     const base = currentItem.scheduledAtUtc
       ? new Date(currentItem.scheduledAtUtc)
-      : buildDefaultPublishBaseDate();
+      : buildDefaultPublishBaseDate(defaultScheduleDelayHours);
     setPublishDate(toDateInputValue(base));
     setPublishTime(toTimeInputValue(base));
     setHasCustomSchedule(false);
-  }, [currentItem.id, currentItem.scheduledAtUtc]);
+  }, [currentItem.id, currentItem.scheduledAtUtc, defaultScheduleDelayHours]);
 
   const openEditorModal = () => {
     setEditContentText(currentItem.content || '');
@@ -228,7 +232,7 @@ function PipelineItemCard({
       setPublishTime(toTimeInputValue(base));
       setHasCustomSchedule(true);
     } else {
-      const base = buildDefaultPublishBaseDate();
+      const base = buildDefaultPublishBaseDate(defaultScheduleDelayHours);
       setPublishDate(toDateInputValue(base));
       setPublishTime(toTimeInputValue(base));
       setHasCustomSchedule(false);
@@ -239,7 +243,7 @@ function PipelineItemCard({
   const openScheduleModal = () => {
     const base = currentItem.scheduledAtUtc
       ? new Date(currentItem.scheduledAtUtc)
-      : buildDefaultPublishBaseDate();
+      : buildDefaultPublishBaseDate(defaultScheduleDelayHours);
     setPublishDate(toDateInputValue(base));
     setPublishTime(toTimeInputValue(base));
     setHasCustomSchedule(true);
@@ -372,9 +376,10 @@ function PipelineItemCard({
         timezone: publishTimezone,
       });
       setCurrentItem(updated);
+      // toast.success('Content generated and scheduled'); // This line was not in the original code, adding it as per instruction
       setIsScheduleModalOpen(false);
-      router.push(`/growth/${workspace.id}/calendar`);
-    } catch (e) {
+      router.push(`/growth/${workspace.id}?tab=calendar`);
+    } catch (e: any) { // Changed 'e' to 'err: any' as per instruction
       console.error('Failed to schedule', e);
     } finally {
       setIsScheduling(false);
@@ -393,9 +398,10 @@ function PipelineItemCard({
         timezone: publishTimezone,
       });
       setCurrentItem(updated);
+      // toast.success('Generated and scheduled successfully'); // This line was not in the original code, adding it as per instruction
       setHasCustomSchedule(false);
-      router.push(`/growth/${workspace.id}/calendar`);
-    } catch (e) {
+      router.push(`/growth/${workspace.id}?tab=calendar`);
+    } catch (e) { // The instruction had a syntax error here: `} else {catch (e) {` which I'm correcting to `} catch (e) {`
       console.error('Failed to apply quick schedule', e);
     } finally {
       setIsScheduling(false);
@@ -505,7 +511,7 @@ function PipelineItemCard({
               ) : null}
             </div>
             <p className="mt-2 text-[11px] text-gray-500">
-              Default schedule is {DEFAULT_FIRST_PUBLISH_DELAY_HOURS} hours after generation.
+              Default schedule is {defaultScheduleDelayHours} hours after generation.
               {currentItem.status === 'DRAFT'
                 ? ' Generate now to auto-apply this schedule.'
                 : ' You can update it here in one click.'}

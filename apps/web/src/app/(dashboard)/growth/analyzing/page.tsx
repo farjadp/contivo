@@ -8,7 +8,7 @@ const STEPS = [
   { id: 1, text: 'Connecting to your website', icon: Globe },
   { id: 2, text: 'Reading your key pages', icon: FileSearch },
   { id: 3, text: 'Understanding your brand and audience', icon: BrainCircuit },
-  { id: 4, text: 'Preparing your strategy workspace', icon: Sparkles },
+  { id: 4, text: 'Building your Brand Memory', icon: Sparkles },
 ];
 
 export default function GrowthAnalyzingPage() {
@@ -42,9 +42,9 @@ function GrowthAnalyzingContent() {
         setCurrentStepIndex(currentInx);
       }
       
-      // All steps done, wait a tiny bit and redirect to competitors map
+      // All steps done, wait a tiny bit and redirect to Brand Memory
       setTimeout(() => {
-        router.push(`/growth/competitors?id=${workspaceId}` as any);
+        router.push(`/growth/${workspaceId}?tab=strategy` as any);
       }, 500);
     };
 

@@ -45,3 +45,4 @@ apps/api/prisma/dev.db-journal
 # Misc
 .cache
 coverage
+.claude/

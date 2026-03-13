@@ -4,7 +4,11 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateContentIdeasWithGemini, type IdeationRequestOptions } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
-import { getContentWordCountLimits, getIdeationMaxContentCount } from '@/lib/app-settings';
+import {
+  getContentWordCountLimits,
+  getDefaultScheduleDelayHours,
+  getIdeationMaxContentCount,
+} from '@/lib/app-settings';
 import {
   clampWordCount,
   midpointWordCount,
@@ -96,7 +100,6 @@ type ManualSourcePayload = {
   publishTime?: string | null;
 };
 
-const AUTO_SCHEDULE_DELAY_HOURS = 4;
 const AUTO_SCHEDULE_WINDOW_DAYS = 7;
 
 async function computeAutoScheduleUtc(input: {
@@ -557,7 +560,8 @@ export async function generatePostFromPipeline(
       return { error: 'AI generation failed' };
     }
 
-    const baseAutoSchedule = new Date(Date.now() + AUTO_SCHEDULE_DELAY_HOURS * 60 * 60 * 1000);
+    const autoScheduleDelayHours = await getDefaultScheduleDelayHours();
+    const baseAutoSchedule = new Date(Date.now() + autoScheduleDelayHours * 60 * 60 * 1000);
     const autoScheduledAtUtc = await computeAutoScheduleUtc({
       workspaceId,
       userId: session.userId as string,
@@ -600,7 +604,7 @@ export async function generatePostFromPipeline(
         scheduleTimezone,
         scheduledAtUtc: updated.scheduledAtUtc?.toISOString() || null,
         autoScheduleWindowDays: AUTO_SCHEDULE_WINDOW_DAYS,
-        autoScheduleDelayHours: AUTO_SCHEDULE_DELAY_HOURS,
+        autoScheduleDelayHours,
       },
     });
 
@@ -635,7 +639,7 @@ export async function generatePostFromPipeline(
           scheduleTimezone,
           scheduledAtUtc: updated.scheduledAtUtc?.toISOString() || null,
           autoScheduleWindowDays: AUTO_SCHEDULE_WINDOW_DAYS,
-          autoScheduleDelayHours: AUTO_SCHEDULE_DELAY_HOURS,
+          autoScheduleDelayHours,
         },
       });
     }
