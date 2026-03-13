@@ -427,13 +427,13 @@ function OverviewSection({
         <Panel title="Top Platforms" subtitle="Content created in the last 30 days">
           <SimpleTable
             headers={['Platform', 'Count']}
-            rows={analytics.platforms.map((item) => [item.channel, item.count.toLocaleString()])}
+            rows={analytics.platforms.map((item: any) => [item.channel, item.count.toLocaleString()])}
           />
         </Panel>
         <Panel title="AI Cost by Feature" subtitle="30-day provider spend">
           <SimpleTable
             headers={['Feature', 'Cost', 'Tokens']}
-            rows={analytics.aiCostByFeature.map((item) => [
+            rows={analytics.aiCostByFeature.map((item: any) => [
               item.feature,
               formatUsd(item.costUsd),
               item.totalTokens.toLocaleString(),
@@ -443,7 +443,7 @@ function OverviewSection({
         <Panel title="Content Status Breakdown" subtitle="Operational state of assets">
           <SimpleTable
             headers={['Status', 'Count']}
-            rows={analytics.contentStatusBreakdown.map((item) => [item.status, item.count.toLocaleString()])}
+            rows={analytics.contentStatusBreakdown.map((item: any) => [item.status, item.count.toLocaleString()])}
           />
         </Panel>
       </div>
