@@ -1,4 +1,4 @@
-import { PrismaClient, UserPlan, UserRole } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -10,15 +10,15 @@ async function main() {
     where: { email: 'dev@contivo.app' },
     update: {
       passwordHash: '$2b$10$V1n5OmNPjxmA1QMgqE41kuPOlnbOwYgBQF4D07G6k2ObPItkQ1xG6', // password123
-      role: UserRole.ADMIN,
-      plan: UserPlan.PRO,
+      role: 'ADMIN',
+      plan: 'PRO',
     },
     create: {
       passwordHash: '$2b$10$V1n5OmNPjxmA1QMgqE41kuPOlnbOwYgBQF4D07G6k2ObPItkQ1xG6', // password123
       email: 'dev@contivo.app',
       name: 'Contivo Dev',
-      plan: UserPlan.PRO,
-      role: UserRole.ADMIN,
+      plan: 'PRO',
+      role: 'ADMIN',
     },
   });
 
