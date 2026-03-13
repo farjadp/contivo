@@ -81,7 +81,7 @@ export async function createNewWorkspace(_prevState: any, formData: FormData) {
 
   if (competitorsData.length > 0) {
     await prisma.competitor.createMany({
-      data: competitorsData.map(c => ({
+      data: competitorsData.map((c: any) => ({
         workspaceId: workspace.id,
         name: c.name,
         domain: c.domain,

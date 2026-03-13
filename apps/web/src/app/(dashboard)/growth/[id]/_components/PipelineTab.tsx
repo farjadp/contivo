@@ -141,7 +141,7 @@ export function PipelineTab({
     <div className="space-y-4 animate-in fade-in py-2">
        {/* Future Kanban board could go here, for now using a clean list */}
        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map(item => (
+          {items.map((item: any) => (
             <PipelineItemCard
               key={item.id}
               item={item}
@@ -264,7 +264,7 @@ function PipelineItemCard({
       setCurrentItem(updated);
       setIsPreviewOpen(false);
       if (updated.status === 'SCHEDULED') {
-        router.push(`/growth/${workspace.id}/calendar`);
+        router.push(`/growth/${workspace.id}?tab=calendar`);
       }
     } catch (e) {
       console.error(e);

@@ -158,7 +158,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
                           <span className="text-xs font-bold text-gray-300">Empty</span>
                         </div>
                       ) : (
-                        dayItems.map(item => (
+                        dayItems.map((item: any) => (
                           <div key={item.id} className="bg-gray-50 border border-gray-100 p-3 rounded-[16px] hover:border-[#2B2DFF]/30 hover:shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer group">
                             <div className="text-[9px] font-black uppercase tracking-widest text-[#2B2DFF] mb-1.5 line-clamp-1">
                               {item.channel}

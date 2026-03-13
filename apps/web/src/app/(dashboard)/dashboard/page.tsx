@@ -142,8 +142,8 @@ export default async function DashboardPage() {
     select: { id: true, name: true, updatedAt: true },
   });
 
-  const archiveStates = await listWorkspaceArchiveStates(candidateWorkspaces.map((w) => w.id));
-  const visibleWorkspace = candidateWorkspaces.find((w) => !archiveStates.get(w.id)?.isArchived);
+  const archiveStates = await listWorkspaceArchiveStates(candidateWorkspaces.map((w: any) => w.id));
+  const visibleWorkspace = candidateWorkspaces.find((w: any) => !archiveStates.get(w.id)?.isArchived);
 
   if (!visibleWorkspace) {
     if (candidateWorkspaces.length > 0) {
@@ -345,7 +345,7 @@ export default async function DashboardPage() {
                 </div>
               </div>
             ) : (
-              actions.map((act, idx) => (
+              actions.map((act: any, idx: number) => (
                 <NextActionCard key={idx} {...act} />
               ))
             )}

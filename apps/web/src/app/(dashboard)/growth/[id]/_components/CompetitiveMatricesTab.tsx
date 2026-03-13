@@ -358,7 +358,7 @@ export function CompetitiveMatricesTab({
                   <h4 className="px-3 pb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                     Strategic Dimensions
                   </h4>
-                  {matrices.charts.map(chart => (
+                  {matrices.charts.map((chart: any) => (
                     <button
                       key={chart.chart_key}
                       type="button"
