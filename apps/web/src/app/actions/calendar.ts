@@ -5,7 +5,7 @@
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
-import { ContentStatus } from '@prisma/client';
+
 
 export interface SchedulePayload {
   contentId: string;
@@ -37,7 +37,7 @@ export async function scheduleContentItem(payload: SchedulePayload) {
       userId: session.userId,
     },
     data: {
-      status: ContentStatus.SCHEDULED,
+      status: 'SCHEDULED',
       scheduledAtUtc,
       scheduledTimezone: payload.timezone,
       campaign: payload.campaign,
@@ -81,7 +81,7 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
     },
     data: {
       content: payload.content,
-      status: scheduledAtUtc ? ContentStatus.SCHEDULED : ContentStatus.READY,
+      status: scheduledAtUtc ? 'SCHEDULED' : 'READY',
       scheduledAtUtc,
       scheduledTimezone: scheduledAtUtc ? payload.timezone : null,
       campaign: payload.campaign,
@@ -106,13 +106,13 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
   return updatedContent;
 }
 
-export async function updateContentStatus(contentId: string, status: ContentStatus) {
+export async function updateContentStatus(contentId: string, status: string) {
   const session = await getSession();
   if (!session?.userId) throw new Error('Unauthorized');
 
   const updated = await prisma.contentItem.update({
     where: { id: contentId, userId: session.userId },
-    data: { status },
+    data: { status: status as any },
   });
 
   if (updated.workspaceId) {
@@ -137,11 +137,11 @@ export async function getCalendarItems(workspaceId: string) {
       userId: session.userId,
       status: {
         in: [
-          ContentStatus.READY,
-          ContentStatus.SCHEDULED,
-          ContentStatus.PUBLISHING,
-          ContentStatus.PUBLISHED,
-          ContentStatus.FAILED,
+          'READY',
+          'SCHEDULED',
+          'PUBLISHING',
+          'PUBLISHED',
+          'FAILED',
         ]
       }
     },

@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 import { Calendar as CalendarIcon, List, Loader2, AlertCircle } from 'lucide-react';
 import { getCalendarItems } from '@/app/actions/calendar';
-import { ContentItem } from '@prisma/client';
 
 type ViewMode = 'week' | 'list';
 
 export function CalendarTab({ workspaceId }: { workspaceId: string }) {
   const [view, setView] = useState<ViewMode>('list');
-  const [items, setItems] = useState<ContentItem[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,7 +36,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
     return d;
   });
 
-  const itemsByDate: Record<string, ContentItem[]> = {};
+  const itemsByDate: Record<string, any[]> = {};
   items.forEach((item) => {
     if (!item.scheduledAtUtc) return;
     const d = new Date(item.scheduledAtUtc);

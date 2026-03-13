@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { Workspace } from '@prisma/client';
+
 import { Sparkles, Loader2, FileText, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { generateIdeas, saveIdeaToPipeline, generateDraftPreviewFromIdea } from '@/app/actions/workspace';
 import { useRouter } from 'next/navigation';
@@ -86,7 +86,7 @@ export function IdeationTab({
   maxImageCount,
   wordCountLimits,
 }: {
-  workspace: Workspace;
+  workspace: any;
   maxIdeaCount: number;
   maxImageCount: number;
   wordCountLimits: ContentWordCountLimits;

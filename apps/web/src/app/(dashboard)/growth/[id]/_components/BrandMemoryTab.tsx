@@ -1,18 +1,13 @@
-import { Workspace } from '@prisma/client';
 import { Layers3, Sparkles, UserCircle2 } from 'lucide-react';
 import type { BrandAssetsPayload } from '@/app/actions/growth-brand-assets';
 import { BrandAssetsManager } from './BrandAssetsManager';
 import { RescrapeManager } from './RescrapeManager';
 
-type WorkspaceWithCompetitors = Workspace & {
-  competitors?: any[];
-};
-
 export function BrandMemoryTab({
   workspace,
   maxRescrapeRuns,
 }: {
-  workspace: WorkspaceWithCompetitors;
+  workspace: any;
   maxRescrapeRuns: number;
 }) {
   const brand = (workspace.brandSummary as any) || {};

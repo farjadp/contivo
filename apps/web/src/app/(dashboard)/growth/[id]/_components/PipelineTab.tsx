@@ -1,6 +1,6 @@
 'use client';
 
-import { Workspace, ContentItem } from '@prisma/client';
+
 import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, Paperclip, Send, Save } from 'lucide-react';
 import { updateContentStatus, scheduleContentItem, updateContentAndSchedule } from '@/app/actions/calendar';
 import Link from 'next/link';
@@ -111,8 +111,8 @@ export function PipelineTab({
   wordCountLimits,
   defaultScheduleDelayHours,
 }: {
-  workspace: Workspace;
-  items: ContentItem[];
+  workspace: any;
+  items: any[];
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
 }) {
@@ -161,8 +161,8 @@ function PipelineItemCard({
   wordCountLimits,
   defaultScheduleDelayHours,
 }: {
-  item: ContentItem;
-  workspace: Workspace;
+  item: any;
+  workspace: any;
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
 }) {
