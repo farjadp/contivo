@@ -533,7 +533,7 @@ function UsersSection({
                   <td className="px-3 py-4 text-xs text-gray-600">
                     <p>{row._count.workspaces} workspaces</p>
                     <p>{row._count.contentItems} content items</p>
-                    <p>{row.creditBalance} credits</p>
+                    <p>{String(row.creditBalance || 0)} credits</p>
                     <p>{formatUsd(row.totalAiCost)} AI cost</p>
                   </td>
                   <td className="px-3 py-4 text-xs text-gray-600">{formatDateTime(row.lastActiveAt)}</td>
