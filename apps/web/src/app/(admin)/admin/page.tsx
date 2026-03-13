@@ -392,7 +392,7 @@ function OverviewSection({
             {overview.recentFailedJobs.length === 0 ? (
               <EmptyState text="No failed jobs recorded." />
             ) : (
-              overview.recentFailedJobs.map((job) => (
+              overview.recentFailedJobs.map((job: any) => (
                 <div key={job.id} className="rounded-xl border border-red-100 bg-red-50/70 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{job.type}</p>
