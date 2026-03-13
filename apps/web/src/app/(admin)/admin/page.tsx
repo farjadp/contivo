@@ -617,7 +617,7 @@ function WorkspacesSection({
 
       <Panel title="Workspace Management" subtitle="Inspect health, reassign ownership, or force intervention">
         <div className="space-y-4">
-          {rows.map((row) => (
+          {rows.map((row: any) => (
             <div key={row.id} className="rounded-2xl border border-gray-200 bg-white p-4">
               <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                 <div>
@@ -889,7 +889,7 @@ function CreditsSection({
                 </tr>
               </thead>
               <tbody>
-                {rows.map((row) => (
+                {rows.map((row: any) => (
                   <tr key={row.id} className="border-b border-gray-100">
                     <td className="px-3 py-3">
                       <p className="font-medium text-[#121212]">{row.user.email}</p>
@@ -1015,7 +1015,7 @@ function ContentSection({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row: any) => (
               <tr key={row.id} className="border-b border-gray-100 align-top">
                 <td className="px-3 py-4">
                   <Link href={`/admin/content/${row.id}`} className="font-bold text-[#121212] hover:underline">
@@ -1084,7 +1084,7 @@ function JobsSection({
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
+            {rows.map((row: any) => (
               <tr key={row.id} className="border-b border-gray-100 align-top">
                 <td className="px-3 py-4">
                   <p className="font-bold text-[#121212]">{row.type}</p>
