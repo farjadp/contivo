@@ -4,6 +4,7 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
+    "postinstall": "cd apps/api && npx prisma generate",
     "build": "turbo build",
     "dev": "turbo dev",
     "lint": "turbo lint",
