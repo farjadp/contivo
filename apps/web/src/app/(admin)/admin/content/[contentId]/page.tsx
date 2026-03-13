@@ -200,7 +200,7 @@ export default async function AdminContentDetailPage({ params }: Props) {
             <EmptyState text="No framework history found." />
           ) : (
             <div className="space-y-3">
-              {frameworkHistory.map((entry) => (
+              {frameworkHistory.map((entry: any) => (
                 <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{entry.frameworkName}</p>

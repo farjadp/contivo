@@ -150,7 +150,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <EmptyState text="No workspaces found for this user." />
           ) : (
             <div className="space-y-3">
-              {user.workspaces.map((workspace) => (
+              {user.workspaces.map((workspace: any) => (
                 <div key={workspace.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -177,7 +177,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <EmptyState text="No AI usage logged yet." />
           ) : (
             <div className="space-y-3">
-              {recentAiUsage.map((entry) => (
+              {recentAiUsage.map((entry: any) => (
                 <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{entry.feature}</p>
@@ -199,7 +199,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <EmptyState text="No content items found." />
           ) : (
             <div className="space-y-3">
-              {recentContent.map((item) => (
+              {recentContent.map((item: any) => (
                 <div key={item.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -223,7 +223,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
             <EmptyState text="No jobs found." />
           ) : (
             <div className="space-y-3">
-              {recentJobs.map((job) => (
+              {recentJobs.map((job: any) => (
                 <div key={job.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>

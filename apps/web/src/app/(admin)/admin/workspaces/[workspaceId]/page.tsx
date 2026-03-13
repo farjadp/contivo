@@ -99,7 +99,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
     getWorkspaceArchiveState(workspaceId),
   ]);
 
-  const contentCounts = new Map(contentStatusGroups.map((entry) => [entry.status, entry._count._all]));
+  const contentCounts = new Map(contentStatusGroups.map((entry: any) => [entry.status, entry._count._all]));
 
   return (
     <div className="space-y-6">
@@ -182,7 +182,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
             <EmptyState text="No competitors recorded for this workspace." />
           ) : (
             <div className="space-y-3">
-              {workspace.competitors.map((competitor) => (
+              {workspace.competitors.map((competitor: any) => (
                 <div key={competitor.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
@@ -211,7 +211,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
                 <EmptyState text="No keyword opportunities generated yet." />
               ) : (
                 <div className="space-y-2">
-                  {keywordOpportunityTop.map((item) => (
+                  {keywordOpportunityTop.map((item: any) => (
                     <div key={item.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                       <p className="text-sm font-bold text-[#121212]">{item.keyword}</p>
                       <p className="mt-1 text-xs text-slate-500">
@@ -229,7 +229,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
                 <EmptyState text="No SERP analyses recorded yet." />
               ) : (
                 <div className="space-y-2">
-                  {recentSerpAnalyses.map((entry) => (
+                  {recentSerpAnalyses.map((entry: any) => (
                     <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                       <p className="text-sm font-bold text-[#121212]">{entry.keyword}</p>
                       <p className="mt-1 text-xs text-slate-500">{formatDateTime(entry.createdAt)}</p>
@@ -249,7 +249,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
                 <EmptyState text="No content items found." />
               ) : (
                 <div className="space-y-2">
-                  {workspace.contentItems.map((item) => (
+                  {workspace.contentItems.map((item: any) => (
                     <div key={item.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <Link href={`/admin/content/${item.id}`} className="text-sm font-bold text-[#121212] hover:underline">
@@ -270,7 +270,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
                 <EmptyState text="No framework events recorded yet." />
               ) : (
                 <div className="space-y-2">
-                  {frameworkEvents.map((entry) => (
+                  {frameworkEvents.map((entry: any) => (
                     <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                       <div className="flex items-start justify-between gap-3">
                         <p className="text-sm font-bold text-[#121212]">{entry.frameworkName}</p>
