@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3000",
-    "build": "npx prisma@5.13.0 generate --schema=../../apps/api/prisma/schema.prisma && next build",
+    "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit"
@@ -12,6 +12,7 @@
   "dependencies": {
     "@clerk/nextjs": "^5.1.0",
     "@contivo/types": "workspace:*",
+    "@contivo/api": "workspace:*",
     "@prisma/client": "^5.13.0",
     "@radix-ui/react-label": "^2.0.2",
     "@radix-ui/react-select": "^2.0.0",
