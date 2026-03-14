@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
-    "build": "prisma generate && nest build",
+    "build": "nest build",
     "start": "node dist/main",
     "start:worker": "WORKER_MODE=true node dist/worker",
     "lint": "eslint src/**/*.ts",
