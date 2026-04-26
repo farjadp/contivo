@@ -1,25 +1,27 @@
 import { Controller, Get } from '@nestjs/common';
-import {
-  HealthCheck,
-  HealthCheckService,
-  PrismaHealthIndicator,
-} from '@nestjs/terminus';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 @Controller('health')
 export class HealthController {
-  constructor(
-    private readonly health: HealthCheckService,
-    private readonly prismaHealth: PrismaHealthIndicator,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
+  @Public()
   @Get()
-  @HealthCheck()
-  check() {
-    return this.health.check([
-      () => this.prismaHealth.pingCheck('database', this.prisma as any),
-    ]);
+  async check() {
+    let database = 'up';
+
+    try {
+      await this.prisma.$queryRawUnsafe('SELECT 1');
+    } catch (error) {
+      database = 'down';
+    }
+
+    return {
+      status: database === 'up' ? 'ok' : 'degraded',
+      database,
+      timestamp: new Date().toISOString(),
+    };
   }
 }
