@@ -61,7 +61,7 @@ export class CrawlProcessor implements OnModuleInit, OnModuleDestroy {
           throw error; // Let BullMQ handle retries
         }
       },
-      { connection: redisConnection },
+      { connection: redisConnection as any },
     );
 
     this.worker.on('failed', (job, err) => {
