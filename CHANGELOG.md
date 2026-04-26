@@ -2,6 +2,32 @@
 
 All notable changes to this project are documented here.
 
+## 2026-04-26
+
+### Added
+
+- **Strategic Reports** — new Reports tab on every workspace dashboard; users can generate a full AI-designed market intelligence report (PDF + HTML) up to 5 times per calendar month
+- `StrategicReport` Prisma model — stores file paths, metadata snapshot (competitors count, charts count, keywords analyzed), and sections included
+- `StrategicReportEligibilityService` (NestJS) — checks monthly limit and data completeness before allowing generation
+- `ai-report-designer.ts` — calls Gemini API (OpenAI fallback) with a structured prompt to produce fully-styled HTML; normalises DB field names before sending data so the AI never receives `undefined` values
+- `html-to-pdf.ts` — converts AI-generated HTML to a print-ready PDF using Puppeteer (headless Chromium); injects Tailwind CDN and print CSS automatically
+- `strategic-report-builder.ts` — pure function that assembles workspace data into a markdown content tree (used as input context for the AI designer)
+- `ReportsTab` UI component — eligibility card with missing-data warnings, Generate button, and report history table with PDF + HTML download links
+- `ReportGeneratingModal` UI component — full-screen progress overlay with a 4-stage animated progress bar (Preparing data → AI designing → Rendering PDF → Saving); simulates realistic timing since server actions cannot stream progress
+- Server actions: `checkReportEligibility`, `generateStrategicReport`, `getReportHistory` in `apps/web/src/app/actions/strategic-reports.ts`
+- Puppeteer added to `apps/web` dependencies
+
+### Changed
+
+- Reports tab added to workspace dashboard navigation (alongside Pipeline, Ideation, Brand Memory, Calendar, etc.)
+- `WorkspacesModule` now provides and exports `StrategicReportEligibilityService`
+
+### Fixed
+
+- Eligibility check was using camelCase field names (`clientOfferings`, `primaryKeywords`) that don't exist in the DB — corrected to snake_case (`client_offerings.offerings`, `primary_keywords`)
+- Matrix data was sending `chart.name`/`chart.xAxis`/`c.x` — corrected to `chart.chart_name`/`chart.axes.x`/`c.x_score`, eliminating "undefined" values in generated reports
+- Auth in server actions switched from Clerk's `auth()` to the project's own `getSession()` — resolves Unauthorized errors when actions are called from client components
+
 ## 2026-03-13
 
 ### Added

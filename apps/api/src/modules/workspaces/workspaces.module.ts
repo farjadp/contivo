@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { PrismaModule } from '../../common/prisma/prisma.module';
+import { CrawlProcessor } from './crawl.processor';
+import { StrategicReportEligibilityService } from './strategic-report-eligibility.service';
 
 /**
  * WorkspacesModule
@@ -13,5 +16,9 @@ import { Module } from '@nestjs/common';
  *   2. Create WorkspacesService with create(), findAllForUser(), findOne()
  *   3. On create: enqueue website crawl job via JobsService
  */
-@Module({})
+@Module({
+  imports: [PrismaModule],
+  providers: [CrawlProcessor, StrategicReportEligibilityService],
+  exports: [StrategicReportEligibilityService],
+})
 export class WorkspacesModule {}

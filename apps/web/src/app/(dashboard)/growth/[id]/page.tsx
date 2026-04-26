@@ -7,6 +7,7 @@ import {
   BarChart3,
   Coins,
   ExternalLink,
+  FileText,
   Lightbulb,
   ListTodo,
   LineChart,
@@ -40,6 +41,7 @@ import { ProductsServicesTab } from './_components/ProductsServicesTab';
 import { buildWorkspaceProgressReport } from '@/lib/workspace-progress';
 import { ProgressReportTab } from './_components/ProgressReportTab';
 import { SeoIntelligenceTab } from './_components/SeoIntelligenceTab';
+import { ReportsTab } from '@/components/workspace/ReportsTab';
 
 export const metadata = { title: 'Workspace Dashboard' };
 
@@ -109,6 +111,7 @@ function resolveTab(rawTab: string | string[] | undefined): string {
     'offerings',
     'calendar',
     'seo',
+    'reports',
   ]);
   if (!value || !allowed.has(value)) return 'pipeline';
   return value;
@@ -193,6 +196,39 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     })(),
   ]);
 
+  const MONTHLY_LIMIT = 5;
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+
+  const [reportsThisMonth, reportHistory] = await Promise.all([
+    prisma.strategicReport.count({
+      where: { userId: session.userId as string, reportDate: { gte: startOfMonth } },
+    }),
+    prisma.strategicReport.findMany({
+      where: { workspaceId: workspace.id },
+      orderBy: { reportDate: 'desc' },
+      take: 20,
+    }),
+  ]);
+
+  const insights = (workspace.audienceInsights as any) || {};
+  const reportMissingData: string[] = [];
+  if (!workspace.brandSummary) reportMissingData.push('Brand Memory');
+  if (!insights?.competitiveMatrices?.charts || insights.competitiveMatrices.charts.length < 5)
+    reportMissingData.push('Market Matrices (5 charts required)');
+  if (!insights?.competitorKeywordsIntel?.competitors?.length)
+    reportMissingData.push('Competitor Keywords');
+  if (!insights?.productsServicesIntel?.client_offerings?.offerings?.length)
+    reportMissingData.push('Products & Services');
+
+  const reportEligibility = {
+    canGenerate: reportsThisMonth < MONTHLY_LIMIT && reportMissingData.length === 0,
+    reportsThisMonth,
+    remainingReports: MONTHLY_LIMIT - reportsThisMonth,
+    missingData: reportMissingData,
+  };
+
   const requestedTab = resolveTab(resolvedSearchParams.tab);
   const brand = (workspace.brandSummary as any) || {};
   const initialMatrices =
@@ -203,7 +239,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     ((workspace.audienceInsights as any)?.productsServicesIntel as any) || null;
   const initialBrandAssetsPayload =
     ((workspace.audienceInsights as any)?.brandAssets as any) || null;
-  const acceptedCompetitors = workspace.competitors.filter((item) => item.userDecision === 'ACCEPTED').length;
+  const acceptedCompetitors = workspace.competitors.filter((item: any) => item.userDecision === 'ACCEPTED').length;
 
   const matricesTokenUsage = (initialMatrices?.token_usage as TokenUsageLike) || null;
   const keywordsTokenUsage = (initialKeywordPayload?.token_usage as TokenUsageLike) || null;
@@ -233,11 +269,11 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       createdAt: workspace.createdAt,
       brandSummary: workspace.brandSummary,
       audienceInsights: workspace.audienceInsights,
-      contentItems: workspace.contentItems.map((item) => ({
+      contentItems: workspace.contentItems.map((item: any) => ({
         status: item.status,
         channel: item.channel,
       })),
-      competitors: workspace.competitors.map((item) => ({
+      competitors: workspace.competitors.map((item: any) => ({
         userDecision: item.userDecision,
       })),
     },
@@ -317,39 +353,44 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       helper: `${seoIntelligence.keywordOpportunities.length} opportunities`,
       icon: <TrendingUp className="h-4 w-4" />,
     },
+    {
+      key: 'reports',
+      label: 'Reports',
+      helper: `${reportEligibility.remainingReports} remaining this month`,
+      icon: <FileText className="h-4 w-4" />,
+    },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 pb-20 pt-2">
-      {/* ── BENTO HERO HEADER ────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-[32px] bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-6 md:p-10">
-        <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-[#2B2DFF]/10 to-[#00E5FF]/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="max-w-7xl mx-auto space-y-8 pb-20 pt-2">
+      {/* ── HERO HEADER ────────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-[#FDFCF8] border-2 border-[#121212] p-6 md:p-10 shadow-[8px_8px_0px_#121212] rounded-none">
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-8">
           <div>
             <Link
               href="/growth"
-              className="inline-flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-[#2B2DFF] mb-6 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#121212]/50 hover:text-[#121212] mb-8 transition-colors"
             >
-              <ArrowLeft className="w-4 h-4" /> Back to Workspaces
+              <ArrowLeft className="w-4 h-4" /> Return
             </Link>
             <div className="flex items-center gap-5">
-              <div className="h-16 w-16 rounded-[20px] bg-gray-900 flex items-center justify-center text-white font-black text-2xl uppercase shadow-xl shrink-0">
+              <div className="h-16 w-16 bg-[#121212] flex items-center justify-center text-[#FDFCF8] font-black text-2xl uppercase shrink-0 border-2 border-[#121212]">
                 {workspace.name.substring(0, 2)}
               </div>
               <div>
-                <h1 className="text-4xl font-black tracking-tight text-gray-900 mb-2">
+                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-[#121212] mb-3">
                   {workspace.name}
                 </h1>
-                <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500 font-bold">
+                <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-[#121212]/60">
                   {workspace.websiteUrl && (
-                    <a href={workspace.websiteUrl.startsWith('http') ? workspace.websiteUrl : `https://${workspace.websiteUrl}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#2B2DFF] hover:bg-indigo-50 px-3 py-1 rounded-xl transition-colors">
+                    <a href={workspace.websiteUrl.startsWith('http') ? workspace.websiteUrl : `https://${workspace.websiteUrl}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#C04C36] hover:bg-[#C04C36]/10 px-3 py-1 border border-[#C04C36] transition-colors rounded-none">
                       <ExternalLink className="w-3.5 h-3.5" />
                       {workspace.websiteUrl.replace(/^https?:\/\//, '')}
                     </a>
                   )}
                   {brand.industry && (
-                    <span className="px-3 py-1 bg-gray-50 text-gray-500 rounded-xl">
+                    <span className="px-3 py-1 bg-[#EFECE5] text-[#121212]/80 border border-[#121212]/10 rounded-none">
                       {brand.industry}
                     </span>
                   )}
@@ -361,23 +402,23 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <div className="flex flex-col items-stretch gap-4 lg:items-end">
             <div className="flex flex-wrap lg:justify-end gap-2 w-full lg:w-auto">
               <StatChip label="AI Tokens" value={totalTrackedTokens.toLocaleString()} />
-              <div className="rounded-[16px] border border-emerald-100 bg-emerald-50 px-4 py-3 min-w-[130px] flex-1 lg:flex-none">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Cost</p>
-                <p className="mt-1 text-lg font-black text-emerald-900">{formatUsd(estimatedCostUsd)}</p>
+              <div className="border border-[#121212]/20 bg-[#FDFCF8] px-4 py-3 min-w-[130px] flex-1 lg:flex-none">
+                <p className="text-[10px] font-black uppercase tracking-widest text-[#121212]/50">Cost</p>
+                <p className="mt-1 text-lg font-black text-[#121212]">{formatUsd(estimatedCostUsd)}</p>
               </div>
             </div>
 
             <Link
               href={`/growth/${workspace.id}?tab=ideation`}
-              className="inline-flex shrink-0 items-center justify-center gap-2 bg-[#2B2DFF] text-white px-6 py-4 rounded-2xl text-sm font-bold shadow-xl shadow-indigo-600/20 hover:scale-105 transition-all"
+              className="inline-flex shrink-0 items-center justify-center gap-2 bg-[#C04C36] text-[#FDFCF8] px-6 py-4 text-sm font-bold uppercase tracking-widest hover:bg-[#121212] transition-colors rounded-none"
             >
-              <Sparkles className="w-5 h-5 text-indigo-200" />
+              <Sparkles className="w-4 h-4" />
               Generate Content
             </Link>
           </div>
         </div>
 
-        <div className="relative z-10 mt-8 pt-8 border-t border-gray-100 grid gap-3 grid-cols-2 md:grid-cols-5">
+        <div className="relative z-10 mt-8 pt-8 border-t border-[#121212]/10 grid gap-3 grid-cols-2 md:grid-cols-5">
           <StatChip label="Competitors" value={acceptedCompetitors.toLocaleString()} />
           <StatChip label="Runs Used" value={discoveryStats.usedRuns.toLocaleString()} />
           <StatChip label="Runs Left" value={discoveryStats.remainingRuns.toLocaleString()} />
@@ -385,14 +426,14 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <StatChip label="Content" value={workspace.contentItems.length.toLocaleString()} />
         </div>
 
-        <div className="mt-5 rounded-2xl border border-amber-100 bg-amber-50/50 xl:w-fit px-4 py-3 text-xs font-semibold text-amber-700/80 flex items-center gap-2">
-          <Coins className="h-4 w-4 shrink-0" />
+        <div className="mt-6 border border-[#121212]/10 bg-[#EFECE5] xl:w-fit px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#121212]/60 flex items-center gap-2 rounded-none">
+          <Coins className="h-4 w-4 shrink-0 text-[#121212]" />
           Costs estimated from tracked AI modules.
         </div>
       </div>
 
-      {/* ── BENTO NAVIGATION TABS ────────────────────────────────────── */}
-      <div className="rounded-[32px] border border-gray-100 bg-white p-3 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+      {/* ── NAVIGATION TABS ────────────────────────────────────── */}
+      <div className="border border-[#121212]/20 bg-[#FDFCF8] p-3 shadow-[4px_4px_0px_#121212] rounded-none">
         <nav className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" aria-label="Tabs">
           {tabItems.map((item) => {
             const isActive = activeTab === item.key;
@@ -401,24 +442,24 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
               <Link
                 key={item.key}
                 href={`/growth/${workspace.id}?tab=${item.key}`}
-                className={`group relative overflow-hidden rounded-[24px] px-5 py-4 transition-all hover:-translate-y-0.5 ${
+                className={`group relative overflow-hidden px-5 py-4 transition-colors rounded-none border ${
                   isActive
-                    ? 'bg-gray-900 text-white shadow-xl shadow-gray-900/10 border border-gray-900/50'
-                    : 'bg-white text-gray-700 border border-gray-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:border-gray-200'
+                    ? 'bg-[#121212] text-[#FDFCF8] border-[#121212]'
+                    : 'bg-[#FDFCF8] text-[#121212] border-[#121212]/10 hover:bg-[#EFECE5] hover:border-[#121212]/30'
                 }`}
               >
                 <div className="relative z-10 flex items-start justify-between gap-3">
                   <div>
-                    <p className={`inline-flex items-center gap-2.5 font-bold ${isActive ? 'text-white' : 'text-gray-900 group-hover:text-[#2B2DFF] transition-colors'}`}>
+                    <p className={`inline-flex items-center gap-2.5 font-bold uppercase tracking-widest text-sm ${isActive ? 'text-[#FDFCF8]' : 'text-[#121212] group-hover:text-[#C04C36] transition-colors'}`}>
                       {item.icon}
                       {item.label}
                     </p>
-                    <p className={`mt-1.5 text-[11px] font-bold tracking-wide uppercase ${isActive ? 'text-gray-400' : 'text-gray-400'}`}>
+                    <p className={`mt-1.5 text-[10px] font-bold tracking-widest uppercase ${isActive ? 'text-[#FDFCF8]/50' : 'text-[#121212]/40'}`}>
                       {item.helper}
                     </p>
                   </div>
                   {isActive ? (
-                    <span className="rounded-xl bg-white/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-[#00E5FF]">
+                    <span className="bg-[#C04C36] text-[#FDFCF8] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-none">
                       Active
                     </span>
                   ) : null}
@@ -430,7 +471,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       </div>
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
-      <div className="mt-5 rounded-[32px] border border-gray-100 bg-white p-6 md:p-10 shadow-[0_8px_30px_rgb(0,0,0,0.03)] min-h-[50vh]">
+      <div className="mt-8 border border-[#121212]/20 bg-[#FDFCF8] p-6 md:p-10 shadow-[4px_4px_0px_#121212] rounded-none min-h-[50vh]">
         {activeTab === 'strategy' && (
           <BrandMemoryTab
             workspace={workspace}
@@ -444,7 +485,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <CompetitiveMatricesTab
             workspaceId={workspace.id}
             initialMatrices={initialMatrices}
-            initialCompetitors={workspace.competitors.map((item) => ({
+            initialCompetitors={workspace.competitors.map((item: any) => ({
               id: item.id,
               name: item.name,
               domain: item.domain,
@@ -496,8 +537,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             workspaceId={workspace.id}
             acceptedCompetitorDomains={
               workspace.competitors
-                .filter((c) => c.userDecision === 'ACCEPTED' && c.domain)
-                .map((c) => c.domain!)
+                .filter((c: any) => c.userDecision === 'ACCEPTED' && c.domain)
+                .map((c: any) => c.domain!)
             }
             initialDomainGroups={seoIntelligence.domainGroups}
             initialDomainScans={seoIntelligence.domainScans}
@@ -508,6 +549,13 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         {activeTab === 'calendar' && (
           <CalendarTab workspaceId={workspace.id} />
         )}
+        {activeTab === 'reports' && (
+          <ReportsTab
+            workspaceId={workspace.id}
+            initialEligibility={reportEligibility}
+            initialHistory={reportHistory}
+          />
+        )}
       </div>
     </div>
   );
@@ -515,9 +563,9 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[16px] border border-gray-100 bg-gray-50/50 px-4 py-3 flex-1 lg:flex-none min-w-[130px]">
-      <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="mt-1 text-lg font-black text-gray-900">{value}</p>
+    <div className="border border-[#121212]/10 bg-[#EFECE5] px-4 py-3 flex-1 lg:flex-none min-w-[130px] rounded-none">
+      <p className="text-[10px] font-black uppercase tracking-widest text-[#121212]/50">{label}</p>
+      <p className="mt-1 text-lg font-black text-[#121212]">{value}</p>
     </div>
   );
 }

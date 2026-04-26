@@ -11,6 +11,7 @@ Contivo is an AI-powered marketing workspace for strategy, competitor intelligen
 - Ideation engine with framework-based generation
 - Content Pipeline with manual source support
 - Publishing schedule + calendar flow
+- **Strategic Reports** — AI-generated PDF market intelligence reports with scatter-plot matrices, keyword intelligence, and strategic recommendations
 - Admin controls for platform limits and AI model settings
 
 ## Monorepo
@@ -47,11 +48,13 @@ pnpm install
 cp .env.example .env
 ```
 
-3. Start Postgres (Docker):
+3. Start local services (Docker):
 
 ```bash
 docker compose up -d
 ```
+
+This starts PostgreSQL on `localhost:5432` and Redis on `localhost:6379`.
 
 4. Prepare DB (API workspace):
 
