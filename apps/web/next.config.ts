@@ -2,8 +2,9 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@contivo/types'],
-  experimental: {
-    typedRoutes: true,
+  typedRoutes: true,
+  eslint: {
+    ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,

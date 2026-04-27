@@ -2,13 +2,12 @@
 
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Bot, CheckCircle2, Globe, FileSearch, Sparkles, BrainCircuit } from 'lucide-react';
 
 const STEPS = [
-  { id: 1, text: 'Connecting to your website', icon: Globe },
-  { id: 2, text: 'Reading your key pages', icon: FileSearch },
-  { id: 3, text: 'Understanding your brand and audience', icon: BrainCircuit },
-  { id: 4, text: 'Building your Brand Memory', icon: Sparkles },
+  { id: 1, text: 'Connecting to your website' },
+  { id: 2, text: 'Reading your key pages' },
+  { id: 3, text: 'Understanding your brand and audience' },
+  { id: 4, text: 'Building your Brand Memory' },
 ];
 
 export default function GrowthAnalyzingPage() {
@@ -63,62 +62,77 @@ function AnalyzingFallback() {
 
 function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[60vh] max-w-lg mx-auto py-12 px-6">
+    <div className="w-full h-full min-h-[80vh] flex flex-col lg:flex-row bg-[#FDFCF8] text-[#121212] overflow-hidden rounded-[32px] border border-[#121212]/10">
       
-      <div className="mb-10 relative">
-        <div className="absolute inset-0 bg-indigo-500 blur-2xl opacity-20 rounded-full animate-pulse" />
-        <div className="w-20 h-20 rounded-2xl bg-[#121212] flex items-center justify-center shadow-xl relative z-10 animate-bounce">
-          <Bot className="h-10 w-10 text-white" />
+      {/* Left Column: Intro */}
+      <div className="w-full lg:w-[45%] p-8 lg:p-12 xl:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#121212]/10 bg-[#EFECE5]">
+        <div>
+           <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase opacity-50 mb-16">
+              Processing &mdash; System Active
+           </div>
+
+           <h1 className="text-5xl md:text-6xl font-medium tracking-tighter leading-[1] text-[#121212] mb-8">
+             <div className="animate-in slide-in-from-bottom duration-700 delay-100 fill-mode-both">Analyzing</div>
+             <div className="animate-in slide-in-from-bottom duration-700 delay-200 fill-mode-both">
+                 <span className="italic text-[#121212]/50 font-serif font-light">website</span>
+             </div>
+           </h1>
+           
+           <p className="text-lg text-[#121212]/70 leading-relaxed font-medium max-w-sm animate-in fade-in duration-1000 delay-300 fill-mode-both">
+             Contivo intelligence engine is actively reading your pages. This typically requires approximately 10 seconds.
+           </p>
+        </div>
+
+        <div className="hidden lg:flex items-center gap-3 mt-12 animate-pulse">
+            <div className="w-3 h-3 bg-[#C04C36]" />
+            <span className="text-xs font-bold tracking-widest uppercase opacity-40">Do not close window</span>
         </div>
       </div>
 
-      <h1 className="text-3xl font-extrabold tracking-tight text-[#121212] mb-3 text-center">
-        Analyzing your website
-      </h1>
-      <p className="text-gray-500 mb-10 text-center text-sm">
-        Please wait while Contivo works its magic. This usually takes about 10 seconds.
-      </p>
+      {/* Right Column: Steps Progress array */}
+      <div className="w-full lg:w-[55%] p-8 lg:p-12 xl:p-24 flex flex-col justify-center bg-[#FDFCF8] animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
+         <div className="w-full max-w-md mx-auto relative pl-4">
+             {/* Timeline line */}
+             <div className="absolute left-0 top-6 bottom-6 w-[2px] bg-[#121212]/10 rounded-full" />
+             
+             {STEPS.map((step, index) => {
+                const isActive = index === currentStepIndex;
+                const isPast = index < currentStepIndex;
 
-      <div className="w-full space-y-5 bg-white p-8 rounded-3xl border border-gray-100 shadow-sm">
-        {STEPS.map((step, index) => {
-          const isActive = index === currentStepIndex;
-          const isPast = index < currentStepIndex;
-          const Icon = step.icon;
+                return (
+                  <div
+                    key={step.id}
+                    className={`relative py-6 pl-8 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      isPast ? 'opacity-40 translate-x-0' : isActive ? 'opacity-100 translate-x-2' : 'opacity-20 translate-x-0'
+                    }`}
+                  >
+                     {/* Timeline Node */}
+                     <div className={`absolute left-[-5px] top-[calc(50%-5px)] w-[12px] h-[12px] rounded-sm transition-all duration-700 ${
+                         isPast ? 'bg-[#121212]/40' : isActive ? 'bg-[#C04C36]' : 'bg-[#121212]/20'
+                     }`} 
+                     style={{
+                         transform: isActive ? 'rotate(45deg) scale(1.2)' : 'rotate(0deg)'
+                     }} />
 
-          return (
-            <div
-              key={step.id}
-              className={`flex items-center gap-4 transition-all duration-500 ${
-                isPast ? 'opacity-50' : isActive ? 'opacity-100 scale-105 transform' : 'opacity-20'
-              }`}
-            >
-              <div className="relative">
-                {isPast ? (
-                  <CheckCircle2 className="h-6 w-6 text-green-500" />
-                ) : isActive ? (
-                  <div className="h-6 w-6 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin" />
-                ) : (
-                  <div className="h-6 w-6 rounded-full border-2 border-gray-200" />
-                )}
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${isActive ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-50 text-gray-400'}`}>
-                  <Icon className="h-4 w-4" />
-                </div>
-                <span
-                  className={`text-sm font-semibold transition-colors ${
-                    isPast ? 'text-gray-500 line-through decoration-gray-300' : isActive ? 'text-[#121212]' : 'text-gray-300'
-                  }`}
-                >
-                  {step.text}
-                </span>
-              </div>
-            </div>
-          );
-        })}
+                     <div className="flex flex-col">
+                        <span className={`text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-1 transition-colors duration-500 ${
+                            isActive ? 'text-[#C04C36]' : 'text-[#121212]/40'
+                        }`}>
+                           Phase 0{step.id} 
+                           {isActive && <span className="ml-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/60 animate-pulse">Running...</span>}
+                           {isPast && <span className="ml-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/40">Complete</span>}
+                        </span>
+                        <span className={`text-xl md:text-2xl font-medium tracking-tighter transition-colors duration-500 ${
+                          isPast ? 'text-[#121212] line-through decoration-[#121212]/30' : isActive ? 'text-[#121212]' : 'text-[#121212]/60'
+                        }`}>
+                          {step.text}
+                        </span>
+                     </div>
+                  </div>
+                );
+             })}
+         </div>
       </div>
-
     </div>
   );
 }

@@ -259,7 +259,7 @@ export function SeoIntelligenceTab({
           {acceptedCompetitorDomains.length === 0 && domainsWithKeywords.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
               <AlertCircle className="w-5 h-5 mx-auto mb-2 text-gray-400" />
-              No accepted competitors found. Accept competitors in the Competitor Map tab first.
+              No accepted competitors found. Accept competitors in the Market Matrices tab first.
             </div>
           ) : (
             <>

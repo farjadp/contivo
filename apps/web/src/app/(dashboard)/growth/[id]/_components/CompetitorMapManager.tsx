@@ -35,6 +35,46 @@ type DiscoveryArchiveItem = {
   createdAt: string | Date;
 };
 
+type CompetitiveMatrixPayload = {
+  generated_at: string;
+  ai_estimated: boolean;
+  source: 'AI' | 'MANUAL';
+  charts: Array<{
+    chart_key: string;
+    chart_name: string;
+    axes: { x: string; y: string };
+    companies: Array<{
+      name: string;
+      website: string;
+      type: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL' | 'TARGET';
+      x_score: number;
+      y_score: number;
+      x_reason: string;
+      y_reason: string;
+      confidence_score: number;
+    }>;
+    summary: {
+      market_pattern: string;
+      positioning_opportunity: string;
+    };
+  }>;
+  cross_chart_summary: string;
+  strongest_differentiation_opportunity: string;
+  token_usage: {
+    runs: number;
+    lifetime_prompt_tokens: number;
+    lifetime_completion_tokens: number;
+    lifetime_total_tokens: number;
+    last_run: {
+      model: string;
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+      created_at: string;
+    } | null;
+  };
+};
+
 function isSyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
   const name = String(item.name || '').toLowerCase().trim();
   const domain = String(item.domain || '').toLowerCase().trim();
@@ -129,11 +169,13 @@ export function CompetitorMapManager({
   initialCompetitors,
   initialMeta,
   initialArchive,
+  onMatricesUpdated,
 }: {
   workspaceId: string;
   initialCompetitors: CompetitorItem[];
   initialMeta?: DiscoveryMeta;
   initialArchive?: DiscoveryArchiveItem[];
+  onMatricesUpdated?: (matrices: CompetitiveMatrixPayload | null) => void;
 }) {
   const router = useRouter();
   const [competitors, setCompetitors] = useState<CompetitorItem[]>(
@@ -283,7 +325,10 @@ export function CompetitorMapManager({
               userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
             })),
         );
-        setSuccess('Competitor edits saved.');
+        if (result?.matrices) {
+          onMatricesUpdated?.(result.matrices as CompetitiveMatrixPayload);
+        }
+        setSuccess(result?.message || 'Competitor edits saved.');
         router.refresh();
       }
     } catch (saveError) {
@@ -481,6 +526,20 @@ export function CompetitorMapManager({
                 {competitor.description}
               </p>
             ) : null}
+            {(competitor.category || competitor.audienceGuess) && (
+              <div className="flex flex-wrap gap-2">
+                {competitor.category ? (
+                  <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700">
+                    {competitor.category}
+                  </span>
+                ) : null}
+                {competitor.audienceGuess ? (
+                  <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
+                    {competitor.audienceGuess}
+                  </span>
+                ) : null}
+              </div>
+            )}
           </div>
         ))}
       </div>

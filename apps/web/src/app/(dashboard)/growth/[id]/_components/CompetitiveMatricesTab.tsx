@@ -89,6 +89,24 @@ function colorForType(type: MatrixCompanyPoint['type']): string {
   return 'bg-rose-500 border-rose-200';
 }
 
+function textColorForType(type: MatrixCompanyPoint['type']): string {
+  if (type === 'TARGET') return 'text-indigo-700';
+  if (type === 'INDIRECT') return 'text-amber-700';
+  if (type === 'ASPIRATIONAL') return 'text-emerald-700';
+  return 'text-rose-700';
+}
+
+function labelForType(type: MatrixCompanyPoint['type']): string {
+  if (type === 'TARGET') return 'Target';
+  if (type === 'INDIRECT') return 'Indirect';
+  if (type === 'ASPIRATIONAL') return 'Aspirational';
+  return 'Direct';
+}
+
+function compactDomain(website: string): string {
+  return website.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/$/, '');
+}
+
 function scoreToPercent(score: number): number {
   const safe = Math.max(1, Math.min(10, score));
   return 10 + ((safe - 1) / 9) * 80;
@@ -225,18 +243,19 @@ export function CompetitiveMatricesTab({
             initialCompetitors={initialCompetitors}
             initialMeta={discoveryMeta}
             initialArchive={discoveryArchive}
+            onMatricesUpdated={setMatrices}
           />
         </div>
       </section>
 
       {/* 2. Market Matrices Area */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-md flex flex-col min-h-[600px]">
+      <section className="relative overflow-visible rounded-3xl border border-gray-200 bg-white shadow-sm flex flex-col min-h-[600px]">
         {/* Header toolbar */}
-        <div className="bg-gradient-to-r from-gray-50/50 to-white px-6 py-5 border-b border-gray-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3">
+        <div className="bg-white px-6 py-5 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-3">
               <h2 className="text-lg font-bold text-[#121212] tracking-tight">Positioning Matrices</h2>
-              <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-bold text-indigo-800 uppercase tracking-widest shadow-sm">
+              <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700 uppercase tracking-widest ring-1 ring-indigo-100">
                 AI Generated
               </span>
             </div>
@@ -244,12 +263,12 @@ export function CompetitiveMatricesTab({
               Visualize your market position across 5 critical dimensions to find your strongest differentiation hook.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 xl:justify-end">
             {matrices?.token_usage && (
               <button
                 type="button"
                 onClick={() => setShowTokens(!showTokens)}
-                className="inline-flex items-center rounded-xl bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 transition hover:bg-gray-50 hover:border-gray-300 shadow-sm"
+                className="inline-flex min-h-10 items-center rounded-lg bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
               >
                 {showTokens ? 'Hide Diagnostics' : 'View Diagnostics'}
               </button>
@@ -258,7 +277,7 @@ export function CompetitiveMatricesTab({
               type="button"
               onClick={saveEdits}
               disabled={isSaving || !matrices}
-              className="inline-flex items-center gap-2 rounded-xl bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-[#121212] transition hover:bg-gray-50 hover:border-gray-300 shadow-sm disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-[#121212] transition hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-gray-500" />}
               Save Overrides
@@ -267,7 +286,7 @@ export function CompetitiveMatricesTab({
               type="button"
               onClick={generate}
               disabled={isGenerating}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-5 py-2 text-[13px] font-bold text-white transition shadow-md hover:bg-black hover:shadow-lg disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#121212] px-5 py-2 text-[13px] font-bold text-white transition hover:bg-black disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-emerald-400" />}
               Generate AI Matrices
@@ -353,9 +372,9 @@ export function CompetitiveMatricesTab({
           ) : (
             <>
               {/* Sidebar: Navigation & Macro Summary */}
-              <div className="w-full lg:w-[280px] xl:w-[320px] shrink-0 border-r border-gray-100 bg-gray-50/40 flex flex-col">
-                <div className="p-5 space-y-2 flex-1">
-                  <h4 className="px-3 pb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              <div className="w-full lg:w-[280px] xl:w-[310px] shrink-0 border-r border-gray-100 bg-gray-50/60 flex flex-col">
+                <div className="p-5 space-y-2">
+                  <h4 className="px-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                     Strategic Dimensions
                   </h4>
                   {matrices.charts.map((chart: any) => (
@@ -363,10 +382,10 @@ export function CompetitiveMatricesTab({
                       key={chart.chart_key}
                       type="button"
                       onClick={() => setSelectedKey(chart.chart_key)}
-                      className={`w-full text-left rounded-xl px-4 py-3.5 text-[13px] font-bold transition-all duration-200 ${
+                      className={`w-full text-left rounded-lg px-4 py-3 text-[13px] font-bold transition-all duration-200 ${
                         selectedKey === chart.chart_key
                           ? 'bg-white text-[#121212] shadow-sm ring-1 ring-gray-200'
-                          : 'text-gray-500 hover:bg-white hover:text-gray-900 hover:shadow-sm'
+                          : 'text-gray-500 hover:bg-white hover:text-gray-900'
                       }`}
                     >
                       {chart.chart_name}
@@ -374,13 +393,13 @@ export function CompetitiveMatricesTab({
                   ))}
                 </div>
 
-                <div className="mt-auto p-6 border-t border-gray-100 space-y-6 bg-white shrink-0">
+                <div className="mt-auto p-5 border-t border-gray-100 space-y-5 bg-white shrink-0">
                   <div className="space-y-3">
                     <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-500">
                       <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
                       Macro Opportunity
                     </h4>
-                    <p className="text-[13px] font-semibold tracking-tight text-indigo-950 bg-indigo-50/80 rounded-2xl p-4 leading-relaxed border border-indigo-100">
+                    <p className="text-[13px] font-semibold tracking-tight text-indigo-950 bg-indigo-50/80 rounded-xl p-4 leading-relaxed border border-indigo-100">
                       {matrices.strongest_differentiation_opportunity}
                     </p>
                   </div>
@@ -390,7 +409,7 @@ export function CompetitiveMatricesTab({
                       <div className="h-2 w-2 rounded-full border-2 border-gray-300 bg-white"></div>
                       Cross-Chart Synthesis
                     </h4>
-                    <p className="text-[13px] text-gray-700 leading-relaxed pl-4 border-l-[3px] border-gray-200">
+                    <p className="text-[13px] text-gray-700 leading-relaxed pl-4 border-l-[3px] border-gray-200 max-h-64 overflow-y-auto pr-2">
                       {matrices.cross_chart_summary}
                     </p>
                   </div>
@@ -398,102 +417,194 @@ export function CompetitiveMatricesTab({
               </div>
 
               {/* Main Area: Chart Visualization */}
-              <div className="flex-1 flex flex-col bg-white overflow-hidden">
+              <div className="flex-1 flex flex-col bg-white overflow-visible">
                 {selectedChart && (
-                  <div className="p-6 md:p-8 flex flex-col h-full w-full mx-auto max-w-[1240px]">
-                    <div className="mb-8 pl-2">
-                      <h3 className="text-3xl font-black text-[#121212] tracking-tight">{selectedChart.chart_name}</h3>
-                      <p className="text-[14px] text-gray-500 mt-2 font-medium">
-                        Plotting <span className="text-[#121212] font-bold px-1">{selectedChart.axes.y}</span> against <span className="text-[#121212] font-bold px-1">{selectedChart.axes.x}</span>
-                      </p>
+                  <div className="p-5 md:p-7 flex flex-col h-full w-full mx-auto max-w-[1280px]">
+                    <div className="mb-6 flex flex-col gap-3 border-b border-gray-100 pb-5 lg:flex-row lg:items-end lg:justify-between">
+                      <div className="min-w-0">
+                        <h3 className="text-2xl md:text-3xl font-black text-[#121212] tracking-tight">
+                          {selectedChart.chart_name}
+                        </h3>
+                        <p className="text-[13px] text-gray-500 mt-2 font-medium">
+                          <span className="font-bold text-[#121212]">{selectedChart.axes.y}</span> vs{' '}
+                          <span className="font-bold text-[#121212]">{selectedChart.axes.x}</span>
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2 text-[11px] font-bold text-gray-500">
+                        <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-indigo-700">
+                          <span className="h-2 w-2 rounded-full bg-indigo-600" /> Target
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-rose-700">
+                          <span className="h-2 w-2 rounded-full bg-rose-500" /> Direct
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-amber-700">
+                          <span className="h-2 w-2 rounded-full bg-amber-400" /> Indirect
+                        </span>
+                        <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700">
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" /> Aspirational
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="grid gap-8 xl:grid-cols-[1fr_340px]">
-                      {/* The Chart Container */}
-                      <div className="relative h-[480px] w-full rounded-[2.5rem] border-l-[3px] border-b-[3px] border-gray-200 bg-gradient-to-tr from-gray-50/80 to-white shadow-inner">
-                        <span className="absolute -left-[3.5rem] top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
-                          {selectedChart.axes.y} &rarr;
-                        </span>
-                        <span className="absolute -bottom-10 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
-                          {selectedChart.axes.x} &rarr;
-                        </span>
+                    <div className="space-y-6">
+                      <div className="space-y-5">
+                        {/* The Chart Container */}
+                        <div className="relative h-[520px] w-full rounded-2xl border border-gray-200 bg-white shadow-inner">
+                          <div className="absolute inset-8 rounded-xl bg-gradient-to-tr from-gray-50 to-white">
+                            <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200/80 -translate-y-1/2"></div>
+                            <div className="absolute inset-y-0 left-1/2 w-px bg-gray-200/80 -translate-x-1/2"></div>
+                            <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-gray-100"></div>
+                          </div>
 
-                        {/* Chart Grid Lines */}
-                        <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200/60 w-full pointer-events-none -translate-y-1/2 border-dashed"></div>
-                        <div className="absolute inset-y-0 left-1/2 w-px bg-gray-200/60 h-full pointer-events-none -translate-x-1/2 border-dashed"></div>
+                          <span className="absolute left-5 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
+                            {selectedChart.axes.y}
+                          </span>
+                          <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
+                            {selectedChart.axes.x}
+                          </span>
+                          <span className="absolute left-10 top-8 text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                            High
+                          </span>
+                          <span className="absolute bottom-8 right-10 text-[10px] font-bold uppercase tracking-widest text-gray-300">
+                            High
+                          </span>
 
-                        {selectedChart.companies.map((company) => {
-                          const x = scoreToPercent(company.x_score);
-                          const y = 100 - scoreToPercent(company.y_score);
-                          return (
-                            <div
-                              key={`${selectedChart.chart_key}:${company.name}:${company.website}`}
-                              className="group absolute"
-                              style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
-                            >
-                              {/* Bubble */}
-                              <div className={`relative flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border-2 shadow-sm transition-transform duration-300 group-hover:scale-[1.3] z-10 ${colorForType(company.type)}`} />
-                              
-                              <span className="absolute left-1/2 -translate-x-1/2 pt-2.5 text-[11px] font-bold text-gray-500 transition-all duration-300 group-hover:scale-110 group-hover:text-[#121212] pointer-events-none whitespace-nowrap">
-                                {company.name}
-                              </span>
+                          {selectedChart.companies.map((company, index) => {
+                            const x = scoreToPercent(company.x_score);
+                            const y = 100 - scoreToPercent(company.y_score);
+                            const isTarget = company.type === 'TARGET';
+                            return (
+                              <div
+                                key={`${selectedChart.chart_key}:${company.name}:${company.website}`}
+                                className="group absolute z-10"
+                                style={{ left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)' }}
+                              >
+                                <div
+                                  className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 text-[10px] font-black text-white shadow-sm ring-4 ring-white transition-transform duration-200 group-hover:scale-110 group-hover:shadow-lg ${colorForType(company.type)}`}
+                                >
+                                  {isTarget ? 'T' : index + 1}
+                                </div>
 
-                              {/* Tooltip Popup */}
-                              <div className="pointer-events-none absolute left-1/2 top-11 z-50 hidden w-80 -translate-x-1/2 opacity-0 group-hover:block hover:opacity-100 transition-all duration-300 group-hover:opacity-100">
-                                <div className="rounded-3xl border border-gray-200/60 bg-white/95 backdrop-blur-2xl p-5 shadow-2xl">
-                                  <div className="flex items-center gap-2.5 mb-2">
-                                    <div className={`h-3 w-3 rounded-full ${colorForType(company.type).replace('border-', 'bg-')}`}></div>
-                                    <p className="font-bold text-[15px] text-[#121212] tracking-tight">{company.name}</p>
-                                  </div>
-                                  <p className="text-[11px] text-gray-500 font-medium mb-4 pl-5">{company.website.replace(/^https?:\/\//, '')}</p>
-                                  
-                                  <div className="space-y-4">
-                                    <div className="rounded-xl bg-gray-50/50 p-3 border border-gray-100">
-                                      <p className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 flex justify-between">
-                                        <span>{selectedChart.axes.x}</span>
-                                        <span className="text-gray-800 bg-white px-2 py-0.5 rounded-md border border-gray-200">{company.x_score}/10</span>
-                                      </p>
-                                      <p className="text-[12px] text-gray-700 leading-relaxed font-medium">{company.x_reason}</p>
+                                {isTarget ? (
+                                  <span className="absolute left-1/2 top-9 -translate-x-1/2 rounded-md border border-indigo-100 bg-white px-2 py-1 text-[11px] font-bold text-indigo-700 shadow-sm whitespace-nowrap">
+                                    Your Brand
+                                  </span>
+                                ) : null}
+
+                                {/* Tooltip Popup */}
+                                <div className="pointer-events-none absolute left-1/2 top-12 z-50 hidden w-80 -translate-x-1/2 group-hover:block">
+                                  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl">
+                                    <div className="mb-3 flex items-start gap-3">
+                                      <div
+                                        className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${colorForType(company.type)}`}
+                                      >
+                                        {isTarget ? 'T' : index + 1}
+                                      </div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-[14px] text-[#121212] tracking-tight">
+                                          {company.name}
+                                        </p>
+                                        <p className="mt-0.5 truncate text-[11px] text-gray-500 font-medium">
+                                          {compactDomain(company.website)}
+                                        </p>
+                                      </div>
                                     </div>
-                                    <div className="rounded-xl bg-gray-50/50 p-3 border border-gray-100">
-                                      <p className="text-[10px] uppercase font-bold text-gray-400 mb-1.5 flex justify-between">
-                                        <span>{selectedChart.axes.y}</span>
-                                        <span className="text-gray-800 bg-white px-2 py-0.5 rounded-md border border-gray-200">{company.y_score}/10</span>
-                                      </p>
-                                      <p className="text-[12px] text-gray-700 leading-relaxed font-medium">{company.y_reason}</p>
+
+                                    <div className="grid gap-3">
+                                      <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
+                                        <p className="mb-1.5 flex justify-between text-[10px] uppercase font-bold text-gray-400">
+                                          <span>{selectedChart.axes.x}</span>
+                                          <span className="text-gray-800">{company.x_score}/10</span>
+                                        </p>
+                                        <p className="text-[12px] text-gray-700 leading-relaxed font-medium">
+                                          {company.x_reason}
+                                        </p>
+                                      </div>
+                                      <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
+                                        <p className="mb-1.5 flex justify-between text-[10px] uppercase font-bold text-gray-400">
+                                          <span>{selectedChart.axes.y}</span>
+                                          <span className="text-gray-800">{company.y_score}/10</span>
+                                        </p>
+                                        <p className="text-[12px] text-gray-700 leading-relaxed font-medium">
+                                          {company.y_reason}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="mt-5 pt-4 flex items-center justify-between border-t border-gray-100">
-                                    <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">AI Confidence Metric</span>
-                                    <span className="text-[12px] font-black text-[#121212] bg-gray-100 px-2 py-1 rounded-lg">{Math.round(company.confidence_score * 100)}%</span>
+
+                                    <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
+                                      <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
+                                        Confidence
+                                      </span>
+                                      <span className="text-[12px] font-black text-[#121212]">
+                                        {Math.round(company.confidence_score * 100)}%
+                                      </span>
+                                    </div>
                                   </div>
                                 </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
+
                       </div>
 
-                      {/* Right Rail: Specific insights for THIS chart */}
-                      <div className="flex flex-col space-y-5">
-                        <div className="rounded-[2rem] border border-gray-100 bg-gray-50/70 p-7 shadow-sm">
+                      {/* Chart insights */}
+                      <div className="grid gap-4 xl:grid-cols-2">
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                           <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
                             <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-                            Market Pattern observed
+                            Market Pattern
                           </h4>
-                          <p className="text-[14px] text-[#121212] leading-loose font-medium">
+                          <p className="text-[14px] text-[#121212] leading-7 font-medium">
                             {selectedChart.summary.market_pattern}
                           </p>
                         </div>
                         
-                        <div className="rounded-[2rem] border border-emerald-100 bg-emerald-50/70 p-7 shadow-sm">
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
                           <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-3">
                             <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
                             Actionable Gap
                           </h4>
-                          <p className="text-[14px] text-emerald-950 leading-loose font-bold">
+                          <p className="text-[14px] text-emerald-950 leading-7 font-bold">
                             {selectedChart.summary.positioning_opportunity}
                           </p>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-gray-200 bg-white p-4">
+                        <div className="mb-3 flex items-center justify-between gap-3">
+                          <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-500">
+                            Plotted Companies
+                          </h4>
+                          <span className="text-[11px] font-bold text-gray-400">
+                            {selectedChart.companies.length} total
+                          </span>
+                        </div>
+                        <div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
+                          {selectedChart.companies.map((company, index) => (
+                            <div
+                              key={`${selectedChart.chart_key}:list:${company.name}:${company.website}`}
+                              className="flex min-w-0 items-center gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                            >
+                              <span
+                                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${colorForType(company.type)}`}
+                              >
+                                {company.type === 'TARGET' ? 'T' : index + 1}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate text-[12px] font-bold text-[#121212]">{company.name}</p>
+                                <p className="truncate text-[11px] text-gray-500">{compactDomain(company.website)}</p>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <p className={`text-[10px] font-bold uppercase ${textColorForType(company.type)}`}>
+                                  {labelForType(company.type)}
+                                </p>
+                                <p className="text-[11px] font-semibold text-gray-500">
+                                  {company.x_score}/{company.y_score}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>

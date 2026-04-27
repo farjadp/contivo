@@ -23,6 +23,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 import {
@@ -39,7 +40,8 @@ export class SocialConnectionsService {
   // ─── Public methods ────────────────────────────────────────────────────────
 
   /** Lists all social connections for a workspace — tokens excluded. */
-  async list(workspaceId: string) {
+  async list(workspaceId: string, userId: string) {
+    await this.validateWorkspaceAccess(workspaceId, userId);
     return this.prisma.socialConnection.findMany({
       where: { workspaceId },
       orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
@@ -48,7 +50,9 @@ export class SocialConnectionsService {
   }
 
   /** Creates and persists a new connection with encrypted token refs. */
-  async create(dto: CreateSocialConnectionDto) {
+  async create(dto: CreateSocialConnectionDto, userId?: string) {
+    if (userId) await this.validateWorkspaceAccess(dto.workspaceId, userId);
+
     // If this connection is set as default, unset all others for the platform
     if (dto.isDefault) {
       await this.clearDefaultForPlatform(dto.workspaceId, dto.platform as any);
@@ -83,7 +87,8 @@ export class SocialConnectionsService {
   }
 
   /** Updates mutable fields on a connection (default flag, display name). */
-  async update(id: string, workspaceId: string, dto: UpdateSocialConnectionDto) {
+  async update(id: string, workspaceId: string, dto: UpdateSocialConnectionDto, userId: string) {
+    await this.validateWorkspaceAccess(workspaceId, userId);
     await this.findOrThrow(id, workspaceId);
 
     if (dto.isDefault) {
@@ -104,7 +109,8 @@ export class SocialConnectionsService {
   }
 
   /** Soft-disconnects a connection by marking status = REVOKED and clearing tokens. */
-  async disconnect(id: string, workspaceId: string) {
+  async disconnect(id: string, workspaceId: string, userId: string) {
+    await this.validateWorkspaceAccess(workspaceId, userId);
     await this.findOrThrow(id, workspaceId);
 
     await this.prisma.socialConnection.update({
@@ -120,7 +126,8 @@ export class SocialConnectionsService {
   }
 
   /** Marks connection as PENDING_REAUTH so the front-end can trigger OAuth again. */
-  async markForReauth(id: string, workspaceId: string) {
+  async markForReauth(id: string, workspaceId: string, userId: string) {
+    await this.validateWorkspaceAccess(workspaceId, userId);
     await this.findOrThrow(id, workspaceId);
     return this.prisma.socialConnection.update({
       where: { id },
@@ -153,6 +160,27 @@ export class SocialConnectionsService {
   }
 
   // ─── Private helpers ───────────────────────────────────────────────────────
+
+  public async validateWorkspaceAccess(workspaceId: string, userId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { OR: [{ clerkId: userId }, { id: userId }] },
+    });
+
+    if (!user) throw new ForbiddenException('User not found in system.');
+    
+    // Admins have global access and bypass tenancy checks
+    if (user.role === 'ADMIN') {
+      return;
+    }
+
+    const workspace = await this.prisma.workspace.findFirst({
+      where: { id: workspaceId, userId: user.id },
+    });
+
+    if (!workspace) {
+      throw new ForbiddenException(`You do not have access to workspace ${workspaceId}.`);
+    }
+  }
 
   private async findOrThrow(id: string, workspaceId: string) {
     const conn = await this.prisma.socialConnection.findFirst({
@@ -195,7 +223,7 @@ export class SocialConnectionsService {
   // ─── Token encryption (MVP: XOR + base64) ─────────────────────────────────
   // Replace with proper KMS / Vault calls in production.
 
-  private encryptToken(token: string): string {
+  public encryptToken(token: string): string {
     const secret = process.env.SOCIAL_TOKEN_SECRET ?? 'contivo-dev-secret-key-change-in-prod';
     const keyBytes = Buffer.from(secret, 'utf8');
     const tokenBytes = Buffer.from(token, 'utf8');
@@ -206,7 +234,7 @@ export class SocialConnectionsService {
     return out.toString('base64');
   }
 
-  private decryptToken(ref: string): string {
+  public decryptToken(ref: string): string {
     // XOR encryption is symmetric — decrypt == encrypt
     return this.encryptToken(Buffer.from(ref, 'base64').toString('utf8'));
   }

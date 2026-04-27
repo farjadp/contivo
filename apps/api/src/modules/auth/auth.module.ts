@@ -1,20 +1,13 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ClerkAuthGuard } from './guards/clerk-auth.guard';
 
-/**
- * AuthModule
- *
- * Responsibilities:
- *   - Validate Clerk JWT tokens on incoming requests via ClerkAuthGuard
- *   - Expose @CurrentUser() decorator that injects authenticated user context
- *   - Expose @Public() decorator to mark routes as unauthenticated
- *
- * This module does NOT implement its own session storage.
- * Clerk is the sole source of truth for identity.
- *
- * TODO (when adding guards):
- *   1. Install @clerk/backend: pnpm add @clerk/backend
- *   2. Create ClerkAuthGuard that calls verifyToken() from @clerk/backend
- *   3. Register as global guard in AppModule using APP_GUARD
- */
-@Module({})
+@Module({
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ClerkAuthGuard,
+    },
+  ],
+})
 export class AuthModule {}

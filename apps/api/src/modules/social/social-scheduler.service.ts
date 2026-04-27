@@ -55,6 +55,7 @@ export class SocialSchedulerService {
         select: {
           id:          true,
           workspaceId: true,
+          userId:      true,
           channel:     true,
           topic:       true,
           content:     true,
@@ -80,6 +81,7 @@ export class SocialSchedulerService {
   private async publishItem(item: {
     id: string;
     workspaceId: string;
+    userId: string;
     channel: string;
     topic: string;
     content: string | null;
@@ -132,7 +134,7 @@ export class SocialSchedulerService {
         platform:           platform as any,
         body:               item.content ?? item.topic,
         hashtags:           [],
-      });
+      }, item.userId);
 
       this.logger.log(
         `Scheduler: created PublishJob id=${job.id} for ContentItem=${item.id} via ${platform}`,

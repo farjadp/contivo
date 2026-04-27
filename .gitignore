@@ -46,3 +46,5 @@ apps/api/prisma/dev.db-journal
 .cache
 coverage
 .claude/
+.vercel
+.env*.local

@@ -17,15 +17,20 @@
  */
 
 import { Controller, Get, Param, Query, Redirect, Logger } from '@nestjs/common';
+import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+import { SocialConnectionsService } from './social-connections.service';
 import { SocialOAuthService } from './social-oauth.service';
 
-type Platform = 'linkedin' | 'x' | 'facebook';
+type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
 
 @Controller('social/oauth')
 export class SocialOAuthController {
   private readonly logger = new Logger(SocialOAuthController.name);
 
-  constructor(private readonly oauthService: SocialOAuthService) {}
+  constructor(
+    private readonly oauthService: SocialOAuthService,
+    private readonly connections: SocialConnectionsService,
+  ) {}
 
   /**
    * Step 1 — initiate OAuth.
@@ -34,10 +39,14 @@ export class SocialOAuthController {
    */
   @Get(':platform/connect')
   @Redirect()
-  initiateOAuth(
+  async initiateOAuth(
     @Param('platform') platform: Platform,
     @Query('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
+    if (!workspaceId) throw new Error('workspaceId is required');
+    await this.connections.validateWorkspaceAccess(workspaceId, user.id);
+
     const url = this.oauthService.getAuthUrl(platform, workspaceId);
     this.logger.log(`OAuth initiated: ${platform} workspace=${workspaceId}`);
     return { url, statusCode: 302 };

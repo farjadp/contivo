@@ -229,6 +229,7 @@ Analyze the target company and its competitors across these 5 charts:
 
 You must:
 - score each axis from 1 to 10
+- CRITICAL: evaluate the true scale and maturity of the TARGET company. If they are an independent consultant, solopreneur, or early startup, their scores for "Audience Size", "Content Volume", and "Execution scale" MUST be realistically low (e.g., 1-4) compared to established industry leaders. DO NOT default the target company to the middle (5) or high if they are fundamentally small.
 - justify every score with concrete signals
 - lower confidence when evidence is weak
 - avoid confident guessing
@@ -406,8 +407,8 @@ function normalizeMatrixPayload(raw: any, input: {
         name: input.companyName,
         website: normalizeWebsite(input.companyWebsite),
         type: 'TARGET',
-        x_score: heuristicPointScore(`${seed}:x`, 6),
-        y_score: heuristicPointScore(`${seed}:y`, 7),
+        x_score: heuristicPointScore(`${seed}:x`, 4),
+        y_score: heuristicPointScore(`${seed}:y`, 4),
         x_reason: 'Target score estimated from current product positioning.',
         y_reason: 'Target score estimated from current brand summary signals.',
         confidence_score: 0.55,

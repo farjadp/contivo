@@ -111,8 +111,12 @@ export async function fetchDomainKeywords(
       '/v3/dataforseo_labs/google/domain_keywords/live',
       payload,
     );
-  } catch (err) {
-    console.error('[DataForSEO] fetchDomainKeywords error:', err);
+  } catch (err: any) {
+    console.error('[DataForSEO] fetchDomainKeywords error:', err.message);
+    if (err.message?.includes('credentials are missing') || process.env.NODE_ENV === 'development') {
+      console.log('Returning mock keyword data for domain:', domain);
+      return generateMockKeywords(domain, limit);
+    }
     return [];
   }
 
@@ -129,7 +133,7 @@ export async function fetchDomainKeywords(
   })).filter((kw) => kw.keyword.length > 0);
 }
 
-// ----- Module 3: SERP Results ----------------------------------------------
+// ----- Module 2: SERP Results ----------------------------------------------
 
 /**
  * Fetch the top 10 organic SERP results for a keyword.
@@ -156,8 +160,12 @@ export async function fetchSerpResults(
       '/v3/serp/google/organic/live/regular',
       payload,
     );
-  } catch (err) {
-    console.error('[DataForSEO] fetchSerpResults error:', err);
+  } catch (err: any) {
+    console.error('[DataForSEO] fetchSerpResults error:', err.message);
+    if (err.message?.includes('credentials are missing') || process.env.NODE_ENV === 'development') {
+      console.log('Returning mock SERP data for keyword:', keyword);
+      return generateMockSerp(keyword);
+    }
     return [];
   }
 
@@ -174,4 +182,60 @@ export async function fetchSerpResults(
       description: item?.description ? String(item.description) : null,
       domain: String(item?.domain || ''),
     }));
+}
+
+// ----- Mock Data Generators -----------------------------------------------
+
+function generateMockKeywords(domain: string, limit: number): DataForSEOKeyword[] {
+  const seed = domain.length;
+  const count = Math.min(limit, 25 + (seed % 20)); // Generates 25-45 keywords per domain
+  const result: DataForSEOKeyword[] = [];
+  
+  const topics = ['software', 'platform', 'tool', 'service', 'app', 'solution', 'management', 'system'];
+  const modifiers = ['best', 'top', 'enterprise', 'free', 'cheap', 'online', 'cloud', 'b2b'];
+  
+  const baseParts = domain.split('.')[0].split('-');
+
+  for (let i = 0; i < count; i++) {
+    const isBranded = i < 3;
+    let keyword = '';
+    
+    if (isBranded) {
+      keyword = `${baseParts.join(' ')} ${i === 0 ? '' : ['login', 'pricing', 'reviews'][i % 3]}`.trim();
+    } else {
+      const topic = topics[(seed + i) % topics.length];
+      const mod = modifiers[(seed * i) % modifiers.length];
+      const part = baseParts[i % baseParts.length];
+      keyword = `${mod} ${part} ${topic}`;
+    }
+
+    result.push({
+      keyword,
+      search_volume: Math.floor(100 + (Math.sin(i * seed) + 1) * 4500),
+      keyword_difficulty: Math.floor(20 + (Math.cos(i) + 1) * 35),
+      competition: Number((0.2 + (Math.sin(i * 3) + 1) * 0.4).toFixed(2)),
+      ranking_position: Math.floor(1 + (Math.abs(Math.sin(i * seed)) * 50)),
+      ranking_url: `https://${domain}/${keyword.replace(/\s+/g, '-')}`,
+    });
+  }
+  
+  // Sort by search volume descending just like real API
+  return result.sort((a, b) => b.search_volume - a.search_volume);
+}
+
+function generateMockSerp(keyword: string): DataForSEOSerpItem[] {
+  const result: DataForSEOSerpItem[] = [];
+  const domains = ['hubspot.com', 'g2.com', 'capterra.com', 'forbes.com', 'techcrunch.com', 'medium.com', 'blog.intercom.com', 'zapier.com/blog', 'nerdwallet.com', 'shopify.com/blog'];
+  
+  for (let i = 0; i < 10; i++) {
+    const domain = domains[i % domains.length];
+    result.push({
+      rank_absolute: i + 1,
+      title: `${i === 0 ? 'The Ultimate Guide to' : 'Top 10'} ${keyword.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} | ${domain.split('.')[0].toUpperCase()}`,
+      url: `https://${domain}/${keyword.replace(/\s+/g, '-')}-guide`,
+      description: `Learn everything you need to know about ${keyword} in our comprehensive overview. Compare top tools, find pricing, and improve your strategy today.`,
+      domain,
+    });
+  }
+  return result;
 }

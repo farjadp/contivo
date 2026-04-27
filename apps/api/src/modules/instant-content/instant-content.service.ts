@@ -138,23 +138,80 @@ export class InstantContentService {
   }
 
   /**
+   * Executes a pre-created InstantContent job in the background via queue worker.
+   */
+  async executeJob(jobId: string) {
+    const job = await this.prisma.contentJob.findUnique({
+      where: { id: jobId },
+    });
+
+    if (!job) throw new NotFoundException('Content job not found');
+    if (job.status === 'COMPLETED') return;
+
+    try {
+      const payload = job.inputPayload as any;
+      const input = {
+        topic: payload.topic,
+        channel: payload.channel,
+        tone: payload.tone,
+      };
+
+      const aiResult = await this.ai.generateInstantContent(input);
+
+      const contentItem = await this.prisma.contentItem.create({
+        data: {
+          userId: job.userId,
+          type: CHANNEL_TYPE_MAP[input.channel] as any,
+          channel: input.channel as any,
+          tone: (input.tone ?? null) as any,
+          topic: input.topic,
+          content: aiResult.content,
+          status: 'GENERATED',
+          creditsCost: aiResult.creditsCost,
+          jobId: job.id,
+        },
+      });
+
+      await this.prisma.contentJob.update({
+        where: { id: job.id },
+        data: {
+          status: 'COMPLETED',
+          outputPayload: { contentItemId: contentItem.id, model: aiResult.model },
+          creditsCost: aiResult.creditsCost,
+          completedAt: new Date(),
+        },
+      });
+
+      // Deduct credits (assumes 5 credits for background fast tasks)
+      await this.credits.deduct(job.userId, 5, 'INSTANT_CONTENT', job.id);
+
+      this.logger.log(`InstantContent background job ${job.id} completed successfully.`);
+    } catch (err) {
+      await this.prisma.contentJob.update({
+        where: { id: job.id },
+        data: {
+          status: 'FAILED',
+          errorMessage: err instanceof Error ? err.message : 'Unknown error',
+          completedAt: new Date(),
+        },
+      });
+      throw err;
+    }
+  }
+
+  /**
    * Resolve user by clerkId or raw cuid.
-   * Falls back to the seeded dev user for local development.
+   * Throws UnauthorizedException if the user does not exist in the database.
    */
   private async resolveUser(userId: string) {
     // Try clerkId first, then direct id
-    let user = await this.prisma.user.findFirst({
+    const user = await this.prisma.user.findFirst({
       where: { OR: [{ clerkId: userId }, { id: userId }] },
     });
 
-    // In local dev with no auth, fall back to the seeded dev user
-    if (!user) {
-      user = await this.prisma.user.findUnique({ where: { email: 'dev@contivo.app' } });
-    }
-
     if (!user) {
       throw new NotFoundException(
-        `User not found. Make sure you have run: pnpm db:seed`,
+        `User profile not found. Please log in or ensure your account is properly synced.`,
       );
     }
 

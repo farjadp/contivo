@@ -29,10 +29,10 @@ function SidebarLink({
     <Link
       href={href as any}
       className={cn(
-        'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all',
+        'flex items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors rounded-none',
         isActive
-          ? 'bg-[#2B2DFF] text-white shadow-sm shadow-indigo-200'
-          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100',
+          ? 'bg-[#121212] text-[#FDFCF8]'
+          : 'text-[#121212]/50 hover:text-[#121212] hover:bg-[#121212]/5',
       )}
     >
       <Icon className="w-4 h-4 shrink-0" />
@@ -44,17 +44,26 @@ function SidebarLink({
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
+  // Hide the AppShell for specific routes like full-screen onboarding pages
+  if (pathname === '/growth/new' || pathname === '/growth/analyzing') {
+    return (
+      <main className="h-screen w-full overflow-y-auto bg-[#FDFCF8]">
+        {children}
+      </main>
+    );
+  }
+
   return (
-    <div className="h-screen flex overflow-hidden bg-[#F6F7FB] p-3 sm:p-5 gap-5">
+    <div className="h-screen flex overflow-hidden bg-[#FDFCF8] text-[#121212]">
       {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="w-64 shrink-0 flex flex-col rounded-[32px] border border-white/40 bg-white/70 backdrop-blur-xl py-6 px-4 gap-1 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hidden md:flex">
+      <aside className="w-64 shrink-0 flex flex-col border-r border-[#121212]/10 bg-[#EFECE5] py-8 px-4 hidden md:flex">
         {/* Logo */}
-        <div className="px-4 mb-8 mt-2">
-          <span className="text-2xl font-black tracking-tighter text-[#2B2DFF]">Contivo</span>
+        <div className="px-4 mb-12">
+          <span className="text-2xl font-black tracking-tighter text-[#121212]">Contivo<span className="text-[#C04C36]">.</span></span>
         </div>
 
         {/* Nav */}
-        <nav className="flex flex-col gap-1.5 flex-1 mt-4">
+        <nav className="flex flex-col gap-2 flex-1 mt-4">
           {NAV_ITEMS.map((item) => (
             <SidebarLink
               key={item.href}
@@ -69,9 +78,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Sign out */}
-        <div className="pt-4">
+        <div className="pt-4 border-t border-[#121212]/10 mt-auto">
           <form action={logout}>
-            <button className="flex w-full items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-red-500 hover:bg-red-50 hover:text-red-600 transition-colors">
+            <button className="flex w-full items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-widest text-[#C04C36] hover:bg-[#C04C36]/10 transition-colors rounded-none">
               <LogOut className="w-5 h-5 shrink-0" />
               Sign out
             </button>
@@ -80,8 +89,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </aside>
 
       {/* ── Main ───────────────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto rounded-[32px] pb-10">
-        <div className="max-w-7xl mx-auto h-full">
+      <main className="flex-1 overflow-y-auto pb-10">
+        <div className="max-w-7xl mx-auto h-full p-6 md:p-10">
           {children}
         </div>
       </main>

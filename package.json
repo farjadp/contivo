@@ -25,5 +25,10 @@
     "trailingComma": "all",
     "printWidth": 100,
     "tabWidth": 2
+  },
+  "pnpm": {
+    "overrides": {
+      "ioredis": "5.10.0"
+    }
   }
 }

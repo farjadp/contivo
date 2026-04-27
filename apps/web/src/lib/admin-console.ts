@@ -109,6 +109,8 @@ export async function getAdminOverview() {
     activeWorkspaces,
     aiJobsToday,
     failedAiJobsToday,
+    socialJobsToday,
+    failedSocialJobsToday,
     creditsUsedToday,
     estimatedAiCostToday,
     scheduledContentCount,
@@ -117,9 +119,14 @@ export async function getAdminOverview() {
     pendingJobs,
     runningJobs,
     failedJobs,
-    recentFailedJobs,
+    pendingSocialJobs,
+    publishingSocialJobs,
+    failedSocialJobsTotal,
+    contentRecentFailed,
+    socialRecentFailed,
     topFrameworks,
     completedJobsToday,
+    publishedSocialJobsToday,
   ] = await Promise.all([
     prisma.$queryRaw`SELECT 1`
       .then(() => Date.now() - databaseLatencyStartedAt)
@@ -176,6 +183,17 @@ export async function getAdminOverview() {
         status: 'FAILED',
       },
     }),
+    prisma.socialPublishJob.count({
+      where: {
+        createdAt: { gte: today },
+      },
+    }),
+    prisma.socialPublishJob.count({
+      where: {
+        createdAt: { gte: today },
+        status: 'FAILED',
+      },
+    }),
     prisma.creditLedger.aggregate({
       where: {
         createdAt: { gte: today },
@@ -206,6 +224,9 @@ export async function getAdminOverview() {
     prisma.contentJob.count({ where: { status: 'PENDING' } }),
     prisma.contentJob.count({ where: { status: 'RUNNING' } }),
     prisma.contentJob.count({ where: { status: 'FAILED' } }),
+    prisma.socialPublishJob.count({ where: { status: 'SCHEDULED' } }),
+    prisma.socialPublishJob.count({ where: { status: 'PUBLISHING' } }),
+    prisma.socialPublishJob.count({ where: { status: 'FAILED' } }),
     prisma.contentJob.findMany({
       where: { status: 'FAILED' },
       orderBy: { updatedAt: 'desc' },
@@ -213,6 +234,14 @@ export async function getAdminOverview() {
       include: {
         user: { select: { email: true } },
         workspace: { select: { name: true } },
+      },
+    }),
+    prisma.socialPublishJob.findMany({
+      where: { status: 'FAILED' },
+      orderBy: { updatedAt: 'desc' },
+      take: 8,
+      include: {
+        connection: { select: { workspace: { select: { name: true, user: { select: { email: true } } } } } },
       },
     }),
     getFrameworkUsageSummary(30),
@@ -227,17 +256,49 @@ export async function getAdminOverview() {
         completedAt: true,
       },
     }),
+    prisma.socialPublishJob.findMany({
+      where: {
+        createdAt: { gte: today },
+        status: 'PUBLISHED',
+        publishedAtUtc: { not: null },
+      },
+      select: {
+        createdAt: true,
+        publishedAtUtc: true,
+      },
+    }),
   ]);
 
+  const allCompletedJobs = [
+    ...completedJobsToday.map((j) => ({ start: j.createdAt.getTime(), end: j.completedAt?.getTime() })),
+    ...publishedSocialJobsToday.map((j) => ({ start: j.createdAt.getTime(), end: j.publishedAtUtc?.getTime() }))
+  ];
+
   const averageGenerationTimeMs =
-    completedJobsToday.length > 0
+    allCompletedJobs.length > 0
       ? Math.round(
-          completedJobsToday.reduce((total, job) => {
-            const completedAt = job.completedAt?.getTime() || job.createdAt.getTime();
-            return total + Math.max(0, completedAt - job.createdAt.getTime());
-          }, 0) / completedJobsToday.length,
+          allCompletedJobs.reduce((total, job) => {
+            const end = job.end || job.start;
+            return total + Math.max(0, end - job.start);
+          }, 0) / allCompletedJobs.length,
         )
       : 0;
+
+  const recentFailedJobsMerged = [
+    ...contentRecentFailed,
+    ...socialRecentFailed.map((job) => ({
+      id: job.id,
+      type: 'SOCIAL_PUBLISH',
+      status: job.status,
+      errorMessage: job.lastError,
+      updatedAt: job.updatedAt,
+      createdAt: job.createdAt,
+      user: { email: job.connection.workspace.user.email },
+      workspace: { name: job.connection.workspace.name },
+      durationMs: null,
+    }))
+  ];
+  recentFailedJobsMerged.sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
 
   return {
     metrics: {
@@ -249,19 +310,19 @@ export async function getAdminOverview() {
       freeUsers: Math.max(0, totalUsers - payingUsers),
       totalWorkspaces,
       activeWorkspaces,
-      aiJobsToday,
-      failedAiJobsToday,
+      aiJobsToday: aiJobsToday + socialJobsToday,
+      failedAiJobsToday: failedAiJobsToday + failedSocialJobsToday,
       averageGenerationTimeMs,
       creditsUsedToday: Math.abs(creditsUsedToday._sum.amount ?? 0),
       estimatedAiCostToday: toNumber(estimatedAiCostToday._sum.estimatedCostUsd),
       scheduledContentCount,
       contentGeneratedToday,
       publishedContentToday,
-      pendingJobs,
-      runningJobs,
-      failedJobs,
+      pendingJobs: pendingJobs + pendingSocialJobs,
+      runningJobs: runningJobs + publishingSocialJobs,
+      failedJobs: failedJobs + failedSocialJobsTotal,
     },
-    recentFailedJobs,
+    recentFailedJobs: recentFailedJobsMerged.slice(0, 8),
     topFrameworks: topFrameworks.slice(0, 5),
     health: {
       database: databaseLatencyMs == null ? 'FAILED' : 'healthy',
@@ -476,28 +537,74 @@ export async function getAdminJobs(input: {
   status?: string;
   type?: string;
 }) {
-  const where: Prisma.ContentJobWhereInput = {};
+  const contentWhere: Prisma.ContentJobWhereInput = {};
+  const socialWhere: Prisma.SocialPublishJobWhereInput = {};
+
   if (input.status && input.status !== 'ALL') {
-    where.status = input.status as any;
+    contentWhere.status = input.status as any;
+    if (input.status === 'RUNNING') socialWhere.status = 'PUBLISHING';
+    else socialWhere.status = input.status as any;
   }
-  if (input.type && input.type !== 'ALL') {
-    where.type = input.type as any;
+  
+  const isSocialType = input.type === 'SOCIAL_PUBLISH';
+  const isContentType = input.type && input.type !== 'ALL' && input.type !== 'SOCIAL_PUBLISH';
+
+  if (isContentType) {
+    contentWhere.type = input.type as any;
   }
 
-  const rows = await prisma.contentJob.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    take: 80,
-    include: {
-      user: { select: { email: true } },
-      workspace: { select: { name: true } },
-    },
-  });
+  const fetchContent = !isSocialType;
+  const fetchSocial = !isContentType;
 
-  return rows.map((job) => ({
-    ...job,
-    durationMs: job.completedAt ? job.completedAt.getTime() - job.createdAt.getTime() : null,
-  }));
+  const [contentRows, socialRows] = await Promise.all([
+    fetchContent
+      ? prisma.contentJob.findMany({
+          where: contentWhere,
+          orderBy: { createdAt: 'desc' },
+          take: 80,
+          include: {
+            user: { select: { email: true } },
+            workspace: { select: { name: true } },
+          },
+        })
+      : Promise.resolve([]),
+    fetchSocial
+      ? prisma.socialPublishJob.findMany({
+          where: socialWhere,
+          orderBy: { createdAt: 'desc' },
+          take: 80,
+          include: {
+            connection: { select: { workspace: { select: { name: true, user: { select: { email: true } } } } } },
+          },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const output = [
+    ...contentRows.map((job) => ({
+      ...job,
+      durationMs: job.completedAt ? job.completedAt.getTime() - job.createdAt.getTime() : null,
+    })),
+    ...socialRows.map((job) => ({
+      id: job.id,
+      userId: job.connection.workspace.user.email, // using email slot for table rendering if needed
+      workspaceId: job.workspaceId,
+      type: 'SOCIAL_PUBLISH',
+      status: job.status === 'PUBLISHING' ? 'RUNNING' : job.status,
+      inputPayload: { platform: job.platform }, // minimal payload mock
+      errorMessage: job.lastError,
+      creditsCost: 0,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      completedAt: job.publishedAtUtc,
+      user: { email: job.connection.workspace.user.email },
+      workspace: { name: job.connection.workspace.name },
+      durationMs: job.publishedAtUtc ? job.publishedAtUtc.getTime() - job.createdAt.getTime() : null,
+    }))
+  ];
+
+  output.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  return output.slice(0, 80);
 }
 
 export async function getAdminCreditLedger(userId?: string) {
@@ -583,6 +690,8 @@ export async function getAdminIntegrations() {
       openAiConfigured: Boolean(process.env.OPENAI_API_KEY),
       redisConfigured: Boolean(process.env.REDIS_URL),
       dataForSeoConfigured: Boolean(process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD),
+      xConfigured: Boolean(process.env.TWITTER_CLIENT_ID),
+      facebookConfigured: Boolean(process.env.FACEBOOK_APP_ID),
     },
     seoData: {
       keywordRows,

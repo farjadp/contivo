@@ -1,58 +1,70 @@
 import Link from 'next/link';
-import { ArrowRight, Zap, TrendingUp } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 
 export default function OnboardingWelcomePage() {
   return (
-    <div className="w-full max-w-2xl">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-[#121212] tracking-tight mb-3">
-          Welcome to Contivo
+    <div className="w-full min-h-screen flex flex-col lg:flex-row">
+      {/* Left Column: Intro */}
+      <div className="w-full lg:w-[45%] p-8 pt-32 lg:p-16 xl:p-24 flex flex-col justify-center border-b lg:border-b-0 lg:border-r border-[#121212]/10 bg-[#EFECE5]">
+        <h1 className="text-6xl md:text-7xl lg:text-[6rem] font-medium tracking-tighter leading-[0.9] text-[#121212] mb-10 overflow-hidden">
+          <div className="animate-in slide-in-from-bottom duration-700 delay-100 fill-mode-both">Begin</div>
+          <div className="animate-in slide-in-from-bottom duration-700 delay-200 fill-mode-both">
+              <span className="italic text-[#121212]/50 font-serif font-light">shaping</span>
+          </div>
+          <div className="animate-in slide-in-from-bottom duration-700 delay-300 fill-mode-both">your system.</div>
         </h1>
-        <p className="text-lg text-gray-500">
-          Let&apos;s build your first content system. Choose how you want to start.
+        <p className="max-w-md text-xl text-[#121212]/70 leading-relaxed font-medium animate-in fade-in duration-1000 delay-500 fill-mode-both">
+          Contivo brings clarity to your content. Choose a path to construct your long-term strategy, or skip the setup to generate instantly.
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* Primary: Build Workspace */}
-        <Link
-          href={"/growth/new" as any}
-          className="group relative flex flex-col gap-4 rounded-2xl border-2 border-[#121212] bg-[#121212] p-8 text-white hover:bg-white hover:text-[#121212] transition-all duration-300"
-        >
-          <div className="h-12 w-12 rounded-xl bg-white/10 group-hover:bg-[#121212]/10 flex items-center justify-center transition-colors">
-            <TrendingUp className="h-6 w-6" />
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-widest opacity-60 mb-2">Recommended</div>
-            <h2 className="text-xl font-bold mb-2">Build My Workspace</h2>
-            <p className="text-sm opacity-70 leading-relaxed">
-              Set up your brand, get an AI strategy, and generate a full content system. Best for serious content marketing.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-sm font-semibold mt-auto">
-            Get Started <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+      {/* Right Column: Choices */}
+      <div className="w-full lg:w-[55%] flex flex-col animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
+         {/* Choice 1: Build Workspace */}
+         <Link 
+            href={"/growth/new" as any}
+            className="group flex-1 p-8 lg:p-16 xl:p-20 flex flex-col justify-between border-b border-[#121212]/10 bg-[#FDFCF8] hover:bg-[#D9E2DC] transition-colors duration-500 ease-out cursor-pointer"
+         >
+            <div className="flex justify-between items-start">
+               <span className="text-sm font-bold tracking-widest text-[#121212]/50 group-hover:text-[#121212] transition-colors uppercase">
+                  01 &mdash; Recommended
+               </span>
+               <div className="w-14 h-14 rounded-full border border-[#121212]/20 flex items-center justify-center group-hover:bg-[#121212] group-hover:text-white transition-all duration-500">
+                  <ArrowRight className="w-6 h-6 group-hover:-rotate-45 transition-transform duration-500" />
+               </div>
+            </div>
+            <div className="mt-20 lg:mt-0">
+               <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tighter mb-4 group-hover:translate-x-6 transition-transform duration-500 will-change-transform">
+                 Build Workspace
+               </h2>
+               <p className="text-lg md:text-xl text-[#121212]/50 max-w-sm group-hover:translate-x-6 transition-transform duration-500 delay-75 group-hover:text-[#121212]/80 will-change-transform">
+                  Establish your brand identity and set up a comprehensive, data-driven marketing engine.
+               </p>
+            </div>
+         </Link>
 
-        {/* Secondary: Quick Content */}
-        <Link
-          href={"/instant" as any}
-          className="group flex flex-col gap-4 rounded-2xl border-2 border-gray-200 bg-white p-8 text-[#121212] hover:border-[#121212] transition-all duration-300"
-        >
-          <div className="h-12 w-12 rounded-xl bg-gray-100 flex items-center justify-center">
-            <Zap className="h-6 w-6 text-indigo-600" />
-          </div>
-          <div>
-            <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Quick Mode</div>
-            <h2 className="text-xl font-bold mb-2">Quick Content</h2>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Give a topic, pick a channel, and get content in seconds. No setup needed.
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-500 group-hover:text-[#121212] mt-auto transition-colors">
-            Skip &amp; Create <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+         {/* Choice 2: Instant Content */}
+         <Link 
+            href={"/instant" as any}
+            className="group flex-1 p-8 lg:p-16 xl:p-20 flex flex-col justify-between bg-[#FDFCF8] hover:bg-[#EBE2D5] transition-colors duration-500 ease-out cursor-pointer"
+         >
+            <div className="flex justify-between items-start">
+               <span className="text-sm font-bold tracking-widest text-[#121212]/50 group-hover:text-[#121212] transition-colors uppercase">
+                  02 &mdash; Fast Track
+               </span>
+               <div className="w-14 h-14 rounded-full border border-[#121212]/20 flex items-center justify-center group-hover:bg-[#121212] group-hover:text-white transition-all duration-500">
+                  <ArrowRight className="w-6 h-6 group-hover:-rotate-45 transition-transform duration-500" />
+               </div>
+            </div>
+            <div className="mt-20 lg:mt-0">
+               <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tighter mb-4 group-hover:translate-x-6 transition-transform duration-500 will-change-transform">
+                 Instant Content
+               </h2>
+               <p className="text-lg md:text-xl text-[#121212]/50 max-w-sm group-hover:translate-x-6 transition-transform duration-500 delay-75 group-hover:text-[#121212]/80 will-change-transform">
+                  No configuration needed. Give a topic, choose a platform, and get polished posts in seconds.
+               </p>
+            </div>
+         </Link>
       </div>
     </div>
   );

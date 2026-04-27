@@ -19,8 +19,9 @@
  */
 
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { createHmac, timingSafeEqual } from 'crypto';
+import * as crypto from 'crypto';
 import { SocialConnectionsService } from './social-connections.service';
+import { PrismaService } from '../../common/prisma/prisma.service';
 
 // ─── Platform config helper ───────────────────────────────────────────────────
 
@@ -30,18 +31,19 @@ type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
 export class SocialOAuthService {
   private readonly logger = new Logger(SocialOAuthService.name);
 
-  constructor(private readonly connections: SocialConnectionsService) {}
+  constructor(
+    private readonly connections: SocialConnectionsService,
+    private readonly prisma: PrismaService,
+  ) {}
 
   // ─── Step 1: Build redirect URL ──────────────────────────────────────────
 
   getAuthUrl(platform: Platform, workspaceId: string): string {
-    const state = this.buildState(workspaceId);
-
     switch (platform) {
-      case 'linkedin': return this.linkedInAuthUrl(state);
-      case 'x':        return this.xAuthUrl(state);
-      case 'facebook': return this.facebookAuthUrl(state);
-      case 'tiktok':   return this.tikTokAuthUrl(state);
+      case 'linkedin': return this.linkedInAuthUrl(workspaceId);
+      case 'x':        return this.xAuthUrl(workspaceId);
+      case 'facebook': return this.facebookAuthUrl(workspaceId);
+      case 'tiktok':   return this.tikTokAuthUrl(workspaceId);
       default:         throw new BadRequestException(`Unsupported platform: ${platform}`);
     }
   }
@@ -53,11 +55,12 @@ export class SocialOAuthService {
     code: string,
     stateParam: string,
   ): Promise<string> {
-    const workspaceId = this.verifyState(stateParam);
+    const stateObj = this.verifyState(stateParam);
+    const workspaceId = stateObj.workspaceId;
 
     switch (platform) {
       case 'linkedin': return this.linkedInCallback(workspaceId, code);
-      case 'x':        return this.xCallback(workspaceId, code);
+      case 'x':        return this.xCallback(workspaceId, code, stateObj.codeVerifier);
       case 'facebook': return this.facebookCallback(workspaceId, code);
       case 'tiktok':   return this.tikTokCallback(workspaceId, code);
       default:         throw new BadRequestException(`Unsupported platform: ${platform}`);
@@ -66,7 +69,8 @@ export class SocialOAuthService {
 
   // ─── LinkedIn ─────────────────────────────────────────────────────────────
 
-  private linkedInAuthUrl(state: string): string {
+  private linkedInAuthUrl(workspaceId: string): string {
+    const state = this.buildState(workspaceId);
     const clientId    = process.env.LINKEDIN_CLIENT_ID!;
     const redirectUri = process.env.LINKEDIN_REDIRECT_URI!;
     const scopes      = ['openid', 'profile', 'email', 'w_member_social'].join(' ');
@@ -146,10 +150,15 @@ export class SocialOAuthService {
 
   // ─── X (Twitter) ─────────────────────────────────────────────────────────
 
-  private xAuthUrl(state: string): string {
+  private xAuthUrl(workspaceId: string): string {
     const clientId    = process.env.TWITTER_CLIENT_ID!;
     const redirectUri = process.env.TWITTER_REDIRECT_URI!;
     const scopes      = ['tweet.read', 'tweet.write', 'users.read', 'offline.access'].join(' ');
+
+    const codeVerifier = crypto.randomBytes(32).toString('base64url');
+    const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
+
+    const state = this.buildState(workspaceId, { codeVerifier });
 
     const params = new URLSearchParams({
       response_type:         'code',
@@ -157,14 +166,14 @@ export class SocialOAuthService {
       redirect_uri:          redirectUri,
       state,
       scope:                 scopes,
-      code_challenge:        'challenge',       // TODO: implement PKCE properly
-      code_challenge_method: 'plain',
+      code_challenge:        codeChallenge,
+      code_challenge_method: 'S256',
     });
 
     return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
   }
 
-  private async xCallback(workspaceId: string, code: string): Promise<string> {
+  private async xCallback(workspaceId: string, code: string, codeVerifier: string): Promise<string> {
     const clientId     = process.env.TWITTER_CLIENT_ID!;
     const clientSecret = process.env.TWITTER_CLIENT_SECRET!;
     const redirectUri  = process.env.TWITTER_REDIRECT_URI!;
@@ -181,7 +190,7 @@ export class SocialOAuthService {
         grant_type:    'authorization_code',
         code,
         redirect_uri:  redirectUri,
-        code_verifier: 'challenge',   // TODO: match PKCE code verifier
+        code_verifier: codeVerifier,
       }),
     });
 
@@ -222,7 +231,8 @@ export class SocialOAuthService {
 
   // ─── Facebook ─────────────────────────────────────────────────────────────
 
-  private facebookAuthUrl(state: string): string {
+  private facebookAuthUrl(workspaceId: string): string {
+    const state = this.buildState(workspaceId);
     const appId       = process.env.FACEBOOK_APP_ID!;
     const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
     const scopes      = ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list'].join(',');
@@ -262,7 +272,6 @@ export class SocialOAuthService {
     const meRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${access_token}`);
     const fbUser = await meRes.json() as { id: string; name: string };
 
-    // Get Pages managed by this user (for page publishing)
     const pagesRes = await fetch(
       `https://graph.facebook.com/v19.0/${fbUser.id}/accounts?access_token=${access_token}`,
     );
@@ -270,28 +279,49 @@ export class SocialOAuthService {
       data: Array<{ id: string; name: string; access_token: string }>;
     };
 
-    // Save the user token (or first page token if pages exist)
-    const pageToken = pages?.[0]?.access_token ?? access_token;
-    const pageName  = pages?.[0]?.name ?? fbUser.name;
-    const pageId    = pages?.[0]?.id ?? fbUser.id;
+    if (!pages || pages.length === 0) {
+      this.logger.warn(`Facebook connected but no pages found for workspace=${workspaceId}`);
+      throw new BadRequestException('No Facebook Pages found. Please ensure you selected a Page during authorization.');
+    }
 
-    await this.connections.create({
-      workspaceId,
-      platform:          'FACEBOOK',
-      accountName:       pageName,
-      accountIdentifier: pageId,
-      accessToken:       pageToken,
-      scopes:            ['pages_manage_posts', 'pages_read_engagement'],
-      isDefault:         true,
-    });
+    // Save a connection for every Page the user authorized
+    for (const page of pages) {
+      // Check if connection already exists to avoid duplicates
+      const existing = await this.prisma.socialConnection.findFirst({
+        where: { workspaceId, platform: 'FACEBOOK', accountIdentifier: page.id },
+      });
 
-    this.logger.log(`Facebook connected: workspace=${workspaceId} page=${pageName}`);
+      if (existing) {
+        // Update token if it already exists
+        await this.prisma.socialConnection.update({
+          where: { id: existing.id },
+          data: {
+            encryptedAccessTokenRef: this.connections.encryptToken(page.access_token),
+            status: 'CONNECTED',
+          },
+        });
+        this.logger.log(`Facebook page updated: workspace=${workspaceId} page=${page.name}`);
+      } else {
+        await this.connections.create({
+          workspaceId,
+          platform:          'FACEBOOK',
+          accountName:       page.name,
+          accountIdentifier: page.id,
+          accessToken:       page.access_token,
+          scopes:            ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list'],
+          isDefault:         pages.indexOf(page) === 0, // First page is default if none exist
+        });
+        this.logger.log(`Facebook page connected: workspace=${workspaceId} page=${page.name}`);
+      }
+    }
+
     return `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/connections?connected=facebook`;
   }
 
   // ─── TikTok ───────────────────────────────────────────────────────────────
 
-  private tikTokAuthUrl(state: string): string {
+  private tikTokAuthUrl(workspaceId: string): string {
+    const state = this.buildState(workspaceId);
     const clientKey  = process.env.TIKTOK_CLIENT_KEY!;
     const redirectUri = process.env.TIKTOK_REDIRECT_URI!;
     // Required scopes for content posting
@@ -370,37 +400,45 @@ export class SocialOAuthService {
 
   // ─── State helpers (CSRF) ────────────────────────────────────────────────
 
-  private buildState(workspaceId: string): string {
-    const secret    = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
-    const timestamp = Date.now().toString();
-    const payload   = `${workspaceId}:${timestamp}`;
-    const sig       = createHmac('sha256', secret).update(payload).digest('hex');
-    return Buffer.from(`${payload}:${sig}`).toString('base64url');
+  private buildState(workspaceId: string, extraData: Record<string, string> = {}): string {
+    const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
+    const key = crypto.createHash('sha256').update(secret).digest();
+    const iv = crypto.randomBytes(12);
+
+    const payloadObj = { workspaceId, ts: Date.now(), ...extraData };
+    const payloadBuffer = Buffer.from(JSON.stringify(payloadObj), 'utf8');
+
+    const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+    const ciphertext = Buffer.concat([cipher.update(payloadBuffer), cipher.final()]);
+    const authTag = cipher.getAuthTag(); // 16 bytes
+
+    // pack as: iv(12) + authTag(16) + ciphertext
+    return Buffer.concat([iv, authTag, ciphertext]).toString('base64url');
   }
 
-  private verifyState(stateParam: string): string {
+  private verifyState(stateParam: string): Record<string, any> {
     try {
-      const decoded   = Buffer.from(stateParam, 'base64url').toString('utf8');
-      const parts     = decoded.split(':');
-      if (parts.length < 3) throw new Error('Invalid state');
+      const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
+      const key = crypto.createHash('sha256').update(secret).digest();
 
-      const workspaceId = parts[0];
-      const timestamp   = parts[1];
-      const sig         = parts.slice(2).join(':');
-      const secret      = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
-      const expected    = createHmac('sha256', secret).update(`${workspaceId}:${timestamp}`).digest('hex');
+      const packed = Buffer.from(stateParam, 'base64url');
+      if (packed.length < 28) throw new Error('State too short');
 
-      // Timing-safe comparison
-      if (!timingSafeEqual(Buffer.from(sig, 'hex'), Buffer.from(expected, 'hex'))) {
-        throw new Error('State signature mismatch');
-      }
+      const iv = packed.subarray(0, 12);
+      const authTag = packed.subarray(12, 28);
+      const ciphertext = packed.subarray(28);
 
-      // Reject states older than 10 minutes
-      if (Date.now() - parseInt(timestamp, 10) > 10 * 60 * 1000) {
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+      decipher.setAuthTag(authTag);
+
+      const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
+      const payloadObj = JSON.parse(decrypted.toString('utf8'));
+
+      if (Date.now() - payloadObj.ts > 10 * 60 * 1000) {
         throw new Error('State expired');
       }
 
-      return workspaceId;
+      return payloadObj;
     } catch (err) {
       throw new BadRequestException(`Invalid OAuth state: ${(err as Error).message}`);
     }

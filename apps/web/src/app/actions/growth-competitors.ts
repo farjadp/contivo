@@ -7,6 +7,7 @@ import { getSession } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { generatePositioningInsights } from '@/lib/gemini';
 import { discoverCompetitorsWithGemini } from '@/lib/gemini';
+import { generateWorkspaceCompetitiveMatrices } from '@/app/actions/growth-matrices';
 import {
   createDiscoveryArchive,
   getMaxDiscoveryRuns,
@@ -103,6 +104,256 @@ function stripCodeFences(value: string): string {
     .trim();
 }
 
+function sanitizeText(input: string): string {
+  return input.replace(/\s+/g, ' ').trim();
+}
+
+function decodeHtmlEntities(input: string): string {
+  return input
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function extractSignalsFromHtml(html: string): string[] {
+  const lines: string[] = [];
+
+  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
+  if (title) lines.push(sanitizeText(decodeHtmlEntities(title)));
+
+  const description =
+    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1] ||
+    html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1];
+  if (description) lines.push(sanitizeText(decodeHtmlEntities(description)));
+
+  const regex = /<(h1|h2|h3|a|li|p)[^>]*>([\s\S]*?)<\/\1>/gi;
+  let match: RegExpExecArray | null = regex.exec(html);
+  while (match) {
+    const text = sanitizeText(decodeHtmlEntities(String(match[2] || '').replace(/<[^>]+>/g, ' ')));
+    if (text.length >= 10) lines.push(text);
+    if (lines.length >= 240) break;
+    match = regex.exec(html);
+  }
+
+  const unique = new Set<string>();
+  const filtered: string[] = [];
+  for (const line of lines) {
+    const normalized = line.toLowerCase();
+    if (!line || normalized.length < 8) continue;
+    if (unique.has(normalized)) continue;
+    unique.add(normalized);
+    filtered.push(line);
+    if (filtered.length >= 160) break;
+  }
+
+  return filtered;
+}
+
+async function fetchHtml(url: string): Promise<string | null> {
+  try {
+    const res = await fetch(url, {
+      method: 'GET',
+      redirect: 'follow',
+      signal: AbortSignal.timeout(6000),
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        Accept: 'text/html,application/xhtml+xml',
+      },
+    });
+
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  }
+}
+
+async function fetchHtmlForDomain(domain: string, path: string): Promise<{ url: string; html: string } | null> {
+  const normalizedDomain = normalizeDomain(domain);
+  if (!normalizedDomain) return null;
+
+  const candidates = [`https://${normalizedDomain}${path}`, `http://${normalizedDomain}${path}`];
+  for (const url of candidates) {
+    const html = await fetchHtml(url);
+    if (html) return { url, html };
+  }
+
+  return null;
+}
+
+async function collectWebsiteEvidence(domain: string): Promise<{
+  domain: string;
+  pagesScanned: string[];
+  evidence: string;
+}> {
+  const normalizedDomain = normalizeDomain(domain);
+  if (!normalizedDomain) {
+    return { domain: '', pagesScanned: [], evidence: '' };
+  }
+
+  const paths = ['/', '/about', '/services', '/solutions', '/products', '/pricing', '/blog'];
+  const pagesScanned: string[] = [];
+  const evidenceLines: string[] = [];
+
+  for (const path of paths) {
+    const response = await fetchHtmlForDomain(normalizedDomain, path);
+    if (!response) continue;
+
+    const signals = extractSignalsFromHtml(response.html);
+    if (signals.length === 0) continue;
+
+    pagesScanned.push(response.url);
+    evidenceLines.push(`Page: ${response.url}`);
+    evidenceLines.push(...signals.slice(0, 20));
+
+    if (evidenceLines.length >= 140) break;
+  }
+
+  return {
+    domain: normalizedDomain,
+    pagesScanned,
+    evidence: evidenceLines.slice(0, 140).join('\n'),
+  };
+}
+
+async function enrichManualCompetitorWithOpenAI(input: {
+  competitor: EditableCompetitor;
+  workspace: {
+    name: string;
+    websiteUrl?: string | null;
+    brandSummary?: any;
+  };
+}): Promise<Partial<EditableCompetitor> | null> {
+  const domain = normalizeDomain(input.competitor.domain);
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey || !domain) return null;
+
+  const evidence = await collectWebsiteEvidence(domain);
+  if (!evidence.evidence) return null;
+
+  const ownDomain = normalizeDomain(input.workspace.websiteUrl || '');
+  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
+  const brandSummary = input.workspace.brandSummary || {};
+
+  const prompt = `
+You are enriching a manually entered competitor record for a market intelligence workspace.
+
+Target brand:
+- name: ${trimTo(input.workspace.name, 120)}
+- website: ${trimTo(input.workspace.websiteUrl || '', 180)}
+- industry: ${trimTo(brandSummary?.industry, 120)}
+- audience: ${trimTo(brandSummary?.audience || brandSummary?.persona?.title, 160)}
+- value proposition: ${trimTo(brandSummary?.valueProposition || brandSummary?.businessSummary, 260)}
+
+Manual competitor input:
+- name: ${trimTo(input.competitor.name, 120)}
+- domain: ${domain}
+
+Website evidence:
+${evidence.evidence}
+
+Task:
+- infer the competitor's best display name
+- write a concise factual description
+- infer category
+- infer likely audience
+- classify as direct, indirect, or aspirational based on overlap with the target brand
+- return 3 to 6 key features/signals
+- include a short positioning summary
+
+Rules:
+- use only the provided public website evidence
+- do not invent unsupported claims
+- if evidence is weak, keep wording cautious
+- never classify as target
+- output JSON only
+
+Schema:
+{
+  "name": "string",
+  "description": "string",
+  "category": "string",
+  "audienceGuess": "string",
+  "type": "DIRECT|INDIRECT|ASPIRATIONAL",
+  "positioning": "string",
+  "keyFeatures": ["string"]
+}
+`;
+
+  try {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are precise and evidence-bound. Return only valid JSON and avoid unsupported claims.',
+          },
+          { role: 'user', content: prompt },
+        ],
+        temperature: 0.2,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error('OpenAI manual competitor enrichment error:', await res.text());
+      return null;
+    }
+
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content;
+    if (!content || typeof content !== 'string') return null;
+
+    const parsed = JSON.parse(stripCodeFences(content));
+    const normalizedType = normalizeTypeFromDiscovery(parsed?.type);
+    const displayName = trimTo(parsed?.name || input.competitor.name || domain, 120);
+    const category = trimTo(parsed?.category, 120);
+    const audienceGuess = trimTo(parsed?.audienceGuess, 200);
+    const positioning = trimTo(parsed?.positioning, 180);
+    const keyFeatures = Array.isArray(parsed?.keyFeatures)
+      ? parsed.keyFeatures.map((item: unknown) => trimTo(String(item || ''), 80)).filter(Boolean).slice(0, 6)
+      : [];
+    const description = trimTo(
+      [
+        trimTo(parsed?.description, 280),
+        positioning ? `Positioning: ${positioning}` : '',
+        keyFeatures.length ? `Signals: ${keyFeatures.join(', ')}` : '',
+        evidence.pagesScanned.length ? `Pages scanned: ${evidence.pagesScanned.length}` : '',
+      ]
+        .filter(Boolean)
+        .join(' | '),
+      500,
+    );
+
+    if (ownDomain && domain === ownDomain) return null;
+
+    return {
+      name: displayName || input.competitor.name || domain,
+      domain,
+      description: description || null,
+      category: category || null,
+      audienceGuess: audienceGuess || null,
+      type: normalizedType,
+      positioning: positioning || null,
+      keyFeatures: keyFeatures.length ? keyFeatures : null,
+    };
+  } catch (error) {
+    console.error('Failed to enrich manual competitor:', error);
+    return null;
+  }
+}
+
 function isLikelySyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
   const name = String(item.name || '').toLowerCase().trim();
   const domain = String(item.domain || '').toLowerCase().trim();
@@ -168,16 +419,23 @@ function buildCompetitorDiscoveryPrompt(input: {
   limit: number;
 }): string {
   return `
-You are a market intelligence analyst.
+You are a precise market intelligence analyst.
 Your job is to identify real competitors for a company using website-based signals.
+
+CRITICAL INSTRUCTION ON SCALE:
+You must critically evaluate the scale, maturity, and type of the target business based on their summary and description.
+- If the business appears to be a solopreneur, independent consultant, single-person agency, or early-stage startup, DO NOT compare them to massive enterprise corporations, global unicorns, or established industry giants (e.g., do not suggest Toptal, Techstars, or McKinsey for a freelance developer).
+- Find REALISTICALLY SCALED competitors. If they are an independent consultant, find other independent consultants or boutique agencies in their specific niche.
+- Match the playing field.
 
 Prioritize:
 - accuracy
 - relevance
 - real companies
 - verifiable domains
+- matched business scale and maturity
 
-Never invent companies. If uncertain, lower confidence.
+Never invent companies. If uncertain about a domain, lower confidence.
 
 INPUT
 Company Name: ${input.companyName}
@@ -193,21 +451,21 @@ Identify competitors for this product. Focus on direct, indirect, and adjacent t
 Return 6 to ${input.limit} competitors maximum. Quality > quantity.
 
 PROCESS (you must follow):
-1) Infer product category, core problem, primary audience.
+1) Infer product category, core problem, primary audience, AND BUSINESS SCALE.
 2) Generate discovery search query ideas (category, alternatives, audience query types).
-3) Identify candidate competitors.
+3) Identify candidate competitors that match the industry AND scale.
 4) Validate each candidate is real, has a real site, and overlaps product/audience.
 5) Classify each as direct / indirect / adjacent.
 6) Extract signals for each.
 7) Assign confidence score between 0 and 1.
-8) Explain reason for inclusion.
+8) Explain reason for inclusion, explicitly mentioning why the scale matches.
 
 STRICT RULES:
 - No more than ${input.limit}
 - Unique domains only
 - Exclude the original company itself
-- Avoid agencies, blogs, consultants, marketplaces, unrelated services
-- Prefer well-known or verifiable companies
+- Avoid unrelated marketplaces or enterprise giants if the target is small
+- Prefer verifiable companies with an actual digital footprint
 - If uncertain, lower confidence
 
 Return JSON only using this schema:
@@ -731,6 +989,7 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
     });
 
     if (!workspace) return { error: 'Workspace not found' };
+    let enrichedCount = 0;
 
     const existingById = new Map(workspace.competitors.map((item) => [item.id, item]));
 
@@ -741,18 +1000,43 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
 
       const domain = normalizeDomain(raw.domain);
       const description = trimTo(raw.description, 500);
+      const effectiveDescription =
+        description.toLowerCase() === 'manually added competitor' ? '' : description;
       const category = trimTo(raw.category, 120);
       const audienceGuess = trimTo(raw.audienceGuess, 200);
       const type = normalizeCompetitorType(raw.type);
       const userDecision = normalizeDecision(raw.userDecision);
+      const shouldEnrich =
+        Boolean(domain) &&
+        (!effectiveDescription || !category || !audienceGuess || !raw.type || id.startsWith('temp-'));
+
+      const enriched = shouldEnrich
+        ? await enrichManualCompetitorWithOpenAI({
+            competitor: {
+              ...raw,
+              name,
+              domain,
+              description: effectiveDescription,
+              category,
+              audienceGuess,
+              type,
+            },
+            workspace: {
+              name: workspace.name,
+              websiteUrl: workspace.websiteUrl,
+              brandSummary: workspace.brandSummary,
+            },
+          })
+        : null;
+      if (enriched) enrichedCount += 1;
 
       const data = {
-        name,
-        domain,
-        description: description || null,
-        category: category || null,
-        audienceGuess: audienceGuess || null,
-        type,
+        name: trimTo(enriched?.name, 120) || name,
+        domain: normalizeDomain(enriched?.domain) || domain,
+        description: trimTo(enriched?.description, 500) || effectiveDescription || null,
+        category: trimTo(enriched?.category, 120) || category || null,
+        audienceGuess: trimTo(enriched?.audienceGuess, 200) || audienceGuess || null,
+        type: normalizeCompetitorType(enriched?.type || type),
         userDecision,
       };
 
@@ -784,14 +1068,25 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
       action: 'COMPETITOR_MANUAL_EDIT_SAVED',
       detail: {
         editedCount: competitors.length,
+        enrichedCount,
       },
     });
 
     const stats = await getWorkspaceDiscoveryStats(session.userId as string, workspace.id);
+    const latestMatrices = await generateWorkspaceCompetitiveMatrices(workspace.id);
+    const matrixRefreshSucceeded = Boolean(latestMatrices && !latestMatrices.error && latestMatrices.matrices);
+    const messageParts = [
+      `Saved edits${enrichedCount > 0 ? ` and enriched ${enrichedCount} competitor profile${enrichedCount === 1 ? '' : 's'}` : ''}.`,
+      matrixRefreshSucceeded
+        ? 'Positioning matrices were refreshed.'
+        : 'Need at least 2 accepted competitors to refresh the positioning matrices.',
+    ];
 
     return {
       success: true,
       competitors: serializeCompetitorsForClient(latest),
+      matrices: matrixRefreshSucceeded ? latestMatrices.matrices : null,
+      message: messageParts.join(' '),
       meta: {
         usedRuns: stats.usedRuns,
         remainingRuns: stats.remainingRuns,

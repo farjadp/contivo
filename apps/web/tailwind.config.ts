@@ -68,6 +68,25 @@ const config: Config = {
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',
+      },
+      keyframes: {
+        orbit: {
+          '0%': { transform: 'rotate(0deg) translateX(40px) rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg) translateX(40px) rotate(-360deg)' },
+        },
+        'pulse-slow': {
+          '0%, 100%': { opacity: '0.3', transform: 'scale(1)' },
+          '50%': { opacity: '0.6', transform: 'scale(1.05)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-10px)' },
+        }
+      },
+      animation: {
+        orbit: 'orbit 20s linear infinite',
+        'pulse-slow': 'pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        float: 'float 6s ease-in-out infinite',
       }
     },
   },

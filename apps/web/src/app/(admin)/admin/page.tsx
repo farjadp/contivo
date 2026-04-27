@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { getSession } from '@/lib/auth';
+import { AdminBarChart, AdminPieChart } from './charts';
 import {
   adjustCredits,
   manageBilling,
@@ -137,24 +138,38 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
       : [];
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-3xl border border-gray-200 bg-gradient-to-br from-white via-white to-slate-50 p-6 shadow-sm">
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
+    <div className="mx-auto flex max-w-[1440px] flex-col gap-8">
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] p-8 shadow-2xl ring-1 ring-white/10 sm:p-12">
+        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-20 -right-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+        
+        <div className="relative flex flex-col gap-10 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">Operational Control Center</p>
-            <h1 className="mt-3 text-3xl font-bold tracking-tight text-[#121212]">Contivo Admin</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-600">
-              Daily console for users, workspaces, AI controls, billing, content operations, and audit visibility.
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-md">
+               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">Command Center Online</p>
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl lg:text-6xl">Admin Console</h1>
+            <p className="mt-6 text-lg leading-relaxed text-slate-400">
+              Platform administration, AI orchestration, billing dynamics, and operational telemetry.
             </p>
-            <p className="mt-2 text-xs text-slate-500">
-              Signed in as {user?.email || 'unknown'} {user?.role ? `(${user.role})` : ''}
-            </p>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex -space-x-2">
+                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-indigo-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-indigo-500" /></div>
+                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-emerald-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-emerald-500" /></div>
+                <div className="h-8 w-8 flex items-center justify-center rounded-full border-2 border-[#0a0a0a] bg-white/10 text-[10px] font-bold text-white">+2</div>
+              </div>
+              <p className="text-sm font-medium text-slate-400">
+                Session active for <span className="font-bold text-white">{user?.email || 'unknown'}</span>
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <MetricCard label="Users" value={overview.metrics.totalUsers.toLocaleString()} />
-            <MetricCard label="Workspaces" value={overview.metrics.totalWorkspaces.toLocaleString()} />
-            <MetricCard label="AI Jobs Today" value={overview.metrics.aiJobsToday.toLocaleString()} />
-            <MetricCard label="AI Cost Today" value={formatUsd(overview.metrics.estimatedAiCostToday)} emphasis />
+          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 xl:w-auto">
+            <DarkMetricCard label="Users" value={overview.metrics.totalUsers.toLocaleString()} />
+            <DarkMetricCard label="Workspaces" value={overview.metrics.totalWorkspaces.toLocaleString()} />
+            <DarkMetricCard label="AI Jobs Today" value={overview.metrics.aiJobsToday.toLocaleString()} />
+            <DarkMetricCard label="AI Cost Today" value={formatUsd(overview.metrics.estimatedAiCostToday)} emphasis />
           </div>
         </div>
       </div>
@@ -174,33 +189,11 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         <HealthCard title="Providers" status={overview.health.provider} description={`${integrations.providers.geminiConfigured ? 'Gemini' : 'Gemini missing'}, ${integrations.providers.openAiConfigured ? 'OpenAI' : 'OpenAI missing'}.`} />
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">
-        <nav className="grid gap-2 md:grid-cols-2 xl:grid-cols-4">
-          {SECTION_META.map((item) => {
-            const active = section === item.key;
-            return (
-              <Link
-                key={item.key}
-                href={`/admin?section=${item.key}`}
-                className={`rounded-xl border px-4 py-3 transition ${
-                  active
-                    ? 'border-[#121212] bg-[#121212] text-white'
-                    : 'border-gray-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50'
-                }`}
-              >
-                <p className="text-sm font-bold">{item.label}</p>
-                <p className={`mt-1 text-xs ${active ? 'text-slate-200' : 'text-slate-500'}`}>{item.description}</p>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-
-      <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="rounded-[2rem] border border-slate-200/60 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-[#121212]">{SECTION_META.find((item) => item.key === section)?.label}</h2>
-            <p className="mt-1 text-sm text-slate-500">{SECTION_META.find((item) => item.key === section)?.description}</p>
+            <h2 className="text-2xl font-black tracking-tight text-[#121212]">{SECTION_META.find((item) => item.key === section)?.label}</h2>
+            <p className="mt-2 text-sm font-medium text-slate-500">{SECTION_META.find((item) => item.key === section)?.description}</p>
           </div>
         </div>
 
@@ -362,17 +355,34 @@ function OverviewSection({
   analytics: Awaited<ReturnType<typeof getAdminAnalytics>>;
 }) {
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-4">
-        <MetricCard
-          label="Average Generation Time"
-          value={formatDuration(overview.metrics.averageGenerationTimeMs)}
-          helper="completed AI jobs today"
-        />
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 auto-rows-max">
+      {/* Feature 1: Top Frameworks (Spans 8 cols) */}
+      <div className="lg:col-span-8">
+        <Panel title="Top Frameworks (30d)" subtitle="Most adopted generation frameworks">
+          <SimpleTable
+            headers={['Framework', 'Events', 'Fallback', 'Score']}
+            rows={overview.topFrameworks.slice(0, 5).map((item) => [
+              item.frameworkName,
+              item.events.toLocaleString(),
+              item.fallbackEvents.toLocaleString(),
+              item.avgOverallScore?.toFixed(2) || '-',
+            ])}
+          />
+        </Panel>
+      </div>
+
+      {/* Feature 2: High-density metric stack (Spans 4 cols) */}
+      <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">
         <MetricCard
           label="Credits Used Today"
           value={overview.metrics.creditsUsedToday.toLocaleString()}
           helper={`${overview.metrics.publishedContentToday} published today`}
+          emphasis
+        />
+        <MetricCard
+          label="Average Generation Time"
+          value={formatDuration(overview.metrics.averageGenerationTimeMs)}
+          helper="completed AI jobs today"
         />
         <MetricCard
           label="Scheduled Posts"
@@ -386,65 +396,66 @@ function OverviewSection({
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/* Feature 3: Recent Failures (Spans 8 cols) */}
+      <div className="lg:col-span-8">
         <Panel title="Recent Critical Failures" subtitle="Latest failed background jobs">
           <div className="space-y-3">
             {overview.recentFailedJobs.length === 0 ? (
               <EmptyState text="No failed jobs recorded." />
             ) : (
-              overview.recentFailedJobs.map((job: any) => (
-                <div key={job.id} className="rounded-xl border border-red-100 bg-red-50/70 p-3">
+              overview.recentFailedJobs.slice(0, 4).map((job: any) => (
+                <div key={job.id} className="rounded-3xl border border-red-100 bg-red-50/70 p-5 transition-colors hover:bg-red-50">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{job.type}</p>
-                    <span className="rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700 border-red-200 bg-white">
+                    <span className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700 shadow-sm">
                       {job.status}
                     </span>
                   </div>
-                  <p className="mt-1 text-xs text-slate-600">
+                  <p className="mt-2 text-xs font-semibold text-slate-500">
                     {job.user.email} {job.workspace?.name ? `• ${job.workspace.name}` : ''} • {formatDateTime(job.updatedAt)}
                   </p>
-                  <p className="mt-2 text-xs text-red-700">{job.errorMessage || 'Unknown error'}</p>
+                  <p className="mt-3 text-xs font-medium text-red-700">{job.errorMessage || 'Unknown error'}</p>
                 </div>
               ))
             )}
           </div>
         </Panel>
-
-        <Panel title="Top Frameworks (30d)" subtitle="Most adopted generation frameworks">
-          <SimpleTable
-            headers={['Framework', 'Events', 'Fallback', 'Score']}
-            rows={overview.topFrameworks.map((item) => [
-              item.frameworkName,
-              item.events.toLocaleString(),
-              item.fallbackEvents.toLocaleString(),
-              item.avgOverallScore?.toFixed(2) || '-',
-            ])}
-          />
-        </Panel>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <Panel title="Top Platforms" subtitle="Content created in the last 30 days">
-          <SimpleTable
-            headers={['Platform', 'Count']}
-            rows={analytics.platforms.map((item: any) => [item.channel, item.count.toLocaleString()])}
-          />
+      {/* Bottom row graphs/tables (Span 4 cols each) */}
+      <div className="lg:col-span-4">
+        <Panel title="Top Platforms" subtitle="Content destinations (30d)">
+          <div className="pt-4">
+            <AdminBarChart 
+              data={analytics.platforms} 
+              dataKey="count" 
+              nameKey="channel" 
+              color="#3b82f6" 
+            />
+          </div>
         </Panel>
-        <Panel title="AI Cost by Feature" subtitle="30-day provider spend">
-          <SimpleTable
-            headers={['Feature', 'Cost', 'Tokens']}
-            rows={analytics.aiCostByFeature.map((item: any) => [
-              item.feature,
-              formatUsd(item.costUsd),
-              item.totalTokens.toLocaleString(),
-            ])}
-          />
+      </div>
+      <div className="lg:col-span-4">
+        <Panel title="AI Cost Context" subtitle="Provider spend vs volume">
+          <div className="pt-4">
+            <AdminBarChart 
+              data={analytics.aiCostByFeature} 
+              dataKey="costUsd" 
+              nameKey="feature" 
+              color="#10b981" 
+            />
+          </div>
         </Panel>
-        <Panel title="Content Status Breakdown" subtitle="Operational state of assets">
-          <SimpleTable
-            headers={['Status', 'Count']}
-            rows={analytics.contentStatusBreakdown.map((item: any) => [item.status, item.count.toLocaleString()])}
-          />
+      </div>
+      <div className="lg:col-span-4">
+        <Panel title="Asset Pipeline" subtitle="Content state mapping">
+          <div className="pt-4">
+            <AdminPieChart 
+              data={analytics.contentStatusBreakdown.map(item => ({ ...item, count: Number(item.count) }))} 
+              dataKey="count" 
+              nameKey="status" 
+            />
+          </div>
         </Panel>
       </div>
     </div>
@@ -468,7 +479,7 @@ function UsersSection({
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action="/admin" className="grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-4 lg:grid-cols-5">
+      <form action="/admin" className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-5">
         <input type="hidden" name="section" value="users" />
         <input name="q" defaultValue={filters.q} placeholder="Search email, name, user id" className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
         <select name="plan" defaultValue={filters.plan} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
@@ -483,93 +494,100 @@ function UsersSection({
           <option value="ALL">All statuses</option>
           {USER_ACCOUNT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
       </form>
 
       <Panel title="User Management" subtitle="Search, inspect, and update access controls">
         <div className="overflow-x-auto">
-          <table className="min-w-full text-sm">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-                <th className="px-3 py-3">User</th>
-                <th className="px-3 py-3">Plan / Role</th>
-                <th className="px-3 py-3">Status</th>
-                <th className="px-3 py-3">Usage</th>
-                <th className="px-3 py-3">Last Active</th>
-                <th className="px-3 py-3">Actions</th>
+              <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+                <th className="px-4 py-4 text-[10px] font-bold">User</th>
+                <th className="px-4 py-4 text-[10px] font-bold">Plan / Role</th>
+                <th className="px-4 py-4 text-[10px] font-bold">Status</th>
+                <th className="px-4 py-4 text-[10px] font-bold">Usage</th>
+                <th className="px-4 py-4 text-[10px] font-bold">Last Active</th>
+                <th className="px-4 py-4 text-[10px] font-bold w-[340px]">Actions</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100/80">
               {rows.map((row) => (
-                <tr key={row.id} className="border-b border-gray-100 align-top">
-                  <td className="px-3 py-4">
+                <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+                  <td className="px-4 py-4">
                     <Link href={`/admin/users/${row.id}`} className="font-bold text-[#121212] hover:underline">
                       {row.name || 'Unnamed user'}
                     </Link>
                     <p className="text-xs text-gray-500">{row.email}</p>
                     <p className="mt-1 text-[11px] text-gray-400">{row.id}</p>
                   </td>
-                  <td className="px-3 py-4">
+                  <td className="px-4 py-4">
                     <div className="space-y-2">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.subscription?.status || row.plan)}`}>
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.subscription?.status || row.plan)}`}>
                         {row.plan}
                       </span>
-                      <span className={`ml-2 inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.role)}`}>
+                      <span className={`ml-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.role)}`}>
                         {row.role}
                       </span>
-                      <p className="text-xs text-gray-500">Subscription: {row.subscription?.status || 'none'}</p>
+                      <p className="text-xs font-medium text-slate-500">Subscription: <span className="text-[#121212]">{row.subscription?.status || 'none'}</span></p>
                     </div>
                   </td>
-                  <td className="px-3 py-4">
+                  <td className="px-4 py-4">
                     <div className="space-y-2">
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.accountStatus)}`}>
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.accountStatus)}`}>
                         {row.accountStatus}
                       </span>
                       {row.suspendedReason ? (
-                        <p className="max-w-[180px] text-[11px] text-red-600">{row.suspendedReason}</p>
+                        <p className="max-w-[180px] text-[11px] font-semibold text-red-600">{row.suspendedReason}</p>
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-3 py-4 text-xs text-gray-600">
-                    <p>{row._count.workspaces} workspaces</p>
-                    <p>{row._count.contentItems} content items</p>
-                    <p>{String(row.creditBalance || 0)} credits</p>
-                    <p>{formatUsd(Number(row.totalAiCost || 0))} AI cost</p>
+                  <td className="px-4 py-4 text-xs font-medium text-slate-600 space-y-1">
+                    <p><span className="font-bold text-[#121212]">{row._count.workspaces}</span> workspaces</p>
+                    <p><span className="font-bold text-[#121212]">{row._count.contentItems}</span> content items</p>
+                    <p><span className="font-bold text-[#121212]">{String(row.creditBalance || 0)}</span> credits</p>
+                    <p><span className="font-bold text-[#121212]">{formatUsd(Number(row.totalAiCost || 0))}</span> AI cost</p>
                   </td>
-                  <td className="px-3 py-4 text-xs text-gray-600">{formatDateTime(row.lastActiveAt)}</td>
-                  <td className="px-3 py-4">
-                    <div className="grid gap-2 md:grid-cols-3">
-                      <form action={updateUserAccess} className="space-y-2 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                  <td className="px-4 py-4 text-xs font-medium text-slate-600">{formatDateTime(row.lastActiveAt)}</td>
+                  <td className="px-4 py-4">
+                    <div className="flex flex-col gap-3">
+                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
-                        <select name="plan" defaultValue={row.plan} className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-black">
+                        <select name="plan" defaultValue={row.plan} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
                           {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="w-full rounded-lg bg-black px-2 py-1.5 text-xs font-bold text-white">Update Plan</button>
+                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">Set Plan</button>
                       </form>
-                      <form action={updateUserAccess} className="space-y-2 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
-                        <select name="role" defaultValue={row.role} className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-black">
+                        <select name="role" defaultValue={row.role} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
                           {USER_ROLE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="w-full rounded-lg bg-black px-2 py-1.5 text-xs font-bold text-white">Update Role</button>
+                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">Set Role</button>
                       </form>
-                      <form action={manageUserLifecycle} className="space-y-2 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                      <form action={manageUserLifecycle} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
                         <input type="hidden" name="actionType" value={row.accountStatus === 'SUSPENDED' ? 'REACTIVATE' : 'SUSPEND'} />
                         {row.accountStatus !== 'SUSPENDED' ? (
-                          <input
-                            name="reason"
-                            placeholder="Suspension reason"
-                            className="w-full rounded-lg border border-gray-300 bg-white px-2 py-1.5 text-xs outline-none focus:border-black"
-                          />
+                          <div className="flex gap-2">
+                            <input
+                              name="reason"
+                              placeholder="Suspension reason"
+                              className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-red-500 focus:bg-white"
+                            />
+                            <button className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-red-700">
+                              Suspend
+                            </button>
+                          </div>
                         ) : (
-                          <p className="rounded-lg border border-green-200 bg-green-50 px-2 py-1.5 text-[11px] text-green-700">
-                            Account is suspended and can be reactivated.
-                          </p>
+                          <div className="flex gap-2 items-center justify-between">
+                            <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 w-full text-center">
+                              Account suspended.
+                            </p>
+                            <button className="shrink-0 rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-emerald-700">
+                              Reactivate
+                            </button>
+                          </div>
                         )}
-                        <button className={`w-full rounded-lg px-2 py-1.5 text-xs font-bold text-white ${row.accountStatus === 'SUSPENDED' ? 'bg-green-600' : 'bg-red-600'}`}>
-                          {row.accountStatus === 'SUSPENDED' ? 'Reactivate' : 'Suspend'}
-                        </button>
                       </form>
                     </div>
                   </td>
@@ -601,7 +619,7 @@ function WorkspacesSection({
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action="/admin" className="grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-4 lg:grid-cols-4">
+      <form action="/admin" className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="workspaces" />
         <input name="q" defaultValue={filters.q} placeholder="Search workspace, url, owner" className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
@@ -612,80 +630,80 @@ function WorkspacesSection({
           <option value="ALL">All owners</option>
           {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
         </select>
-        <button className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
       </form>
 
       <Panel title="Workspace Management" subtitle="Inspect health, reassign ownership, or force intervention">
         <div className="space-y-4">
           {rows.map((row: any) => (
-            <div key={row.id} className="rounded-2xl border border-gray-200 bg-white p-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div key={row.id} className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                  <div className="flex items-center gap-2">
-                    <Link href={`/admin/workspaces/${row.id}`} className="text-base font-bold text-[#121212] hover:underline">
+                  <div className="flex items-center gap-3">
+                    <Link href={`/admin/workspaces/${row.id}`} className="text-xl font-black tracking-tight text-[#121212] hover:underline">
                       {row.name}
                     </Link>
-                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
                       {row.status}
                     </span>
                     {row.archiveState?.isArchived ? (
-                      <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone('ARCHIVED')}`}>
+                      <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone('ARCHIVED')}`}>
                         Archived
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-1 text-sm text-slate-500">{row.websiteUrl || 'No website URL'}</p>
-                  <p className="mt-1 text-xs text-slate-400">
+                  <p className="mt-2 text-sm font-medium text-slate-500">{row.websiteUrl || 'No website URL'}</p>
+                  <p className="mt-2 text-xs font-semibold text-slate-400">
                     Owner: {row.user.email} • Created {formatDateTime(row.createdAt)}
                   </p>
                 </div>
-                <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-3">
+                <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
                   <InfoPill label="Competitors" value={row._count.competitors.toLocaleString()} />
                   <InfoPill label="Content Items" value={row._count.contentItems.toLocaleString()} />
                   <InfoPill label="Strategy Runs" value={row._count.strategyRuns.toLocaleString()} />
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 lg:grid-cols-4">
-                <form action={manageWorkspace} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+              <div className="mt-6 grid gap-4 lg:grid-cols-4">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="REANALYZE" />
-                  <button className="w-full rounded-lg bg-black px-3 py-2 text-xs font-bold text-white">Force Re-analysis</button>
+                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Force Re-analysis</button>
                 </form>
 
-                <form action={manageWorkspace} className="space-y-2 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value={row.archiveState?.isArchived ? 'RESTORE' : 'ARCHIVE'} />
                   {!row.archiveState?.isArchived ? (
                     <input
                       name="reason"
                       placeholder="Archive reason"
-                      className="w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs outline-none focus:border-black"
+                      className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]"
                     />
                   ) : (
-                    <p className="rounded-lg border border-green-200 bg-green-50 px-2 py-2 text-[11px] text-green-700">
-                      Workspace is archived and hidden from user workspace lists.
+                    <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-2 text-[11px] font-bold text-emerald-700">
+                      Workspace is archived.
                     </p>
                   )}
-                  <button className={`w-full rounded-lg px-3 py-2 text-xs font-bold text-white ${row.archiveState?.isArchived ? 'bg-green-600' : 'bg-amber-600'}`}>
+                  <button className={`mt-auto w-full rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 ${row.archiveState?.isArchived ? 'bg-emerald-600' : 'bg-amber-600'}`}>
                     {row.archiveState?.isArchived ? 'Restore Workspace' : 'Archive Workspace'}
                   </button>
                 </form>
 
-                <form action={manageWorkspace} className="space-y-2 rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="TRANSFER" />
-                  <select name="targetUserId" defaultValue="" className="w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-xs outline-none focus:border-black">
+                  <select name="targetUserId" defaultValue="" className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]">
                     <option value="">Transfer owner to...</option>
                     {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
                   </select>
-                  <button className="w-full rounded-lg bg-black px-3 py-2 text-xs font-bold text-white">Transfer Owner</button>
+                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Transfer Owner</button>
                 </form>
 
-                <form action={manageWorkspace} className="rounded-xl border border-red-200 bg-red-50 p-3">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-red-200/60 bg-red-50 p-4 transition-colors hover:border-red-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="DELETE" />
-                  <button className="w-full rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">Delete Workspace</button>
+                  <button className="mt-auto w-full rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-red-700">Delete Workspace</button>
                 </form>
               </div>
             </div>
@@ -747,7 +765,7 @@ function AiSection({
                 required
               />
             </label>
-            <button className="inline-flex w-fit rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Save AI Controls</button>
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Save AI Controls</button>
           </form>
         </Panel>
 
@@ -810,7 +828,7 @@ function SettingsSection({
             </div>
           </div>
 
-          <button className="inline-flex w-fit rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Save Platform Settings</button>
+          <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Save Platform Settings</button>
         </form>
       </Panel>
     </div>
@@ -863,7 +881,7 @@ function CreditsSection({
             </select>
             <input type="number" name="amount" min={1} placeholder="Amount" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required />
             <textarea name="note" placeholder="Reason / internal note" className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Apply Credit Adjustment</button>
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Credit Adjustment</button>
           </form>
         </Panel>
 
@@ -874,7 +892,7 @@ function CreditsSection({
               <option value="">All users</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
-            <button className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Filter Ledger</button>
+            <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Filter Ledger</button>
           </form>
           <div className="max-h-[520px] overflow-auto">
             <table className="min-w-full text-sm">
@@ -926,7 +944,7 @@ function CreditsSection({
             <input type="number" name="trialDays" min={1} max={90} defaultValue={14} placeholder="Trial days" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             <input type="number" name="promoCredits" min={1} placeholder="Promo credits" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             <textarea name="note" placeholder="Billing note / promo reason" className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Run Billing Action</button>
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Run Billing Action</button>
           </form>
         </Panel>
 
@@ -978,7 +996,7 @@ function ContentSection({
 }) {
   return (
     <Panel title="Content Operations" subtitle="Inspect generated output, schedule state, and operational metadata">
-      <form action="/admin" className="mb-4 grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-4 lg:grid-cols-4">
+      <form action="/admin" className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="content" />
         <input
           name="q"
@@ -998,41 +1016,41 @@ function ContentSection({
           <option value="ALL">All workspaces</option>
           {workspaceOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
-        <button className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-white lg:col-span-4">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800 lg:col-span-4">Apply Filters</button>
       </form>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-              <th className="px-3 py-3">Topic</th>
-              <th className="px-3 py-3">Workspace</th>
-              <th className="px-3 py-3">Platform</th>
-              <th className="px-3 py-3">Status</th>
-              <th className="px-3 py-3">Words</th>
-              <th className="px-3 py-3">Schedule</th>
-              <th className="px-3 py-3">Generated</th>
+            <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+              <th className="px-4 py-4 text-[10px] font-bold">Topic</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Workspace</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Platform</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Status</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Words</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Schedule</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Generated</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100/80">
             {rows.map((row: any) => (
-              <tr key={row.id} className="border-b border-gray-100 align-top">
-                <td className="px-3 py-4">
+              <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+                <td className="px-4 py-4">
                   <Link href={`/admin/content/${row.id}`} className="font-bold text-[#121212] hover:underline">
                     {row.topic}
                   </Link>
-                  <p className="mt-1 line-clamp-2 text-xs text-slate-500">{row.content}</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-500">{row.content}</p>
                 </td>
-                <td className="px-3 py-4 text-xs text-slate-600">{row.workspace?.name || '-'}</td>
-                <td className="px-3 py-4 text-xs text-slate-600">{row.channel}</td>
-                <td className="px-3 py-4">
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.workspace?.name || '-'}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.channel}</td>
+                <td className="px-4 py-4">
+                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
                     {row.status}
                   </span>
                 </td>
-                <td className="px-3 py-4 text-xs text-slate-600">{row.wordCount.toLocaleString()}</td>
-                <td className="px-3 py-4 text-xs text-slate-600">{formatDateTime(row.scheduledAtUtc)}</td>
-                <td className="px-3 py-4 text-xs text-slate-600">{formatDateTime(row.createdAt)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.wordCount.toLocaleString()}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDateTime(row.scheduledAtUtc)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDateTime(row.createdAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -1057,7 +1075,7 @@ function JobsSection({
   return (
     <Panel title="Jobs & Queue Monitoring" subtitle="Current job records, duration, and failure visibility">
       <StatusBanner status={status} />
-      <form action="/admin" className="mb-4 grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-4 lg:grid-cols-3">
+      <form action="/admin" className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-3">
         <input type="hidden" name="section" value="jobs" />
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
           <option value="ALL">All statuses</option>
@@ -1067,47 +1085,47 @@ function JobsSection({
           <option value="ALL">All job types</option>
           {JOB_TYPE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-white">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
       </form>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-              <th className="px-3 py-3">Job</th>
-              <th className="px-3 py-3">User / Workspace</th>
-              <th className="px-3 py-3">Status</th>
-              <th className="px-3 py-3">Credits</th>
-              <th className="px-3 py-3">Duration</th>
-              <th className="px-3 py-3">Error</th>
-              <th className="px-3 py-3">Actions</th>
+            <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+              <th className="px-4 py-4 text-[10px] font-bold">Job</th>
+              <th className="px-4 py-4 text-[10px] font-bold">User / Workspace</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Status</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Credits</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Duration</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Error</th>
+              <th className="px-4 py-4 text-[10px] font-bold">Actions</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-100/80">
             {rows.map((row: any) => (
-              <tr key={row.id} className="border-b border-gray-100 align-top">
-                <td className="px-3 py-4">
+              <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+                <td className="px-4 py-4">
                   <p className="font-bold text-[#121212]">{row.type}</p>
-                  <p className="text-xs text-slate-400">{row.id}</p>
+                  <p className="text-[10px] font-mono font-medium text-slate-400">{row.id}</p>
                 </td>
-                <td className="px-3 py-4 text-xs text-slate-600">
-                  <p>{row.user.email}</p>
-                  <p>{row.workspace?.name || '-'}</p>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">
+                  <p className="text-[#121212]">{row.user.email}</p>
+                  <p className="text-slate-500">{row.workspace?.name || '-'}</p>
                 </td>
-                <td className="px-3 py-4">
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
+                <td className="px-4 py-4">
+                  <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
                     {row.status}
                   </span>
                 </td>
-                <td className="px-3 py-4 text-xs text-slate-600">{row.creditsCost}</td>
-                <td className="px-3 py-4 text-xs text-slate-600">{formatDuration(row.durationMs)}</td>
-                <td className="px-3 py-4 text-xs text-red-600">{row.errorMessage || '-'}</td>
-                <td className="px-3 py-4">
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.creditsCost}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDuration(row.durationMs)}</td>
+                <td className="px-4 py-4 text-xs font-medium text-red-600 max-w-xs truncate">{row.errorMessage || '-'}</td>
+                <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-2">
                     <form action={manageJob}>
                       <input type="hidden" name="jobId" value={row.id} />
                       <input type="hidden" name="actionType" value="RETRY" />
-                      <button className="rounded-lg bg-black px-3 py-1.5 text-[11px] font-bold text-white">
+                      <button className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-[#121212] shadow-sm transition-colors hover:bg-slate-50">
                         Retry
                       </button>
                     </form>
@@ -1115,7 +1133,7 @@ function JobsSection({
                       <form action={manageJob}>
                         <input type="hidden" name="jobId" value={row.id} />
                         <input type="hidden" name="actionType" value="CANCEL" />
-                        <button className="rounded-lg bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white">
+                        <button className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-opacity hover:opacity-90">
                           Cancel
                         </button>
                       </form>
@@ -1204,10 +1222,10 @@ function StatusBanner({ status }: { status: string }) {
   if (!status) return null;
   const tone =
     status === 'saved'
-      ? 'border-green-200 bg-green-50 text-green-700'
+      ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
       : status === 'failed'
-        ? 'border-red-200 bg-red-50 text-red-700'
-        : 'border-amber-200 bg-amber-50 text-amber-700';
+        ? 'border-red-200/60 bg-red-50 text-red-700'
+        : 'border-amber-200/60 bg-amber-50 text-amber-700';
   const message =
     status === 'saved'
       ? 'Change saved successfully.'
@@ -1215,7 +1233,7 @@ function StatusBanner({ status }: { status: string }) {
         ? 'Action failed. Check logs and retry.'
         : 'Invalid input. Review the submitted values.';
 
-  return <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${tone}`}>{message}</div>;
+  return <div className={`mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm ${tone}`}>{message}</div>;
 }
 
 function MetricCard({
@@ -1230,10 +1248,27 @@ function MetricCard({
   emphasis?: boolean;
 }) {
   return (
-    <div className={`rounded-2xl border p-4 ${emphasis ? 'border-emerald-200 bg-emerald-50' : 'border-gray-200 bg-white'}`}>
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-[#121212]">{value}</p>
-      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+    <div
+      className={`group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border p-6 sm:p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${
+        emphasis
+          ? 'border-emerald-200/60 bg-emerald-50/10'
+          : 'border-slate-200/60 bg-white shadow-sm'
+      }`}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+      {emphasis && (
+        <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-700 group-hover:scale-125 pointer-events-none" />
+      )}
+      <div className="relative z-10">
+        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${emphasis ? 'text-emerald-700' : 'text-slate-400'}`}>{label}</p>
+        <p className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-[#121212]">{value}</p>
+      </div>
+      {helper && (
+        <div className="relative z-10 mt-8 flex items-center gap-2 border-t border-slate-100/80 pt-5">
+          <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${emphasis ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-300'}`} />
+          <p className="text-xs font-semibold text-slate-500">{helper}</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -1247,15 +1282,19 @@ function HealthCard({
   status: string;
   description: string;
 }) {
+  const isHealthy = status === 'healthy';
+  const toneBg = isHealthy ? 'bg-emerald-50/50 hover:bg-emerald-50/80' : 'bg-red-50/50 hover:bg-red-50/80';
+  const toneBorder = isHealthy ? 'border-emerald-200/60' : 'border-red-200/60';
+
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4">
+    <div className={`flex flex-col justify-between rounded-3xl border ${toneBorder} ${toneBg} p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-sm font-bold text-[#121212]">{title}</p>
-        <span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(status)}`}>
+        <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(status)}`}>
           {status}
         </span>
       </div>
-      <p className="mt-2 text-sm text-slate-600">{description}</p>
+      <p className="mt-4 text-xs font-medium leading-relaxed text-slate-600">{description}</p>
     </div>
   );
 }
@@ -1270,12 +1309,12 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white">
-      <div className="border-b border-gray-100 px-5 py-4">
-        <p className="text-base font-bold text-[#121212]">{title}</p>
-        <p className="mt-1 text-sm text-slate-500">{subtitle}</p>
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white shadow-sm transition-shadow hover:shadow-md">
+      <div className="border-b border-slate-100 px-6 py-5 sm:px-8">
+        <p className="text-lg font-bold text-[#121212]">{title}</p>
+        <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="flex flex-1 flex-col p-6 sm:p-8">{children}</div>
     </div>
   );
 }
@@ -1286,9 +1325,25 @@ function EmptyState({ text }: { text: string }) {
 
 function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-slate-50 px-3 py-2">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-bold text-[#121212]">{value}</p>
+    <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50 px-5 py-4 transition-colors hover:bg-slate-100">
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p>
+      <p className="text-xl font-black tracking-tight text-[#121212]">{value}</p>
+    </div>
+  );
+}
+
+function DarkMetricCard({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
+  return (
+    <div className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
+      emphasis ? 'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'border-white/10 bg-white/5 backdrop-blur-md'
+    }`}>
+      {emphasis && (
+        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-500 group-hover:scale-110 pointer-events-none" />
+      )}
+      <div className="relative z-10">
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{label}</p>
+        <p className={`mt-3 text-2xl sm:text-3xl font-black tracking-tight ${emphasis ? 'text-emerald-400' : 'text-white'}`}>{value}</p>
+      </div>
     </div>
   );
 }
@@ -1313,19 +1368,19 @@ function SimpleTable({
     <EmptyState text="No data available." />
   ) : (
     <div className="overflow-x-auto">
-      <table className="min-w-full text-sm">
+      <table className="w-full text-left text-sm">
         <thead>
-          <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
+          <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
             {headers.map((header) => (
-              <th key={header} className="px-3 py-3">{header}</th>
+              <th key={header} className="px-4 py-4 text-[10px] font-bold">{header}</th>
             ))}
           </tr>
         </thead>
-        <tbody>
+        <tbody className="divide-y divide-slate-100/80">
           {rows.map((row, index) => (
-            <tr key={`${row[0]}-${index}`} className="border-b border-gray-100">
+            <tr key={`${row[0]}-${index}`} className="transition-colors hover:bg-slate-50/50">
               {row.map((cell, cellIndex) => (
-                <td key={`${row[0]}-${cellIndex}`} className="px-3 py-3 text-sm text-slate-700">{cell}</td>
+                <td key={`${row[0]}-${cellIndex}`} className={`px-4 py-4 text-sm ${cellIndex === 0 ? 'font-semibold text-[#121212]' : 'text-slate-600'}`}>{cell}</td>
               ))}
             </tr>
           ))}
@@ -1345,15 +1400,15 @@ function LogList({
   }
 
   return (
-    <div className="max-h-[560px] space-y-3 overflow-auto">
+    <div className="max-h-[560px] space-y-4 overflow-auto pr-2">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-bold text-[#121212]">{row.action}</p>
-            <p className="text-[11px] text-slate-400">{formatDateTime(row.createdAt)}</p>
+        <div key={row.id} className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-slate-50 p-5 transition-colors hover:border-slate-300">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm font-black tracking-tight text-[#121212]">{row.action}</p>
+            <p className="shrink-0 text-[11px] font-medium text-slate-400">{formatDateTime(row.createdAt)}</p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">{row.workspaceName || 'No workspace'}</p>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-white p-2 text-[11px] text-slate-600">
+          <p className="mt-1 text-xs font-semibold text-slate-500">{row.workspaceName || 'Platform Level / No workspace'}</p>
+          <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-slate-200/40 bg-white p-4 text-[11px] leading-relaxed text-slate-600 shadow-sm">
             {JSON.stringify(row.detail, null, 2)}
           </pre>
         </div>

@@ -11,9 +11,7 @@
  *   PATCH  /:id                  Update connection (default flag, display name)
  *   DELETE /:id                  Disconnect an account
  *   POST   /:id/reconnect        Mark connection as PENDING_REAUTH
- *
- * Auth: Bearer JWT via x-user-id header (follows existing Contivo auth pattern).
- *
+ * Auth: Protected by global ClerkAuthGuard. User identity available via @CurrentUser().
  * SECURITY: No token fields are ever included in responses.
  */
 
@@ -28,6 +26,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 import { SocialConnectionsService } from './social-connections.service';
 import {
   CreateSocialConnectionDto,
@@ -40,16 +39,22 @@ export class SocialConnectionsController {
 
   // GET /social/connections?workspaceId=xxx
   @Get()
-  async list(@Query('workspaceId') workspaceId: string) {
+  async list(
+    @Query('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
-    const connections = await this.service.list(workspaceId);
+    const connections = await this.service.list(workspaceId, user.id);
     return { connections, total: connections.length };
   }
 
   // POST /social/connections
   @Post()
-  async create(@Body() dto: CreateSocialConnectionDto) {
-    const connection = await this.service.create(dto);
+  async create(
+    @Body() dto: CreateSocialConnectionDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const connection = await this.service.create(dto, user.id);
     return { connection };
   }
 
@@ -59,9 +64,10 @@ export class SocialConnectionsController {
     @Param('id') id: string,
     @Query('workspaceId') workspaceId: string,
     @Body() dto: UpdateSocialConnectionDto,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
-    const connection = await this.service.update(id, workspaceId, dto);
+    const connection = await this.service.update(id, workspaceId, dto, user.id);
     return { connection };
   }
 
@@ -70,9 +76,10 @@ export class SocialConnectionsController {
   async disconnect(
     @Param('id') id: string,
     @Query('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
-    await this.service.disconnect(id, workspaceId);
+    await this.service.disconnect(id, workspaceId, user.id);
     return { success: true };
   }
 
@@ -81,9 +88,10 @@ export class SocialConnectionsController {
   async reconnect(
     @Param('id') id: string,
     @Query('workspaceId') workspaceId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
-    const connection = await this.service.markForReauth(id, workspaceId);
+    const connection = await this.service.markForReauth(id, workspaceId, user.id);
     return { connection };
   }
 }

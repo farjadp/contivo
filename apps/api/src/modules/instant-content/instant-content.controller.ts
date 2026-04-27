@@ -3,6 +3,7 @@ import { GenerateInstantContentRequest } from '@contivo/types';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
 import { InstantContentService } from './instant-content.service';
+import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 
 @Controller('instant-content')
 export class InstantContentController {
@@ -12,26 +13,25 @@ export class InstantContentController {
    * POST /api/v1/instant-content/generate
    *
    * Body is validated against the shared Zod schema.
-   * userId is hardcoded to the seeded dev user for this slice.
-   * Replace with @CurrentUser() decorator once ClerkAuthGuard is wired.
    */
   @Post('generate')
   generate(
+    @CurrentUser() user: AuthenticatedUser,
     @Body(new ZodValidationPipe(GenerateInstantContentRequest))
     body: GenerateInstantContentRequest,
   ) {
-    // TODO: replace with real userId from Clerk JWT once AuthModule guard is active
-    const userId = process.env.DEV_USER_ID ?? 'seed-dev-user';
-    return this.service.generate(userId, body);
+    return this.service.generate(user.id, body);
   }
 
   /**
    * GET /api/v1/instant-content/history
-   * Returns the most recent generated content items for the dev user.
+   * Returns the most recent generated content items for the current user.
    */
   @Get('history')
-  history(@Query('limit') limit?: string) {
-    const userId = process.env.DEV_USER_ID ?? 'seed-dev-user';
-    return this.service.getHistory(userId, parseInt(limit ?? '20', 10));
+  history(
+    @CurrentUser() user: AuthenticatedUser,
+    @Query('limit') limit?: string,
+  ) {
+    return this.service.getHistory(user.id, parseInt(limit ?? '20', 10));
   }
 }

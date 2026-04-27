@@ -1,17 +1,11 @@
 import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+import { ClerkWebhooksController } from './webhooks.controller';
 
-/**
- * UsersModule
- *
- * Responsibilities:
- *   - Sync user records from Clerk webhooks (user.created, user.updated)
- *   - Provide UserService for querying/updating user profiles
- *   - Surface user plan + credit balance for other modules
- *
- * TODO:
- *   1. Add POST /webhooks/clerk route handler (use svix to verify signature)
- *   2. Add GET /users/me endpoint
- *   3. Create UsersService with findByClerkId(), upsertFromClerk()
- */
-@Module({})
+@Module({
+  controllers: [UsersController, ClerkWebhooksController],
+  providers: [UsersService],
+  exports: [UsersService],
+})
 export class UsersModule {}

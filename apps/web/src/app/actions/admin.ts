@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
+import { auth } from '@clerk/nextjs/server';
 import { getSession } from '@/lib/auth';
 import {
   archiveWorkspace,
@@ -554,48 +555,80 @@ export async function manageJob(formData: FormData): Promise<void> {
       where: { id: jobId },
     });
 
-    if (!job) {
-      redirect('/admin?section=jobs&jobs=invalid');
+    if (job) {
+      if (actionType === 'CANCEL') {
+        await prisma.contentJob.update({
+          where: { id: jobId },
+          data: {
+            status: 'FAILED',
+            errorMessage: 'Cancelled by admin',
+            completedAt: new Date(),
+          },
+        });
+        await writeAdminAudit(session, 'JOB_CANCELLED', {
+          jobId,
+          previousStatus: job.status,
+        });
+      } else if (actionType === 'RETRY') {
+        const retriedJob = await prisma.contentJob.create({
+          data: {
+            userId: job.userId,
+            workspaceId: job.workspaceId,
+            type: job.type,
+            status: 'PENDING',
+            inputPayload: job.inputPayload as Prisma.InputJsonValue,
+            errorMessage: null,
+            creditsCost: 0,
+          },
+        });
+        await writeAdminAudit(session, 'JOB_RETRIED', {
+          jobId,
+          retriedJobId: retriedJob.id,
+          previousStatus: job.status,
+        });
+      } else {
+        redirect('/admin?section=jobs&jobs=invalid');
+      }
+      revalidatePath('/admin');
+      redirect('/admin?section=jobs&jobs=saved');
+      return; // Ensure we exit
     }
 
-    if (actionType === 'CANCEL') {
-      await prisma.contentJob.update({
-        where: { id: jobId },
-        data: {
-          status: 'FAILED',
-          errorMessage: 'Cancelled by admin',
-          completedAt: new Date(),
-        },
-      });
-      await writeAdminAudit(session, 'JOB_CANCELLED', {
-        jobId,
-        previousStatus: job.status,
-      });
-    } else if (actionType === 'RETRY') {
-      const retriedJob = await prisma.contentJob.create({
-        data: {
-          userId: job.userId,
-          workspaceId: job.workspaceId,
-          type: job.type,
-          status: 'PENDING',
-          inputPayload: job.inputPayload as Prisma.InputJsonValue,
-          errorMessage: null,
-          creditsCost: 0,
-        },
-      });
-      await writeAdminAudit(session, 'JOB_RETRIED', {
-        jobId,
-        retriedJobId: retriedJob.id,
-        previousStatus: job.status,
-      });
-    } else {
-      redirect('/admin?section=jobs&jobs=invalid');
+    const socialJob = await prisma.socialPublishJob.findUnique({
+      where: { id: jobId },
+    });
+
+    if (socialJob) {
+      const { getToken } = await auth();
+      const token = await getToken();
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+
+      if (actionType === 'CANCEL') {
+        const res = await fetch(`${baseUrl}/api/v1/social/publish-jobs/${jobId}?workspaceId=${socialJob.workspaceId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Cancel failed with ${res.status}`);
+        await writeAdminAudit(session, 'SOCIAL_JOB_CANCELLED', { jobId, previousStatus: socialJob.status });
+      } else if (actionType === 'RETRY') {
+        const res = await fetch(`${baseUrl}/api/v1/social/publish-jobs/${jobId}/retry?workspaceId=${socialJob.workspaceId}`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error(`Retry failed with ${res.status}`);
+        await writeAdminAudit(session, 'SOCIAL_JOB_RETRIED', { jobId, previousStatus: socialJob.status });
+      } else {
+        redirect('/admin?section=jobs&jobs=invalid');
+      }
+
+      revalidatePath('/admin');
+      redirect('/admin?section=jobs&jobs=saved');
+      return;
     }
+
+    redirect('/admin?section=jobs&jobs=invalid');
   } catch (error) {
     console.error('Failed to manage job from admin:', error);
     redirect('/admin?section=jobs&jobs=failed');
   }
-
-  revalidatePath('/admin');
-  redirect('/admin?section=jobs&jobs=saved');
 }

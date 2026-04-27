@@ -31,6 +31,7 @@ import { AdapterFactory } from './adapters/adapter.factory';
 import { SocialConnectionsService } from './social-connections.service';
 import { CreatePublishJobDto } from './dto/create-publish-job.dto';
 import type { PublishPayload } from './adapters/social-adapter.interface';
+import { JobsService } from '../jobs/jobs.service';
 
 // Use local string type — avoids @contivo/types circular dep before package build
 type SocialPlatform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'INSTAGRAM';
@@ -43,11 +44,13 @@ export class SocialPublishService {
     private readonly prisma: PrismaService,
     private readonly adapterFactory: AdapterFactory,
     private readonly connections: SocialConnectionsService,
+    private readonly jobs: JobsService,
   ) {}
 
   // ─── Create publish job ────────────────────────────────────────────────────
 
-  async createJob(dto: CreatePublishJobDto) {
+  async createJob(dto: CreatePublishJobDto, userId: string) {
+    await this.connections.validateWorkspaceAccess(dto.workspaceId, userId);
     const platform = dto.platform as SocialPlatform;
 
     // 1. Build payload for validation
@@ -95,13 +98,16 @@ export class SocialPublishService {
       `Publish job created: id=${job.id} platform=${platform} workspace=${dto.workspaceId} scheduled=${isScheduled}`,
     );
 
-    // 6. For immediate jobs: process synchronously (MVP without real queue)
-    //    In production: replace with BullMQ enqueue call.
+    // 6. Enqueue via BullMQ. If scheduled, the scheduler service handles it separately.
+    // Replace processJobAsync with genuine enqueuing
     if (!isScheduled) {
-      // Fire-and-forget — DO NOT await so we return the job ID immediately
-      this.processJobAsync(job.id, dto.socialConnectionId, platform, payload).catch(
-        (err: unknown) => this.logger.error(`processJobAsync failed for job ${job.id}`, err),
-      );
+      await this.jobs.enqueuePublish({
+        userId,
+        workspaceId: dto.workspaceId,
+        jobRecordId: job.id,
+        traceId: job.id,
+        metadata: payload,
+      });
     }
 
     return this.findJobOrThrow(job.id);
@@ -111,8 +117,10 @@ export class SocialPublishService {
 
   async listJobs(
     workspaceId: string,
+    userId: string,
     options?: { status?: string; limit?: number },
   ) {
+    await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const where: Record<string, unknown> = { workspaceId };
     if (options?.status) where.status = options.status;
 
@@ -127,7 +135,8 @@ export class SocialPublishService {
 
   // ─── Get job detail + logs ─────────────────────────────────────────────────
 
-  async getJobDetail(id: string, workspaceId: string) {
+  async getJobDetail(id: string, workspaceId: string, userId: string) {
+    await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const job = await this.prisma.socialPublishJob.findFirst({
       where: { id, workspaceId },
     });
@@ -143,7 +152,8 @@ export class SocialPublishService {
 
   // ─── Retry ────────────────────────────────────────────────────────────────
 
-  async retry(id: string, workspaceId: string) {
+  async retry(id: string, workspaceId: string, userId: string) {
+    await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const job = await this.prisma.socialPublishJob.findFirst({
       where: { id, workspaceId, status: 'FAILED' },
     });
@@ -170,27 +180,25 @@ export class SocialPublishService {
       retryCount: job.retryCount + 1,
     });
 
-    // Retrieve connection ID and platform to re-execute
-    const connection = await this.prisma.socialConnection.findUnique({
-      where: { id: job.socialConnectionId },
-    });
-    if (!connection) throw new NotFoundException('Social connection not found for retry.');
-
     const payload: PublishPayload = {
-      body: job.lastError ? '' : '', // Payload not stored on job for MVP — rebuild via contentItem
-      // For now, re-use empty payload for retry. Attach content resolution in Phase 2.
+      body: job.lastError ? '' : '', // For now, re-use empty payload for retry. Phase 2: Attach content resolution.
     };
 
-    this.processJobAsync(id, job.socialConnectionId, job.platform as SocialPlatform, payload).catch(
-      (err: unknown) => this.logger.error(`retry processJobAsync failed for job ${id}`, err),
-    );
+    await this.jobs.enqueuePublish({
+      userId,
+      workspaceId,
+      jobRecordId: job.id,
+      traceId: job.id,
+      metadata: payload,
+    });
 
     return this.findJobOrThrow(id);
   }
 
   // ─── Cancel ───────────────────────────────────────────────────────────────
 
-  async cancel(id: string, workspaceId: string) {
+  async cancel(id: string, workspaceId: string, userId: string) {
+    await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const job = await this.prisma.socialPublishJob.findFirst({
       where: { id, workspaceId },
     });
@@ -214,9 +222,9 @@ export class SocialPublishService {
 
   /**
    * Internal async executor.
-   * In production this becomes a BullMQ processor worker.
+   * Called by the BullMQ processor worker in the background.
    */
-  private async processJobAsync(
+  public async processJobAsync(
     jobId: string,
     connectionId: string,
     platform: SocialPlatform,

@@ -12,6 +12,7 @@
 
 import { Module } from '@nestjs/common';
 import { PrismaModule } from '../../common/prisma/prisma.module';
+import { JobsModule } from '../jobs/jobs.module';
 
 // Controllers
 import { SocialConnectionsController } from './social-connections.controller';
@@ -24,6 +25,9 @@ import { SocialPublishService } from './social-publish.service';
 import { SocialOAuthService } from './social-oauth.service';
 import { SocialSchedulerService } from './social-scheduler.service';
 
+// Processors
+import { PublishProcessor } from './publish.processor';
+
 // Adapters
 import { LinkedInAdapter } from './adapters/linkedin.adapter';
 import { XAdapter } from './adapters/x.adapter';
@@ -33,7 +37,7 @@ import { TikTokAdapter } from './adapters/tiktok.adapter';
 import { AdapterFactory } from './adapters/adapter.factory';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, JobsModule],
   controllers: [
     SocialConnectionsController,
     SocialPublishController,
@@ -45,6 +49,9 @@ import { AdapterFactory } from './adapters/adapter.factory';
     SocialPublishService,
     SocialOAuthService,
     SocialSchedulerService,
+
+    // Processors
+    PublishProcessor,
 
     // Adapters (all injectable singletons)
     LinkedInAdapter,
