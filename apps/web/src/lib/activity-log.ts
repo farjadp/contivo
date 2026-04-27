@@ -22,6 +22,33 @@ export type DiscoveryArchiveEntry = {
   createdAt: Date;
 };
 
+function isMissingRelationError(
+  error: unknown,
+): error is { code?: string; meta?: { code?: string; message?: string } } {
+  if (!error || typeof error !== 'object') return false;
+
+  const candidate = error as { code?: string; meta?: { code?: string; message?: string } };
+  const message = String(candidate.meta?.message || '');
+
+  return candidate.code === 'P2010' && (candidate.meta?.code === '42P01' || message.includes('does not exist'));
+}
+
+async function withLogTablesRetry<T>(operation: () => Promise<T>): Promise<T> {
+  await ensureLogTables();
+
+  try {
+    return await operation();
+  } catch (error) {
+    if (!isMissingRelationError(error)) {
+      throw error;
+    }
+
+    ensureTablesPromise = null;
+    await ensureLogTables();
+    return operation();
+  }
+}
+
 async function ensureLogTables(): Promise<void> {
   if (ensureTablesPromise) return ensureTablesPromise;
 
@@ -86,79 +113,77 @@ export async function writeActivityLog(input: {
   detail?: any;
 }): Promise<void> {
   try {
-    await ensureLogTables();
-    await prisma.$executeRaw`
-      INSERT INTO activity_logs (id, user_id, workspace_id, action, detail, created_at)
-      VALUES (${randomUUID()}, ${input.userId}, ${input.workspaceId || null}, ${input.action}, ${
-        input.detail ? JSON.stringify(input.detail) : null
-      }::jsonb, NOW())
-    `;
+    await withLogTablesRetry(() =>
+      prisma.$executeRaw`
+        INSERT INTO activity_logs (id, user_id, workspace_id, action, detail, created_at)
+        VALUES (${randomUUID()}, ${input.userId}, ${input.workspaceId || null}, ${input.action}, ${
+          input.detail ? JSON.stringify(input.detail) : null
+        }::jsonb, NOW())
+      `,
+    );
   } catch (error) {
     console.error('writeActivityLog failed:', error);
   }
 }
 
 export async function listUserActivityLogs(userId: string, limit = 80): Promise<ActivityLogEntry[]> {
-  await ensureLogTables();
-
-  const rows = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      action: string;
-      workspaceId: string | null;
-      workspaceName: string | null;
-      detail: any;
-      createdAt: Date;
-    }>
-  >`
-    SELECT
-      l.id,
-      l.action,
-      l.workspace_id AS "workspaceId",
-      w.name AS "workspaceName",
-      l.detail,
-      l.created_at AS "createdAt"
-    FROM activity_logs l
-    LEFT JOIN workspaces w ON w.id = l.workspace_id
-    WHERE l.user_id = ${userId}
-    ORDER BY l.created_at DESC
-    LIMIT ${limit}
-  `;
-
-  return rows;
+  return withLogTablesRetry(() =>
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        action: string;
+        workspaceId: string | null;
+        workspaceName: string | null;
+        detail: any;
+        createdAt: Date;
+      }>
+    >`
+      SELECT
+        l.id,
+        l.action,
+        l.workspace_id AS "workspaceId",
+        w.name AS "workspaceName",
+        l.detail,
+        l.created_at AS "createdAt"
+      FROM activity_logs l
+      LEFT JOIN workspaces w ON w.id = l.workspace_id
+      WHERE l.user_id = ${userId}
+      ORDER BY l.created_at DESC
+      LIMIT ${limit}
+    `,
+  );
 }
 
 export async function listAllActivityLogs(
   limit = 200,
   actionPrefix?: string,
 ): Promise<ActivityLogEntry[]> {
-  await ensureLogTables();
-
-  const rows = actionPrefix
-    ? await prisma.$queryRaw<
-        Array<{
-          id: string;
-          action: string;
-          workspaceId: string | null;
-          workspaceName: string | null;
-          detail: any;
-          createdAt: Date;
-        }>
-      >`
-        SELECT
-          l.id,
-          l.action,
-          l.workspace_id AS "workspaceId",
-          w.name AS "workspaceName",
-          l.detail,
-          l.created_at AS "createdAt"
-        FROM activity_logs l
-        LEFT JOIN workspaces w ON w.id = l.workspace_id
-        WHERE l.action LIKE ${`${actionPrefix}%`}
-        ORDER BY l.created_at DESC
-        LIMIT ${limit}
-      `
-    : await prisma.$queryRaw<
+  return withLogTablesRetry(async () => {
+    const rows = actionPrefix
+      ? await prisma.$queryRaw<
+          Array<{
+            id: string;
+            action: string;
+            workspaceId: string | null;
+            workspaceName: string | null;
+            detail: any;
+            createdAt: Date;
+          }>
+        >`
+          SELECT
+            l.id,
+            l.action,
+            l.workspace_id AS "workspaceId",
+            w.name AS "workspaceName",
+            l.detail,
+            l.created_at AS "createdAt"
+          FROM activity_logs l
+          LEFT JOIN workspaces w ON w.id = l.workspace_id
+          WHERE l.action LIKE ${`${actionPrefix}%`}
+          ORDER BY l.created_at DESC
+          LIMIT ${limit}
+        `
+      : await prisma.$queryRaw<
         Array<{
           id: string;
           action: string;
@@ -181,7 +206,8 @@ export async function listAllActivityLogs(
         LIMIT ${limit}
       `;
 
-  return rows;
+    return rows;
+  });
 }
 
 export async function listWorkspaceActivityLogs(
@@ -189,114 +215,109 @@ export async function listWorkspaceActivityLogs(
   workspaceId: string,
   limit = 400,
 ): Promise<ActivityLogEntry[]> {
-  await ensureLogTables();
-
-  const rows = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      action: string;
-      workspaceId: string | null;
-      workspaceName: string | null;
-      detail: any;
-      createdAt: Date;
-    }>
-  >`
-    SELECT
-      l.id,
-      l.action,
-      l.workspace_id AS "workspaceId",
-      w.name AS "workspaceName",
-      l.detail,
-      l.created_at AS "createdAt"
-    FROM activity_logs l
-    LEFT JOIN workspaces w ON w.id = l.workspace_id
-    WHERE l.user_id = ${userId}
-      AND l.workspace_id = ${workspaceId}
-    ORDER BY l.created_at DESC
-    LIMIT ${limit}
-  `;
-
-  return rows;
+  return withLogTablesRetry(() =>
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        action: string;
+        workspaceId: string | null;
+        workspaceName: string | null;
+        detail: any;
+        createdAt: Date;
+      }>
+    >`
+      SELECT
+        l.id,
+        l.action,
+        l.workspace_id AS "workspaceId",
+        w.name AS "workspaceName",
+        l.detail,
+        l.created_at AS "createdAt"
+      FROM activity_logs l
+      LEFT JOIN workspaces w ON w.id = l.workspace_id
+      WHERE l.user_id = ${userId}
+        AND l.workspace_id = ${workspaceId}
+      ORDER BY l.created_at DESC
+      LIMIT ${limit}
+    `,
+  );
 }
 
 export async function listWorkspaceActivityLogsForAdmin(
   workspaceId: string,
   limit = 400,
 ): Promise<ActivityLogEntry[]> {
-  await ensureLogTables();
-
-  const rows = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      action: string;
-      workspaceId: string | null;
-      workspaceName: string | null;
-      detail: any;
-      createdAt: Date;
-    }>
-  >`
-    SELECT
-      l.id,
-      l.action,
-      l.workspace_id AS "workspaceId",
-      w.name AS "workspaceName",
-      l.detail,
-      l.created_at AS "createdAt"
-    FROM activity_logs l
-    LEFT JOIN workspaces w ON w.id = l.workspace_id
-    WHERE l.workspace_id = ${workspaceId}
-    ORDER BY l.created_at DESC
-    LIMIT ${limit}
-  `;
-
-  return rows;
+  return withLogTablesRetry(() =>
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        action: string;
+        workspaceId: string | null;
+        workspaceName: string | null;
+        detail: any;
+        createdAt: Date;
+      }>
+    >`
+      SELECT
+        l.id,
+        l.action,
+        l.workspace_id AS "workspaceId",
+        w.name AS "workspaceName",
+        l.detail,
+        l.created_at AS "createdAt"
+      FROM activity_logs l
+      LEFT JOIN workspaces w ON w.id = l.workspace_id
+      WHERE l.workspace_id = ${workspaceId}
+      ORDER BY l.created_at DESC
+      LIMIT ${limit}
+    `,
+  );
 }
 
 export async function listContentActivityLogs(
   contentId: string,
   limit = 120,
 ): Promise<ActivityLogEntry[]> {
-  await ensureLogTables();
-
-  const rows = await prisma.$queryRaw<
-    Array<{
-      id: string;
-      action: string;
-      workspaceId: string | null;
-      workspaceName: string | null;
-      detail: any;
-      createdAt: Date;
-    }>
-  >`
-    SELECT
-      l.id,
-      l.action,
-      l.workspace_id AS "workspaceId",
-      w.name AS "workspaceName",
-      l.detail,
-      l.created_at AS "createdAt"
-    FROM activity_logs l
-    LEFT JOIN workspaces w ON w.id = l.workspace_id
-    WHERE COALESCE(l.detail::text, '') ILIKE ${`%${contentId}%`}
-    ORDER BY l.created_at DESC
-    LIMIT ${limit}
-  `;
-
-  return rows;
+  return withLogTablesRetry(() =>
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        action: string;
+        workspaceId: string | null;
+        workspaceName: string | null;
+        detail: any;
+        createdAt: Date;
+      }>
+    >`
+      SELECT
+        l.id,
+        l.action,
+        l.workspace_id AS "workspaceId",
+        w.name AS "workspaceName",
+        l.detail,
+        l.created_at AS "createdAt"
+      FROM activity_logs l
+      LEFT JOIN workspaces w ON w.id = l.workspace_id
+      WHERE COALESCE(l.detail::text, '') ILIKE ${`%${contentId}%`}
+      ORDER BY l.created_at DESC
+      LIMIT ${limit}
+    `,
+  );
 }
 
 export async function getWorkspaceDiscoveryStats(
   userId: string,
   workspaceId: string,
 ): Promise<{ usedRuns: number; remainingRuns: number }> {
-  await ensureLogTables();
   const maxRuns = await getCompetitiveLandscapeLimit();
 
-  const rows = await prisma.$queryRaw<Array<{ usedRuns: number }>>`
-    SELECT COUNT(*)::int AS "usedRuns"
-    FROM competitor_discovery_runs
-    WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
-  `;
+  const rows = await withLogTablesRetry(() =>
+    prisma.$queryRaw<Array<{ usedRuns: number }>>`
+      SELECT COUNT(*)::int AS "usedRuns"
+      FROM competitor_discovery_runs
+      WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
+    `,
+  );
 
   const usedRuns = rows[0]?.usedRuns || 0;
   return {
@@ -311,7 +332,6 @@ export async function createDiscoveryArchive(input: {
   source: string;
   competitors: any[];
 }): Promise<{ runNumber: number; remainingRuns: number }> {
-  await ensureLogTables();
   const maxRuns = await getCompetitiveLandscapeLimit();
 
   const stats = await getWorkspaceDiscoveryStats(input.userId, input.workspaceId);
@@ -321,28 +341,30 @@ export async function createDiscoveryArchive(input: {
 
   const runNumber = stats.usedRuns + 1;
 
-  await prisma.$executeRaw`
-    INSERT INTO competitor_discovery_runs (
-      id,
-      user_id,
-      workspace_id,
-      run_number,
-      source,
-      discovered_count,
-      competitors_snapshot,
-      created_at
-    )
-    VALUES (
-      ${randomUUID()},
-      ${input.userId},
-      ${input.workspaceId},
-      ${runNumber},
-      ${input.source},
-      ${input.competitors.length},
-      ${JSON.stringify(input.competitors)}::jsonb,
-      NOW()
-    )
-  `;
+  await withLogTablesRetry(() =>
+    prisma.$executeRaw`
+      INSERT INTO competitor_discovery_runs (
+        id,
+        user_id,
+        workspace_id,
+        run_number,
+        source,
+        discovered_count,
+        competitors_snapshot,
+        created_at
+      )
+      VALUES (
+        ${randomUUID()},
+        ${input.userId},
+        ${input.workspaceId},
+        ${runNumber},
+        ${input.source},
+        ${input.competitors.length},
+        ${JSON.stringify(input.competitors)}::jsonb,
+        NOW()
+      )
+    `,
+  );
 
   return {
     runNumber,
@@ -355,28 +377,28 @@ export async function listWorkspaceDiscoveryArchive(
   workspaceId: string,
   limit = 10,
 ): Promise<DiscoveryArchiveEntry[]> {
-  await ensureLogTables();
-
-  return prisma.$queryRaw<
-    Array<{
-      id: string;
-      runNumber: number;
-      source: string;
-      discoveredCount: number;
-      createdAt: Date;
-    }>
-  >`
-    SELECT
-      id,
-      run_number AS "runNumber",
-      source,
-      discovered_count AS "discoveredCount",
-      created_at AS "createdAt"
-    FROM competitor_discovery_runs
-    WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
-    ORDER BY created_at DESC
-    LIMIT ${limit}
-  `;
+  return withLogTablesRetry(() =>
+    prisma.$queryRaw<
+      Array<{
+        id: string;
+        runNumber: number;
+        source: string;
+        discoveredCount: number;
+        createdAt: Date;
+      }>
+    >`
+      SELECT
+        id,
+        run_number AS "runNumber",
+        source,
+        discovered_count AS "discoveredCount",
+        created_at AS "createdAt"
+      FROM competitor_discovery_runs
+      WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
+      ORDER BY created_at DESC
+      LIMIT ${limit}
+    `,
+  );
 }
 
 export async function getMaxDiscoveryRuns(): Promise<number> {
