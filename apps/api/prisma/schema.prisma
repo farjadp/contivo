@@ -70,34 +70,113 @@ model Workspace {
   socialConnections    SocialConnection[]
   strategyRuns         StrategyRun[]
   strategicReports     StrategicReport[]
+  autopilotPolicy      AutopilotPolicy?
+  autopilotRuns        AutopilotRun[]
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@map("workspaces")
 }
 
+/// Per-workspace autopilot configuration. One policy per workspace; when
+/// `enabled` the runner ideates + drafts + schedules content with no human
+/// in the loop. Publishing itself is still handled by SocialSchedulerService
+/// once an item is SCHEDULED and its time arrives.
+model AutopilotPolicy {
+  id          String    @id @default(cuid())
+  workspaceId String    @unique
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+
+  enabled Boolean @default(false)
+
+  // How much and where
+  postsPerWeek Int              @default(3)
+  channels     ContentChannel[]
+
+  // When posts may go live (local time in `timezone`)
+  timezone        String @default("America/Toronto")
+  windowStartHour Int    @default(9)
+  windowEndHour   Int    @default(18)
+  publishDays     Int[]  @default([1, 2, 3, 4, 5]) // 0=Sun … 6=Sat
+
+  // Steering
+  goal        String?
+  topicHints  String[] @default([])
+  avoidTopics String[] @default([])
+
+  // Scheduling bookkeeping
+  lastRunAt DateTime?
+  nextRunAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs AutopilotRun[]
+
+  @@index([enabled, nextRunAt])
+  @@index([userId])
+  @@map("autopilot_policies")
+}
+
+enum AutopilotRunStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  SKIPPED
+}
+
+/// One row per runner execution for a policy. `log` holds a step-by-step
+/// JSON trail (ideas generated, items scheduled, channels skipped and why)
+/// so a hands-off user can still audit what the machine did.
+model AutopilotRun {
+  id          String          @id @default(cuid())
+  policyId    String
+  policy      AutopilotPolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  status  AutopilotRunStatus @default(RUNNING)
+  trigger String             @default("cron") // cron | manual
+
+  ideasGenerated Int @default(0)
+  itemsScheduled Int @default(0)
+  itemsSkipped   Int @default(0)
+
+  log   Json?
+  error String?
+
+  startedAt  DateTime  @default(now())
+  finishedAt DateTime?
+
+  @@index([workspaceId, startedAt])
+  @@index([policyId])
+  @@map("autopilot_runs")
+}
+
 model StrategicReport {
-  id                String    @id @default(cuid())
-  workspaceId       String
-  workspace         Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  userId            String
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
 
   // File paths
-  docxPath          String
-  pdfPath           String
+  docxPath String
+  pdfPath  String
 
   // Metadata
-  reportDate        DateTime @default(now())
-  fileSize          Int
-  sectionsIncluded  Json
+  reportDate       DateTime @default(now())
+  fileSize         Int
+  sectionsIncluded Json
 
   // Analytics snapshot (frozen at generation time)
-  competitorsCount  Int
-  keywordsAnalyzed  Int
-  chartsGenerated   Int
+  competitorsCount Int
+  keywordsAnalyzed Int
+  chartsGenerated  Int
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([workspaceId])
   @@index([userId])
