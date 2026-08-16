@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { AlertCircle, Bot, CheckCircle2, ChevronDown, ChevronUp, Play, Save, Zap } from 'lucide-react';
 
 import {
@@ -58,9 +59,12 @@ export function AutopilotTab({
   connectedPlatforms,
   ideationReady,
 }: Props) {
+  const router = useRouter();
   const [form, setForm] = useState<AutopilotPolicyInput>(() => toForm(initialPolicy));
-  const [policy, setPolicy] = useState(initialPolicy);
-  const runs = initialRuns;
+  // Server props win after router.refresh(); local override only right after a save.
+  const [savedPolicy, setSavedPolicy] = useState<SerializedPolicy | null>(null);
+  const policy = savedPolicy ?? initialPolicy;
+  const runs = initialRuns; // refreshed via router.refresh() after save/run
   const [hintsText, setHintsText] = useState(initialPolicy?.topicHints.join(', ') ?? '');
   const [avoidText, setAvoidText] = useState(initialPolicy?.avoidTopics.join(', ') ?? '');
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
@@ -93,7 +97,7 @@ export function AutopilotTab({
         return;
       }
       if ('policy' in result && result.policy) {
-        setPolicy(result.policy);
+        setSavedPolicy(result.policy);
         setForm(toForm(result.policy));
         setMessage({
           kind: 'ok',
@@ -101,6 +105,7 @@ export function AutopilotTab({
             ? 'Autopilot is ON. The next scheduled tick will fill your queue.'
             : 'Autopilot settings saved (currently off).',
         });
+        router.refresh();
       }
     });
   };
@@ -119,8 +124,9 @@ export function AutopilotTab({
           kind: r.status === 'FAILED' ? 'error' : 'ok',
           text: `Run ${r.status.toLowerCase()}: ${r.itemsScheduled} scheduled, ${r.itemsSkipped} skipped${
             r.reason ? ` — ${r.reason}` : ''
-          }. Refresh to see the run log.`,
+          }.`,
         });
+        router.refresh();
       }
     });
   };
