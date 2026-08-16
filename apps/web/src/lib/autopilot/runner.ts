@@ -26,6 +26,7 @@ import {
 } from '@/lib/content-engine';
 
 import { CHANNEL_TO_PLATFORM } from './channels';
+import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
 
 // ---------------------------------------------------------------------------
@@ -40,6 +41,10 @@ const DEFAULT_RERUN_HOURS = 24;
 const FAILURE_RERUN_HOURS = 3;
 /** How many recent topics to consider when deduping. */
 const RECENT_TOPIC_LOOKBACK = 40;
+/** How many recent bodies the quality gate compares against for duplication. */
+const RECENT_BODY_LOOKBACK = 10;
+/** Attempts per slot: a rejected draft is regenerated this many times. */
+const MAX_ATTEMPTS_PER_SLOT = 2;
 /** Statuses that count as "already occupying a slot". */
 const OCCUPYING_STATUSES = ['SCHEDULED', 'PUBLISHING', 'PUBLISHED'] as const;
 
@@ -231,7 +236,9 @@ export async function runPolicy(
     let ideasGenerated = 0;
     let itemsScheduled = 0;
     let itemsSkipped = 0;
+    let itemsRejected = 0;
     const usedTopics = [...recentTopics];
+    const recentBodies = await loadRecentBodies(policy.workspaceId);
 
     // Group by channel so each ideation call is platform-specific.
     const byChannel = new Map<ContentChannel, Date[]>();
@@ -265,49 +272,105 @@ export async function runPolicy(
       });
       note('ideas', { channel, generated: ideas.length, fresh: fresh.length, want });
 
+      let ideaCursor = 0;
       for (let i = 0; i < want; i++) {
-        const idea = fresh[i];
         const slot = channelSlots[i];
-        if (!idea) {
-          itemsSkipped += 1;
-          note('slot_unfilled', { channel, slot: slot.toISOString(), reason: 'no fresh idea' });
-          continue;
+        let filled = false;
+
+        // Each slot gets a couple of attempts: if the gate rejects a draft we
+        // move to the next idea rather than publishing something unvetted.
+        for (let attempt = 0; attempt < MAX_ATTEMPTS_PER_SLOT && !filled; attempt++) {
+          const idea = fresh[ideaCursor++];
+          if (!idea) break;
+
+          // Force the channel: idea.format drives channel resolution in the engine.
+          const saved = await saveIdeaToPipelineCore(actor, {
+            ...idea,
+            format: channel,
+            auto_insert_to_calendar: false,
+            framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),
+            framework_name: idea.framework_name ?? ('framework' in ideation ? ideation.framework?.framework_name : undefined),
+          });
+          if ('error' in saved && saved.error) {
+            note('save_failed', { channel, topic: idea.topic, error: saved.error });
+            continue;
+          }
+          const itemId = 'id' in saved ? saved.id : null;
+          if (!itemId) continue;
+
+          const drafted = await generateDraftForItem(actor, itemId, {
+            scheduledAtUtc: slot,
+            source: 'autopilot',
+            manualSource: { timezone: policy.timezone },
+          });
+          if ('error' in drafted && drafted.error) {
+            note('draft_failed', { channel, itemId, topic: idea.topic, error: drafted.error });
+            continue;
+          }
+
+          // ── Quality gate: the stand-in for a human reviewer ──
+          const body = 'item' in drafted ? String(drafted.item?.content || '') : '';
+          const verdict = await evaluateDraft({
+            content: body,
+            topic: String(idea.topic || ''),
+            channel,
+            brandSummary: ctx.brandSummary,
+            avoidTopics: policy.avoidTopics,
+            recentContents: recentBodies,
+          });
+
+          if (!verdict.approved) {
+            // Pull it back out of the publish queue — a rejected draft must
+            // never stay SCHEDULED, or the cron would publish it anyway.
+            await prisma.contentItem.update({
+              where: { id: itemId },
+              data: {
+                status: 'DRAFT',
+                scheduledAtUtc: null,
+                failedReason: `Autopilot quality gate: ${verdict.reasons[0] ?? verdict.rejectedBy}`,
+              },
+            });
+            itemsRejected += 1;
+            note('gate_rejected', {
+              channel,
+              itemId,
+              topic: idea.topic,
+              rejectedBy: verdict.rejectedBy,
+              scores: verdict.scores,
+              reasons: verdict.reasons.slice(0, 3),
+            });
+            continue;
+          }
+
+          recentBodies.push(body);
+          usedTopics.push(String(idea.topic));
+          itemsScheduled += 1;
+          filled = true;
+          note('scheduled', {
+            channel,
+            itemId,
+            topic: idea.topic,
+            slot: slot.toISOString(),
+            scores: verdict.scores,
+            judge: verdict.judge,
+          });
         }
-        // Force the channel: idea.format drives channel resolution in the engine.
-        const saved = await saveIdeaToPipelineCore(actor, {
-          ...idea,
-          format: channel,
-          auto_insert_to_calendar: false,
-          framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),
-          framework_name: idea.framework_name ?? ('framework' in ideation ? ideation.framework?.framework_name : undefined),
-        });
-        if ('error' in saved && saved.error) {
+
+        if (!filled) {
           itemsSkipped += 1;
-          note('save_failed', { channel, topic: idea.topic, error: saved.error });
-          continue;
+          note('slot_unfilled', {
+            channel,
+            slot: slot.toISOString(),
+            reason: 'no idea passed the quality gate',
+          });
         }
-        const itemId = 'id' in saved ? saved.id : null;
-        if (!itemId) {
-          itemsSkipped += 1;
-          continue;
-        }
-        const drafted = await generateDraftForItem(actor, itemId, {
-          scheduledAtUtc: slot,
-          source: 'autopilot',
-          manualSource: { timezone: policy.timezone },
-        });
-        if ('error' in drafted && drafted.error) {
-          itemsSkipped += 1;
-          note('draft_failed', { channel, itemId, topic: idea.topic, error: drafted.error });
-          continue;
-        }
-        usedTopics.push(String(idea.topic));
-        itemsScheduled += 1;
-        note('scheduled', { channel, itemId, topic: idea.topic, slot: slot.toISOString() });
       }
     }
 
     const counts = { ideasGenerated, itemsScheduled, itemsSkipped };
+    if (itemsRejected > 0) {
+      note('gate_summary', { rejected: itemsRejected });
+    }
     if (itemsScheduled === 0) {
       return finish('FAILED', counts, {
         error: 'Nothing could be scheduled this run.',
@@ -353,6 +416,16 @@ async function resolvePublishableChannels(
     ok.push(channel);
   }
   return ok;
+}
+
+async function loadRecentBodies(workspaceId: string): Promise<string[]> {
+  const items = await prisma.contentItem.findMany({
+    where: { workspaceId, status: { in: [...OCCUPYING_STATUSES] } },
+    orderBy: { createdAt: 'desc' },
+    take: RECENT_BODY_LOOKBACK,
+    select: { content: true },
+  });
+  return items.map((i) => String(i.content || '')).filter(Boolean);
 }
 
 async function loadRecentTopics(workspaceId: string): Promise<string[]> {

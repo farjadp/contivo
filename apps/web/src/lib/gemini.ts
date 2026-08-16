@@ -1539,3 +1539,32 @@ Keep your analysis specific, actionable, and grounded in what you actually see i
   logFallback('analyzeSerpResultsWithGemini', gemini.status, openAi.status);
   return null;
 }
+
+/**
+ * Runs a prompt through the standard provider chain (Gemini → OpenAI) and
+ * parses the reply as JSON. Exposed so callers outside this module — such as
+ * the Autopilot quality gate — reuse the same cooldown, fallback and
+ * JSON-cleaning behaviour instead of talking to providers directly.
+ *
+ * Returns null only when BOTH providers fail or neither returns valid JSON;
+ * callers must decide what an unavailable model means for them.
+ */
+export async function requestJsonFromAi<T>(
+  prompt: string,
+  systemPrompt?: string,
+): Promise<{ data: T; provider: 'gemini' | 'openai' } | null> {
+  const gemini = await callGemini(prompt, true);
+  if (gemini.ok && gemini.text) {
+    const parsed = safeJsonParse<T>(gemini.text);
+    if (parsed) return { data: parsed, provider: 'gemini' };
+  }
+
+  const openAi = await callOpenAi(prompt, true, systemPrompt);
+  if (openAi.ok && openAi.text) {
+    const parsed = safeJsonParse<T>(openAi.text);
+    if (parsed) return { data: parsed, provider: 'openai' };
+  }
+
+  logFallback('requestJsonFromAi', gemini.status, openAi.status);
+  return null;
+}
