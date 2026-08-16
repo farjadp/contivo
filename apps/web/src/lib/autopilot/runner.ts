@@ -25,6 +25,7 @@ import {
   saveIdeaToPipelineCore,
 } from '@/lib/content-engine';
 
+import { CHANNEL_TO_PLATFORM } from './channels';
 import { pickPublishSlots } from './schedule';
 
 // ---------------------------------------------------------------------------
@@ -41,13 +42,6 @@ const FAILURE_RERUN_HOURS = 3;
 const RECENT_TOPIC_LOOKBACK = 40;
 /** Statuses that count as "already occupying a slot". */
 const OCCUPYING_STATUSES = ['SCHEDULED', 'PUBLISHING', 'PUBLISHED'] as const;
-
-/** ContentChannel → SocialPlatform. Channels without a publisher are skipped. */
-const CHANNEL_TO_PLATFORM: Partial<Record<ContentChannel, string>> = {
-  linkedin: 'LINKEDIN',
-  twitter: 'X',
-  instagram: 'INSTAGRAM',
-};
 
 /** ContentChannel → ideation `platform` hint. */
 const CHANNEL_TO_IDEATION_PLATFORM: Record<string, string> = {

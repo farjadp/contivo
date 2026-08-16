@@ -5,6 +5,7 @@ import { notFound, redirect } from 'next/navigation';
 import {
   ArrowLeft,
   BarChart3,
+  Bot,
   Coins,
   ExternalLink,
   FileText,
@@ -42,6 +43,8 @@ import { buildWorkspaceProgressReport } from '@/lib/workspace-progress';
 import { ProgressReportTab } from './_components/ProgressReportTab';
 import { SeoIntelligenceTab } from './_components/SeoIntelligenceTab';
 import { ReportsTab } from '@/components/workspace/ReportsTab';
+import { AutopilotTab } from './_components/AutopilotTab';
+import { getAutopilotState } from '@/app/actions/autopilot';
 
 export const metadata = { title: 'Workspace Dashboard' };
 
@@ -112,6 +115,7 @@ function resolveTab(rawTab: string | string[] | undefined): string {
     'calendar',
     'seo',
     'reports',
+    'autopilot',
   ]);
   if (!value || !allowed.has(value)) return 'pipeline';
   return value;
@@ -228,6 +232,18 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     remainingReports: MONTHLY_LIMIT - reportsThisMonth,
     missingData: reportMissingData,
   };
+
+  const autopilotState = await getAutopilotState(workspace.id);
+  const autopilotPolicy = ('policy' in autopilotState && autopilotState.policy) || null;
+  const autopilotRuns = ('runs' in autopilotState && autopilotState.runs) || [];
+  const autopilotConnected =
+    ('connectedPlatforms' in autopilotState && autopilotState.connectedPlatforms) || [];
+  const ideationReady =
+    Boolean(workspace.brandSummary) &&
+    Array.isArray(insights?.competitiveMatrices?.charts) &&
+    insights.competitiveMatrices.charts.length > 0 &&
+    Array.isArray(insights?.competitorKeywordsIntel?.competitors) &&
+    insights.competitorKeywordsIntel.competitors.length > 0;
 
   const requestedTab = resolveTab(resolvedSearchParams.tab);
   const brand = (workspace.brandSummary as any) || {};
@@ -358,6 +374,14 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       label: 'Reports',
       helper: `${reportEligibility.remainingReports} remaining this month`,
       icon: <FileText className="h-4 w-4" />,
+    },
+    {
+      key: 'autopilot',
+      label: 'Autopilot',
+      helper: autopilotPolicy?.enabled
+        ? `ON · ${autopilotPolicy.postsPerWeek}/week`
+        : 'Hands-off publishing',
+      icon: <Bot className="h-4 w-4" />,
     },
   ];
 
@@ -554,6 +578,15 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             workspaceId={workspace.id}
             initialEligibility={reportEligibility}
             initialHistory={reportHistory}
+          />
+        )}
+        {activeTab === 'autopilot' && (
+          <AutopilotTab
+            workspaceId={workspace.id}
+            initialPolicy={autopilotPolicy}
+            initialRuns={autopilotRuns}
+            connectedPlatforms={autopilotConnected}
+            ideationReady={ideationReady}
           />
         )}
       </div>
