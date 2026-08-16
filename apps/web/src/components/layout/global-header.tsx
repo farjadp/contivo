@@ -34,11 +34,11 @@ export function GlobalHeader() {
         </>
       ) : (
         <>
-          <Link href={"/sign-in" as any} className="text-sm font-medium text-[#121212]">
+          <Link href="/sign-in" className="text-sm font-medium text-[#121212]">
             Sign in
           </Link>
           <Link
-            href={"/sign-up" as any}
+            href="/sign-up"
             className="bg-[#6c47ff] text-white rounded-full font-medium text-sm h-10 px-4 inline-flex items-center"
           >
             Sign Up
