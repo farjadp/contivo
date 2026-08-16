@@ -3,16 +3,16 @@ import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
 
 import { PrismaModule } from './common/prisma/prisma.module';
-import { HealthModule } from './modules/health/health.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { UsersModule } from './modules/users/users.module';
-import { WorkspacesModule } from './modules/workspaces/workspaces.module';
-import { InstantContentModule } from './modules/instant-content/instant-content.module';
 import { AIModule } from './modules/ai/ai.module';
-import { JobsModule } from './modules/jobs/jobs.module';
+import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CreditsModule } from './modules/credits/credits.module';
+import { HealthModule } from './modules/health/health.module';
+import { InstantContentModule } from './modules/instant-content/instant-content.module';
+import { JobsModule } from './modules/jobs/jobs.module';
 import { SocialModule } from './modules/social/social.module';
+import { UsersModule } from './modules/users/users.module';
+import { WorkspacesModule } from './modules/workspaces/workspaces.module';
 
 @Module({
   imports: [

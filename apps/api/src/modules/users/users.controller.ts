@@ -1,6 +1,8 @@
 import { Controller, Get, NotFoundException } from '@nestjs/common';
-import { UsersService } from './users.service';
+
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+
+import { UsersService } from './users.service';
 
 @Controller('users')
 export class UsersController {

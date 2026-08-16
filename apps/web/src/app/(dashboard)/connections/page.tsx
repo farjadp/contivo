@@ -93,7 +93,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-[#121212]">Connections</h1>
         <p className="text-gray-500 mt-2 text-sm">
-          Connect your brand's social channels and websites. Publish and schedule content directly from Contivo.
+          Connect your brand&apos;s social channels and websites. Publish and schedule content directly from Contivo.
         </p>
       </div>
 

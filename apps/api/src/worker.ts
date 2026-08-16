@@ -8,8 +8,8 @@
  * Run via: WORKER_MODE=true node dist/worker
  * Or:       pnpm start:worker
  */
-import { NestFactory } from '@nestjs/core';
 import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module';
 

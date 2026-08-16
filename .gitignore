@@ -48,3 +48,6 @@ coverage
 .claude/
 .vercel
 .env*.local
+
+# Generated strategic report output
+apps/web/public/reports/

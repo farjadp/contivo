@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Queue } from 'bullmq';
+
 import { QUEUES, BaseJobPayload } from './jobs.constants';
 
 @Injectable()

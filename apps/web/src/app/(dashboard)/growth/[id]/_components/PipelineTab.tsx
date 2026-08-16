@@ -124,7 +124,7 @@ export function PipelineTab({
         </div>
         <h2 className="text-lg font-bold text-[#121212] mb-1">Your pipeline is empty</h2>
         <p className="text-sm text-gray-500 max-w-sm mb-6 leading-relaxed">
-          You haven't generated any content for this brand yet. Head over to the Ideation Station to get started.
+          You haven&apos;t generated any content for this brand yet. Head over to the Ideation Station to get started.
         </p>
         <Link
           href={`/growth/${workspace.id}?tab=ideation`}
@@ -734,7 +734,7 @@ function PipelineItemCard({
                     </select>
                   </div>
                   <p className="text-[11px] text-gray-500 leading-tight">
-                    Leave date and time blank to save simply as "Ready", or fill them out to automatically mark this post as "Scheduled".
+                    Leave date and time blank to save simply as &quot;Ready&quot;, or fill them out to automatically mark this post as &quot;Scheduled&quot;.
                   </p>
                 </div>
               </div>

@@ -13,8 +13,11 @@
  *       this adapter. Never log or expose the accessToken.
  */
 
-import { Injectable, Logger } from '@nestjs/common';
 import { SocialPlatform } from '@contivo/types';
+import { Injectable, Logger } from '@nestjs/common';
+
+import { validateX } from '../validators/platform-validator';
+
 import {
   SocialAdapter,
   AdapterConnection,
@@ -22,7 +25,7 @@ import {
   PublishResult,
   ValidationResult,
 } from './social-adapter.interface';
-import { validateX } from '../validators/platform-validator';
+
 
 @Injectable()
 export class XAdapter implements SocialAdapter {

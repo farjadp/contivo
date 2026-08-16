@@ -1,7 +1,9 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
-import { QUEUES, BaseJobPayload } from '../jobs/jobs.constants';
+
 import { redisConnection } from '../jobs/bull-board.provider';
+import { QUEUES, BaseJobPayload } from '../jobs/jobs.constants';
+
 import { InstantContentService } from './instant-content.service';
 
 @Injectable()

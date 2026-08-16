@@ -148,7 +148,7 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
             </span>
           </div>
           <p className="text-2xl font-bold">Strategic Intelligence</p>
-          <p className="text-sm opacity-70 mt-1">This takes 30–60 seconds — please don't close the tab</p>
+          <p className="text-sm opacity-70 mt-1">This takes 30–60 seconds — please don&apos;t close the tab</p>
         </div>
 
         {/* ── Body ── */}

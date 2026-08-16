@@ -384,7 +384,7 @@ export function SeoIntelligenceTab({
                 </div>
               ) : selectedDomain ? (
                 <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400">
-                  No keywords scanned yet for <strong>{selectedDomain}</strong>. Click "Scan Keywords" above.
+                  No keywords scanned yet for <strong>{selectedDomain}</strong>. Click &quot;Scan Keywords&quot; above.
                 </div>
               ) : null}
             </>
@@ -406,7 +406,7 @@ export function SeoIntelligenceTab({
               Compute Opportunities
             </button>
             <p className="text-xs text-gray-500">
-              Runs gap analysis across all competitor keyword data you've scanned.
+              Runs gap analysis across all competitor keyword data you&apos;ve scanned.
             </p>
           </div>
 
@@ -418,7 +418,7 @@ export function SeoIntelligenceTab({
 
           {opportunities.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
-              No keyword opportunities yet. Scan at least one competitor's keywords first, then compute opportunities.
+              No keyword opportunities yet. Scan at least one competitor&apos;s keywords first, then compute opportunities.
             </div>
           ) : (
             <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">

@@ -1,8 +1,10 @@
 import { Controller, Post, Req, Res, Headers, Logger, HttpStatus } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { Webhook } from 'svix';
-import { UsersService } from './users.service';
+
 import { Public } from '../auth/decorators/public.decorator';
+
+import { UsersService } from './users.service';
 
 @Controller('webhooks/clerk')
 export class ClerkWebhooksController {

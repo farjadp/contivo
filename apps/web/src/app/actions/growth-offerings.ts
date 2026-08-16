@@ -822,7 +822,7 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     });
 
     const extractResult = await callOpenAiJson(extractionPrompt);
-    let payload =
+    const payload =
       extractResult?.parsed != null
         ? normalizePayload(extractResult.parsed, {
             clientName: workspace.name,

@@ -17,7 +17,9 @@
  */
 
 import { Controller, Get, Param, Query, Redirect, Logger } from '@nestjs/common';
+
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+
 import { SocialConnectionsService } from './social-connections.service';
 import { SocialOAuthService } from './social-oauth.service';
 

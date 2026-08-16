@@ -17,8 +17,9 @@
  *   Caption: 2 200 chars (hashtags count toward this limit)
  */
 
-import { Injectable, Logger } from '@nestjs/common';
 import { SocialPlatform } from '@contivo/types';
+import { Injectable, Logger } from '@nestjs/common';
+
 import {
   SocialAdapter,
   AdapterConnection,

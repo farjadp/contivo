@@ -1,8 +1,9 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
-import { QUEUES, BaseJobPayload } from '../jobs/jobs.constants';
-import { redisConnection } from '../jobs/bull-board.provider';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
+import { redisConnection } from '../jobs/bull-board.provider';
+import { QUEUES, BaseJobPayload } from '../jobs/jobs.constants';
 
 @Injectable()
 export class CrawlProcessor implements OnModuleInit, OnModuleDestroy {

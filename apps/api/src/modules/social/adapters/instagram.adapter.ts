@@ -19,8 +19,11 @@
  * API reference: https://developers.facebook.com/docs/instagram-api/guides/content-publishing
  */
 
-import { Injectable, Logger } from '@nestjs/common';
 import { SocialPlatform } from '@contivo/types';
+import { Injectable, Logger } from '@nestjs/common';
+
+import { validateInstagram } from '../validators/platform-validator';
+
 import {
   SocialAdapter,
   AdapterConnection,
@@ -28,7 +31,7 @@ import {
   PublishResult,
   ValidationResult,
 } from './social-adapter.interface';
-import { validateInstagram } from '../validators/platform-validator';
+
 
 const PHASE2_ERROR =
   'Instagram publishing is not yet available. ' +

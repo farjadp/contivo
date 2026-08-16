@@ -9,12 +9,13 @@
  */
 
 import { Injectable } from '@nestjs/common';
-import { SocialAdapter } from './social-adapter.interface';
-import { LinkedInAdapter } from './linkedin.adapter';
-import { XAdapter } from './x.adapter';
+
 import { FacebookAdapter } from './facebook.adapter';
 import { InstagramAdapter } from './instagram.adapter';
+import { LinkedInAdapter } from './linkedin.adapter';
+import { SocialAdapter } from './social-adapter.interface';
 import { TikTokAdapter } from './tiktok.adapter';
+import { XAdapter } from './x.adapter';
 
 // Use a plain string key to avoid @contivo/types import before package is built
 type PlatformKey = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'INSTAGRAM' | 'TIKTOK';

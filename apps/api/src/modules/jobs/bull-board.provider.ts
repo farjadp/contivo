@@ -1,5 +1,5 @@
-import Redis from 'ioredis';
 import { Logger } from '@nestjs/common';
+import Redis from 'ioredis';
 
 const logger = new Logger('JobsRedisProvider');
 

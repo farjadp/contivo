@@ -26,12 +26,14 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
-import { AdapterFactory } from './adapters/adapter.factory';
-import { SocialConnectionsService } from './social-connections.service';
-import { CreatePublishJobDto } from './dto/create-publish-job.dto';
-import type { PublishPayload } from './adapters/social-adapter.interface';
 import { JobsService } from '../jobs/jobs.service';
+
+import { AdapterFactory } from './adapters/adapter.factory';
+import type { PublishPayload } from './adapters/social-adapter.interface';
+import { CreatePublishJobDto } from './dto/create-publish-job.dto';
+import { SocialConnectionsService } from './social-connections.service';
 
 // Use local string type — avoids @contivo/types circular dep before package build
 type SocialPlatform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'INSTAGRAM';

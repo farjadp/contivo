@@ -27,9 +27,11 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
-import { SocialPublishService } from './social-publish.service';
+
 import { CreatePublishJobDto } from './dto/create-publish-job.dto';
+import { SocialPublishService } from './social-publish.service';
 
 @Controller('social/publish-jobs')
 export class SocialPublishController {

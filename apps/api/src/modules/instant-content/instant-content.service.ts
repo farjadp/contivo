@@ -1,8 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import {
   type GenerateInstantContentRequest,
   type GenerateInstantContentResponse,
 } from '@contivo/types';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { AIService } from '../ai/ai.service';

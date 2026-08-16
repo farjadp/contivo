@@ -72,7 +72,7 @@ export default async function GrowthEnginePage() {
           </div>
           <h2 className="text-lg font-bold text-[#121212] mb-1">No workspaces yet</h2>
           <p className="text-sm text-gray-500 max-w-sm mb-6 leading-relaxed">
-            Create your first Growth Engine workspace. Tell us about your brand and we'll build a tailored content strategy in seconds.
+            Create your first Growth Engine workspace. Tell us about your brand and we&apos;ll build a tailored content strategy in seconds.
           </p>
           <Link
             href={"/growth/new" as any}

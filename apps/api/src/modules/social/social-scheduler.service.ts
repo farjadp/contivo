@@ -17,7 +17,9 @@
 
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
+
 import { SocialPublishService } from './social-publish.service';
 
 @Injectable()

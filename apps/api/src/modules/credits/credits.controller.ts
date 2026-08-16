@@ -1,7 +1,9 @@
-import { Controller, Get } from '@nestjs/common';
-import { CreditsService } from './credits.service';
 import { GetBalanceResponse } from '@contivo/types';
+import { Controller, Get } from '@nestjs/common';
+
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+
+import { CreditsService } from './credits.service';
 
 @Controller('credits')
 export class CreditsController {

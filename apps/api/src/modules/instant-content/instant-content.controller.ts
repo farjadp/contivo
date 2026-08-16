@@ -1,9 +1,10 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { GenerateInstantContentRequest } from '@contivo/types';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe';
-import { InstantContentService } from './instant-content.service';
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+
+import { InstantContentService } from './instant-content.service';
 
 @Controller('instant-content')
 export class InstantContentController {

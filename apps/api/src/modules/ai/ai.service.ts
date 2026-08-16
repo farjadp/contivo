@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
 import type { GenerateInstantContentRequest } from '@contivo/types';
+import { Injectable, Logger } from '@nestjs/common';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

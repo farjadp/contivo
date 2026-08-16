@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { QUEUES } from './jobs.constants';
+
 import { redisConnection } from './bull-board.provider';
+import { QUEUES } from './jobs.constants';
 import { JobsService } from './jobs.service';
 
 // Provide queue abstractions directly so they can be injected by controllers/services

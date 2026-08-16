@@ -11,30 +11,25 @@
  */
 
 import { Module } from '@nestjs/common';
+
 import { PrismaModule } from '../../common/prisma/prisma.module';
 import { JobsModule } from '../jobs/jobs.module';
 
 // Controllers
-import { SocialConnectionsController } from './social-connections.controller';
-import { SocialPublishController } from './social-publish.controller';
-import { SocialOAuthController } from './social-oauth.controller';
-
-// Services
-import { SocialConnectionsService } from './social-connections.service';
-import { SocialPublishService } from './social-publish.service';
-import { SocialOAuthService } from './social-oauth.service';
-import { SocialSchedulerService } from './social-scheduler.service';
-
-// Processors
-import { PublishProcessor } from './publish.processor';
-
-// Adapters
-import { LinkedInAdapter } from './adapters/linkedin.adapter';
-import { XAdapter } from './adapters/x.adapter';
+import { AdapterFactory } from './adapters/adapter.factory';
 import { FacebookAdapter } from './adapters/facebook.adapter';
 import { InstagramAdapter } from './adapters/instagram.adapter';
+import { LinkedInAdapter } from './adapters/linkedin.adapter';
 import { TikTokAdapter } from './adapters/tiktok.adapter';
-import { AdapterFactory } from './adapters/adapter.factory';
+import { XAdapter } from './adapters/x.adapter';
+import { PublishProcessor } from './publish.processor';
+import { SocialConnectionsController } from './social-connections.controller';
+import { SocialConnectionsService } from './social-connections.service';
+import { SocialOAuthController } from './social-oauth.controller';
+import { SocialOAuthService } from './social-oauth.service';
+import { SocialPublishController } from './social-publish.controller';
+import { SocialPublishService } from './social-publish.service';
+import { SocialSchedulerService } from './social-scheduler.service';
 
 @Module({
   imports: [PrismaModule, JobsModule],

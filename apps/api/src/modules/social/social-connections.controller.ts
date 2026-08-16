@@ -26,12 +26,14 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
+
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
-import { SocialConnectionsService } from './social-connections.service';
+
 import {
   CreateSocialConnectionDto,
   UpdateSocialConnectionDto,
 } from './dto/create-social-connection.dto';
+import { SocialConnectionsService } from './social-connections.service';
 
 @Controller('social/connections')
 export class SocialConnectionsController {

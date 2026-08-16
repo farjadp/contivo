@@ -18,10 +18,14 @@
  *   - The access token is never logged or returned to the frontend.
  */
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { SocialConnectionsService } from './social-connections.service';
+
+import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
+
+import { SocialConnectionsService } from './social-connections.service';
+
 
 // ─── Platform config helper ───────────────────────────────────────────────────
 
