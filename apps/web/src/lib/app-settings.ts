@@ -97,6 +97,9 @@ function normalizeLimit(
   raw: string | null | undefined,
   fallback: number,
 ): number {
+  // Number(null) and Number('') are 0, which would silently clamp an unset
+  // setting to PLATFORM_LIMIT_MIN instead of applying the fallback.
+  if (raw == null || String(raw).trim() === '') return fallback;
   const parsed = Number(raw);
   if (!Number.isInteger(parsed)) return fallback;
   return Math.max(PLATFORM_LIMIT_MIN, Math.min(PLATFORM_LIMIT_MAX, parsed));
@@ -195,7 +198,7 @@ export async function getGeminiCooldownSeconds(): Promise<number> {
   }
 
   const persisted = await readSetting(GEMINI_COOLDOWN_SECONDS_KEY);
-  const parsed = Number(persisted);
+  const parsed = persisted == null || persisted.trim() === '' ? NaN : Number(persisted);
   const value = Number.isInteger(parsed)
     ? Math.max(GEMINI_COOLDOWN_SECONDS_MIN, Math.min(GEMINI_COOLDOWN_SECONDS_MAX, parsed))
     : DEFAULT_GEMINI_COOLDOWN_SECONDS;
@@ -309,7 +312,7 @@ export async function getDefaultScheduleDelayHours(): Promise<number> {
   }
 
   const persisted = await readSetting(DEFAULT_SCHEDULE_DELAY_HOURS_KEY);
-  const parsed = Number(persisted);
+  const parsed = persisted == null || persisted.trim() === '' ? NaN : Number(persisted);
   const value = Number.isInteger(parsed)
     ? Math.max(SCHEDULE_DELAY_HOURS_MIN, Math.min(SCHEDULE_DELAY_HOURS_MAX, parsed))
     : DEFAULT_SCHEDULE_DELAY_HOURS;
