@@ -12,7 +12,7 @@ const BRAND_MEMORY_LIMIT_KEY = 'brand_memory_rescrape_limit';
 const IDEATION_MAX_CONTENT_COUNT_KEY = 'ideation_max_content_count';
 const DEFAULT_SCHEDULE_DELAY_HOURS_KEY = 'default_schedule_delay_hours';
 const CONTENT_WORD_COUNT_LIMITS_KEY = 'content_word_count_limits';
-const DEFAULT_GEMINI_MODEL = 'gemini-3-pro-preview';
+const DEFAULT_GEMINI_MODEL = 'gemini-3.7-flash';
 const DEFAULT_OPENAI_FALLBACK_MODEL = 'gpt-4.1';
 const DEFAULT_GEMINI_COOLDOWN_SECONDS = 60;
 const DEFAULT_COMPETITIVE_LANDSCAPE_LIMIT = 3;
@@ -20,7 +20,19 @@ const DEFAULT_BRAND_MEMORY_LIMIT = 3;
 const DEFAULT_IDEATION_MAX_CONTENT_COUNT = 10;
 const DEFAULT_SCHEDULE_DELAY_HOURS = 4;
 const CACHE_TTL_MS = 30_000;
-const LEGACY_GEMINI_MODELS = new Set(['gemini-2.0-flash', 'gemini-2.0-flash-lite']);
+/**
+ * Models the Gemini API has retired. Any of these — whether persisted by an
+ * admin or set via GEMINI_MODEL — is silently upgraded to the current default,
+ * because they return a hard 404 ("no longer available") on every call.
+ * Verified against the live API on 2026-08-16.
+ */
+const LEGACY_GEMINI_MODELS = new Set([
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+  'gemini-3-pro-preview',
+]);
 
 let ensureSettingsTablePromise: Promise<void> | null = null;
 let geminiModelCache: { value: string; expiresAt: number } | null = null;
@@ -32,11 +44,17 @@ let ideationMaxContentCountCache: { value: number; expiresAt: number } | null = 
 let defaultScheduleDelayHoursCache: { value: number; expiresAt: number } | null = null;
 let contentWordCountLimitsCache: { value: ContentWordCountLimits; expiresAt: number } | null = null;
 
+/**
+ * Selectable models, all confirmed working on 2026-08-16.
+ * Pro-tier models are omitted: they exist but return 429 RESOURCE_EXHAUSTED
+ * on a free-tier key, which just burns the cooldown and falls through to
+ * OpenAI. Add one here once the project is on a paid Gemini plan.
+ */
 export const GEMINI_MODEL_PRESETS = [
-  'gemini-3-pro-preview',
-  'gemini-3-flash-preview',
-  'gemini-2.5-pro',
-  'gemini-2.5-flash',
+  'gemini-3.7-flash',
+  'gemini-3.5-flash',
+  'gemini-3.1-flash-lite',
+  'gemini-flash-latest',
 ] as const;
 
 export const PLATFORM_LIMIT_MIN = 1;

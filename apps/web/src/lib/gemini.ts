@@ -120,6 +120,17 @@ async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCa
       const errorBody = await res.text();
       console.error('Gemini API Request Error:', errorBody);
 
+      // A 404 means the configured model no longer exists. Every call will
+      // fail forever and silently fall through to OpenAI, so say so loudly
+      // instead of burying it among transient errors.
+      if (res.status === 404) {
+        console.error(
+          `[gemini] Model "${model}" was rejected as unavailable (404). ` +
+            'Every Gemini call will fail and fall back to OpenAI until the model is changed ' +
+            '(admin panel, GEMINI_MODEL env, or DEFAULT_GEMINI_MODEL in app-settings.ts).',
+        );
+      }
+
       if (res.status === 429 || res.status === 503) {
         let cooldownMs = fallbackCooldownMs;
         const retryDelayMatch = errorBody.match(/"retryDelay"\s*:\s*"(\d+)s"/i);
