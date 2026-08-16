@@ -72,6 +72,7 @@ model Workspace {
   strategicReports     StrategicReport[]
   autopilotPolicy      AutopilotPolicy?
   autopilotRuns        AutopilotRun[]
+  siteConnections      SiteConnection[]
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -153,6 +154,46 @@ model AutopilotRun {
   @@index([workspaceId, startedAt])
   @@index([policyId])
   @@map("autopilot_runs")
+}
+
+enum SiteConnectionStatus {
+  ACTIVE
+  DISABLED
+  REVOKED
+}
+
+/// A website that pulls its published content from Contivo. One row per site;
+/// the API key is stored only as a SHA-256 hash (`keyHash`) — the plaintext is
+/// shown to the user once at creation and never persisted. `keyPrefix` is the
+/// short visible fragment used to identify a key in the UI.
+model SiteConnection {
+  id          String    @id @default(cuid())
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  userId      String
+
+  name    String
+  siteUrl String
+  status  SiteConnectionStatus @default(ACTIVE)
+
+  keyHash   String @unique
+  keyPrefix String
+
+  /// Optional endpoint pinged after a post is published so the site can
+  /// revalidate its cache. Called with the secret as a Bearer token.
+  revalidateUrl    String?
+  revalidateSecret String?
+
+  lastFetchedAt        DateTime?
+  lastRevalidateAt     DateTime?
+  lastRevalidateStatus Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("site_connections")
 }
 
 model StrategicReport {
@@ -278,6 +319,9 @@ model ContentItem {
   topic             String
   content           String
   status            ContentStatus  @default(DRAFT)
+  /// URL-safe identifier for website-published content. Assigned at publish
+  /// time and never changed afterwards, so live URLs stay stable.
+  slug              String?
   creditsCost       Int            @default(0)
   jobId             String?
   scheduledAtUtc    DateTime?
@@ -291,8 +335,10 @@ model ContentItem {
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace         Workspace?     @relation(fields: [workspaceId], references: [id])
 
+  @@unique([workspaceId, slug])
   @@index([userId])
   @@index([workspaceId])
+  @@index([workspaceId, status, publishedAtUtc])
   @@map("content_items")
 }
 
