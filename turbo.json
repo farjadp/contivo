@@ -39,7 +39,8 @@
     "FACEBOOK_REDIRECT_URI",
     "TIKTOK_REDIRECT_URI",
     "OAUTH_STATE_SECRET",
-    "SOCIAL_TOKEN_SECRET"
+    "SOCIAL_TOKEN_SECRET",
+    "CRON_SECRET"
   ],
   "tasks": {
     "build": {

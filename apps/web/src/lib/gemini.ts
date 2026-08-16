@@ -852,6 +852,8 @@ export type IdeationRequestOptions = FrameworkSelectionInput & {
   autoInsertToCalendar?: boolean;
   marketMatrices?: any;
   competitorKeywordsIntel?: any;
+  /** Free-form operator guidance (e.g. Autopilot topic hints / avoid list). */
+  steeringNotes?: string | null;
 };
 
 export interface ContentIdeasResult {
@@ -960,6 +962,7 @@ function buildIdeasPrompt(input: {
   goal: string;
   platform: string;
   funnelStage: string;
+  steeringNotes?: string | null;
 }): string {
   return `
 You are Contivo Framework Engine.
@@ -989,7 +992,7 @@ Content request context:
 - include_images: ${input.includeImages}
 - image_count: ${input.imageCount} (max 3; first image should be cover)
 - auto_insert_to_calendar: ${input.autoInsertToCalendar} (mock behavior for now)
-
+${input.steeringNotes ? `\nOperator steering (must respect):\n${input.steeringNotes}\n` : ''}
 Output schema:
 {
   "ideas": [
@@ -1061,7 +1064,7 @@ async function generateIdeasWithFramework(
     imageCount: number;
     autoInsertToCalendar: boolean;
   },
-  context: { goal: string; platform: string; funnelStage: string },
+  context: { goal: string; platform: string; funnelStage: string; steeringNotes?: string | null },
   intelligenceContext: {
     marketMetricContext: string;
     competitorKeywordContext: string;
@@ -1090,6 +1093,7 @@ async function generateIdeasWithFramework(
     goal: context.goal,
     platform: context.platform,
     funnelStage: context.funnelStage,
+    steeringNotes: context.steeringNotes,
   });
 
   const gemini = await callGemini(prompt, true);
@@ -1162,6 +1166,7 @@ export async function generateContentIdeasWithGemini(
   const goal = String(options?.goal || 'authority');
   const platform = String(options?.platform || 'linkedin');
   const funnelStage = String(options?.funnelStage || 'AUTO');
+  const steeringNotes = String(options?.steeringNotes || '').trim().slice(0, 1200) || null;
   const normalizedBrand = normalizeBrandSummary(brandSummary);
   const intelligenceContext = {
     marketMetricContext: summarizeMarketMetricContext(marketMatrices),
@@ -1180,7 +1185,7 @@ export async function generateContentIdeasWithGemini(
       imageCount,
       autoInsertToCalendar,
     },
-    { goal, platform, funnelStage },
+    { goal, platform, funnelStage, steeringNotes },
     intelligenceContext,
   );
 
@@ -1210,7 +1215,7 @@ export async function generateContentIdeasWithGemini(
             imageCount,
             autoInsertToCalendar,
           },
-          { goal, platform, funnelStage },
+          { goal, platform, funnelStage, steeringNotes },
           intelligenceContext,
         );
         if (fallbackResult && fallbackResult.qualityScores.overall_score >= primary.qualityScores.overall_score) {
