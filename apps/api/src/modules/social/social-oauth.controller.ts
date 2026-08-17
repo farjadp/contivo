@@ -16,10 +16,11 @@
  *   The /callback endpoint validates the HMAC-signed state param (no session needed).
  */
 
-import { Controller, Get, Param, Query, Redirect, Logger } from '@nestjs/common';
+import { Controller, Get, Param, Query, Redirect, Logger, UnauthorizedException } from '@nestjs/common';
 
-import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
+import { Public } from '../auth/decorators/public.decorator';
 
+import { verifyHandoffToken } from './connect-handoff';
 import { SocialConnectionsService } from './social-connections.service';
 import { SocialOAuthService } from './social-oauth.service';
 
@@ -36,21 +37,33 @@ export class SocialOAuthController {
 
   /**
    * Step 1 — initiate OAuth.
-   * Called by the frontend's Connect button.
+   *
+   * Reached by a browser navigation from the Connect button, which cannot
+   * send an Authorization header, so this route is @Public and authenticates
+   * with a short-lived signed handoff token minted by the web app instead.
    * Returns a 302 redirect to the platform's authorization page.
    */
+  @Public()
   @Get(':platform/connect')
   @Redirect()
   async initiateOAuth(
     @Param('platform') platform: Platform,
     @Query('workspaceId') workspaceId: string,
-    @CurrentUser() user: AuthenticatedUser,
+    @Query('t') handoffToken?: string,
   ) {
-    if (!workspaceId) throw new Error('workspaceId is required');
-    await this.connections.validateWorkspaceAccess(workspaceId, user.id);
+    const handoff = verifyHandoffToken(handoffToken);
+    if (!handoff) {
+      this.logger.warn(`OAuth connect rejected: missing or invalid handoff token (${platform})`);
+      throw new UnauthorizedException('Invalid or expired connect link. Reopen the Connections page and try again.');
+    }
+    const targetWorkspaceId = workspaceId || handoff.workspaceId;
+    if (targetWorkspaceId !== handoff.workspaceId) {
+      throw new UnauthorizedException('Connect link does not match the requested workspace.');
+    }
+    await this.connections.validateWorkspaceAccess(targetWorkspaceId, handoff.userId);
 
-    const url = this.oauthService.getAuthUrl(platform, workspaceId);
-    this.logger.log(`OAuth initiated: ${platform} workspace=${workspaceId}`);
+    const url = this.oauthService.getAuthUrl(platform, targetWorkspaceId);
+    this.logger.log(`OAuth initiated: ${platform} workspace=${targetWorkspaceId}`);
     return { url, statusCode: 302 };
   }
 

@@ -13,8 +13,10 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight } from 'lucide-react';
+
+import { getSocialConnectUrl } from '@/app/actions/social-connect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,8 +86,24 @@ const PLATFORMS: {
 
 export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
   const [selected, setSelected] = useState<Platform | null>(null);
+  const [connectError, setConnectError] = useState('');
+  const [isConnecting, startConnect] = useTransition();
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+  // The API's /connect route is opened by the browser, so it cannot carry an
+  // auth header. Mint a short-lived signed link first, then navigate to it.
+  const handleConnect = () => {
+    if (!selected) return;
+    setConnectError('');
+    startConnect(async () => {
+      const result = await getSocialConnectUrl(selected.toLowerCase(), workspaceId);
+      if ('error' in result) {
+        setConnectError(result.error);
+        return;
+      }
+      window.location.href = result.url;
+    });
+  };
+
 
   const platform = PLATFORMS.find((p) => p.id === selected);
 
@@ -197,14 +215,18 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                 </p>
               </div>
 
-              {/* CTA — real OAuth redirect to NestJS backend */}
-              <a
-                href={`${API_BASE}/api/v1/social/oauth/${selected!.toLowerCase()}/connect?workspaceId=${encodeURIComponent(workspaceId)}`}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-[0.99] transition-all"
+              {/* CTA — mints a signed handoff link, then redirects to the provider */}
+              {connectError && (
+                <p className="mb-3 text-xs text-red-600">{connectError}</p>
+              )}
+              <button
+                onClick={handleConnect}
+                disabled={isConnecting}
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
                 style={{ backgroundColor: platform!.color }}
               >
-                Continue to {platform!.label} OAuth →
-              </a>
+                {isConnecting ? 'Preparing…' : `Continue to ${platform!.label} OAuth →`}
+              </button>
             </div>
           )}
         </div>
