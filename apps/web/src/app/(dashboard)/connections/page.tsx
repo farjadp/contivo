@@ -17,6 +17,8 @@ import { Share2, Globe } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
+import { SitesSection } from './_components/SitesSection';
+import { listSites } from '@/app/actions/sites';
 
 export const metadata = { title: 'Connections — Contivo' };
 
@@ -82,10 +84,14 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   const workspaceId = params.workspaceId ?? session.userId ?? '';
 
   // Fetch data in parallel
-  const [{ connections }, { jobs }] = await Promise.all([
+  const [{ connections }, { jobs }, siteState] = await Promise.all([
     fetchConnections(workspaceId),
     fetchPublishJobs(workspaceId),
+    listSites(),
   ]);
+  const sites = 'sites' in siteState ? siteState.sites : [];
+  const siteWorkspaces = 'workspaces' in siteState ? siteState.workspaces : [];
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pt-8 px-4">
@@ -128,19 +134,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
             workspaceId={workspaceId}
           />
         ) : (
-          /* Websites tab — placeholder for Phase 2 */
-          <div className="py-16 text-center">
-            <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-              <Globe className="w-6 h-6 text-gray-400" />
-            </div>
-            <h3 className="text-base font-bold text-[#121212]">Website connections</h3>
-            <p className="text-sm text-gray-400 mt-1 max-w-xs mx-auto">
-              Connect your website or blog for direct publishing via RSS, webhooks, or CMS integrations.
-            </p>
-            <span className="inline-block mt-4 text-xs font-bold text-gray-400 bg-gray-100 rounded-full px-3 py-1.5">
-              Coming in Phase 2
-            </span>
-          </div>
+          <SitesSection sites={sites} workspaces={siteWorkspaces} appUrl={appUrl} />
         )}
       </div>
     </div>

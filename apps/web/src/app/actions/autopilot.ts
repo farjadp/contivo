@@ -38,7 +38,7 @@ export async function getAutopilotState(workspaceId: string) {
   const auth = await requireOwnedWorkspace(workspaceId);
   if ('error' in auth) return { error: auth.error };
 
-  const [policy, runs, connections] = await Promise.all([
+  const [policy, runs, connections, siteCount] = await Promise.all([
     prisma.autopilotPolicy.findUnique({ where: { workspaceId } }),
     prisma.autopilotRun.findMany({
       where: { workspaceId },
@@ -49,6 +49,7 @@ export async function getAutopilotState(workspaceId: string) {
       where: { workspaceId, status: 'CONNECTED', isDefault: true },
       select: { platform: true, accountName: true },
     }),
+    prisma.siteConnection.count({ where: { workspaceId, status: 'ACTIVE' } }),
   ]);
 
   return {
@@ -58,6 +59,7 @@ export async function getAutopilotState(workspaceId: string) {
       platform: String(c.platform),
       accountName: c.accountName,
     })),
+    hasSiteConnection: siteCount > 0,
   };
 }
 

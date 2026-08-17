@@ -18,6 +18,7 @@ type Props = {
   initialPolicy: SerializedPolicy | null;
   initialRuns: SerializedRun[];
   connectedPlatforms: Array<{ platform: string; accountName: string }>;
+  hasSiteConnection: boolean;
   ideationReady: boolean;
 };
 
@@ -57,6 +58,7 @@ export function AutopilotTab({
   initialPolicy,
   initialRuns,
   connectedPlatforms,
+  hasSiteConnection,
   ideationReady,
 }: Props) {
   const router = useRouter();
@@ -73,6 +75,8 @@ export function AutopilotTab({
 
   const connectedSet = new Set(connectedPlatforms.map((c) => c.platform));
   const channelIsConnected = (channel: string) => {
+    // blog publishes through the Content API, so a site connection is what counts.
+    if (channel === 'blog') return hasSiteConnection;
     const platform = CHANNEL_TO_PLATFORM[channel as keyof typeof CHANNEL_TO_PLATFORM];
     return platform ? connectedSet.has(platform) : false;
   };
@@ -211,11 +215,12 @@ export function AutopilotTab({
           )}
           {!anyChannelConnected && (
             <Warning>
-              None of the selected channels has a connected default account. Connect one on the{' '}
+              None of the selected channels can publish yet. Social channels need a connected
+              default account and Blog needs a website — set one up on the{' '}
               <a href="/connections" className="underline font-semibold">
                 Connections
               </a>{' '}
-              page or Autopilot will skip every run.
+              page, or Autopilot will skip every run.
             </Warning>
           )}
           {message && (
@@ -291,13 +296,19 @@ export function AutopilotTab({
                     {CHANNEL_LABELS[channel] ?? channel}
                     <span
                       className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
-                      title={connected ? 'Connected' : 'No connected default account'}
+                      title={
+                        connected
+                          ? 'Ready to publish'
+                          : channel === 'blog'
+                            ? 'No active site connection'
+                            : 'No connected default account'
+                      }
                     />
                   </button>
                 );
               })}
             </div>
-            <Hint>Green dot = a default account is connected for that channel.</Hint>
+            <Hint>Green dot = that channel can actually publish (social account or website connected).</Hint>
           </Field>
 
           <Field label="Publish days">

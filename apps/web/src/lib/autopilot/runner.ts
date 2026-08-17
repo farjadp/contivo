@@ -10,7 +10,8 @@
  *      slot inside the policy window → item becomes SCHEDULED
  *   6. record an AutopilotRun with a step-by-step log
  *
- * Publishing itself is done by SocialSchedulerService when the slot arrives.
+ * Publishing itself happens elsewhere once an item is SCHEDULED:
+ * SocialSchedulerService (Nest) for social, publishDueWebContent for blog.
  * No session — this is meant to be called from a cron-triggered route.
  */
 
@@ -25,7 +26,7 @@ import {
   saveIdeaToPipelineCore,
 } from '@/lib/content-engine';
 
-import { CHANNEL_TO_PLATFORM } from './channels';
+import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
 import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
 
@@ -187,7 +188,8 @@ export async function runPolicy(
     if (channels.length === 0) {
       note('no_publishable_channels');
       return finish('SKIPPED', zero, {
-        error: 'No channel has a connected default social account.',
+        error:
+          'No channel is publishable: social channels need a connected default account, and blog needs an active site connection.',
       });
     }
 
@@ -396,14 +398,27 @@ async function resolvePublishableChannels(
   note: (step: string, extra?: Record<string, unknown>) => void,
 ): Promise<ContentChannel[]> {
   const wanted = requested.length > 0 ? requested : (['linkedin'] as ContentChannel[]);
-  const connections = await prisma.socialConnection.findMany({
-    where: { workspaceId, status: 'CONNECTED', isDefault: true },
-    select: { platform: true },
-  });
+  const [connections, siteCount] = await Promise.all([
+    prisma.socialConnection.findMany({
+      where: { workspaceId, status: 'CONNECTED', isDefault: true },
+      select: { platform: true },
+    }),
+    prisma.siteConnection.count({ where: { workspaceId, status: 'ACTIVE' } }),
+  ]);
   const connected = new Set(connections.map((c) => String(c.platform)));
 
   const ok: ContentChannel[] = [];
   for (const channel of wanted) {
+    // Web channels publish through the Content API, not a social adapter.
+    if (WEB_CHANNELS.includes(channel)) {
+      if (siteCount === 0) {
+        note('channel_skipped', { channel, reason: 'no active site connection' });
+        continue;
+      }
+      ok.push(channel);
+      continue;
+    }
+
     const platform = CHANNEL_TO_PLATFORM[channel];
     if (!platform) {
       note('channel_skipped', { channel, reason: 'no publisher for this channel yet' });

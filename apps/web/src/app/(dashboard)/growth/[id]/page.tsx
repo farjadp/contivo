@@ -238,6 +238,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const autopilotRuns = ('runs' in autopilotState && autopilotState.runs) || [];
   const autopilotConnected =
     ('connectedPlatforms' in autopilotState && autopilotState.connectedPlatforms) || [];
+  const autopilotHasSite =
+    'hasSiteConnection' in autopilotState ? Boolean(autopilotState.hasSiteConnection) : false;
   const ideationReady =
     Boolean(workspace.brandSummary) &&
     Array.isArray(insights?.competitiveMatrices?.charts) &&
@@ -586,6 +588,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             initialPolicy={autopilotPolicy}
             initialRuns={autopilotRuns}
             connectedPlatforms={autopilotConnected}
+            hasSiteConnection={autopilotHasSite}
             ideationReady={ideationReady}
           />
         )}
