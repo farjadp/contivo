@@ -179,7 +179,10 @@ export async function runPolicy(
     const ctx = await loadIdeationContext(actor);
     if ('error' in ctx) {
       note('prerequisites_missing', { error: ctx.error });
-      return finish('SKIPPED', zero, { error: ctx.error });
+      // Retry sooner than the daily cadence: the user is probably setting the
+      // workspace up right now, and waiting a full day after they finish is
+      // a poor experience for something meant to be hands-off.
+      return finish('SKIPPED', zero, { error: ctx.error, rerunHours: FAILURE_RERUN_HOURS });
     }
     note('prerequisites_ok');
 
