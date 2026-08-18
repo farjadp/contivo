@@ -69,10 +69,16 @@ export class SocialOAuthController {
 
   /**
    * Step 2 — handle platform callback.
-   * The platform redirects here after user authorizes.
+   *
+   * The provider redirects the user's browser here, so like /connect it can
+   * carry no Authorization header and must be @Public. Its authentication is
+   * the `state` parameter: AES-GCM encrypted and issued by us in step 1, so a
+   * forged callback cannot name a workspace we did not authorise.
+   *
    * Exchanges the code for a token, saves the connection, then redirects
    * the user back to the frontend /connections page.
    */
+  @Public()
   @Get(':platform/callback')
   @Redirect()
   async handleCallback(
