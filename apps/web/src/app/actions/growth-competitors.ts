@@ -1099,3 +1099,55 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
     return { error: 'Could not save competitor edits.' };
   }
 }
+
+/**
+ * Saves a single competitor's accept/reject decision immediately.
+ *
+ * Deliberately does NOT run the enrichment or matrix-regeneration that
+ * `saveWorkspaceCompetitorEdits` does: this fires on every click, so it must
+ * be one indexed UPDATE and nothing else. Text edits (name, domain, type)
+ * still go through the bulk save, where that cost is expected.
+ */
+export async function setCompetitorDecision(
+  workspaceId: string,
+  competitorId: string,
+  decision: string,
+) {
+  const session = await getSession();
+  if (!session) return { error: 'Not authenticated' };
+  if (!workspaceId || !competitorId) return { error: 'Missing identifiers' };
+
+  const normalized = normalizeDecision(decision);
+
+  try {
+    // Scope the update through the workspace so one user cannot flip another
+    // user's competitor by guessing an id.
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId, userId: session.userId as string },
+      select: { id: true },
+    });
+    if (!workspace) return { error: 'Workspace not found' };
+
+    const { count } = await prisma.competitor.updateMany({
+      where: { id: competitorId, workspaceId },
+      data: { userDecision: normalized },
+    });
+    if (count === 0) return { error: 'Competitor not found' };
+
+    const acceptedCount = await prisma.competitor.count({
+      where: { workspaceId, userDecision: 'ACCEPTED' },
+    });
+
+    await writeActivityLog({
+      userId: session.userId as string,
+      workspaceId,
+      action: 'COMPETITOR_DECISION_SET',
+      detail: { competitorId, decision: normalized, acceptedCount },
+    });
+
+    return { success: true, decision: normalized, acceptedCount };
+  } catch (error) {
+    console.error('Failed to set competitor decision:', error);
+    return { error: 'Could not save that decision.' };
+  }
+}

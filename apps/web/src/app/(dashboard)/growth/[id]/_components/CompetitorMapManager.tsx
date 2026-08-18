@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
+import { Check, Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import {
   discoverWorkspaceCompetitors,
   saveWorkspaceCompetitorEdits,
+  setCompetitorDecision,
 } from '@/app/actions/growth-competitors';
 
 type CompetitorItem = {
@@ -196,12 +197,17 @@ export function CompetitorMapManager({
         .filter((item) => !isSyntheticCompetitor(item))
         .map((item) => ({
           id: item.id,
-          decision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
+          // Decisions save on click, so they are not part of the dirty state —
+          // only the free-text fields need an explicit save.
           type: item.type || 'DIRECT',
           name: item.name,
+          domain: item.domain ?? '',
         })),
     ),
   );
+  // Decisions save the instant they are clicked, so this tracks which rows
+  // are mid-flight rather than a whole-form dirty state.
+  const [savingDecisionIds, setSavingDecisionIds] = useState<string[]>([]);
   const [manualName, setManualName] = useState('');
   const [manualDomain, setManualDomain] = useState('');
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -215,6 +221,36 @@ export function CompetitorMapManager({
     initialArchive || [],
   );
 
+  const applyDecision = async (competitorId: string, decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => {
+    const previous = competitors.find((c) => c.id === competitorId)?.userDecision;
+    if (previous === decision) return;
+
+    // Optimistic: the button reflects the choice immediately, and rolls back
+    // if the write fails, so the screen never claims something the DB refused.
+    updateCompetitor(competitorId, { userDecision: decision });
+    setError(null);
+
+    // Rows created locally have no database row yet — they persist via the
+    // bulk save, which is what creates them.
+    if (competitorId.startsWith('temp-')) return;
+
+    setSavingDecisionIds((ids) => [...ids, competitorId]);
+    try {
+      const result = await setCompetitorDecision(workspaceId, competitorId, decision);
+      if (result && 'error' in result && result.error) {
+        updateCompetitor(competitorId, { userDecision: previous });
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error(err);
+      updateCompetitor(competitorId, { userDecision: previous });
+      setError('Could not save that decision.');
+    } finally {
+      setSavingDecisionIds((ids) => ids.filter((id) => id !== competitorId));
+      router.refresh();
+    }
+  };
+
   const visibleCompetitors = useMemo(
     () =>
       competitors.filter(
@@ -227,9 +263,9 @@ export function CompetitorMapManager({
       JSON.stringify(
         competitors.map((item) => ({
           id: item.id,
-          decision: item.userDecision,
           type: item.type,
           name: item.name,
+          domain: item.domain ?? '',
         })),
       ),
     [competitors],
@@ -376,9 +412,9 @@ export function CompetitorMapManager({
           JSON.stringify(
             (result?.competitors ?? competitors).map((item: any) => ({
               id: item.id,
-              decision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
               type: item.type || 'DIRECT',
               name: item.name,
+              domain: item.domain ?? '',
             })),
           ),
         );
@@ -398,9 +434,9 @@ export function CompetitorMapManager({
       {hasUnsavedChanges && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3">
           <p className="text-sm text-emerald-900">
-            <span className="font-bold">Your competitor decisions are not saved yet.</span>{' '}
-            Accepting or rejecting only changes this screen — nothing reaches the workspace, and
-            keyword analysis will not see it, until you save.
+            <span className="font-bold">You have unsaved text edits.</span>{' '}
+            Accept and Reject save on click, but changes to a competitor&apos;s name, domain or type
+            need this save.
           </p>
           <button
             type="button"
@@ -436,7 +472,7 @@ export function CompetitorMapManager({
           }`}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {hasUnsavedChanges ? 'Save competitor decisions' : 'Saved'}
+          {hasUnsavedChanges ? 'Save text edits' : 'Saved'}
         </button>
 
         <span className="text-xs font-semibold text-gray-500">
@@ -587,15 +623,11 @@ export function CompetitorMapManager({
                 <option value="ASPIRATIONAL">Aspirational</option>
               </select>
 
-              <select
+              <DecisionButtons
                 value={competitor.userDecision || (competitor.source === 'AI' ? 'PENDING' : 'ACCEPTED')}
-                onChange={(event) => updateCompetitor(competitor.id, { userDecision: event.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-              >
-                <option value="PENDING">Pending Review</option>
-                <option value="ACCEPTED">Accepted</option>
-                <option value="REJECTED">Rejected</option>
-              </select>
+                saving={savingDecisionIds.includes(competitor.id)}
+                onChange={(d) => applyDecision(competitor.id, d)}
+              />
             </div>
 
             {competitor.description ? (
@@ -640,6 +672,51 @@ export function CompetitorMapManager({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function DecisionButtons({
+  value,
+  saving,
+  onChange,
+}: {
+  value: string;
+  saving: boolean;
+  onChange: (decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => void;
+}) {
+  const options: Array<{ key: 'ACCEPTED' | 'REJECTED'; label: string; on: string }> = [
+    { key: 'ACCEPTED', label: 'Accept', on: 'bg-emerald-600 text-white border-emerald-600' },
+    { key: 'REJECTED', label: 'Reject', on: 'bg-red-600 text-white border-red-600' },
+  ];
+
+  return (
+    <div className="flex items-center gap-1.5">
+      {options.map((o) => {
+        const active = value === o.key;
+        return (
+          <button
+            key={o.key}
+            type="button"
+            disabled={saving}
+            // Clicking the active choice clears it back to undecided.
+            onClick={() => onChange(active ? 'PENDING' : o.key)}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${
+              active ? o.on : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            {active && <Check className="h-3.5 w-3.5" />}
+            {o.label}
+          </button>
+        );
+      })}
+      {saving ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+      ) : value === 'PENDING' ? (
+        <span className="text-xs text-gray-400">Undecided</span>
+      ) : (
+        <span className="text-xs text-emerald-600">Saved</span>
+      )}
     </div>
   );
 }
