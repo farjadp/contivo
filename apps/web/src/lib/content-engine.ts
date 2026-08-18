@@ -32,6 +32,8 @@ import {
   getLatestFrameworkMetadataForContentItem,
   logFrameworkMetadata,
 } from '@/lib/framework-metadata-log';
+import { humanizeDraft } from '@/lib/humanize';
+import { generateImageForContentItem } from '@/lib/content-image';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -526,6 +528,10 @@ export type GenerateDraftOptions = {
   scheduledAtUtc?: Date | null;
   /** Free-form origin tag written to the activity log (e.g. "autopilot"). */
   source?: string;
+  /** Rewrite the draft to strip machine-written tells before saving. */
+  humanize?: boolean;
+  /** Generate and attach artwork for the post. */
+  withImage?: boolean;
 };
 
 /**
@@ -608,6 +614,25 @@ export async function generateDraftForItem(
       return { error: 'AI generation failed' };
     }
 
+    // Rewrite before the item is saved, so the humanised text is what gets
+    // quality-gated, stored and published — not the raw generation.
+    let finalBody = generatedBody;
+    let humanizeInfo: Record<string, unknown> | null = null;
+    if (options.humanize) {
+      const humanized = await humanizeDraft({
+        text: generatedBody,
+        channel: item.channel,
+        brandSummary,
+      });
+      finalBody = humanized.text;
+      humanizeInfo = {
+        changed: humanized.changed,
+        source: humanized.source,
+        tellsBefore: humanized.tellsBefore,
+        tellsAfter: humanized.tellsAfter,
+      };
+    }
+
     const autoScheduleDelayHours = await getDefaultScheduleDelayHours();
     const baseAutoSchedule = new Date(Date.now() + autoScheduleDelayHours * 60 * 60 * 1000);
     const autoScheduledAtUtc = await computeAutoScheduleUtc({
@@ -625,12 +650,27 @@ export async function generateDraftForItem(
     const updated = await prisma.contentItem.update({
       where: { id: itemId },
       data: {
-        content: generatedBody,
+        content: finalBody,
         status: 'SCHEDULED',
         scheduledAtUtc: finalScheduledAtUtc,
         scheduledTimezone: scheduleTimezone || 'America/Toronto',
       },
     });
+
+    // Artwork is best-effort: a post without an image still publishes.
+    let imageInfo: Record<string, unknown> | null = null;
+    if (options.withImage) {
+      const image = await generateImageForContentItem({
+        contentItemId: updated.id,
+        workspaceId,
+        topic: updated.topic,
+        body: finalBody,
+        brandSummary,
+      });
+      imageInfo = image
+        ? { imageId: image.id, bytes: image.bytes, altText: image.altText }
+        : { imageId: null, failed: true };
+    }
 
     await writeActivityLog({
       userId,
@@ -638,6 +678,8 @@ export async function generateDraftForItem(
       action: 'CONTENT_GENERATED_FROM_PIPELINE',
       detail: {
         itemId: updated.id,
+        humanize: humanizeInfo,
+        image: imageInfo,
         channel: updated.channel,
         status: updated.status,
         frameworkId,
@@ -693,7 +735,7 @@ export async function generateDraftForItem(
       });
     }
 
-    return { success: true, item: updated };
+    return { success: true, item: updated, humanize: humanizeInfo, image: imageInfo };
   } catch (err) {
     console.error('Generation action error:', err);
     return { error: 'Failed to generate post.' };

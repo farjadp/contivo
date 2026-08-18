@@ -20,6 +20,13 @@ export interface AdapterConnection {
   refreshToken?: string;
 }
 
+/** An image to publish alongside the post. */
+export interface PublishImage {
+  data: Buffer;
+  mimeType: string;
+  altText?: string;
+}
+
 /** Platform-agnostic publish payload. */
 export interface PublishPayload {
   body: string;
@@ -27,6 +34,8 @@ export interface PublishPayload {
   hashtags?: string[];
   /** For Facebook: required page identifier */
   pageId?: string;
+  /** Optional artwork; adapters that cannot post media ignore it. */
+  image?: PublishImage;
 }
 
 /** Normalised result returned by every adapter after a post attempt. */

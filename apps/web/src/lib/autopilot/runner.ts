@@ -307,6 +307,11 @@ export async function runPolicy(
             scheduledAtUtc: slot,
             source: 'autopilot',
             manualSource: { timezone: policy.timezone },
+            // Unattended posts have to clear a higher bar: strip the
+            // machine-written tells, and ship artwork so the post is not a
+            // wall of text in the feed.
+            humanize: true,
+            withImage: true,
           });
           if ('error' in drafted && drafted.error) {
             note('draft_failed', { channel, itemId, topic: idea.topic, error: drafted.error });
@@ -358,6 +363,8 @@ export async function runPolicy(
             slot: slot.toISOString(),
             scores: verdict.scores,
             judge: verdict.judge,
+            humanized: 'humanize' in drafted ? (drafted.humanize as any)?.changed ?? false : false,
+            image: 'image' in drafted ? Boolean((drafted.image as any)?.imageId) : false,
           });
         }
 

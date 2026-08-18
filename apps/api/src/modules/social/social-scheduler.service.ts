@@ -157,18 +157,17 @@ export class SocialSchedulerService {
 
   /** Maps content pipeline channel names to social platform enum values. */
   private channelToPlatform(channel: string): string | null {
+    // The ContentChannel enum is lower-case ('linkedin', 'twitter', ...).
+    // This map used to be keyed on upper-case only, so every lookup returned
+    // null and no scheduled post was ever published. Normalise first.
     const map: Record<string, string> = {
-      LINKEDIN:  'LINKEDIN',
-      TWITTER:   'X',
-      X:         'X',
-      FACEBOOK:  'FACEBOOK',
-      INSTAGRAM: 'INSTAGRAM',
-      // Friendly label variants
-      LinkedIn:  'LINKEDIN',
-      Twitter:   'X',
-      Facebook:  'FACEBOOK',
-      Instagram: 'INSTAGRAM',
+      linkedin:  'LINKEDIN',
+      twitter:   'X',
+      x:         'X',
+      facebook:  'FACEBOOK',
+      instagram: 'INSTAGRAM',
+      tiktok:    'TIKTOK',
     };
-    return map[channel] ?? null;
+    return map[String(channel ?? '').trim().toLowerCase()] ?? null;
   }
 }

@@ -225,19 +225,26 @@ export class SocialConnectionsService {
   // ─── Token encryption (MVP: XOR + base64) ─────────────────────────────────
   // Replace with proper KMS / Vault calls in production.
 
-  public encryptToken(token: string): string {
+  /** XOR a buffer against the repeating key. Symmetric: same call both ways. */
+  private xorBytes(input: Buffer): Buffer {
     const secret = process.env.SOCIAL_TOKEN_SECRET ?? 'contivo-dev-secret-key-change-in-prod';
     const keyBytes = Buffer.from(secret, 'utf8');
-    const tokenBytes = Buffer.from(token, 'utf8');
-    const out = Buffer.alloc(tokenBytes.length);
-    for (let i = 0; i < tokenBytes.length; i++) {
-      out[i] = tokenBytes[i] ^ keyBytes[i % keyBytes.length];
+    const out = Buffer.alloc(input.length);
+    for (let i = 0; i < input.length; i++) {
+      out[i] = input[i] ^ keyBytes[i % keyBytes.length];
     }
-    return out.toString('base64');
+    return out;
+  }
+
+  public encryptToken(token: string): string {
+    return this.xorBytes(Buffer.from(token, 'utf8')).toString('base64');
   }
 
   public decryptToken(ref: string): string {
-    // XOR encryption is symmetric — decrypt == encrypt
-    return this.encryptToken(Buffer.from(ref, 'base64').toString('utf8'));
+    // Must XOR the raw bytes. The previous version decoded the ciphertext to a
+    // UTF-8 *string* first: XORed bytes are arbitrary binary, so every byte
+    // that was not valid UTF-8 became U+FFFD and the token came back corrupted.
+    // Every social publish then failed as "token expired or invalid".
+    return this.xorBytes(Buffer.from(ref, 'base64')).toString('utf8');
   }
 }

@@ -256,6 +256,33 @@ export class SocialPublishService {
         throw new Error('Social connection token unavailable. Reconnect the account.');
       }
 
+      // Artwork is loaded here rather than carried in the job payload: the
+      // payload travels through the queue as JSON, and image bytes do not
+      // belong in it. The row is the single copy both sides read.
+      const enrichedPayload: PublishPayload = { ...payload };
+      try {
+        const job = await this.prisma.socialPublishJob.findUnique({
+          where: { id: jobId },
+          select: { contentItemId: true },
+        });
+        if (job?.contentItemId) {
+          const image = await (this.prisma as any).contentImage.findFirst({
+            where: { contentItemId: job.contentItemId },
+            orderBy: { createdAt: 'desc' },
+          });
+          if (image?.data) {
+            enrichedPayload.image = {
+              data: Buffer.from(image.data),
+              mimeType: image.mimeType || 'image/png',
+              altText: image.altText ?? undefined,
+            };
+          }
+        }
+      } catch (imageErr) {
+        // Never let artwork lookup stop a publish.
+        this.logger.warn(`Could not load artwork for job=${jobId}: ${(imageErr as Error).message}`);
+      }
+
       const adapter = this.adapterFactory.getAdapter(platform);
 
       // Validate live connection
@@ -282,20 +309,35 @@ export class SocialPublishService {
           accessToken,
           refreshToken:      refreshToken ?? undefined,
         },
-        payload,
+        enrichedPayload,
       );
 
       if (result.success) {
+        const publishedAt = new Date();
         await this.prisma.socialPublishJob.update({
           where: { id: jobId },
           data:  {
             status:        'PUBLISHED',
             externalPostId:  result.externalPostId ?? null,
             externalPostUrl: result.externalPostUrl ?? null,
-            publishedAtUtc:  new Date(),
+            publishedAtUtc:  publishedAt,
             lastError:       null,
           },
         });
+
+        // Close the loop on the content item. The scheduler moves it to
+        // PUBLISHING before handing off; without this it stayed there forever
+        // even after a successful post, so nothing ever counted as published.
+        const publishedJob = await this.prisma.socialPublishJob.findUnique({
+          where: { id: jobId },
+          select: { contentItemId: true },
+        });
+        if (publishedJob?.contentItemId) {
+          await this.prisma.contentItem.updateMany({
+            where: { id: publishedJob.contentItemId, status: { in: ['PUBLISHING', 'SCHEDULED'] } },
+            data: { status: 'PUBLISHED', publishedAtUtc: publishedAt, failedReason: null },
+          });
+        }
 
         await this.appendLog(jobId, 'PUBLISH_SUCCESS', 'SUCCESS', {
           externalPostId:  result.externalPostId,
@@ -315,6 +357,19 @@ export class SocialPublishService {
       });
 
       await this.appendLog(jobId, 'PUBLISH_FAILURE', 'FAILURE', undefined, message);
+
+      // Release the content item too, otherwise it sits in PUBLISHING and is
+      // invisible to both the scheduler and the user.
+      const failedJob = await this.prisma.socialPublishJob.findUnique({
+        where: { id: jobId },
+        select: { contentItemId: true },
+      });
+      if (failedJob?.contentItemId) {
+        await this.prisma.contentItem.updateMany({
+          where: { id: failedJob.contentItemId, status: 'PUBLISHING' },
+          data: { status: 'FAILED', failedReason: message },
+        });
+      }
       this.logger.error(`Job ${jobId} failed: ${message}`);
     }
   }

@@ -335,11 +335,41 @@ model ContentItem {
   user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace         Workspace?     @relation(fields: [workspaceId], references: [id])
 
+  images ContentImage[]
+
   @@unique([workspaceId, slug])
   @@index([userId])
   @@index([workspaceId])
   @@index([workspaceId, status, publishedAtUtc])
   @@map("content_items")
+}
+
+/// Generated artwork attached to a content item.
+///
+/// Stored as bytes in the database rather than on disk: the web app runs on a
+/// read-only serverless filesystem, and the Nest publisher needs the raw bytes
+/// to upload to LinkedIn, so both sides read the same row.
+model ContentImage {
+  id            String      @id @default(cuid())
+  contentItemId String
+  contentItem   ContentItem @relation(fields: [contentItemId], references: [id], onDelete: Cascade)
+  workspaceId   String
+
+  data     Bytes
+  mimeType String  @default("image/png")
+  width    Int?
+  height   Int?
+  /// The prompt used, so a regeneration can be compared or repeated.
+  prompt   String?
+  /// Accessibility text published alongside the image.
+  altText  String?
+  provider String  @default("openai")
+
+  createdAt DateTime @default(now())
+
+  @@index([contentItemId])
+  @@index([workspaceId])
+  @@map("content_images")
 }
 
 model ContentJob {
