@@ -15,6 +15,7 @@ import { listWorkspaceActivityLogs } from '@/lib/activity-log';
 import { listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { buildWorkspaceProgressReport } from '@/lib/workspace-progress';
+import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -174,6 +175,24 @@ export default async function DashboardPage() {
   const inPipeline = counts.DRAFT + counts.GENERATED + counts.EDITED + counts.READY;
   const autopilotOn = Boolean(autopilot?.enabled);
   const canPublish = connectionsCount > 0 || sitesCount > 0;
+  const journey = buildJourney({
+    workspaceId: workspace.id,
+    hasBrandSummary: Boolean(workspace.brandSummary),
+    acceptedCompetitors: accepted.length,
+    totalCompetitors: workspace.competitors.length,
+    matrixCharts: Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts)
+      ? (workspace.audienceInsights as any).competitiveMatrices.charts.length
+      : 0,
+    keywordCompetitors: Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors)
+      ? (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length
+      : 0,
+    hasChannel: connectionsCount > 0 || sitesCount > 0,
+    channelLabel: connectionsCount > 0 ? 'Social' : sitesCount > 0 ? 'Website' : null,
+    autopilotEnabled: Boolean(autopilot?.enabled),
+    publishedCount: counts.PUBLISHED,
+    scheduledCount: counts.SCHEDULED,
+  } satisfies WorkspaceFacts);
+
   const ideationReady = Boolean(
     workspace.brandSummary &&
       Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts) &&
@@ -209,6 +228,25 @@ export default async function DashboardPage() {
           </Link>
         </div>
       </div>
+
+      {/* ── The one next step ───────────────────────────────────────── */}
+      {journey.next && (
+        <div className="flex flex-wrap items-center justify-between gap-4 border border-ink-900 bg-ink-900 px-5 py-4 text-white">
+          <div className="min-w-0">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">
+              Step {journey.next.order} of {journey.total} · setup {journey.percent}% done
+            </p>
+            <p className="mt-1 font-display text-[18px] font-semibold">{journey.next.title}</p>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-300">{journey.next.why}</p>
+          </div>
+          <Link
+            href={journey.next.href as never}
+            className="inline-flex shrink-0 items-center gap-2 bg-signal px-4 py-2.5 text-[13px] font-semibold text-signal-ink hover:bg-white"
+          >
+            {journey.next.action} <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
 
       {/* ── Autopilot hero + stats ──────────────────────────────────── */}
       <div className="grid gap-px bg-ink-200 lg:grid-cols-[1.3fr_1fr]">

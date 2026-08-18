@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { notFound, redirect } from 'next/navigation';
 import {
   ArrowLeft,
+  ArrowRight,
   BarChart3,
   Bot,
   Coins,
@@ -16,6 +17,7 @@ import {
   Sparkles,
   Tags,
   CalendarDays,
+  Lock,
   TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -44,6 +46,8 @@ import { ProgressReportTab } from './_components/ProgressReportTab';
 import { SeoIntelligenceTab } from './_components/SeoIntelligenceTab';
 import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
+import { JourneyGuide } from './_components/JourneyGuide';
+import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { getAutopilotState } from '@/app/actions/autopilot';
 
 export const metadata = { title: 'Workspace Dashboard' };
@@ -247,6 +251,31 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     Array.isArray(insights?.competitorKeywordsIntel?.competitors) &&
     insights.competitorKeywordsIntel.competitors.length > 0;
 
+  const journeyFacts: WorkspaceFacts = {
+    workspaceId: workspace.id,
+    hasBrandSummary: Boolean(workspace.brandSummary),
+    acceptedCompetitors: workspace.competitors.filter((c: any) => c.userDecision === 'ACCEPTED').length,
+    totalCompetitors: workspace.competitors.length,
+    matrixCharts: Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts)
+      ? (workspace.audienceInsights as any).competitiveMatrices.charts.length
+      : 0,
+    keywordCompetitors: Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors)
+      ? (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length
+      : 0,
+    hasChannel: autopilotConnected.length > 0 || autopilotHasSite,
+    channelLabel:
+      autopilotConnected.length > 0
+        ? autopilotConnected.map((c) => c.platform).join(', ')
+        : autopilotHasSite
+          ? 'Website'
+          : null,
+    autopilotEnabled: Boolean(autopilotPolicy?.enabled),
+    publishedCount: workspace.contentItems.filter((i: any) => i.status === 'PUBLISHED').length,
+    scheduledCount: workspace.contentItems.filter((i: any) => i.status === 'SCHEDULED').length,
+  };
+  const journey = buildJourney(journeyFacts);
+  const gates = tabGate(journeyFacts);
+
   const requestedTab = resolveTab(resolvedSearchParams.tab);
   const brand = (workspace.brandSummary as any) || {};
   const initialMatrices =
@@ -312,80 +341,95 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     });
   }
 
+  // Ordered by the dependency chain, not by feature age: you cannot ideate
+  // before keywords exist, so Ideation must not sit first in the strip.
   const tabItems = [
     {
-      key: 'pipeline',
-      label: 'Content Pipeline',
-      helper: `${workspace.contentItems.length} items`,
-      icon: <ListTodo className="h-4 w-4" />,
-    },
-    {
-      key: 'ideation',
-      label: 'Ideation Station',
-      helper: 'AI ideas + drafts',
-      icon: <Lightbulb className="h-4 w-4" />,
-    },
-    {
       key: 'strategy',
+      group: 'Intelligence',
       label: 'Brand Memory',
       helper: `${initialBrandAssetsPayload?.summary?.asset_count || 0} assets`,
       icon: <Sparkles className="h-4 w-4" />,
     },
     {
-      key: 'calendar',
-      label: 'Publishing Calendar',
-      helper: `Manage your scheduled content`,
-      icon: <CalendarDays className="h-4 w-4" />,
-    },
-    ...(progressReport
-      ? [
-          {
-            key: 'progress',
-            label: 'Evolution Report',
-            helper: `${progressReport.maturity.before_stage} → ${progressReport.maturity.now_stage}`,
-            icon: <BarChart3 className="h-4 w-4" />,
-          },
-        ]
-      : []),
-    {
       key: 'matrices',
+      group: 'Intelligence',
       label: 'Market Matrices',
       helper: `${initialMatrices?.charts?.length || 0} charts`,
       icon: <LineChart className="h-4 w-4" />,
     },
     {
       key: 'keywords',
+      group: 'Intelligence',
       label: 'Competitor Keywords',
       helper: `${initialKeywordPayload?.competitors?.length || 0} analyzed`,
       icon: <Tags className="h-4 w-4" />,
     },
     {
       key: 'offerings',
+      group: 'Intelligence',
       label: 'Products & Services',
       helper: `${initialOfferingsPayload?.client_offerings?.offerings?.length || 0} client offers`,
       icon: <Package className="h-4 w-4" />,
     },
     {
       key: 'seo',
+      group: 'Intelligence',
       label: 'SEO Intelligence',
       helper: `${seoIntelligence.keywordOpportunities.length} opportunities`,
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
-      key: 'reports',
-      label: 'Reports',
-      helper: `${reportEligibility.remainingReports} remaining this month`,
-      icon: <FileText className="h-4 w-4" />,
+      key: 'ideation',
+      group: 'Create',
+      label: 'Ideation Station',
+      helper: 'AI ideas + drafts',
+      icon: <Lightbulb className="h-4 w-4" />,
+    },
+    {
+      key: 'pipeline',
+      group: 'Create',
+      label: 'Content Pipeline',
+      helper: `${workspace.contentItems.length} items`,
+      icon: <ListTodo className="h-4 w-4" />,
+    },
+    {
+      key: 'calendar',
+      group: 'Create',
+      label: 'Publishing Calendar',
+      helper: 'Scheduled content',
+      icon: <CalendarDays className="h-4 w-4" />,
     },
     {
       key: 'autopilot',
+      group: 'Automate',
       label: 'Autopilot',
       helper: autopilotPolicy?.enabled
         ? `ON · ${autopilotPolicy.postsPerWeek}/week`
         : 'Hands-off publishing',
       icon: <Bot className="h-4 w-4" />,
     },
+    {
+      key: 'reports',
+      group: 'Review',
+      label: 'Reports',
+      helper: `${reportEligibility.remainingReports} remaining this month`,
+      icon: <FileText className="h-4 w-4" />,
+    },
+    ...(progressReport
+      ? [
+          {
+            key: 'progress',
+            group: 'Review',
+            label: 'Evolution Report',
+            helper: `${progressReport.maturity.before_stage} → ${progressReport.maturity.now_stage}`,
+            icon: <BarChart3 className="h-4 w-4" />,
+          },
+        ]
+      : []),
   ];
+
+  const tabGroups = ['Intelligence', 'Create', 'Automate', 'Review'] as const;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-20">
@@ -463,34 +507,73 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         </div>
       </div>
 
+      {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
+      <JourneyGuide workspaceId={workspace.id} journey={journey} />
+
       {/* ── TABS ────────────────────────────────────────────────── */}
-      <nav className="flex flex-wrap gap-x-1 border-b border-ink-200" aria-label="Tabs">
-        {tabItems.map((item) => {
-          const isActive = activeTab === item.key;
+      <div className="border-b border-ink-200">
+        {tabGroups.map((group) => {
+          const items = tabItems.filter((t) => t.group === group);
+          if (items.length === 0) return null;
           return (
-            <Link
-              key={item.key}
-              href={`/growth/${workspace.id}?tab=${item.key}`}
-              className={`group relative flex items-center gap-2 px-3.5 py-3 text-[13px] transition-colors ${
-                isActive ? 'font-semibold text-ink-900' : 'text-ink-600 hover:text-ink-900'
-              }`}
-              title={item.helper}
-            >
-              <span className={isActive ? 'text-ink-900' : 'text-ink-400 group-hover:text-ink-900'}>{item.icon}</span>
-              {item.label}
-              {item.key === 'autopilot' && autopilotPolicy?.enabled && (
-                <span className="ml-1 h-1.5 w-1.5 bg-signal" />
-              )}
-              <span
-                aria-hidden
-                className={`absolute inset-x-0 -bottom-px h-[2px] ${isActive ? 'bg-ink-900' : 'bg-transparent'}`}
-              />
-            </Link>
+            <div key={group} className="flex flex-wrap items-center gap-x-1 gap-y-0.5 py-1">
+              <span className="w-24 shrink-0 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
+                {group}
+              </span>
+              {items.map((item) => {
+                const isActive = activeTab === item.key;
+                const gate = gates[item.key];
+                return (
+                  <Link
+                    key={item.key}
+                    href={`/growth/${workspace.id}?tab=${item.key}`}
+                    title={gate ? `${item.helper} — ${gate}` : item.helper}
+                    className={`group relative flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
+                      isActive
+                        ? 'font-semibold text-ink-900'
+                        : gate
+                          ? 'text-ink-300 hover:text-ink-600'
+                          : 'text-ink-600 hover:text-ink-900'
+                    }`}
+                  >
+                    <span className={isActive ? 'text-ink-900' : gate ? 'text-ink-300' : 'text-ink-400'}>
+                      {item.icon}
+                    </span>
+                    {item.label}
+                    {gate && <Lock className="h-3 w-3 text-ink-300" />}
+                    {item.key === 'autopilot' && autopilotPolicy?.enabled && (
+                      <span className="h-1.5 w-1.5 bg-signal" />
+                    )}
+                    <span
+                      aria-hidden
+                      className={`absolute inset-x-2 -bottom-px h-[2px] ${isActive ? 'bg-ink-900' : 'bg-transparent'}`}
+                    />
+                  </Link>
+                );
+              })}
+            </div>
           );
         })}
-      </nav>
+      </div>
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
+      {gates[activeTab] && (
+        <div className="flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 px-5 py-3">
+          <p className="text-[13px] text-amber-900">
+            <span className="font-semibold">This step is not ready yet — {gates[activeTab]}.</span>{' '}
+            Running it now will produce nothing useful.
+          </p>
+          {journey.next && (
+            <Link
+              href={journey.next.href as never}
+              className="inline-flex shrink-0 items-center gap-2 bg-amber-900 px-3.5 py-2 text-[12.5px] font-medium text-white hover:bg-amber-800"
+            >
+              {journey.next.action} <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="min-h-[50vh] border border-ink-200 bg-white p-6 md:p-8">
         {activeTab === 'strategy' && (
           <BrandMemoryTab
