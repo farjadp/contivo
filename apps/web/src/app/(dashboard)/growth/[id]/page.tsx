@@ -388,116 +388,110 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 pt-2">
-      {/* ── HERO HEADER ────────────────────────────────────────── */}
-      <div className="relative overflow-hidden bg-[#FDFCF8] border-2 border-[#121212] p-6 md:p-10 shadow-[8px_8px_0px_#121212] rounded-none">
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-start justify-between gap-8">
-          <div>
+    <div className="mx-auto max-w-7xl space-y-6 pb-20">
+      {/* ── HEADER ─────────────────────────────────────────────── */}
+      <div className="border border-ink-200 bg-white">
+        <div className="flex flex-col gap-6 p-6 md:p-8 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0">
             <Link
               href="/growth"
-              className="inline-flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-[#121212]/50 hover:text-[#121212] mb-8 transition-colors"
+              className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-ink-400 hover:text-ink-900"
             >
-              <ArrowLeft className="w-4 h-4" /> Return
+              <ArrowLeft className="h-3.5 w-3.5" /> Workspaces
             </Link>
-            <div className="flex items-center gap-5">
-              <div className="h-16 w-16 bg-[#121212] flex items-center justify-center text-[#FDFCF8] font-black text-2xl uppercase shrink-0 border-2 border-[#121212]">
+            <div className="mt-4 flex items-center gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-ink-950 font-display text-[16px] font-bold uppercase text-signal">
                 {workspace.name.substring(0, 2)}
               </div>
-              <div>
-                <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-[#121212] mb-3">
+              <div className="min-w-0">
+                <h1 className="truncate font-display text-[26px] font-bold tracking-tight text-ink-900 sm:text-[32px]">
                   {workspace.name}
                 </h1>
-                <div className="flex flex-wrap items-center gap-3 text-xs font-bold uppercase tracking-widest text-[#121212]/60">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-600">
                   {workspace.websiteUrl && (
-                    <a href={workspace.websiteUrl.startsWith('http') ? workspace.websiteUrl : `https://${workspace.websiteUrl}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-[#C04C36] hover:bg-[#C04C36]/10 px-3 py-1 border border-[#C04C36] transition-colors rounded-none">
-                      <ExternalLink className="w-3.5 h-3.5" />
+                    <a
+                      href={workspace.websiteUrl.startsWith('http') ? workspace.websiteUrl : `https://${workspace.websiteUrl}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 hover:text-ink-900"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
                       {workspace.websiteUrl.replace(/^https?:\/\//, '')}
                     </a>
                   )}
                   {brand.industry && (
-                    <span className="px-3 py-1 bg-[#EFECE5] text-[#121212]/80 border border-[#121212]/10 rounded-none">
-                      {brand.industry}
-                    </span>
+                    <span className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{brand.industry}</span>
                   )}
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-col items-stretch gap-4 lg:items-end">
-            <div className="flex flex-wrap lg:justify-end gap-2 w-full lg:w-auto">
-              <StatChip label="AI Tokens" value={totalTrackedTokens.toLocaleString()} />
-              <div className="border border-[#121212]/20 bg-[#FDFCF8] px-4 py-3 min-w-[130px] flex-1 lg:flex-none">
-                <p className="text-[10px] font-black uppercase tracking-widest text-[#121212]/50">Cost</p>
-                <p className="mt-1 text-lg font-black text-[#121212]">{formatUsd(estimatedCostUsd)}</p>
-              </div>
-            </div>
-
+          <div className="flex shrink-0 flex-col items-stretch gap-3 lg:items-end">
+            <Link
+              href={`/growth/${workspace.id}?tab=autopilot`}
+              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
+                autopilotPolicy?.enabled
+                  ? 'bg-signal text-signal-ink hover:bg-ink-900 hover:text-white'
+                  : 'bg-ink-900 text-white hover:bg-ink-800'
+              }`}
+            >
+              <Bot className="h-4 w-4" />
+              {autopilotPolicy?.enabled ? `Autopilot on · ${autopilotPolicy.postsPerWeek}/wk` : 'Turn on Autopilot'}
+            </Link>
             <Link
               href={`/growth/${workspace.id}?tab=ideation`}
-              className="inline-flex shrink-0 items-center justify-center gap-2 bg-[#C04C36] text-[#FDFCF8] px-6 py-4 text-sm font-bold uppercase tracking-widest hover:bg-[#121212] transition-colors rounded-none"
+              className="inline-flex items-center justify-center gap-2 border border-ink-200 px-4 py-2.5 text-[13px] font-medium text-ink-900 hover:border-ink-400"
             >
-              <Sparkles className="w-4 h-4" />
-              Generate Content
+              <Sparkles className="h-4 w-4" />
+              Ideate by hand
             </Link>
           </div>
         </div>
 
-        <div className="relative z-10 mt-8 pt-8 border-t border-[#121212]/10 grid gap-3 grid-cols-2 md:grid-cols-5">
+        <div className="grid grid-cols-2 gap-px border-t border-ink-200 bg-ink-200 sm:grid-cols-3 lg:grid-cols-7">
           <StatChip label="Competitors" value={acceptedCompetitors.toLocaleString()} />
-          <StatChip label="Runs Used" value={discoveryStats.usedRuns.toLocaleString()} />
-          <StatChip label="Runs Left" value={discoveryStats.remainingRuns.toLocaleString()} />
-          <StatChip label="AI Calls" value={trackedAiRuns.toLocaleString()} />
           <StatChip label="Content" value={workspace.contentItems.length.toLocaleString()} />
-        </div>
-
-        <div className="mt-6 border border-[#121212]/10 bg-[#EFECE5] xl:w-fit px-4 py-3 text-[10px] font-bold uppercase tracking-widest text-[#121212]/60 flex items-center gap-2 rounded-none">
-          <Coins className="h-4 w-4 shrink-0 text-[#121212]" />
-          Costs estimated from tracked AI modules.
+          <StatChip label="Discovery runs" value={`${discoveryStats.usedRuns} / ${discoveryStats.usedRuns + discoveryStats.remainingRuns}`} />
+          <StatChip label="AI calls" value={trackedAiRuns.toLocaleString()} />
+          <StatChip label="AI tokens" value={totalTrackedTokens.toLocaleString()} />
+          <StatChip label="Est. cost" value={formatUsd(estimatedCostUsd)} />
+          <div className="flex items-center gap-2 bg-white px-4 py-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
+            <Coins className="h-3.5 w-3.5 shrink-0" />
+            tracked modules only
+          </div>
         </div>
       </div>
 
-      {/* ── NAVIGATION TABS ────────────────────────────────────── */}
-      <div className="border border-[#121212]/20 bg-[#FDFCF8] p-3 shadow-[4px_4px_0px_#121212] rounded-none">
-        <nav className="grid gap-2 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" aria-label="Tabs">
-          {tabItems.map((item) => {
-            const isActive = activeTab === item.key;
-
-            return (
-              <Link
-                key={item.key}
-                href={`/growth/${workspace.id}?tab=${item.key}`}
-                className={`group relative overflow-hidden px-5 py-4 transition-colors rounded-none border ${
-                  isActive
-                    ? 'bg-[#121212] text-[#FDFCF8] border-[#121212]'
-                    : 'bg-[#FDFCF8] text-[#121212] border-[#121212]/10 hover:bg-[#EFECE5] hover:border-[#121212]/30'
-                }`}
-              >
-                <div className="relative z-10 flex items-start justify-between gap-3">
-                  <div>
-                    <p className={`inline-flex items-center gap-2.5 font-bold uppercase tracking-widest text-sm ${isActive ? 'text-[#FDFCF8]' : 'text-[#121212] group-hover:text-[#C04C36] transition-colors'}`}>
-                      {item.icon}
-                      {item.label}
-                    </p>
-                    <p className={`mt-1.5 text-[10px] font-bold tracking-widest uppercase ${isActive ? 'text-[#FDFCF8]/50' : 'text-[#121212]/40'}`}>
-                      {item.helper}
-                    </p>
-                  </div>
-                  {isActive ? (
-                    <span className="bg-[#C04C36] text-[#FDFCF8] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest rounded-none">
-                      Active
-                    </span>
-                  ) : null}
-                </div>
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
+      {/* ── TABS ────────────────────────────────────────────────── */}
+      <nav className="flex flex-wrap gap-x-1 border-b border-ink-200" aria-label="Tabs">
+        {tabItems.map((item) => {
+          const isActive = activeTab === item.key;
+          return (
+            <Link
+              key={item.key}
+              href={`/growth/${workspace.id}?tab=${item.key}`}
+              className={`group relative flex items-center gap-2 px-3.5 py-3 text-[13px] transition-colors ${
+                isActive ? 'font-semibold text-ink-900' : 'text-ink-600 hover:text-ink-900'
+              }`}
+              title={item.helper}
+            >
+              <span className={isActive ? 'text-ink-900' : 'text-ink-400 group-hover:text-ink-900'}>{item.icon}</span>
+              {item.label}
+              {item.key === 'autopilot' && autopilotPolicy?.enabled && (
+                <span className="ml-1 h-1.5 w-1.5 bg-signal" />
+              )}
+              <span
+                aria-hidden
+                className={`absolute inset-x-0 -bottom-px h-[2px] ${isActive ? 'bg-ink-900' : 'bg-transparent'}`}
+              />
+            </Link>
+          );
+        })}
+      </nav>
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
-      <div className="mt-8 border border-[#121212]/20 bg-[#FDFCF8] p-6 md:p-10 shadow-[4px_4px_0px_#121212] rounded-none min-h-[50vh]">
+      <div className="min-h-[50vh] border border-ink-200 bg-white p-6 md:p-8">
         {activeTab === 'strategy' && (
           <BrandMemoryTab
             workspace={workspace}
@@ -599,9 +593,9 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border border-[#121212]/10 bg-[#EFECE5] px-4 py-3 flex-1 lg:flex-none min-w-[130px] rounded-none">
-      <p className="text-[10px] font-black uppercase tracking-widest text-[#121212]/50">{label}</p>
-      <p className="mt-1 text-lg font-black text-[#121212]">{value}</p>
+    <div className="bg-white px-4 py-3">
+      <p className="font-mono text-[10.5px] uppercase tracking-widest text-ink-400">{label}</p>
+      <p className="mt-1 font-display text-[18px] font-semibold text-ink-900">{value}</p>
     </div>
   );
 }

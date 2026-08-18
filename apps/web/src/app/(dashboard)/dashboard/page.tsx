@@ -1,26 +1,14 @@
 /**
- * User Dashboard Page - Breathtaking Bento-Box Edition
+ * Overview — the first screen after sign-in.
  *
- * A highly premium, light-themed dashboard using a bento-box layout.
- * Features: Soft shadows, bold typography, glowing gradient accents,
- * and high-contrast primary elements for a stunning visual impact.
+ * Reads as a control panel: what Autopilot is doing, what is queued, how
+ * ready the workspace is, and the one or two moves that matter next. Data
+ * loading is unchanged from the previous version; only the render is new.
  */
 
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import {
-  ArrowRight,
-  ArrowUpRight,
-  CalendarDays,
-  CheckCircle2,
-  Compass,
-  Flame,
-  Plus,
-  Sparkles,
-  Target,
-  TrendingUp,
-  Zap,
-} from 'lucide-react';
+import { ArrowRight, Bot, CalendarDays, Plus } from 'lucide-react';
 
 import { getSession } from '@/lib/auth';
 import { listWorkspaceActivityLogs } from '@/lib/activity-log';
@@ -70,65 +58,6 @@ function buildActions(w: {
   return a.slice(0, 3);
 }
 
-// ─── Visual Components ─────────────────────────────────────────────────────────
-
-
-
-function NextActionCard({ title, desc, href, icon }: { title: string; desc: string; href: string; icon: string }) {
-  const icons: Record<string, React.ReactNode> = {
-    sparkles: <Sparkles className="h-5 w-5 text-[#2B2DFF]" />,
-    target: <Target className="h-5 w-5 text-indigo-500" />,
-    trending: <TrendingUp className="h-5 w-5 text-emerald-500" />,
-    calendar: <CalendarDays className="h-5 w-5 text-amber-500" />,
-    zap: <Zap className="h-5 w-5 text-rose-500" />,
-  };
-  const bgs: Record<string, string> = {
-    sparkles: 'bg-indigo-50',
-    target: 'bg-blue-50',
-    trending: 'bg-emerald-50',
-    calendar: 'bg-amber-50',
-    zap: 'bg-rose-50',
-  };
-
-  return (
-    <Link href={href as any} className="group relative flex items-center justify-between overflow-hidden rounded-[20px] bg-white border border-gray-100 p-4 transition-all hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-0.5">
-      <div className="flex items-center gap-4 z-10">
-        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] ${bgs[icon]} transition-transform duration-300 group-hover:scale-110 shadow-sm`}>
-          {icons[icon]}
-        </div>
-        <div>
-          <h3 className="text-sm font-bold text-gray-900">{title}</h3>
-          <p className="mt-0.5 text-xs font-medium text-gray-500">{desc}</p>
-        </div>
-      </div>
-      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 text-gray-400 transition-colors group-hover:bg-[#2B2DFF] group-hover:text-white z-10">
-        <ArrowUpRight className="h-4 w-4" />
-      </div>
-      {/* Subtle hover glow */}
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent to-gray-50/50 opacity-0 group-hover:opacity-100 transition-opacity" />
-    </Link>
-  );
-}
-
-function GridStat({ label, value, sub, icon: Icon, color }: { label: string; value: string; sub: string; icon: any; color: string }) {
-  return (
-    <div className="flex flex-col justify-between rounded-[24px] bg-white border border-gray-100 p-5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] transition hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-      <div className="flex items-start justify-between">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-${color}-50 text-${color}-600`}>
-          <Icon className="h-5 w-5" />
-        </div>
-        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{sub}</span>
-      </div>
-      <div className="mt-6">
-        <p className="text-3xl font-black text-gray-900 tracking-tight">{value}</p>
-        <p className="mt-1 text-xs font-bold text-gray-500 uppercase tracking-widest">{label}</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
 export default async function DashboardPage() {
   const session = await getSession();
   if (!session) redirect('/sign-in');
@@ -149,14 +78,17 @@ export default async function DashboardPage() {
     if (candidateWorkspaces.length > 0) {
       return (
         <div className="flex min-h-[70vh] items-center justify-center">
-          <div className="text-center">
-            <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-[2rem] bg-gray-50 shadow-inner">
-              <span className="text-4xl">📦</span>
-            </div>
-            <h1 className="text-3xl font-black tracking-tight text-gray-900">Workspaces Archived</h1>
-            <p className="mt-3 text-sm font-medium text-gray-500 max-w-sm mx-auto">Create a new workspace or ask your administrator to restore an existing one.</p>
-            <Link href="/growth/new" className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-[#2B2DFF] px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-indigo-600/20 hover:scale-105 transition-transform">
-              <Plus className="h-5 w-5" /> Start New Workspace
+          <div className="max-w-sm border border-ink-200 bg-white p-8">
+            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Overview</p>
+            <h1 className="mt-2 font-display text-[24px] font-bold text-ink-900">All workspaces are archived</h1>
+            <p className="mt-2 text-[14px] text-ink-600">
+              Create a new workspace, or ask an administrator to restore one.
+            </p>
+            <Link
+              href="/growth/new"
+              className="mt-6 inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800"
+            >
+              <Plus className="h-4 w-4" /> New workspace
             </Link>
           </div>
         </div>
@@ -192,8 +124,15 @@ export default async function DashboardPage() {
     prisma.contentItem.findMany({
       where: { workspaceId: visibleWorkspace.id, userId, scheduledAtUtc: { not: null, gte: new Date() }, status: { in: ['READY', 'SCHEDULED', 'PUBLISHING', 'PUBLISHED'] } },
       orderBy: { scheduledAtUtc: 'asc' },
-      take: 4,
+      take: 5,
     }),
+  ]);
+
+  const [autopilot, lastRun, connectionsCount, sitesCount] = await Promise.all([
+    prisma.autopilotPolicy.findUnique({ where: { workspaceId: visibleWorkspace.id } }),
+    prisma.autopilotRun.findFirst({ where: { workspaceId: visibleWorkspace.id }, orderBy: { startedAt: 'desc' } }),
+    prisma.socialConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'CONNECTED' } }),
+    prisma.siteConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'ACTIVE' } }),
   ]);
 
   if (!workspace) redirect('/growth');
@@ -228,172 +167,232 @@ export default async function DashboardPage() {
   });
 
   const firstName = session.email?.split('@')[0] || 'there';
+  const publishedThisWeek = workspace.contentItems.filter(
+    (i: any) => i.publishedAtUtc && new Date(i.publishedAtUtc) >= startOfThisWeek,
+  ).length;
+  const queued = counts.SCHEDULED + counts.PUBLISHING;
+  const inPipeline = counts.DRAFT + counts.GENERATED + counts.EDITED + counts.READY;
+  const autopilotOn = Boolean(autopilot?.enabled);
+  const canPublish = connectionsCount > 0 || sitesCount > 0;
+  const ideationReady = Boolean(
+    workspace.brandSummary &&
+      Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts) &&
+      (workspace.audienceInsights as any).competitiveMatrices.charts.length > 0 &&
+      Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors) &&
+      (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length > 0,
+  );
 
   return (
-    <div className="space-y-6 pb-16 pt-2">
-
-      {/* ── BENTO HERO ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-
-        {/* Hero Welcome */}
-        <div className="relative overflow-hidden rounded-[32px] bg-white border border-gray-100 p-8 shadow-[0_8px_30px_rgb(0,0,0,0.03)] flex flex-col justify-between">
-          {/* Subtle gradient blob background */}
-          <div className="absolute -top-32 -right-32 w-96 h-96 bg-gradient-to-br from-[#2B2DFF]/10 to-[#00E5FF]/10 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex items-start justify-between">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#2B2DFF] mb-2 px-3 py-1 bg-indigo-50 w-fit rounded-full">
-                Active Workspace
-              </p>
-              <h1 className="text-4xl sm:text-5xl font-black tracking-tighter text-gray-900 leading-[1.1]">
-                Hello, <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#2B2DFF] to-[#7A5CFF] capitalize">{firstName}</span>.
-                <br />
-                {workspace.name}
-              </h1>
-              <p className="mt-4 text-sm font-medium text-gray-500 max-w-md leading-relaxed">
-                Your AI-powered engine is warm. You have insights ready to turn into published content.
-              </p>
-            </div>
-          </div>
-
-          <div className="relative z-10 mt-10 flex flex-wrap gap-3">
-            <Link href={`/growth/${workspace.id}?tab=ideation`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-6 py-3.5 text-sm font-bold text-white shadow-xl shadow-gray-900/20 hover:scale-105 transition-transform">
-              <BoltIcon className="w-5 h-5 text-amber-400" /> Fast Ideation
-            </Link>
-            <Link href={`/growth/${workspace.id}`} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white border-2 border-gray-100 px-6 py-3.5 text-sm font-bold text-gray-900 hover:border-gray-200 transition-colors">
-              Enter Workspace <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+    <div className="space-y-8 pb-16">
+      {/* ── Page head ───────────────────────────────────────────────── */}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">
+            Overview · {workspace.name}
+          </p>
+          <h1 className="mt-1 font-display text-[28px] font-bold tracking-tight text-ink-900 sm:text-[32px]">
+            Good to see you, <span className="capitalize">{firstName}</span>.
+          </h1>
         </div>
-
-        {/* Overall Score Bento */}
-        <div className="rounded-[32px] bg-gradient-to-br from-[#2B2DFF] to-[#1e1b4b] p-8 shadow-2xl shadow-indigo-500/20 text-white flex flex-col justify-between relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-6 opacity-30">
-            <Target className="w-48 h-48 -mr-12 -mt-12" strokeWidth={0.5} />
-          </div>
-
-          <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Marketing Intelligence</p>
-            <h2 className="mt-1 text-xl font-bold">Overall Rating</h2>
-          </div>
-
-          <div className="relative z-10 mt-6 flex flex-col items-center justify-center">
-            <div className="relative w-40 h-40">
-              <svg className="h-full w-full -rotate-90" viewBox="0 0 128 128">
-                <circle cx="64" cy="64" r="58" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="12" />
-                <circle
-                  cx="64" cy="64" r="58" fill="none"
-                  stroke="currentColor"
-                  strokeWidth="12"
-                  strokeDasharray="364.4"
-                  strokeDashoffset={364.4 - (overallScore / 100) * 364.4}
-                  strokeLinecap="round"
-                  className="text-white transition-all duration-1000 ease-out"
-                />
-              </svg>
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-5xl font-black tracking-tighter">{overallScore}</span>
-              </div>
-            </div>
-            <div className="mt-6 w-full space-y-3">
-              <div className="flex justify-between items-center text-xs font-semibold">
-                <span className="text-indigo-200">Brand</span>
-                <span className="text-white">{brandScore}%</span>
-              </div>
-              <div className="flex justify-between items-center text-xs font-semibold">
-                <span className="text-indigo-200">SEO / Keywords</span>
-                <span className="text-white">{seoScore}%</span>
-              </div>
-              <div className="flex justify-between items-center text-xs font-semibold">
-                <span className="text-indigo-200">Publish Flow</span>
-                <span className="text-white">{publishScore}%</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── BENTO GRID ─────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <GridStat label="Available Credits" value={creditsLeft.toLocaleString()} sub="Tokens" color="indigo" icon={Zap} />
-        <GridStat label="Content Ready" value={counts.READY.toString()} sub="Pipeline" color="blue" icon={Target} />
-        <GridStat label="Published Posts" value={counts.PUBLISHED.toString()} sub="Active" color="emerald" icon={CheckCircle2} />
-        <GridStat label="SEO Hits" value={workspace._count.keywordOpportunities.toLocaleString()} sub="Keywords" color="amber" icon={Flame} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] gap-6">
-        {/* Next Actions */}
-        <div className="rounded-[32px] bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-8">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#2B2DFF] mb-1">Growth Levers</p>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight">Focus on this next</h2>
-            </div>
-            <Compass className="w-8 h-8 text-gray-200" />
-          </div>
-
-          <div className="grid gap-4">
-            {actions.length === 0 ? (
-              <div className="flex items-center gap-4 rounded-[20px] bg-emerald-50 border border-emerald-100 p-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-emerald-100 text-emerald-600">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-emerald-900">Workspace Optimized</h3>
-                  <p className="text-sm font-medium text-emerald-700/80 mt-0.5">Nothing urgent. Keep publishing content.</p>
-                </div>
-              </div>
-            ) : (
-              actions.map((act: any, idx: number) => (
-                <NextActionCard key={idx} {...act} />
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Content Pipeline Mini */}
-        <div className="rounded-[32px] bg-white border border-gray-100 shadow-[0_8px_30px_rgb(0,0,0,0.03)] p-8 flex flex-col">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#2B2DFF] mb-1">Queue</p>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight mb-8">Scheduling</h2>
-
-          {upcoming.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center rounded-[20px] border-2 border-dashed border-gray-100 bg-gray-50/50 p-6 text-center">
-              <CalendarDays className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-sm font-bold text-gray-400">Nothing lined up</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {upcoming.map((item: any) => (
-                <div key={item.id} className="group relative overflow-hidden rounded-[20px] bg-gray-50 p-4 hover:bg-[#2B2DFF] transition-colors">
-                  <p className="text-sm font-bold text-gray-900 group-hover:text-white truncate">{item.topic}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gray-400 group-hover:text-indigo-200">{item.channel}</span>
-                    <span className="text-[10px] font-bold text-gray-500 group-hover:text-white">
-                      {new Date(item.scheduledAtUtc || item.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <Link href={`/growth/${workspace.id}?tab=calendar`} className="mt-auto pt-6 flex w-full items-center justify-center gap-2 text-sm font-bold text-[#2B2DFF] hover:text-indigo-500 transition-colors">
-            Open Content Calendar <ArrowUpRight className="w-4 h-4" />
+        <div className="flex gap-2">
+          <Link
+            href={`/growth/${workspace.id}?tab=ideation`}
+            className="inline-flex items-center gap-2 border border-ink-200 bg-white px-4 py-2 text-[13px] font-medium text-ink-900 hover:border-ink-400"
+          >
+            Ideate now
+          </Link>
+          <Link
+            href={`/growth/${workspace.id}`}
+            className="inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800"
+          >
+            Open workspace <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
       </div>
 
+      {/* ── Autopilot hero + stats ──────────────────────────────────── */}
+      <div className="grid gap-px bg-ink-200 lg:grid-cols-[1.3fr_1fr]">
+        {/* Autopilot status */}
+        <div className="bg-ink-950 p-7 text-white">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-ink-300">
+              <Bot className="h-4 w-4" /> Autopilot
+            </div>
+            <span
+              className={`inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] uppercase tracking-widest ${
+                autopilotOn ? 'bg-signal text-signal-ink' : 'border border-ink-600 text-ink-300'
+              }`}
+            >
+              {autopilotOn && <span className="h-1.5 w-1.5 animate-pulse bg-signal-ink" />}
+              {autopilotOn ? 'On' : 'Off'}
+            </span>
+          </div>
+
+          <h2 className="mt-5 font-display text-[24px] font-semibold leading-tight">
+            {autopilotOn
+              ? `${autopilot!.postsPerWeek} posts a week, on ${autopilot!.channels.join(' + ') || 'no channel'}.`
+              : 'Not running yet.'}
+          </h2>
+          <p className="mt-2 max-w-md text-[14px] leading-relaxed text-ink-300">
+            {autopilotOn
+              ? lastRun
+                ? `Last run ${relative(lastRun.startedAt)}: ${lastRun.status.toLowerCase()} — ${lastRun.itemsScheduled} scheduled, ${lastRun.itemsSkipped} skipped.`
+                : 'Enabled — the first run happens on the next tick.'
+              : !ideationReady
+                ? 'Build the intelligence layer first (brand memory, matrices, keywords) — Autopilot refuses to write without it.'
+                : !canPublish
+                  ? 'Connect a social account or a website so it has somewhere to publish.'
+                  : 'Everything is ready. Turn it on and it keeps your week filled.'}
+          </p>
+
+          <div className="mt-6 grid grid-cols-3 gap-px bg-ink-700/60">
+            <Metric dark label="Queued" value={queued} />
+            <Metric dark label="Published · 7d" value={publishedThisWeek} />
+            <Metric dark label="In pipeline" value={inPipeline} />
+          </div>
+
+          <div className="mt-6 flex flex-wrap gap-2">
+            <Link
+              href={`/growth/${workspace.id}?tab=autopilot`}
+              className="inline-flex items-center gap-2 bg-signal px-4 py-2 text-[13px] font-semibold text-signal-ink hover:bg-white"
+            >
+              {autopilotOn ? 'Open Autopilot' : 'Set up Autopilot'} <ArrowRight className="h-4 w-4" />
+            </Link>
+            {!canPublish && (
+              <Link
+                href="/connections"
+                className="inline-flex items-center gap-2 border border-ink-600 px-4 py-2 text-[13px] text-ink-100 hover:border-ink-400"
+              >
+                Connect a channel
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Readiness */}
+        <div className="bg-white p-7">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Readiness</p>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="font-display text-[44px] font-bold leading-none text-ink-900">{overallScore}</span>
+            <span className="text-[13px] text-ink-400">/ 100 overall</span>
+          </div>
+          <dl className="mt-6 space-y-3">
+            {[
+              ['Brand memory', brandScore],
+              ['Market intelligence', marketScore],
+              ['Keywords & SEO', seoScore],
+              ['Publishing', publishScore],
+            ].map(([k, v]) => (
+              <div key={String(k)}>
+                <div className="flex justify-between text-[12.5px]">
+                  <dt className="text-ink-600">{k}</dt>
+                  <dd className="font-mono text-ink-900">{v}%</dd>
+                </div>
+                <div className="mt-1 h-1 bg-ink-100">
+                  <div className="h-1 bg-ink-900" style={{ width: `${v}%` }} />
+                </div>
+              </div>
+            ))}
+          </dl>
+          <div className="mt-6 grid grid-cols-3 gap-px bg-ink-100 text-ink-900">
+            <Metric label="Competitors" value={accepted.length} />
+            <Metric label="Keywords" value={workspace._count.keywordOpportunities} />
+            <Metric label="Credits" value={creditsLeft} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Next moves + Queue ──────────────────────────────────────── */}
+      <div className="grid gap-px bg-ink-200 lg:grid-cols-[1fr_1fr]">
+        <div className="bg-white p-7">
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Next moves</p>
+          <h2 className="mt-1 font-display text-[18px] font-semibold text-ink-900">
+            {actions.length === 0 ? 'Nothing urgent' : 'What moves the needle'}
+          </h2>
+          <ul className="mt-5 divide-y divide-ink-100">
+            {actions.length === 0 ? (
+              <li className="py-3 text-[14px] text-ink-600">
+                Intelligence and pipeline are healthy. Let Autopilot run, or ideate by hand.
+              </li>
+            ) : (
+              actions.map((act: any) => (
+                <li key={act.title}>
+                  <Link href={act.href} className="group flex items-center justify-between gap-4 py-3.5">
+                    <div>
+                      <p className="text-[14px] font-medium text-ink-900">{act.title}</p>
+                      <p className="mt-0.5 text-[13px] text-ink-600">{act.desc}</p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-ink-900" />
+                  </Link>
+                </li>
+              ))
+            )}
+          </ul>
+        </div>
+
+        <div className="bg-white p-7">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Queue</p>
+              <h2 className="mt-1 font-display text-[18px] font-semibold text-ink-900">Coming up</h2>
+            </div>
+            <Link
+              href={`/growth/${workspace.id}?tab=calendar`}
+              className="text-[13px] font-medium text-ink-600 hover:text-ink-900"
+            >
+              Calendar →
+            </Link>
+          </div>
+          {upcoming.length === 0 ? (
+            <div className="mt-5 flex items-center gap-3 border border-dashed border-ink-200 p-5 text-[13px] text-ink-600">
+              <CalendarDays className="h-5 w-5 text-ink-300" />
+              Nothing scheduled. {autopilotOn ? 'Autopilot will fill this on its next run.' : 'Turn on Autopilot or schedule from the pipeline.'}
+            </div>
+          ) : (
+            <ul className="mt-5 divide-y divide-ink-100">
+              {upcoming.map((item: any) => (
+                <li key={item.id} className="flex items-center justify-between gap-4 py-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-[14px] font-medium text-ink-900">{item.topic}</p>
+                    <p className="mt-0.5 font-mono text-[11px] uppercase tracking-widest text-ink-400">{item.channel}</p>
+                  </div>
+                  <span className="shrink-0 font-mono text-[12px] text-ink-600">
+                    {new Date(item.scheduledAtUtc || item.createdAt).toLocaleString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// ─── Local Icon Components (Since Lucide doesn't export Lightning visually the way I want) ──
+// ─── Bits ──────────────────────────────────────────────────────────────────────
 
-function BoltIcon({ className }: { className?: string }) {
+function Metric({ label, value, dark }: { label: string; value: number | string; dark?: boolean }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" stroke="none" className={className}>
-      <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-    </svg>
+    <div className={dark ? 'bg-ink-950 px-4 py-3' : 'bg-white px-4 py-3'}>
+      <p className={`font-mono text-[10.5px] uppercase tracking-widest ${dark ? 'text-ink-400' : 'text-ink-400'}`}>{label}</p>
+      <p className={`mt-1 font-display text-[22px] font-semibold ${dark ? 'text-white' : 'text-ink-900'}`}>
+        {typeof value === 'number' ? value.toLocaleString() : value}
+      </p>
+    </div>
   );
+}
+
+function relative(date: Date) {
+  const diff = Date.now() - date.getTime();
+  const m = Math.round(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m} min ago`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} h ago`;
+  return `${Math.round(h / 24)} d ago`;
 }

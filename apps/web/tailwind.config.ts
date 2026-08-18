@@ -46,6 +46,26 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        ink: {
+          950: '#07090C',
+          900: '#0B0F14',
+          800: '#121820',
+          700: '#1B232E',
+          600: '#2A3441',
+          400: '#5C6878',
+          300: '#8A96A6',
+          200: '#B7C0CC',
+          100: '#E6EAF0',
+        },
+        signal: {
+          DEFAULT: '#3DFF8F',
+          dim: '#22B865',
+          ink: '#052A15',
+        },
+        paper: {
+          DEFAULT: '#F5F3EE',
+          2: '#ECE9E1',
+        },
         brand: {
           indigo: '#2B2DFF',
           violet: '#7A5CFF',

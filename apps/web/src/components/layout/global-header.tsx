@@ -11,8 +11,9 @@ export function GlobalHeader() {
   const pathname = usePathname() || '';
 
   // Hide the global header on onboarding and dashboard routes where we have custom layouts
-  const hideHeaderRoutes = ['/onboarding', '/dashboard', '/growth', '/connections', '/instant', '/settings'];
-  const shouldHide = hideHeaderRoutes.some(route => pathname.startsWith(route));
+  // Marketing pages ship their own SiteNav; dashboard routes have the AppShell.
+  const hideHeaderRoutes = ['/onboarding', '/dashboard', '/growth', '/connections', '/instant', '/settings', '/pricing'];
+  const shouldHide = pathname === '/' || hideHeaderRoutes.some(route => pathname.startsWith(route));
 
   if (shouldHide) return null;
 

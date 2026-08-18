@@ -1,41 +1,57 @@
 'use client';
 
 /**
- * AppShell — Main layout wrapper for all dashboard pages.
+ * AppShell — layout for every signed-in page.
  *
- * A vertical sidebar + scrollable main content area.
- * Design: clean white sidebar, indigo active states, minimal borders.
+ * Dark "control room" rail on the left, paper-white working area on the
+ * right. The rail carries the product's one accent (signal green) only on
+ * the active item and the Autopilot state, so the eye lands where the
+ * machine is running.
  */
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ElementType, ReactNode } from 'react';
-import { Zap, TrendingUp, Settings, LayoutDashboard, LogOut, Share2 } from 'lucide-react';
+import { Zap, TrendingUp, Settings, LayoutDashboard, LogOut, Share2, Bot } from 'lucide-react';
+
 import { logout } from '@/app/actions/auth';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { label: 'Dashboard',      href: '/dashboard',    icon: LayoutDashboard },
-  { label: 'Growth Engine',  href: '/growth',       icon: TrendingUp },
-  { label: 'Connections',    href: '/connections',  icon: Share2 },
-  { label: 'Instant Content',href: '/instant',      icon: Zap },
-  { label: 'Settings',       href: '/settings',     icon: Settings },
-];
+  { label: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'Growth Engine', href: '/growth', icon: TrendingUp },
+  { label: 'Connections', href: '/connections', icon: Share2 },
+  { label: 'Instant Content', href: '/instant', icon: Zap },
+  { label: 'Settings', href: '/settings', icon: Settings },
+] as const;
 
-function SidebarLink({
-  href, label, icon: Icon, isActive,
-}: { href: string; label: string; icon: ElementType; isActive: boolean }) {
+function RailLink({
+  href,
+  label,
+  icon: Icon,
+  isActive,
+}: {
+  href: string;
+  label: string;
+  icon: ElementType;
+  isActive: boolean;
+}) {
   return (
     <Link
-      href={href as any}
+      href={href as never}
       className={cn(
-        'flex items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-widest transition-colors rounded-none',
-        isActive
-          ? 'bg-[#121212] text-[#FDFCF8]'
-          : 'text-[#121212]/50 hover:text-[#121212] hover:bg-[#121212]/5',
+        'group relative flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-colors',
+        isActive ? 'text-white' : 'text-ink-300 hover:text-white',
       )}
     >
-      <Icon className="w-4 h-4 shrink-0" />
+      <span
+        aria-hidden
+        className={cn(
+          'absolute left-0 top-1/2 h-5 w-[2px] -translate-y-1/2 transition-colors',
+          isActive ? 'bg-signal' : 'bg-transparent group-hover:bg-ink-600',
+        )}
+      />
+      <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-signal' : 'text-ink-400 group-hover:text-ink-200')} />
       {label}
     </Link>
   );
@@ -44,55 +60,47 @@ function SidebarLink({
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  // Hide the AppShell for specific routes like full-screen onboarding pages
+  // Full-bleed flows (workspace creation / analysis) render without the rail.
   if (pathname === '/growth/new' || pathname === '/growth/analyzing') {
-    return (
-      <main className="h-screen w-full overflow-y-auto bg-[#FDFCF8]">
-        {children}
-      </main>
-    );
+    return <main className="h-screen w-full overflow-y-auto bg-paper text-ink-900">{children}</main>;
   }
 
   return (
-    <div className="h-screen flex overflow-hidden bg-[#FDFCF8] text-[#121212]">
-      {/* ── Sidebar ──────────────────────────────────────────────────── */}
-      <aside className="w-64 shrink-0 flex flex-col border-r border-[#121212]/10 bg-[#EFECE5] py-8 px-4 hidden md:flex">
-        {/* Logo */}
-        <div className="px-4 mb-12">
-          <span className="text-2xl font-black tracking-tighter text-[#121212]">Contivo<span className="text-[#C04C36]">.</span></span>
+    <div className="flex h-screen overflow-hidden bg-paper text-ink-900">
+      {/* ── Rail ─────────────────────────────────────────────────────── */}
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-ink-800 bg-ink-950 md:flex">
+        <div className="flex h-14 items-center gap-2 border-b border-ink-800 px-5">
+          <span className="inline-block h-2.5 w-2.5 bg-signal shadow-[0_0_10px_rgba(61,255,143,0.7)]" />
+          <span className="font-display text-[15px] font-bold tracking-tight text-white">Contivo</span>
         </div>
 
-        {/* Nav */}
-        <nav className="flex flex-col gap-2 flex-1 mt-4">
+        <nav className="mt-4 flex flex-1 flex-col gap-0.5">
           {NAV_ITEMS.map((item) => (
-            <SidebarLink
+            <RailLink
               key={item.href}
               {...item}
-              isActive={
-                item.href === '/dashboard'
-                  ? pathname === '/dashboard'
-                  : pathname.startsWith(item.href)
-              }
+              isActive={item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href)}
             />
           ))}
         </nav>
 
-        {/* Sign out */}
-        <div className="pt-4 border-t border-[#121212]/10 mt-auto">
+        <div className="border-t border-ink-800 px-4 py-3">
+          <div className="mb-3 flex items-center gap-2 px-1 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
+            <Bot className="h-3.5 w-3.5" />
+            autopilot-ready build
+          </div>
           <form action={logout}>
-            <button className="flex w-full items-center gap-3 px-4 py-3 text-sm font-bold uppercase tracking-widest text-[#C04C36] hover:bg-[#C04C36]/10 transition-colors rounded-none">
-              <LogOut className="w-5 h-5 shrink-0" />
+            <button className="flex w-full items-center gap-3 px-1 py-2 text-[13px] text-ink-300 transition-colors hover:text-white">
+              <LogOut className="h-4 w-4 shrink-0" />
               Sign out
             </button>
           </form>
         </div>
       </aside>
 
-      {/* ── Main ───────────────────────────────────────────────────────── */}
-      <main className="flex-1 overflow-y-auto pb-10">
-        <div className="max-w-7xl mx-auto h-full p-6 md:p-10">
-          {children}
-        </div>
+      {/* ── Working area ─────────────────────────────────────────────── */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto max-w-7xl p-6 md:p-10">{children}</div>
       </main>
     </div>
   );
