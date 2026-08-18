@@ -619,15 +619,46 @@ export async function generateDraftForItem(
     let finalBody = generatedBody;
     let humanizeInfo: Record<string, unknown> | null = null;
     if (options.humanize) {
-      const humanized = await humanizeDraft({
+      const hashtagCount = wordCountPlatform === 'blog' || wordCountPlatform === 'email' ? 0 : 3;
+      const countWords = (t: string) => t.split(/\s+/).filter(Boolean).length;
+
+      let humanized = await humanizeDraft({
         text: generatedBody,
         channel: item.channel,
         brandSummary,
+        // Reuse the same target the generator was given, so the rewrite
+        // expands a thin draft instead of preserving its thinness.
+        targetWords: targetWordCount,
+        minWords: wordCountRange.min,
+        // Blog posts are rendered as web pages; hashtags only belong on social.
+        hashtags: hashtagCount,
       });
+      let passes = 1;
+
+      // Models reliably undershoot a word target by 20-30%. One rewrite is not
+      // enough to lift a thin draft to a real one, so keep asking while the
+      // result is still under the floor — bounded, and only while it grows.
+      while (countWords(humanized.text) < wordCountRange.min && passes < 3) {
+        const before = countWords(humanized.text);
+        const next = await humanizeDraft({
+          text: humanized.text,
+          channel: item.channel,
+          brandSummary,
+          targetWords: targetWordCount,
+          minWords: wordCountRange.min,
+          hashtags: hashtagCount,
+        });
+        if (countWords(next.text) <= before) break;
+        humanized = next;
+        passes += 1;
+      }
+
       finalBody = humanized.text;
       humanizeInfo = {
         changed: humanized.changed,
         source: humanized.source,
+        passes,
+        words: countWords(humanized.text),
         tellsBefore: humanized.tellsBefore,
         tellsAfter: humanized.tellsAfter,
       };

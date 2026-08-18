@@ -26,12 +26,21 @@ export const WORD_COUNT_PLATFORMS: WordCountPlatform[] = [
   'instagram',
 ];
 
+/**
+ * Per-platform word ranges.
+ *
+ * LinkedIn's floor used to be 80 words, and generations sat on it — the posts
+ * read as thin. The floor is now high enough that a post has to make an
+ * argument. The ceiling stays under LinkedIn's hard 3,000-character limit
+ * (~450 words at average English word length), which the quality gate also
+ * enforces as a character check.
+ */
 export const DEFAULT_CONTENT_WORD_COUNT_LIMITS: ContentWordCountLimits = {
   blog: { min: 600, max: 2200 },
-  linkedin: { min: 80, max: 450 },
+  linkedin: { min: 380, max: 430 },
   twitter: { min: 20, max: 280 },
   email: { min: 120, max: 1200 },
-  instagram: { min: 30, max: 220 },
+  instagram: { min: 60, max: 220 },
 };
 
 function toInt(value: unknown): number | null {

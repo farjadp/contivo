@@ -41,6 +41,8 @@ export const THRESHOLDS = {
 const PLATFORM_CHAR_LIMITS: Record<string, number> = {
   twitter: 280,
   instagram: 2200,
+  // LinkedIn rejects a share over 3,000 characters outright.
+  linkedin: 3000,
 };
 
 /** Word count tolerance either side of the configured range. */
@@ -271,7 +273,7 @@ ${content.slice(0, 6000)}
 
 Score each 0-10 and be harsh — this goes out unattended on a real company account:
 - brand_fit: matches the brand's audience, tone and value proposition; nothing that contradicts the profile.
-- factual_safety: makes NO specific factual claim it cannot support. Invented statistics, named studies, fake customer results, precise percentages, awards, or claims about named third parties all score 0-3. Generic, experience-based advice scores high.
+- factual_safety: makes NO specific factual claim it cannot support. Invented statistics, named studies, fake customer results, precise percentages, awards, or claims about named third parties all score 0-3. A first-person anecdote presented as something the author actually did — "I worked with a founder who...", "one client of ours...", followed by outcomes like churn dropping — is a FABRICATED CASE STUDY and scores 0-2, because nobody can verify it and the author may never have done it. Hypotheticals clearly framed as such ("picture a team that...") are fine. Generic, experience-based advice scores high.
 - clarity: reads as finished, native to the platform, coherent, no filler or repetition.
 
 Set "verdict" to "reject" if the post would embarrass the brand, makes unverifiable claims, gives regulated advice (medical, legal, financial), touches politics or religion, attacks a named competitor, or reads as machine-generated. Otherwise "approve".

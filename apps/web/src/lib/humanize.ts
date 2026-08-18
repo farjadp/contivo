@@ -48,8 +48,9 @@ export function findTells(text: string): string[] {
   // Em-dash density is the other giveaway: more than two in a short post.
   const emDashes = (text.match(/—/g) || []).length;
   if (emDashes > 2) hits.push(`em-dash-x${emDashes}`);
-  // A trailing hashtag block.
-  if (/(^|\n)\s*(#\w+\s*){3,}$/.test(text.trim())) hits.push('hashtag-block');
+  // A trailing hashtag block is expected on social; only flag hashtag spam.
+  const hashtags = (text.match(/#\w+/g) || []).length;
+  if (hashtags > 8) hits.push(`hashtag-spam-x${hashtags}`);
   return hits;
 }
 
@@ -64,6 +65,11 @@ export async function humanizeDraft(input: {
   brandSummary: unknown;
   /** Keeps first-person voice honest: what this person actually does. */
   authorContext?: string;
+  /** Length the finished post should land on. The rewrite expands to reach it. */
+  targetWords?: number | null;
+  minWords?: number | null;
+  /** Number of hashtags to end on; 0 disables them (e.g. blog). */
+  hashtags?: number;
 }): Promise<HumanizeResult> {
   const original = String(input.text || '').trim();
   const tellsBefore = findTells(original);
@@ -72,6 +78,23 @@ export async function humanizeDraft(input: {
   }
 
   const brand = input.brandSummary as any;
+  const currentWords = original.split(/\s+/).filter(Boolean).length;
+  const target = Number(input.targetWords || 0);
+  const wantsExpansion = target > 0 && currentWords < target * 0.85;
+  const hashtagCount = input.hashtags ?? 3;
+
+  const lengthRule = target
+    ? wantsExpansion
+      ? `- The draft is ${currentWords} words and is too thin. Expand it to about ${target} words by developing the ARGUMENT, not by adding stories: name the trade-off, work through the reasoning, describe the failure mode in general terms, and give the reader steps they can act on. Do not pad with adjectives or restatement.
+- CRITICAL: do not invent a client story, case study, or personal anecdote to fill space. No "I worked with a founder who...", no "one team I advised...", no invented outcomes like "churn dropped" or "support tickets fell". If you need an example, write it as a hypothetical the reader recognises ("picture an onboarding flow where..."), never as something the author did.`
+      : `- Keep it close to ${target} words.`
+    : '- Keep it roughly the same length.';
+
+  const hashtagRule =
+    hashtagCount > 0
+      ? `- End with exactly ${hashtagCount} specific hashtags on their own line. Make them topic and industry specific, not generic (#Leadership, #Success and #Motivation are banned).`
+      : '- No hashtags.';
+
   const prompt = `Rewrite this ${input.channel} post so it reads like one experienced person wrote it in one sitting. Keep the substance and the specifics; change how it sounds.
 
 Voice to match:
@@ -86,11 +109,13 @@ Rules:
 - Cut every phrase that signals AI writing: "Here's the thing", "But the real killer?", "the silent killer", "unlock", "leverage", "supercharge", "game-changer", "dive in".
 - No rhetorical-question opener. Start with a claim, an observation, or a concrete situation.
 - At most one em-dash in the whole post. Prefer full stops.
-- No hashtag block. Remove hashtags entirely.
+${hashtagRule}
 - No "Ready to X? Book a call" CTA. If a close is needed, make it a plain sentence or a question a person would actually ask.
 - Vary sentence length. Allow one short fragment. Do not use a three-item list as the climax.
-- Keep it roughly the same length, same language, same core point. Do not invent facts, numbers or claims that are not already there.
-- Plain text only. No markdown, no emoji.
+- Break it into short paragraphs with blank lines between them, the way people actually read on this platform.
+${lengthRule}
+- Same language, same core point. Do not invent facts, numbers, statistics, client results or first-person experiences that are not already in the draft.
+- Plain text only. No markdown headers, no emoji.
 
 Post:
 """
@@ -109,9 +134,11 @@ Return JSON only: {"text": "the rewritten post"}`;
 
   const rewritten = String(result.data.text || '').trim();
 
-  // Guard against a rewrite that truncated, ballooned, or came back empty.
+  // Guard against a rewrite that truncated or came back empty. When we asked
+  // for expansion, a much longer result is the point, so the ceiling lifts.
   const ratio = rewritten.length / original.length;
-  if (!rewritten || ratio < 0.5 || ratio > 1.8) {
+  const maxRatio = wantsExpansion ? 8 : 1.8;
+  if (!rewritten || ratio < 0.5 || ratio > maxRatio) {
     return { text: original, changed: false, tellsBefore, tellsAfter: tellsBefore, source: 'unchanged' };
   }
 
