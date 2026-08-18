@@ -13,57 +13,20 @@
  */
 
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import { Share2, Globe } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
 import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
+import {
+  getPublishJobs,
+  getSocialConnections,
+  resolveWorkspaceScope,
+} from '@/lib/social-data';
 
 export const metadata = { title: 'Connections — Contivo' };
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
-
-// ─── Server-side data fetch ───────────────────────────────────────────────────
-
-async function fetchConnections(workspaceId: string) {
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/v1/social/connections?workspaceId=${workspaceId}`,
-      { cache: 'no-store' },
-    );
-    if (!res.ok) return { connections: [], total: 0 };
-    return res.json() as Promise<{
-      connections: Array<{
-        id: string; platform: string; accountName: string; accountIdentifier: string;
-        status: string; isDefault: boolean; lastSyncAt: string | null; createdAt: string;
-      }>;
-      total: number;
-    }>;
-  } catch {
-    return { connections: [], total: 0 };
-  }
-}
-
-async function fetchPublishJobs(workspaceId: string) {
-  try {
-    const res = await fetch(
-      `${API_BASE}/api/v1/social/publish-jobs?workspaceId=${workspaceId}&limit=100`,
-      { cache: 'no-store' },
-    );
-    if (!res.ok) return { jobs: [], total: 0 };
-    return res.json() as Promise<{
-      jobs: Array<{
-        id: string; platform: string; status: string; scheduledAtUtc: string | null;
-        externalPostUrl: string | null; lastError: string | null;
-        retryCount: number; createdAt: string; publishedAtUtc: string | null;
-      }>;
-      total: number;
-    }>;
-  } catch {
-    return { jobs: [], total: 0 };
-  }
-}
 
 // ─── Page Props ───────────────────────────────────────────────────────────────
 
@@ -80,13 +43,18 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   const params = await searchParams;
   const activeMainTab = params.tab === 'websites' ? 'websites' : 'social';
 
-  // Use workspaceId from query param or fall back to userId as workspace scope
-  const workspaceId = params.workspaceId ?? session.userId ?? '';
+  // Resolve a REAL workspace. This used to fall back to session.userId, which
+  // is not a workspace id — every social action then failed with
+  // "Workspace not found", including the Connect button.
+  const { workspaces, workspace } = await resolveWorkspaceScope(
+    session.userId as string,
+    params.workspaceId,
+  );
+  const workspaceId = workspace?.id ?? '';
 
-  // Fetch data in parallel
-  const [{ connections }, { jobs }, siteState] = await Promise.all([
-    fetchConnections(workspaceId),
-    fetchPublishJobs(workspaceId),
+  const [connections, jobs, siteState] = await Promise.all([
+    workspaceId ? getSocialConnections(workspaceId) : Promise.resolve([]),
+    workspaceId ? getPublishJobs(workspaceId) : Promise.resolve([]),
     listSites(),
   ]);
   const sites = 'sites' in siteState ? siteState.sites : [];
@@ -102,6 +70,46 @@ export default async function ConnectionsPage({ searchParams }: Props) {
           Connect your brand&apos;s social channels and websites. Publish and schedule content directly from Contivo.
         </p>
       </div>
+
+      {/* ─── No workspace yet ───────────────────────────────────────────── */}
+      {!workspace && (
+        <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
+          <h2 className="text-base font-bold text-[#121212]">Create a workspace first</h2>
+          <p className="text-sm text-amber-800 mt-1">
+            Connections belong to a workspace — it decides which brand&apos;s content gets
+            published. Create one in the Growth Engine, then come back.
+          </p>
+          <Link
+            href="/growth/new"
+            className="inline-block mt-4 rounded-xl bg-[#121212] text-white text-sm font-semibold px-4 py-2"
+          >
+            Create workspace
+          </Link>
+        </div>
+      )}
+
+      {/* ─── Workspace switcher (only when there is a choice) ───────────── */}
+      {workspaces.length > 1 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+            Workspace
+          </span>
+          {workspaces.map((w) => (
+            <Link
+              key={w.id}
+              href={`/connections?tab=${activeMainTab}&workspaceId=${w.id}`}
+              className={cn(
+                'px-3 py-1.5 rounded-full text-xs font-semibold border',
+                w.id === workspaceId
+                  ? 'bg-[#121212] text-white border-[#121212]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300',
+              )}
+            >
+              {w.name}
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* ─── Main tabs: Websites | Social Channels ──────────────────────── */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl w-fit">
