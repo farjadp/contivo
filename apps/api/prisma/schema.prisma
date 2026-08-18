@@ -70,7 +70,7 @@ model Workspace {
   socialConnections    SocialConnection[]
   strategyRuns         StrategyRun[]
   strategicReports     StrategicReport[]
-  autopilotPolicy      AutopilotPolicy?
+  autopilotPolicies    AutopilotPolicy[]
   autopilotRuns        AutopilotRun[]
   siteConnections      SiteConnection[]
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -83,11 +83,18 @@ model Workspace {
 /// `enabled` the runner ideates + drafts + schedules content with no human
 /// in the loop. Publishing itself is still handled by SocialSchedulerService
 /// once an item is SCHEDULED and its time arrives.
+/// One agent. A workspace can run several: a LinkedIn voice, a blog writer,
+/// a competitor watcher — each with its own cadence, channels and steering.
+/// `recipeKey` records which preset it was created from, so the UI can show
+/// what it is without re-deriving it from the settings.
 model AutopilotPolicy {
   id          String    @id @default(cuid())
-  workspaceId String    @unique
+  workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
+
+  name      String  @default("Autopilot")
+  recipeKey String?
 
   enabled Boolean @default(false)
 
@@ -113,10 +120,12 @@ model AutopilotPolicy {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  runs AutopilotRun[]
+  runs         AutopilotRun[]
+  contentItems ContentItem[]
 
   @@index([enabled, nextRunAt])
   @@index([userId])
+  @@index([workspaceId])
   @@map("autopilot_policies")
 }
 
@@ -310,7 +319,7 @@ model StrategyRun {
 }
 
 model ContentItem {
-  id                String         @id @default(cuid())
+  id                String           @id @default(cuid())
   userId            String
   workspaceId       String?
   type              ContentType
@@ -318,11 +327,15 @@ model ContentItem {
   tone              ContentTone?
   topic             String
   content           String
-  status            ContentStatus  @default(DRAFT)
+  status            ContentStatus    @default(DRAFT)
   /// URL-safe identifier for website-published content. Assigned at publish
   /// time and never changed afterwards, so live URLs stay stable.
   slug              String?
-  creditsCost       Int            @default(0)
+  /// Which agent produced this, when it came from one. Lets each agent hold
+  /// its own quota instead of sharing one workspace-wide queue.
+  agentId           String?
+  agent             AutopilotPolicy? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  creditsCost       Int              @default(0)
   jobId             String?
   scheduledAtUtc    DateTime?
   scheduledTimezone String?
@@ -330,10 +343,10 @@ model ContentItem {
   failedReason      String?
   campaign          String?
   notes             String?
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  user              User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  workspace         Workspace?     @relation(fields: [workspaceId], references: [id])
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace         Workspace?       @relation(fields: [workspaceId], references: [id])
 
   images ContentImage[]
 
@@ -341,6 +354,7 @@ model ContentItem {
   @@index([userId])
   @@index([workspaceId])
   @@index([workspaceId, status, publishedAtUtc])
+  @@index([agentId])
   @@map("content_items")
 }
 

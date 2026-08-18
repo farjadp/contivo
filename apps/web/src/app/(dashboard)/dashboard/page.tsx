@@ -130,7 +130,10 @@ export default async function DashboardPage() {
   ]);
 
   const [autopilot, lastRun, connectionsCount, sitesCount] = await Promise.all([
-    prisma.autopilotPolicy.findUnique({ where: { workspaceId: visibleWorkspace.id } }),
+    prisma.autopilotPolicy.findFirst({
+      where: { workspaceId: visibleWorkspace.id },
+      orderBy: [{ enabled: 'desc' }, { createdAt: 'asc' }],
+    }),
     prisma.autopilotRun.findFirst({ where: { workspaceId: visibleWorkspace.id }, orderBy: { startedAt: 'desc' } }),
     prisma.socialConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'CONNECTED' } }),
     prisma.siteConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'ACTIVE' } }),

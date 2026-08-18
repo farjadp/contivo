@@ -201,6 +201,18 @@ export async function runPolicy(
     const upcoming = await prisma.contentItem.findMany({
       where: {
         workspaceId: policy.workspaceId,
+        agentId: policy.id,
+        status: { in: [...OCCUPYING_STATUSES] },
+        scheduledAtUtc: { gte: now, lte: horizonEnd },
+      },
+      select: { scheduledAtUtc: true },
+    });
+
+    // Slots are still spread against everything already booked in the
+    // workspace, so two agents do not schedule on top of each other.
+    const workspaceBooked = await prisma.contentItem.findMany({
+      where: {
+        workspaceId: policy.workspaceId,
         status: { in: [...OCCUPYING_STATUSES] },
         scheduledAtUtc: { gte: now, lte: horizonEnd },
       },
@@ -213,7 +225,7 @@ export async function runPolicy(
     }
 
     // 4. Slots
-    const taken = upcoming.map((i) => i.scheduledAtUtc).filter((d): d is Date => Boolean(d));
+    const taken = workspaceBooked.map((i) => i.scheduledAtUtc).filter((d): d is Date => Boolean(d));
     const slots = pickPublishSlots({
       now,
       count: needed,
@@ -291,6 +303,7 @@ export async function runPolicy(
           // Force the channel: idea.format drives channel resolution in the engine.
           const saved = await saveIdeaToPipelineCore(actor, {
             ...idea,
+            agent_id: policy.id,
             format: channel,
             auto_insert_to_calendar: false,
             framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),

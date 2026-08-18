@@ -2,20 +2,23 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertCircle, Bot, CheckCircle2, ChevronDown, ChevronUp, Play, Save, Zap } from 'lucide-react';
+import { AlertCircle, Bot, CheckCircle2, ChevronDown, ChevronUp, Play, Plus, Save, Zap } from 'lucide-react';
 
 import {
+  createAgent,
   runAutopilotNow,
   saveAutopilotPolicy,
   type AutopilotPolicyInput,
   type SerializedPolicy,
   type SerializedRun,
 } from '@/app/actions/autopilot';
+import { AGENT_RECIPES } from '@/lib/autopilot/recipes';
 import { CHANNEL_LABELS, CHANNEL_TO_PLATFORM, PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
 
 type Props = {
   workspaceId: string;
   initialPolicy: SerializedPolicy | null;
+  initialAgents?: SerializedPolicy[];
   initialRuns: SerializedRun[];
   connectedPlatforms: Array<{ platform: string; accountName: string }>;
   hasSiteConnection: boolean;
@@ -56,12 +59,38 @@ function toForm(p: SerializedPolicy | null): AutopilotPolicyInput {
 export function AutopilotTab({
   workspaceId,
   initialPolicy,
+  initialAgents,
   initialRuns,
   connectedPlatforms,
   hasSiteConnection,
   ideationReady,
 }: Props) {
   const router = useRouter();
+  const agents = initialAgents ?? (initialPolicy ? [initialPolicy] : []);
+  // Which agent the editor below is bound to.
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialPolicy?.id ?? agents[0]?.id ?? null,
+  );
+  const selected = agents.find((a) => a.id === selectedId) ?? agents[0] ?? null;
+  const [showRecipes, setShowRecipes] = useState(agents.length === 0);
+  const [isCreating, startCreate] = useTransition();
+
+  const handleCreate = (recipeKey: string) => {
+    setMessage(null);
+    startCreate(async () => {
+      const result = await createAgent(workspaceId, recipeKey);
+      if ('error' in result && result.error) {
+        setMessage({ kind: 'error', text: result.error });
+        return;
+      }
+      if ('agent' in result && result.agent) {
+        setSelectedId(result.agent.id);
+        setShowRecipes(false);
+        setMessage({ kind: 'ok', text: `${result.agent.name} created. Review the settings, then enable it.` });
+        router.refresh();
+      }
+    });
+  };
   const [form, setForm] = useState<AutopilotPolicyInput>(() => toForm(initialPolicy));
   // Server props win after router.refresh(); local override only right after a save.
   const [savedPolicy, setSavedPolicy] = useState<SerializedPolicy | null>(null);
@@ -93,6 +122,7 @@ export function AutopilotTab({
     startSave(async () => {
       const result = await saveAutopilotPolicy(workspaceId, {
         ...form,
+        agentId: selected?.id,
         topicHints: splitList(hintsText),
         avoidTopics: splitList(avoidText),
       });
@@ -117,7 +147,7 @@ export function AutopilotTab({
   const handleRunNow = () => {
     setMessage(null);
     startRun(async () => {
-      const result = await runAutopilotNow(workspaceId);
+      const result = await runAutopilotNow(workspaceId, selected?.id);
       if ('error' in result && result.error) {
         setMessage({ kind: 'error', text: result.error });
         return;
@@ -153,6 +183,84 @@ export function AutopilotTab({
 
   return (
     <div className="space-y-6">
+      {/* ── Agents ── */}
+      <div className="bg-white rounded-lg border p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold">Agents</h2>
+            <p className="text-gray-600 text-sm mt-1 max-w-2xl">
+              Each agent is one job with its own cadence, channels and steering. They share the
+              workspace&apos;s intelligence and never book the same slot twice.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowRecipes((v) => !v)}
+            className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-semibold hover:bg-gray-50"
+          >
+            <Plus className="w-4 h-4" />
+            New agent
+          </button>
+        </div>
+
+        {agents.length > 0 && (
+          <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+            {agents.map((a) => {
+              const isSelected = a.id === selected?.id;
+              return (
+                <li key={a.id}>
+                  <button
+                    onClick={() => setSelectedId(a.id)}
+                    className={`w-full text-left rounded-lg border p-3.5 transition-colors ${
+                      isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-[15px]">{a.name}</span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
+                          a.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                        }`}
+                      >
+                        {a.enabled ? 'On' : 'Off'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      {a.postsPerWeek}/week · {a.channels.join(', ') || 'no channel'}
+                      {a.lastRunAt ? ` · last run ${formatDate(a.lastRunAt)}` : ''}
+                    </p>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {showRecipes && (
+          <div className="mt-5 border-t pt-5">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+              Start from a recipe
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {AGENT_RECIPES.map((r) => (
+                <button
+                  key={r.key}
+                  onClick={() => handleCreate(r.key)}
+                  disabled={isCreating}
+                  className="text-left rounded-lg border border-gray-200 p-3.5 hover:border-gray-400 disabled:opacity-60"
+                >
+                  <p className="font-semibold text-[15px]">{r.name}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{r.tagline}</p>
+                  <p className="mt-2 text-[11px] text-gray-400">
+                    {r.defaults.postsPerWeek}/week · {r.defaults.channels.join(', ')} ·{' '}
+                    {r.requires === 'site' ? 'needs a website' : r.requires === 'social' ? 'needs a social account' : 'any channel'}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* ── Status header ── */}
       <div className="bg-white rounded-lg border p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -161,7 +269,7 @@ export function AutopilotTab({
               <Bot className={`w-6 h-6 ${policy?.enabled ? 'text-green-700' : 'text-gray-500'}`} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Autopilot</h2>
+              <h2 className="text-xl font-semibold">{selected?.name ?? 'Autopilot'}</h2>
               <p className="text-gray-600 text-sm mt-1 max-w-2xl">
                 When on, Contivo ideates, drafts and schedules posts for you on a cadence — no
                 clicks. Publishing happens automatically when each slot arrives.

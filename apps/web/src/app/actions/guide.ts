@@ -37,7 +37,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
   if (!workspace) return { error: 'Workspace not found' };
 
   const [policy, connections, sites, published, scheduled] = await Promise.all([
-    prisma.autopilotPolicy.findUnique({ where: { workspaceId } }),
+    prisma.autopilotPolicy.findFirst({ where: { workspaceId, enabled: true } }),
     prisma.socialConnection.findMany({
       where: { workspaceId, status: 'CONNECTED' },
       select: { platform: true },

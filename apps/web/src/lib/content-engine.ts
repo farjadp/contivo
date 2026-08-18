@@ -355,6 +355,8 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
         topic: idea.topic || 'Untitled Idea',
         content: buildPipelineDraftContent(idea),
         status: 'DRAFT',
+        // Set when an agent produced this, so each agent keeps its own quota.
+        agentId: idea?.agent_id ? String(idea.agent_id) : null,
       },
     });
 

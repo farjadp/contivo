@@ -239,6 +239,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
   const autopilotState = await getAutopilotState(workspace.id);
   const autopilotPolicy = ('policy' in autopilotState && autopilotState.policy) || null;
+  const autopilotAgents = ('agents' in autopilotState && autopilotState.agents) || [];
   const autopilotRuns = ('runs' in autopilotState && autopilotState.runs) || [];
   const autopilotConnected =
     ('connectedPlatforms' in autopilotState && autopilotState.connectedPlatforms) || [];
@@ -475,7 +476,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             <Link
               href={`/growth/${workspace.id}?tab=autopilot`}
               className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
-                autopilotPolicy?.enabled
+                autopilotAgents.some((a) => a.enabled)
                   ? 'bg-signal text-signal-ink hover:bg-ink-900 hover:text-white'
                   : 'bg-ink-900 text-white hover:bg-ink-800'
               }`}
@@ -662,7 +663,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         {activeTab === 'autopilot' && (
           <AutopilotTab
             workspaceId={workspace.id}
-            initialPolicy={autopilotPolicy}
+            initialPolicy={autopilotPolicy ?? autopilotAgents[0] ?? null}
+            initialAgents={autopilotAgents}
             initialRuns={autopilotRuns}
             connectedPlatforms={autopilotConnected}
             hasSiteConnection={autopilotHasSite}

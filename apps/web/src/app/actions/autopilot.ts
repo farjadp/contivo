@@ -7,9 +7,11 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import { PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
+import { getRecipe } from '@/lib/autopilot/recipes';
 import { runPolicy } from '@/lib/autopilot/runner';
 
 export type AutopilotPolicyInput = {
+  name?: string;
   enabled: boolean;
   postsPerWeek: number;
   channels: ContentChannel[];
@@ -22,24 +24,31 @@ export type AutopilotPolicyInput = {
   avoidTopics?: string[];
 };
 
-async function requireOwnedWorkspace(workspaceId: string) {
+type UserAuth = { ok: true; userId: string } | { ok: false; error: string };
+
+async function requireUser(): Promise<UserAuth> {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' as const };
-  const userId = session.userId as string;
-  const workspace = await prisma.workspace.findUnique({
+  if (!session) return { ok: false, error: 'Not authenticated' };
+  return { ok: true, userId: session.userId as string };
+}
+
+async function requireWorkspace(workspaceId: string, userId: string) {
+  return prisma.workspace.findUnique({
     where: { id: workspaceId, userId },
     select: { id: true },
   });
-  if (!workspace) return { error: 'Workspace not found' as const };
-  return { userId };
 }
 
+/** Loads every agent in the workspace plus the shared publishing context. */
 export async function getAutopilotState(workspaceId: string) {
-  const auth = await requireOwnedWorkspace(workspaceId);
-  if ('error' in auth) return { error: auth.error };
+  const auth = await requireUser();
+  if (!auth.ok) return { error: auth.error };
 
-  const [policy, runs, connections, siteCount] = await Promise.all([
-    prisma.autopilotPolicy.findUnique({ where: { workspaceId } }),
+  const [agents, runs, connections, siteCount] = await Promise.all([
+    prisma.autopilotPolicy.findMany({
+      where: { workspaceId },
+      orderBy: { createdAt: 'asc' },
+    }),
     prisma.autopilotRun.findMany({
       where: { workspaceId },
       orderBy: { startedAt: 'desc' },
@@ -53,7 +62,9 @@ export async function getAutopilotState(workspaceId: string) {
   ]);
 
   return {
-    policy: policy ? serializePolicy(policy) : null,
+    agents: agents.map(serializePolicy),
+    // Kept for callers that only care whether anything is running.
+    policy: agents.find((a) => a.enabled) ? serializePolicy(agents.find((a) => a.enabled)!) : null,
     runs: runs.map(serializeRun),
     connectedPlatforms: connections.map((c) => ({
       platform: String(c.platform),
@@ -63,45 +74,120 @@ export async function getAutopilotState(workspaceId: string) {
   };
 }
 
-export async function saveAutopilotPolicy(workspaceId: string, input: AutopilotPolicyInput) {
-  const auth = await requireOwnedWorkspace(workspaceId);
-  if ('error' in auth) return { error: auth.error };
+/** Creates an agent from a recipe preset. */
+export async function createAgent(workspaceId: string, recipeKey: string) {
+  const auth = await requireUser();
+  if (!auth.ok) return { error: auth.error };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
 
-  const clean = normalizeInput(input);
-  if ('error' in clean) return { error: clean.error };
+  const recipe = getRecipe(recipeKey);
+  if (!recipe) return { error: `Unknown agent type: ${recipeKey}` };
 
-  const policy = await prisma.autopilotPolicy.upsert({
-    where: { workspaceId },
-    create: { workspaceId, userId: auth.userId, ...clean.data },
-    update: clean.data,
+  const existing = await prisma.autopilotPolicy.count({ where: { workspaceId } });
+  if (existing >= 8) return { error: 'A workspace can run at most 8 agents.' };
+
+  const agent = await prisma.autopilotPolicy.create({
+    data: {
+      workspaceId,
+      userId: auth.userId,
+      name: recipe.name,
+      recipeKey: recipe.key,
+      // Created switched off: the user reviews the settings, then enables.
+      enabled: false,
+      postsPerWeek: recipe.defaults.postsPerWeek,
+      channels: recipe.defaults.channels,
+      windowStartHour: recipe.defaults.windowStartHour,
+      windowEndHour: recipe.defaults.windowEndHour,
+      publishDays: recipe.defaults.publishDays,
+      goal: recipe.defaults.goal,
+      topicHints: recipe.defaults.topicHints,
+      avoidTopics: recipe.defaults.avoidTopics,
+    },
   });
 
   await writeActivityLog({
     userId: auth.userId,
     workspaceId,
-    action: 'AUTOPILOT_POLICY_SAVED',
-    detail: { enabled: policy.enabled, postsPerWeek: policy.postsPerWeek, channels: policy.channels },
+    action: 'AUTOPILOT_AGENT_CREATED',
+    detail: { agentId: agent.id, recipeKey: recipe.key, name: agent.name },
   });
 
   revalidatePath(`/growth/${workspaceId}`);
-  return { success: true, policy: serializePolicy(policy) };
+  return { success: true, agent: serializePolicy(agent) };
 }
 
-export async function runAutopilotNow(workspaceId: string) {
-  const auth = await requireOwnedWorkspace(workspaceId);
-  if ('error' in auth) return { error: auth.error };
+export async function saveAutopilotPolicy(
+  workspaceId: string,
+  input: AutopilotPolicyInput & { agentId?: string },
+) {
+  const auth = await requireUser();
+  if (!auth.ok) return { error: auth.error };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
 
-  const policy = await prisma.autopilotPolicy.findUnique({ where: { workspaceId } });
-  if (!policy) return { error: 'Save an Autopilot policy first.' };
-  if (!policy.enabled) return { error: 'Enable Autopilot before running it.' };
+  const clean = normalizeInput(input);
+  if ('error' in clean) return { error: clean.error };
 
-  const result = await runPolicy(policy.id, { trigger: 'manual' });
+  // Target an explicit agent when given; otherwise the workspace's first one,
+  // creating it if this workspace has never had an agent.
+  const target = input.agentId
+    ? await prisma.autopilotPolicy.findFirst({ where: { id: input.agentId, workspaceId } })
+    : await prisma.autopilotPolicy.findFirst({ where: { workspaceId }, orderBy: { createdAt: 'asc' } });
+
+  const agent = target
+    ? await prisma.autopilotPolicy.update({ where: { id: target.id }, data: clean.data })
+    : await prisma.autopilotPolicy.create({
+        data: { workspaceId, userId: auth.userId, name: 'Autopilot', ...clean.data },
+      });
+
+  await writeActivityLog({
+    userId: auth.userId,
+    workspaceId,
+    action: 'AUTOPILOT_POLICY_SAVED',
+    detail: { agentId: agent.id, enabled: agent.enabled, postsPerWeek: agent.postsPerWeek, channels: agent.channels },
+  });
+
+  revalidatePath(`/growth/${workspaceId}`);
+  return { success: true, policy: serializePolicy(agent), agent: serializePolicy(agent) };
+}
+
+export async function deleteAgent(workspaceId: string, agentId: string) {
+  const auth = await requireUser();
+  if (!auth.ok) return { error: auth.error };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+
+  const agent = await prisma.autopilotPolicy.findFirst({ where: { id: agentId, workspaceId } });
+  if (!agent) return { error: 'Agent not found.' };
+
+  // Content it already produced survives; only the agent link is cleared.
+  await prisma.autopilotPolicy.delete({ where: { id: agent.id } });
+  await writeActivityLog({
+    userId: auth.userId,
+    workspaceId,
+    action: 'AUTOPILOT_AGENT_DELETED',
+    detail: { agentId, name: agent.name },
+  });
+
+  revalidatePath(`/growth/${workspaceId}`);
+  return { success: true };
+}
+
+export async function runAutopilotNow(workspaceId: string, agentId?: string) {
+  const auth = await requireUser();
+  if (!auth.ok) return { error: auth.error };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+
+  const agent = agentId
+    ? await prisma.autopilotPolicy.findFirst({ where: { id: agentId, workspaceId } })
+    : await prisma.autopilotPolicy.findFirst({ where: { workspaceId, enabled: true } });
+
+  if (!agent) return { error: 'Create an agent first.' };
+  if (!agent.enabled) return { error: 'Enable this agent before running it.' };
+
+  const result = await runPolicy(agent.id, { trigger: 'manual' });
   revalidatePath(`/growth/${workspaceId}`);
   return { success: true, result };
 }
 
-// ---------------------------------------------------------------------------
-// Helpers
 // ---------------------------------------------------------------------------
 
 function normalizeInput(input: AutopilotPolicyInput) {
@@ -135,6 +221,7 @@ function normalizeInput(input: AutopilotPolicyInput) {
 
   return {
     data: {
+      ...(input.name ? { name: String(input.name).trim().slice(0, 60) } : {}),
       enabled: Boolean(input.enabled),
       postsPerWeek,
       channels,
@@ -145,7 +232,7 @@ function normalizeInput(input: AutopilotPolicyInput) {
       goal: String(input.goal || '').trim().slice(0, 200) || null,
       topicHints: cleanList(input.topicHints),
       avoidTopics: cleanList(input.avoidTopics),
-      // Re-arm so a newly enabled policy runs on the next tick.
+      // Re-arm so a newly enabled agent runs on the next tick.
       nextRunAt: input.enabled ? null : undefined,
     },
   };
@@ -165,6 +252,8 @@ function clampInt(value: unknown, min: number, max: number, fallback: number) {
 
 function serializePolicy(p: {
   id: string;
+  name: string;
+  recipeKey: string | null;
   enabled: boolean;
   postsPerWeek: number;
   channels: ContentChannel[];
@@ -180,6 +269,8 @@ function serializePolicy(p: {
 }) {
   return {
     id: p.id,
+    name: p.name,
+    recipeKey: p.recipeKey,
     enabled: p.enabled,
     postsPerWeek: p.postsPerWeek,
     channels: p.channels,
@@ -197,6 +288,7 @@ function serializePolicy(p: {
 
 function serializeRun(r: {
   id: string;
+  policyId: string;
   status: string;
   trigger: string;
   ideasGenerated: number;
@@ -209,6 +301,7 @@ function serializeRun(r: {
 }) {
   return {
     id: r.id,
+    policyId: r.policyId,
     status: r.status,
     trigger: r.trigger,
     ideasGenerated: r.ideasGenerated,
