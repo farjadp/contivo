@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -187,6 +187,21 @@ export function CompetitorMapManager({
         userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
       })),
   );
+  // Accept/reject happens in local state; nothing reaches the database until
+  // the save button is pressed. Users changed dropdowns, navigated away, and
+  // silently lost the decisions — so track what is actually persisted.
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    JSON.stringify(
+      initialCompetitors
+        .filter((item) => !isSyntheticCompetitor(item))
+        .map((item) => ({
+          id: item.id,
+          decision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
+          type: item.type || 'DIRECT',
+          name: item.name,
+        })),
+    ),
+  );
   const [manualName, setManualName] = useState('');
   const [manualDomain, setManualDomain] = useState('');
   const [isDiscovering, setIsDiscovering] = useState(false);
@@ -207,6 +222,35 @@ export function CompetitorMapManager({
       ),
     [competitors],
   );
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify(
+        competitors.map((item) => ({
+          id: item.id,
+          decision: item.userDecision,
+          type: item.type,
+          name: item.name,
+        })),
+      ),
+    [competitors],
+  );
+  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
+
+  // Browsers only allow the leave-confirmation from a listener registered
+  // while changes are pending, so keep it attached only in that state.
+  const unsavedRef = useRef(hasUnsavedChanges);
+  unsavedRef.current = hasUnsavedChanges;
+  useEffect(() => {
+    if (!hasUnsavedChanges) return undefined;
+    const warn = (e: BeforeUnloadEvent) => {
+      if (!unsavedRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [hasUnsavedChanges]);
+
   const acceptedCount = useMemo(
     () => competitors.filter((item) => item.userDecision === 'ACCEPTED').length,
     [competitors],
@@ -328,7 +372,17 @@ export function CompetitorMapManager({
         if (result?.matrices) {
           onMatricesUpdated?.(result.matrices as CompetitiveMatrixPayload);
         }
-        setSuccess(result?.message || 'Competitor edits saved.');
+        setSavedSnapshot(
+          JSON.stringify(
+            (result?.competitors ?? competitors).map((item: any) => ({
+              id: item.id,
+              decision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
+              type: item.type || 'DIRECT',
+              name: item.name,
+            })),
+          ),
+        );
+        setSuccess(result?.message || 'Competitor decisions saved.');
         router.refresh();
       }
     } catch (saveError) {
@@ -341,6 +395,25 @@ export function CompetitorMapManager({
 
   return (
     <div className="space-y-5">
+      {hasUnsavedChanges && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3">
+          <p className="text-sm text-emerald-900">
+            <span className="font-bold">Your competitor decisions are not saved yet.</span>{' '}
+            Accepting or rejecting only changes this screen — nothing reaches the workspace, and
+            keyword analysis will not see it, until you save.
+          </p>
+          <button
+            type="button"
+            onClick={saveEdits}
+            disabled={isSaving}
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            Save now
+          </button>
+        </div>
+      )}
+
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -356,10 +429,14 @@ export function CompetitorMapManager({
           type="button"
           onClick={saveEdits}
           disabled={isSaving}
-          className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold text-[#121212] transition hover:bg-gray-50 disabled:opacity-60"
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60 ${
+            hasUnsavedChanges
+              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+              : 'border border-gray-300 bg-white text-[#121212] hover:bg-gray-50'
+          }`}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save Manual Edits
+          {hasUnsavedChanges ? 'Save competitor decisions' : 'Saved'}
         </button>
 
         <span className="text-xs font-semibold text-gray-500">
