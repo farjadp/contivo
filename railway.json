@@ -2,7 +2,7 @@
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
     "builder": "NIXPACKS",
-    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @contivo/types build && pnpm --filter @contivo/api exec prisma generate && pnpm --filter @contivo/api build"
+    "buildCommand": "pnpm install --no-frozen-lockfile --prod=false && pnpm --filter @contivo/types build && pnpm --filter @contivo/api exec prisma generate && pnpm --filter @contivo/api build"
   },
   "deploy": {
     "startCommand": "pnpm --filter @contivo/api start",
