@@ -1,4 +1,4 @@
-# Contivo — session handoff (18 August 2026)
+# Contivo — session handoff (19 August 2026)
 
 Paste this at the start of the next chat. It is the shortest complete picture
 of where the project stands, what is running, and what to be careful about.
@@ -15,6 +15,38 @@ to your own website on a schedule — with nobody in the loop.
 **Proof it works:** a real unattended post went live on 18 Aug —
 `https://www.linkedin.com/feed/update/urn:li:share:7495350777063075840`
 
+## 🟢 It is deployed
+
+| | URL | Host |
+|---|---|---|
+| Web | https://www.contivo.app | Vercel (`ashavidproject/contivo`) |
+| API | https://contivo-api-production.up.railway.app | Railway (`contivo-api`) + Redis |
+| DB | Neon — **schema `contivo`, not `public`** | |
+
+Verified live: pages 200; both crons 401 unauthorised / 200 authorised;
+Content API 401 without a key; API health ok with DB up; OAuth connect 401
+without a signed handoff and callback 400 on a forged state.
+
+### Do these first, in this order
+1. **Register the redirect URI in the LinkedIn developer portal:**
+   `https://contivo-api-production.up.railway.app/api/v1/social/oauth/linkedin/callback`
+   Without it, connecting an account in production fails with
+   `redirect_uri mismatch` and the loop cannot run there. Only Farjad can do this.
+2. **Rebuild the workspace in production.** Its database is empty — workspace,
+   brand memory, competitors, matrices, keywords, agents and the LinkedIn
+   connection all exist only on the laptop.
+3. Expect to log in again: `JWT_SECRET` was rotated, invalidating all sessions.
+
+### Deploy quirks (each one cost a failed build)
+- `NODE_ENV=production` makes pnpm skip devDependencies, but `typescript` and
+  `@contivo/config` are devDeps the build needs → build with `--prod=false`.
+- `.npmrc` sets `node-linker=hoisted` for Vercel, which **copies** workspace
+  packages at install time, before `@contivo/types` is built → the API cannot
+  resolve its `dist`. The Railway build overrides with
+  `--config.node-linker=isolated`.
+- Any `information_schema` query filtered on `public` will wrongly report the
+  production tables missing. They live in the `contivo` schema.
+
 ---
 
 ## Phase status
@@ -26,6 +58,7 @@ to your own website on a schedule — with nobody in the loop.
 | 2 · Website channel | ✅ | Content API, hashed site keys, blog publisher, Sites UI |
 | 3 · Agents | ✅ | Several named agents per workspace, from recipes, each with its own quota |
 | 4 · Monetise | ⏳ | Billing is an empty TODO; token crypto still XOR |
+| Deploy | ✅ | Web + API live, schema migrated, secrets set |
 
 ---
 
@@ -104,23 +137,30 @@ looked like they worked, didn't.**
 8. **Expansion pressure caused fabrication** — the model invented a client case
    study ("churn dropped") and the judge scored it 9/10 for safety. Both the
    rewrite rule and the judge now treat that as fabrication.
+9. **`JWT_SECRET` was unset in production** while the repo is public, so session
+   signing fell back to a hardcoded default anyone could read — forging an ADMIN
+   session was trivial. Now set to a random secret.
+10. **The API `start` script pointed at `dist/main`** while `nest build` emits
+    `dist/src/main.js`. The API could not start on any host, only in watch mode.
 
 ---
 
 ## Open work, highest value first
 
-1. **Phase 4 — billing**: `BillingModule` is an empty TODO. `Subscription`,
+1. **Finish the production loop** — LinkedIn redirect URI, then rebuild the
+   workspace and agents at www.contivo.app.
+2. **Phase 4 — billing**: `BillingModule` is an empty TODO. `Subscription`,
    `CreditLedger`, `CreditsService` exist; nothing charges.
-2. **Replace XOR token encryption** with AES-GCM/KMS. Its round-trip was broken
-   until today, which tells you how untested it is.
-3. **Tests** — still zero across ~32k lines. Start with the AI normalisers and
+3. **Replace XOR token encryption** with AES-GCM/KMS. Its round-trip was broken
+   until this session, which tells you how untested it is.
+4. **Tests** — still zero across ~32k lines. Start with the AI normalisers and
    `lib/autopilot/schedule.ts` (pure, easy, high value).
-4. **Strategic Reports on serverless** — Puppeteer + writing into
+5. **Strategic Reports on serverless** — Puppeteer + writing into
    `public/reports/` cannot work on Vercel.
-5. **Redesign pass 2** — inner tab bodies still use the old rounded blue style.
-6. **Nest API guard vs cookie auth** — every other API route is still
+6. **Redesign pass 2** — inner tab bodies still use the old rounded blue style.
+7. **Nest API guard vs cookie auth** — every other API route is still
    unreachable from the browser for the same reason OAuth was.
-7. **Alerting** — nothing notices when a provider fails 100% of calls or the
+8. **Alerting** — nothing notices when a provider fails 100% of calls or the
    publish cron dies. That is how bug #1 survived months.
 
 Full backlog with priorities: **Contivo Mission Control** in Notion.
