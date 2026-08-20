@@ -1,0 +1,14 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "pnpm install --no-frozen-lockfile && pnpm --filter @contivo/types build && pnpm --filter @contivo/api exec prisma generate && pnpm --filter @contivo/api build"
+  },
+  "deploy": {
+    "startCommand": "pnpm --filter @contivo/api start",
+    "healthcheckPath": "/api/v1/health",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
