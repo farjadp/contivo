@@ -12,6 +12,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { loadStorylineContext, storylinePromptBlock } from '@/lib/narrative/context';
 import {
   generateContentIdeasWithGemini,
   generateContentDraftWithGemini,
@@ -357,6 +358,9 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
         status: 'DRAFT',
         // Set when an agent produced this, so each agent keeps its own quota.
         agentId: idea?.agent_id ? String(idea.agent_id) : null,
+        // Which argument this advances. Null for content made before the
+        // narrative layer, and for hand-written ideas with no storyline chosen.
+        storylineId: idea?.storyline_id ? String(idea.storyline_id) : null,
       },
     });
 
@@ -595,6 +599,10 @@ export async function generateDraftForItem(
       .join('\n\n')
       .trim();
 
+    // The storyline is loaded here rather than passed in, so a draft regenerated
+    // later is held to the same claim the gate will score it against.
+    const storyline = await loadStorylineContext(item.storylineId);
+
     const generatedBody = await generateContentDraftWithGemini(
       brandSummary,
       item.topic,
@@ -610,6 +618,7 @@ export async function generateDraftForItem(
           target: targetWordCount,
         },
       },
+      storyline ? storylinePromptBlock(storyline) : null,
     );
 
     if (!generatedBody) {

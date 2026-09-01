@@ -20,6 +20,7 @@
  */
 
 import { requestJsonFromAi } from '@/lib/gemini';
+import { storylinePromptBlock, type StorylineContext } from '@/lib/narrative/context';
 import { getContentWordCountLimits } from '@/lib/app-settings';
 import {
   resolveWordCountPlatformKey,
@@ -35,6 +36,11 @@ export const THRESHOLDS = {
   brandFit: 6,
   factualSafety: 7, // strictest: unverifiable claims are the real risk
   clarity: 6,
+  /** Only applied when the item is bound to a storyline. */
+  storylineFit: 6,
+  /** As strict as factual safety: leaning on evidence you do not have is the
+   *  same failure, just dressed as a story. */
+  evidenceDiscipline: 7,
 } as const;
 
 /** Hard per-platform character ceilings enforced by the network itself. */
@@ -81,6 +87,9 @@ export type GateScores = {
   brandFit: number;
   factualSafety: number;
   clarity: number;
+  /** Null when the item is not bound to a storyline; not scored, not enforced. */
+  storylineFit: number | null;
+  evidenceDiscipline: number | null;
 };
 
 export type GateVerdict = {
@@ -104,6 +113,12 @@ export type GateInput = {
   recentContents?: string[];
   /** Injected in tests; loaded from app settings otherwise. */
   wordCountLimits?: ContentWordCountLimits;
+  /**
+   * The storyline this draft is meant to advance. When absent the gate behaves
+   * exactly as it did before the narrative layer existed, so content created
+   * without one keeps publishing.
+   */
+  storyline?: StorylineContext | null;
 };
 
 // ---------------------------------------------------------------------------
@@ -196,6 +211,11 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
   if (scores.factualSafety < THRESHOLDS.factualSafety)
     below.push(`factual safety ${scores.factualSafety}/10`);
   if (scores.clarity < THRESHOLDS.clarity) below.push(`clarity ${scores.clarity}/10`);
+  // Only when bound to a storyline: an unbound draft was never asked these.
+  if (scores.storylineFit !== null && scores.storylineFit < THRESHOLDS.storylineFit)
+    below.push(`storyline fit ${scores.storylineFit}/10`);
+  if (scores.evidenceDiscipline !== null && scores.evidenceDiscipline < THRESHOLDS.evidenceDiscipline)
+    below.push(`evidence discipline ${scores.evidenceDiscipline}/10`);
 
   if (verdict === 'reject' || below.length > 0) {
     const detail =
@@ -217,7 +237,11 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
   checks.push({
     id: 'judge',
     passed: true,
-    detail: `brand ${scores.brandFit}/10 · safety ${scores.factualSafety}/10 · clarity ${scores.clarity}/10`,
+    detail:
+      `brand ${scores.brandFit}/10 · safety ${scores.factualSafety}/10 · clarity ${scores.clarity}/10` +
+      (scores.storylineFit !== null
+        ? ` · storyline ${scores.storylineFit}/10 · evidence ${scores.evidenceDiscipline}/10`
+        : ''),
   });
   return { approved: true, rejectedBy: null, reasons: notes, checks, scores, judge: provider };
 }
@@ -230,6 +254,8 @@ type JudgeReply = {
   brand_fit?: unknown;
   factual_safety?: unknown;
   clarity?: unknown;
+  storyline_fit?: unknown;
+  evidence_discipline?: unknown;
   verdict?: unknown;
   notes?: unknown;
 };
@@ -247,6 +273,10 @@ async function runJudge(input: GateInput, content: string, platform: string) {
     brandFit: clampScore(raw.brand_fit),
     factualSafety: clampScore(raw.factual_safety),
     clarity: clampScore(raw.clarity),
+    // Only meaningful when a storyline was in the prompt. Scoring them without
+    // one would reject every unbound draft on a question never asked.
+    storylineFit: input.storyline ? clampScore(raw.storyline_fit) : null,
+    evidenceDiscipline: input.storyline ? clampScore(raw.evidence_discipline) : null,
   };
   const verdict = String(raw.verdict || '').toLowerCase() === 'reject' ? 'reject' : 'approve';
   const notes = Array.isArray(raw.notes)
@@ -265,6 +295,7 @@ ${JSON.stringify(brand, null, 2).slice(0, 3000)}
 
 Platform: ${platform}
 Intended topic: ${input.topic}
+${input.storyline ? `\n${storylinePromptBlock(input.storyline)}\n` : ''}
 
 Draft:
 """
@@ -275,6 +306,12 @@ Score each 0-10 and be harsh — this goes out unattended on a real company acco
 - brand_fit: matches the brand's audience, tone and value proposition; nothing that contradicts the profile.
 - factual_safety: makes NO specific factual claim it cannot support. Invented statistics, named studies, fake customer results, precise percentages, awards, or claims about named third parties all score 0-3. A first-person anecdote presented as something the author actually did — "I worked with a founder who...", "one client of ours...", followed by outcomes like churn dropping — is a FABRICATED CASE STUDY and scores 0-2, because nobody can verify it and the author may never have done it. Hypotheticals clearly framed as such ("picture a team that...") are fine. Generic, experience-based advice scores high.
 - clarity: reads as finished, native to the platform, coherent, no filler or repetition.
+${
+  input.storyline
+    ? `- storyline_fit: does this actually ADVANCE the storyline's claim above? A post that is merely on-topic but makes no move toward that claim scores 0-4. It does not have to state the claim outright; it has to argue for it.
+- evidence_discipline: does it stay inside the EVIDENCE listed above? Pointing at proof not on that list — customers, results, numbers, case studies — scores 0-2 even if the post never names them, because the company cannot back it. When the evidence list is empty, arguing from reasoning alone is CORRECT and scores high; implying customers or results scores 0-2. Violating a NEVER CLAIM entry scores 0.`
+    : ''
+}
 
 Set "verdict" to "reject" if the post would embarrass the brand, makes unverifiable claims, gives regulated advice (medical, legal, financial), touches politics or religion, attacks a named competitor, or reads as machine-generated. Otherwise "approve".
 

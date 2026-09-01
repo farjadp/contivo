@@ -29,6 +29,7 @@ import {
 import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
 import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
+import { pickStorylineForWorkspace } from '@/lib/narrative/context';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -261,6 +262,24 @@ export async function runPolicy(
     const byChannel = new Map<ContentChannel, Date[]>();
     for (const p of plan) byChannel.set(p.channel, [...(byChannel.get(p.channel) ?? []), p.slot]);
 
+    // Which argument this run advances. Rotating away from recently used
+    // storylines stops one claim being hammered week after week.
+    const recentStorylineIds = (
+      await prisma.contentItem.findMany({
+        where: { workspaceId: policy.workspaceId, storylineId: { not: null } },
+        orderBy: { createdAt: 'desc' },
+        take: 6,
+        select: { storylineId: true },
+      })
+    )
+      .map((i) => i.storylineId)
+      .filter((id): id is string => Boolean(id));
+
+    const storyline = await pickStorylineForWorkspace(policy.workspaceId, recentStorylineIds);
+    if (storyline) {
+      note('storyline_selected', { storylineId: storyline.id, claim: storyline.claim });
+    }
+
     for (const [channel, channelSlots] of byChannel) {
       const want = channelSlots.length;
       const ideation = await ideateForWorkspace(actor, {
@@ -308,6 +327,7 @@ export async function runPolicy(
             auto_insert_to_calendar: false,
             framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),
             framework_name: idea.framework_name ?? ('framework' in ideation ? ideation.framework?.framework_name : undefined),
+            storyline_id: storyline?.id ?? null,
           });
           if ('error' in saved && saved.error) {
             note('save_failed', { channel, topic: idea.topic, error: saved.error });
@@ -340,6 +360,7 @@ export async function runPolicy(
             brandSummary: ctx.brandSummary,
             avoidTopics: policy.avoidTopics,
             recentContents: recentBodies,
+            storyline,
           });
 
           if (!verdict.approved) {

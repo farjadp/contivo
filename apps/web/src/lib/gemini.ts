@@ -1331,6 +1331,12 @@ export async function generateContentDraftWithGemini(
       target?: number | null;
     } | null;
   },
+  /**
+   * The storyline block this draft must advance, already rendered. Passed as
+   * its own argument rather than folded into `context` because it is a
+   * constraint the quality gate will hold the draft to, not background colour.
+   */
+  storylineBlock?: string | null,
 ): Promise<string | null> {
   const frameworkId = String(frameworkContext?.frameworkId || '').trim();
   const frameworkGuide =
@@ -1367,6 +1373,7 @@ ${JSON.stringify(brandSummary, null, 2)}
 Topic: ${topic}
 Additional Context/Angle: ${context}
 Target Channel: ${channel}
+${storylineBlock ? `\n${storylineBlock}\n` : ''}
 Framework Preference: ${frameworkId || 'none'}
 Framework Reason: ${String(frameworkContext?.selectionReason || '').trim() || 'not provided'}
 Framework Guidance: ${frameworkGuide || 'Use the best structure for the channel and goal.'}
@@ -1381,6 +1388,12 @@ Instructions:
 5. If "Additional Context/Angle" includes USER_NOTES or USER_SOURCE_TEXT, prioritize those user-provided sources.
 6. Do not invent claims that conflict with user-provided sources.
 7. Respect the target word count and keep output inside the allowed word range.
+${
+  storylineBlock
+    ? `8. This post must ADVANCE the storyline's claim. Being on-topic is not enough — argue for it. You do not have to state it outright.
+9. You may only point at the evidence listed. If the evidence list is empty, argue from reasoning and observation and never imply customers, results or case studies. A reviewer scores this and rejects the post if you overreach.`
+    : ''
+}
 `;
 
   const gemini = await callGemini(prompt, false);
