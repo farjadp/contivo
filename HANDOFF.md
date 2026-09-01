@@ -1,4 +1,38 @@
-# Contivo — session handoff (19 August 2026)
+# Contivo — session handoff (1 September 2026)
+
+> **1 Sep update — the onboarding flow.** The autonomous loop below still holds.
+> What did *not* work was the front door. Four blockers, none of which threw:
+>
+> 1. `/onboarding`, `/growth/new`, `/growth/analyzing` and `/instant` had **no
+>    session guard** and answered 200 signed out, on localhost and production.
+> 2. `createNewWorkspace` did scrape + two Gemini calls inline — **12,991ms**
+>    with the button frozen, no `maxDuration`, over Vercel's limit. It now
+>    returns in ~130ms and the analysing screen does the real work.
+> 3. Extraction failures were swallowed: a Gemini 503 produced a workspace with
+>    zero competitors and a UI reading "No competitors discovered yet".
+> 4. **Instant Content had never worked.** The form called the Nest API from the
+>    browser with `token = undefined` → 401 (confirmed on production), and the
+>    API's `AIService` is a **deterministic mock** anyway.
+>
+> Also found and fixed: no account had any credits (nothing outside the admin
+> console ever wrote an ALLOCATION row); `GET /users/me` returned the account's
+> bcrypt `passwordHash`; workspaces stayed `PENDING` forever so the workspace
+> list's `status === 'READY'` check never matched.
+>
+> Clerk is gone from the web app, and the API's Clerk guard is replaced by
+> `SessionAuthGuard`, which verifies the web app's own session JWT — this closes
+> item 7 in "Open work" below.
+>
+> **Before the next deploy: set an identical `JWT_SECRET` on Vercel AND
+> Railway.** The API verifies web-minted tokens with it; a mismatch 401s every
+> server-action call. The web app now refuses to start in production without it.
+>
+> `next.config` no longer ignores TypeScript errors. Typecheck and the
+> production build are green across all five packages.
+
+---
+
+## Original handoff (19 August 2026)
 
 Paste this at the start of the next chat. It is the shortest complete picture
 of where the project stands, what is running, and what to be careful about.
