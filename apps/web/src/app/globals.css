@@ -65,3 +65,48 @@
     color: transparent;
   }
 }
+
+/* ── Editorial world: browser surfaces ──────────────────────────────────────
+   Selection, caret, focus ring and scrollbar ship with browser defaults that
+   belong to no design system. On the marketing surface they are themed from
+   the palette so the parts we did not draw still read as ours. */
+@layer base {
+  .theme-editorial {
+    --carbon: #121212;
+    --paper-warm: #efece5;
+    --brick: #c04c36;
+    accent-color: var(--brick);
+    scrollbar-color: var(--brick) var(--paper-warm);
+  }
+  .theme-editorial ::selection {
+    background: var(--brick);
+    color: #fdf2ee;
+  }
+  .theme-editorial :focus-visible {
+    outline: 2px solid var(--brick);
+    outline-offset: 3px;
+    border-radius: 1px;
+  }
+  .theme-editorial input {
+    caret-color: var(--brick);
+  }
+  .theme-editorial ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  .theme-editorial ::-webkit-scrollbar-track {
+    background: var(--paper-warm);
+  }
+  .theme-editorial ::-webkit-scrollbar-thumb {
+    background: #d6d3ca;
+    border: 3px solid var(--paper-warm);
+  }
+  .theme-editorial ::-webkit-scrollbar-thumb:hover {
+    background: var(--brick);
+  }
+  /* Real numbers in the evidence rows must not jitter between weights. */
+  .tnum {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+}

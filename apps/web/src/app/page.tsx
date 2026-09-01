@@ -1,332 +1,433 @@
-import Link from 'next/link';
-import { ArrowRight, Check } from 'lucide-react';
+/**
+ * Landing page — three acts: intake, refusal, output.
+ *
+ * The old page put a simulated terminal, a JSON card and a code block on a
+ * near-black ground with one neon accent. Three of its four visuals were fake
+ * developer chrome for a product that makes marketing. Everything shown here is
+ * a capture of the running app, and the middle act — the refusal — gets the
+ * whole viewport, because refusing is the part worth paying for.
+ */
 
-import { AutopilotTerminal } from '@/components/marketing/autopilot-terminal';
+import Image from 'next/image';
+import Link from 'next/link';
+
 import { SiteFooter } from '@/components/marketing/site-footer';
+import { ProductReel } from '@/components/marketing/product-reel';
 import { SiteNav } from '@/components/marketing/site-nav';
+import { UrlIntake } from '@/components/marketing/url-intake';
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-ink-950 text-white selection:bg-signal selection:text-signal-ink">
+    <div className="theme-editorial min-h-screen bg-paper-warm font-sans text-carbon">
       <SiteNav />
 
-      {/* ── Hero ─────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden">
-        <Grid />
-        <div className="relative mx-auto grid max-w-6xl gap-12 px-5 pb-20 pt-16 md:grid-cols-[1.05fr_1fr] md:items-center md:pb-28 md:pt-24">
-          <div>
-            <p className="inline-flex items-center gap-2 border border-ink-600 px-2.5 py-1 font-mono text-[11px] uppercase tracking-widest text-ink-200">
-              <span className="h-1.5 w-1.5 bg-signal" />
-              Marketing that runs while you build
-            </p>
-            <h1 className="mt-6 font-display text-[40px] font-bold leading-[1.02] tracking-tight sm:text-[54px] md:text-[62px]">
-              Your website in.
-              <br />
-              A month of posts out.
-              <br />
-              <span className="text-signal">Nobody in between.</span>
-            </h1>
-            <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-ink-200">
-              Contivo reads your site, maps your competitors, learns your keywords — then writes,
-              reviews and publishes to LinkedIn, X and your own blog on a schedule you set. Every
-              draft passes a quality gate before it goes out.
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center gap-2 bg-signal px-5 py-3 text-[14px] font-semibold text-signal-ink transition-colors hover:bg-white"
-              >
-                Start with your URL <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="#how"
-                className="inline-flex items-center gap-2 border border-ink-600 px-5 py-3 text-[14px] font-medium text-ink-100 transition-colors hover:border-ink-400 hover:text-white"
-              >
-                See how it works
-              </Link>
-            </div>
-            <ul className="mt-8 grid gap-2 text-[13px] text-ink-300 sm:grid-cols-2">
-              {[
-                'No prompts. Your brand memory is the prompt.',
-                'Fully hands-off — or approve first, your call.',
-                'Rejects unverifiable claims before publishing.',
-                'Your own site: one API key, any stack.',
-              ].map((t) => (
-                <li key={t} className="flex items-start gap-2">
-                  <Check className="mt-[3px] h-3.5 w-3.5 shrink-0 text-signal" />
-                  {t}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <AutopilotTerminal />
-        </div>
-      </section>
-
-      {/* ── How it works ────────────────────────────────────────────── */}
-      <section id="how" className="border-t border-ink-700/60 bg-ink-900">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-          <SectionHead
-            kicker="How it works"
-            title="Intelligence first. Content second. Publishing last."
-            body="Most AI writing tools start from a blank prompt, so they produce blank-prompt content. Contivo refuses to write until it knows who you are and who you're up against."
-          />
-          <ol className="mt-12 grid gap-px bg-ink-700/60 md:grid-cols-4">
-            {[
-              {
-                n: '01',
-                t: 'Brand memory',
-                d: 'Paste a URL. Contivo scrapes it into tone, audience, value proposition and offers — editable, and used in every draft after.',
-              },
-              {
-                n: '02',
-                t: 'Competitive map',
-                d: 'Discovers competitors your size, you accept or reject them, then five positioning matrices and a keyword gap are built around the survivors.',
-              },
-              {
-                n: '03',
-                t: 'Autopilot',
-                d: 'Set posts per week, channels, and a publish window. It ideates, drafts, and schedules on its own — and retries when the queue runs low.',
-              },
-              {
-                n: '04',
-                t: 'Quality gate',
-                d: 'Every draft is scored for brand fit, factual safety and clarity. Below threshold or unverifiable? Rejected and regenerated, never posted.',
-              },
-            ].map((s) => (
-              <li key={s.n} className="bg-ink-900 p-7">
-                <span className="font-mono text-[11px] tracking-widest text-signal">{s.n}</span>
-                <h3 className="mt-3 font-display text-[19px] font-semibold">{s.t}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-ink-300">{s.d}</p>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </section>
-
-      {/* ── Autopilot ────────────────────────────────────────────────── */}
-      <section id="autopilot" className="border-t border-ink-700/60">
-        <div className="mx-auto grid max-w-6xl gap-12 px-5 py-20 md:grid-cols-2 md:items-center md:py-24">
-          <div>
-            <SectionHead
-              kicker="Autopilot"
-              title="A policy, not a to-do list."
-              body="You describe the outcome once. Contivo keeps the coming week topped up to it, spreads posts across your window, and never repeats itself."
-            />
-            <dl className="mt-8 grid gap-5 sm:grid-cols-2">
-              {[
-                ['Cadence', '1–14 posts / week, kept full 7 days ahead'],
-                ['Channels', 'LinkedIn · X · Instagram · your website'],
-                ['Window', 'Days and local hours you choose'],
-                ['Steering', 'Goal, themes to lean into, topics to never touch'],
-              ].map(([k, v]) => (
-                <div key={k} className="border-l-2 border-signal/60 pl-4">
-                  <dt className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{k}</dt>
-                  <dd className="mt-1 text-[14px] text-ink-100">{v}</dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-          <PolicyCard />
-        </div>
-      </section>
-
-      {/* ── Quality gate ────────────────────────────────────────────── */}
-      <section className="border-t border-ink-700/60 bg-paper text-ink-900">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-          <div className="max-w-2xl">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-600">Quality gate</p>
-            <h2 className="mt-3 font-display text-[32px] font-bold leading-tight tracking-tight sm:text-[40px]">
-              Hands-off is only safe if something says no.
-            </h2>
-            <p className="mt-4 text-[16px] leading-relaxed text-ink-600">
-              Publishing with nobody watching means the reviewer has to be built in. Two layers stand
-              between a draft and your account — and if the reviewer itself is unavailable, the post
-              waits. It never ships unreviewed.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-px bg-ink-200 md:grid-cols-2">
-            <div className="bg-paper p-8">
-              <h3 className="font-display text-[18px] font-semibold">Deterministic checks</h3>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-ink-400">
-                free · instant · never wrong
-              </p>
-              <ul className="mt-5 space-y-2.5 text-[14px] text-ink-700">
-                {[
-                  'Platform limits (X 280 chars) and word ranges',
-                  'Leaked scaffolding, placeholders, “as an AI…”',
-                  'Your never-write-about list, in the body not just the title',
-                  'Near-duplicates of what you already published',
-                ].map((t) => (
-                  <li key={t} className="flex gap-2">
-                    <span className="mt-[9px] h-1 w-1 shrink-0 bg-ink-900" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="bg-paper p-8">
-              <h3 className="font-display text-[18px] font-semibold">AI judge</h3>
-              <p className="mt-1 font-mono text-[11px] uppercase tracking-widest text-ink-400">
-                brand fit · factual safety · clarity
-              </p>
-              <ul className="mt-5 space-y-2.5 text-[14px] text-ink-700">
-                {[
-                  'Scores 0–10; factual safety threshold is the strictest',
-                  'Vetoes invented statistics, named studies, regulated advice',
-                  'Rejected drafts are pulled from the queue and regenerated',
-                  'Both providers down? The post holds. Fail-closed.',
-                ].map((t) => (
-                  <li key={t} className="flex gap-2">
-                    <span className="mt-[9px] h-1 w-1 shrink-0 bg-ink-900" />
-                    {t}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Intelligence ────────────────────────────────────────────── */}
-      <section id="intelligence" className="border-t border-ink-700/60">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-          <SectionHead
-            kicker="Intelligence"
-            title="The part most tools skip."
-            body="This is where the content gets its spine. It is built once per workspace, kept fresh, and fed into every idea and draft."
-          />
-          <div className="mt-12 grid gap-px bg-ink-700/60 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              ['Brand Memory', 'Tone, audience, value proposition, offers — extracted from your site and editable.'],
-              ['Competitor discovery', 'Finds rivals at your scale, verifies they exist, lets you accept or reject each one.'],
-              ['Market matrices', 'Five positioning charts scoring every company 1–10 on two axes. You are always on the map.'],
-              ['Keyword intelligence', 'Clusters, intent split and the gaps competitors leave open — from live sites and DataForSEO.'],
-              ['Products & services', 'Side-by-side of what you sell vs what they sell, pulled from visible pages.'],
-              ['Strategic report', 'A designed PDF of all of the above, five times a month, for the board or the client.'],
-            ].map(([t, d]) => (
-              <div key={t} className="bg-ink-950 p-7">
-                <h3 className="font-display text-[17px] font-semibold">{t}</h3>
-                <p className="mt-2 text-[14px] leading-relaxed text-ink-300">{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Channels ────────────────────────────────────────────────── */}
-      <section id="channels" className="border-t border-ink-700/60 bg-ink-900">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:py-24">
-          <div className="grid gap-12 md:grid-cols-[1fr_1.1fr] md:items-center">
-            <SectionHead
-              kicker="Channels"
-              title="Social through OAuth. Your website through one key."
-              body="Connect LinkedIn, X, Instagram, Facebook or TikTok once. For your own site — any stack, any host — Contivo gives you an API key and your site pulls its posts. Nothing gets pushed into your codebase."
-            />
-            <div className="border border-ink-600 bg-ink-950 p-5 font-mono text-[12.5px] leading-relaxed text-ink-100">
-              <p className="text-ink-400">{'// your site, server-side'}</p>
-              <p>
-                <span className="text-signal">const</span> res = <span className="text-signal">await</span>{' '}
-                fetch(<span className="text-amber-200">&quot;/api/v1/posts&quot;</span>, {'{'}
-              </p>
-              <p className="pl-4">
-                headers: {'{'} Authorization: <span className="text-amber-200">`Bearer ${'{'}KEY{'}'}`</span> {'}'},
-              </p>
-              <p className="pl-4">next: {'{'} revalidate: 300 {'}'},</p>
-              <p>{'}'});</p>
-              <p>
-                <span className="text-signal">const</span> {'{'} posts {'}'} ={' '}
-                <span className="text-signal">await</span> res.json();
-              </p>
-              <p className="mt-3 text-ink-400">{'// → [{ slug, title, excerpt, content, publishedAt }]'}</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ─────────────────────────────────────────────────────── */}
-      <section className="border-t border-ink-700/60">
-        <div className="mx-auto max-w-6xl px-5 py-20 md:py-28">
-          <div className="border border-ink-600 bg-ink-900 p-8 md:p-14">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-signal">Start</p>
-            <h2 className="mt-3 max-w-2xl font-display text-[30px] font-bold leading-tight tracking-tight sm:text-[40px]">
-              Paste your URL. In an hour you have a brand memory, a competitive map, and a queue
-              that fills itself.
-            </h2>
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link
-                href="/sign-up"
-                className="inline-flex items-center gap-2 bg-signal px-5 py-3 text-[14px] font-semibold text-signal-ink hover:bg-white"
-              >
-                Create your workspace <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link href="/pricing" className="px-5 py-3 text-[14px] text-ink-200 hover:text-white">
-                See pricing →
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ActOne />
+      <Reel />
+      <Intelligence />
+      <ActTwo />
+      <ActThree />
+      <Channels />
+      <Close />
 
       <SiteFooter />
     </div>
   );
 }
 
-// ─── Pieces ──────────────────────────────────────────────────────────────
+/* ─── Act I · Intake ─────────────────────────────────────────────────────── */
 
-function SectionHead({ kicker, title, body }: { kicker: string; title: string; body: string }) {
+function ActOne() {
   return (
-    <div className="max-w-2xl">
-      <p className="font-mono text-[11px] uppercase tracking-widest text-signal">{kicker}</p>
-      <h2 className="mt-3 font-display text-[32px] font-bold leading-tight tracking-tight sm:text-[40px]">
+    <section className="relative overflow-hidden border-b border-carbon/10">
+      <PaperGrain />
+      <div className="relative mx-auto max-w-[92rem] px-6 pb-20 pt-16 md:px-12 md:pb-28 md:pt-24">
+        <h1 className="max-w-[19ch] font-display text-[clamp(3rem,8.4vw,7.5rem)] font-semibold leading-[0.92] tracking-[-0.045em]">
+          Give it your website.
+          <br />
+          <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
+            Keep
+          </span>{' '}
+          the rest of your day.
+        </h1>
+
+        <div className="mt-12 grid gap-14 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-end">
+          <UrlIntake />
+
+          <p className="max-w-md text-[17px] leading-[1.65] text-carbon-80">
+            Contivo reads your site into a brand memory, maps the competitors you
+            actually have, and works out which keywords they leave open. Only then does
+            it write — and only what survives a quality gate built to reject it.
+          </p>
+        </div>
+
+        <Evidence />
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Real numbers from a real workspace. Nothing here is a claim about outcomes,
+ * because there are none to make yet — it is the cost of the machine running.
+ */
+function Evidence() {
+  const rows: Array<[string, string]> = [
+    ['Time to read a site', '≈ 20 sec'],
+    ['AI cost of that read', '$0.03'],
+    ['Competitors mapped', '5 of 9 kept'],
+    ['Positioning charts built', '5'],
+  ];
+  return (
+    <dl className="mt-20 grid max-w-4xl grid-cols-2 gap-x-10 gap-y-8 border-t border-carbon/15 pt-8 md:grid-cols-4">
+      {rows.map(([k, v]) => (
+        <div key={k}>
+          <dt className="text-[13px] leading-snug text-carbon-60">{k}</dt>
+          <dd className="tnum mt-1.5 text-balance font-display text-[clamp(1.3rem,2.1vw,1.7rem)] font-medium leading-[1.15] tracking-[-0.03em]">
+            {v}
+          </dd>
+        </div>
+      ))}
+      <p className="col-span-2 text-[12.5px] leading-relaxed text-carbon-60 md:col-span-4">
+        Measured on an example workspace built from a public website while writing this
+        page. Contivo has no customers yet — its only live deployment is its founder&apos;s.
+      </p>
+    </dl>
+  );
+}
+
+/* ─── The reel ───────────────────────────────────────────────────────────── */
+
+function Reel() {
+  return (
+    <section className="border-b border-carbon/10 bg-paper-light">
+      <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-24">
+        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <h2 className="max-w-[16ch] font-display text-[clamp(1.9rem,4vw,3.4rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
+            This is the actual software.
+          </h2>
+          <p className="max-w-sm text-[15px] leading-relaxed text-carbon-80">
+            Twelve seconds, four screens, no mockups: brand memory, the market map, the
+            steps still locked, and a post it wrote.
+          </p>
+        </div>
+
+        <ProductReel />
+      </div>
+    </section>
+  );
+}
+
+/* ─── Intelligence ───────────────────────────────────────────────────────── */
+
+function Intelligence() {
+  return (
+    <section id="intelligence" className="border-b border-carbon/10">
+      <div className="mx-auto max-w-[92rem] px-6 py-20 md:px-12 md:py-28">
+        <h2 className="max-w-[20ch] font-display text-[clamp(2.1rem,5vw,4.2rem)] font-semibold leading-[1] tracking-[-0.04em]">
+          Most tools start from a blank prompt.{' '}
+          <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
+            That
+          </span>{' '}
+          is why they read like one.
+        </h2>
+
+        <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-20">
+          <Spread
+            n="Your brand, read back to you"
+            body="Paste a URL. Contivo pulls out the business summary, the value proposition, the audience it is actually written for and the tone it is written in — then lets you correct all of it. Every draft afterwards is built from this, not from your prompt."
+            src="/marketing/brand-memory.webp"
+            alt="Contivo's Brand Memory screen showing an extracted business summary, value proposition, target audience persona and brand tone tags."
+            w={1800}
+            h={1212}
+          />
+          <Spread
+            n="The market, with you on it"
+            body="It finds competitors at your scale, checks they exist, and lets you throw out the ones that are not really yours. What survives gets scored on five positioning charts — and you are plotted among them, not described in a paragraph."
+            src="/marketing/market-map.webp"
+            alt="Contivo's competitive landscape chart plotting the customer's brand among discovered competitors by audience size and product sophistication."
+            w={1800}
+            h={1074}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Spread({
+  n,
+  body,
+  src,
+  alt,
+  w,
+  h,
+}: {
+  n: string;
+  body: string;
+  src: string;
+  alt: string;
+  w: number;
+  h: number;
+}) {
+  return (
+    <figure className="flex flex-col">
+      <h3 className="max-w-[18ch] font-display text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold leading-[1.08] tracking-[-0.035em]">
+        {n}
+      </h3>
+      <p className="mt-4 max-w-prose text-[15.5px] leading-[1.7] text-carbon-80">{body}</p>
+      <div className="mt-8 overflow-hidden border border-carbon/15 bg-paper-light">
+        <Image
+          src={src}
+          alt={alt}
+          width={w}
+          height={h}
+          className="h-auto w-full"
+          sizes="(min-width: 1024px) 44vw, 92vw"
+        />
+      </div>
+    </figure>
+  );
+}
+
+/* ─── Act II · Refusal ───────────────────────────────────────────────────── */
+
+function ActTwo() {
+  return (
+    <section
+      id="how"
+      className="relative overflow-hidden bg-brick text-brick-ink"
+      // The generated ink texture multiplies over the exact brand red, so the
+      // net on-screen colour stays #C04C36 while the field gains its print grain.
+      style={{
+        backgroundImage: 'url(/marketing/tex-ink.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundBlendMode: 'multiply',
+      }}
+    >
+      <div className="mx-auto max-w-[92rem] px-6 py-24 md:px-12 md:py-36">
+        <h2 className="max-w-[15ch] font-display text-[clamp(2.8rem,8vw,7rem)] font-semibold leading-[0.94] tracking-[-0.045em]">
+          It will not write
+          <br />
+          <span className="font-accent font-normal italic tracking-[-0.02em]">yet</span>.
+        </h2>
+
+        <p className="mt-10 max-w-2xl text-[clamp(1.05rem,1.6vw,1.35rem)] leading-[1.6] text-brick-ink">
+          Ideation is locked until the intelligence underneath it exists. You cannot talk
+          your way past this, and neither can the model. It is the whole reason the
+          output is worth reading.
+        </p>
+
+        <figure className="mt-14">
+          <Image
+            src="/marketing/setup-chain.webp"
+            alt="Contivo's setup chain: brand memory and market map complete, keyword analysis next, and Autopilot locked with the note 'Needs the intelligence steps above'."
+            width={1800}
+            height={400}
+            className="h-auto w-full border border-brick-ink/25"
+            sizes="(min-width: 768px) 88vw, 94vw"
+          />
+          <figcaption className="mt-3 text-[13px] text-brick-ink">
+            The real lock, in the real product. Autopilot cannot be switched on above it.
+          </figcaption>
+        </figure>
+
+        <div className="mt-20 grid gap-x-16 gap-y-12 border-t border-brick-ink/25 pt-12 md:grid-cols-2">
+          <Refusal
+            title="Checks that cannot be argued with"
+            items={[
+              'Platform limits and the word range you set',
+              'Leaked scaffolding, placeholders, “as an AI…”',
+              'Your never-write-about list, in the body and not just the title',
+              'Near-duplicates of anything already published',
+            ]}
+          />
+          <Refusal
+            title="A judge that can veto"
+            items={[
+              'Scores brand fit, factual safety and clarity out of ten',
+              'Factual safety is the strictest threshold of the three',
+              'Vetoes invented statistics, named studies and client anecdotes',
+              'Both providers down? The post is held. Never published unreviewed.',
+            ]}
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Refusal({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="font-display text-[clamp(1.3rem,2.2vw,1.75rem)] font-semibold leading-[1.1] tracking-[-0.03em]">
         {title}
-      </h2>
-      <p className="mt-4 text-[16px] leading-relaxed text-ink-300">{body}</p>
+      </h3>
+      <ul className="mt-6 space-y-4">
+        {items.map((t) => (
+          <li key={t} className="flex gap-4 text-[15.5px] leading-[1.6] text-brick-ink">
+            <span aria-hidden className="mt-[0.62em] h-px w-6 shrink-0 bg-brick-ink/50" />
+            <span>{t}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function Grid() {
+/* ─── Act III · Output ───────────────────────────────────────────────────── */
+
+function ActThree() {
+  return (
+    <section id="autopilot" className="border-b border-carbon/10 bg-paper-light">
+      <div className="mx-auto grid max-w-[92rem] gap-14 px-6 py-20 md:px-12 md:py-28 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-20">
+        <div>
+          <h2 className="max-w-[16ch] font-display text-[clamp(2.1rem,5vw,4.2rem)] font-semibold leading-[1] tracking-[-0.04em]">
+            Then it writes, and it{' '}
+            <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
+              posts
+            </span>
+            .
+          </h2>
+          <p className="mt-6 max-w-md text-[16.5px] leading-[1.7] text-carbon-80">
+            You set a cadence, the channels, and the hours it is allowed to publish in.
+            It keeps the coming week full, spreads posts across your window, avoids
+            repeating itself, and retries when the queue runs low. Nobody approves
+            anything unless you want to.
+          </p>
+
+          <dl className="mt-12 divide-y divide-carbon/15 border-y border-carbon/15">
+            {(
+              [
+                ['Cadence', '1–14 posts a week, kept full 7 days ahead'],
+                ['Channels', 'LinkedIn · X · Instagram · your own site'],
+                ['Window', 'The days and local hours you choose'],
+                ['Steering', 'A goal, themes to lean into, topics to never touch'],
+              ] as Array<[string, string]>
+            ).map(([k, v]) => (
+              <div key={k} className="grid grid-cols-[7.5rem_1fr] gap-6 py-4">
+                <dt className="text-[14px] text-carbon-60">{k}</dt>
+                <dd className="text-[15px] leading-snug">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <figure>
+          <div className="border border-carbon/15 bg-paper-warm">
+            <Image
+              src="/marketing/generated-post.webp"
+              alt="A LinkedIn post generated by Contivo about treating a changelog as a marketing channel, with hashtags and the credits consumed shown underneath."
+              width={1400}
+              height={1114}
+              className="h-auto w-full"
+              sizes="(min-width: 1024px) 48vw, 92vw"
+            />
+          </div>
+          <figcaption className="mt-3 text-[12.5px] text-carbon-60">
+            Generated while building this page, on the topic in the field above it.
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Channels ───────────────────────────────────────────────────────────── */
+
+function Channels() {
+  return (
+    <section id="channels" className="border-b border-carbon/10">
+      <div className="mx-auto max-w-[92rem] px-6 py-20 md:px-12 md:py-28">
+        <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
+          <div>
+            <h2 className="max-w-[17ch] font-display text-[clamp(1.9rem,4.2vw,3.4rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
+              Social through OAuth. Your own site through one key.
+            </h2>
+            <p className="mt-6 max-w-lg text-[16px] leading-[1.7] text-carbon-80">
+              Connect LinkedIn, X, Instagram, Facebook or TikTok once and Contivo posts to
+              them on your behalf. For your own website — any stack, any host — you get an
+              API key and your site reads its posts. Nothing is ever pushed into your
+              codebase, and no plugin is installed.
+            </p>
+          </div>
+
+          <ol className="divide-y divide-carbon/15 border-y border-carbon/15">
+            {(
+              [
+                ['Connect', 'One OAuth pass per network, or one key for your site.'],
+                ['Schedule', 'Contivo picks slots inside the window you allowed.'],
+                ['Publish', 'A scheduler fires every minute and posts what is due.'],
+                ['Record', 'Every run is logged, step by step, including what it rejected.'],
+              ] as Array<[string, string]>
+            ).map(([k, v]) => (
+              <li key={k} className="grid grid-cols-[6.5rem_1fr] gap-6 py-5">
+                <span className="font-display text-[15px] font-semibold tracking-[-0.02em]">
+                  {k}
+                </span>
+                <span className="text-[15px] leading-relaxed text-carbon-80">{v}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Close ──────────────────────────────────────────────────────────────── */
+
+function Close() {
+  return (
+    <section className="bg-carbon text-paper-warm">
+      <div className="mx-auto max-w-[92rem] px-6 py-24 md:px-12 md:py-32">
+        <h2 className="max-w-[17ch] font-display text-[clamp(2.4rem,6.4vw,5.5rem)] font-semibold leading-[0.96] tracking-[-0.045em]">
+          Paste a URL and go back to{' '}
+          <span className="font-accent font-normal italic tracking-[-0.02em] text-paper-warm/60">
+            work
+          </span>
+          .
+        </h2>
+        <p className="mt-8 max-w-xl text-[17px] leading-[1.65] text-paper-warm/75">
+          In under a minute you have a brand memory and a competitive map. From there the
+          queue fills itself, and the only thing it will not do is publish something it
+          could not stand behind.
+        </p>
+
+        <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <Link
+            href="/sign-up"
+            className="group inline-flex items-center gap-4 bg-brick px-8 py-5 text-[15px] font-semibold tracking-[0.01em] text-brick-ink transition-colors duration-300 hover:bg-paper-warm hover:text-carbon"
+          >
+            Create your workspace
+            <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1.5">
+              &rarr;
+            </span>
+          </Link>
+          <Link
+            href="/pricing"
+            className="text-[15px] text-paper-warm/70 underline decoration-paper-warm/30 underline-offset-[6px] transition-colors hover:text-paper-warm hover:decoration-brick"
+          >
+            See pricing
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Pieces ─────────────────────────────────────────────────────────────── */
+
+/** Scanned paper grain over the cream ground, so the ground is a material. */
+function PaperGrain() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute inset-0 opacity-[0.35] [background-image:linear-gradient(to_right,rgba(255,255,255,0.05)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.05)_1px,transparent_1px)] [background-size:48px_48px] [mask-image:radial-gradient(ellipse_at_top,black_30%,transparent_75%)]"
+      className="pointer-events-none absolute inset-0 opacity-[0.55] mix-blend-multiply"
+      style={{
+        backgroundImage: 'url(/marketing/tex-paper.webp)',
+        backgroundSize: '620px',
+      }}
     />
-  );
-}
-
-function PolicyCard() {
-  const rows: Array<[string, string]> = [
-    ['enabled', 'true'],
-    ['postsPerWeek', '3'],
-    ['channels', '["linkedin", "blog"]'],
-    ['publishDays', 'Mon Tue Wed Thu Fri'],
-    ['window', '09:00 – 18:00 America/Toronto'],
-    ['goal', '"authority"'],
-    ['topicHints', '["AI adoption for SMEs", "founder lessons"]'],
-    ['avoidTopics', '["pricing", "politics"]'],
-  ];
-  return (
-    <div className="border border-ink-600 bg-ink-900">
-      <div className="flex items-center justify-between border-b border-ink-700 px-4 py-2.5">
-        <span className="font-mono text-[11px] uppercase tracking-widest text-ink-200">autopilot · policy</span>
-        <span className="flex items-center gap-1.5 font-mono text-[11px] text-signal">
-          <span className="h-1.5 w-1.5 bg-signal animate-pulse" /> ON
-        </span>
-      </div>
-      <dl className="divide-y divide-ink-700/70">
-        {rows.map(([k, v]) => (
-          <div key={k} className="grid grid-cols-[130px_1fr] gap-4 px-4 py-2.5 font-mono text-[12.5px]">
-            <dt className="text-ink-400">{k}</dt>
-            <dd className="text-ink-100">{v}</dd>
-          </div>
-        ))}
-      </dl>
-      <div className="border-t border-ink-700 px-4 py-2.5 font-mono text-[11px] text-ink-400">
-        next run: tomorrow 09:00 · last: 2 scheduled, 0 skipped
-      </div>
-    </div>
   );
 }

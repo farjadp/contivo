@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { scrapeUrl, analyzeWebsiteWithGemini, discoverCompetitorsWithGemini } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
 import { createWorkspaceProgressBaseline } from '@/lib/workspace-progress';
+import { COMPETITOR_DISCOVERY_WARNING } from '@/lib/workspace-setup-warnings';
 
 /**
  * Step 1 of workspace creation: record the workspace and get out of the way.
@@ -155,15 +156,11 @@ export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentRe
     if (comps && comps.length > 0) {
       competitorsData = comps;
     } else {
-      warnings.push(
-        'Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices.',
-      );
+      warnings.push(COMPETITOR_DISCOVERY_WARNING);
     }
   } catch (err) {
     console.error('enrichWorkspace: competitor discovery failed:', err);
-    warnings.push(
-      'Competitor discovery failed — the AI provider was unavailable. You can retry it from Market Matrices.',
-    );
+    warnings.push(COMPETITOR_DISCOVERY_WARNING);
   }
 
   const progressBaseline = createWorkspaceProgressBaseline({ brandSummary });

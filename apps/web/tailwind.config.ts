@@ -65,6 +65,23 @@ const config: Config = {
         paper: {
           DEFAULT: '#F5F3EE',
           2: '#ECE9E1',
+          /* The editorial world, shared with the onboarding screens. */
+          warm: '#EFECE5',
+          light: '#FDFCF8',
+        },
+        carbon: {
+          DEFAULT: '#121212',
+          80: '#3A3A38',
+          60: '#6B6B66',
+          40: '#9C9C95',
+          20: '#D6D3CA',
+        },
+        brick: {
+          DEFAULT: '#C04C36',
+          deep: '#A63D29',
+          /* Lifted from #FDF2EE: body copy on the red field measured 4.42:1,
+             under the 4.5 floor. This clears it without touching the brand red. */
+          ink: '#FFF8F4',
         },
         brand: {
           indigo: '#2B2DFF',
@@ -85,6 +102,8 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
+        accent: ['var(--font-accent)', 'Georgia', 'serif'],
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',

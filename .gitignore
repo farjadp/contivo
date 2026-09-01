@@ -51,3 +51,6 @@ coverage
 
 # Generated strategic report output
 apps/web/public/reports/
+
+# Impeccable inspection captures — evidence for a single run, not source.
+apps/web/.impeccable/review/

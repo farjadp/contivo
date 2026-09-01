@@ -49,6 +49,7 @@ import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { activeSetupWarnings } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
 
 export const metadata = { title: 'Workspace Dashboard' };
@@ -436,9 +437,12 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   // Setup problems that used to be invisible: a Gemini outage during
   // extraction left the workspace looking like a site with no competitors,
   // with nothing anywhere saying the AI provider had failed.
-  const extractionWarnings: string[] = Array.isArray((insights as any)?.extraction?.warnings)
-    ? (insights as any).extraction.warnings.filter((w: unknown) => typeof w === 'string')
-    : [];
+  // Warnings the workspace has since outgrown are dropped: re-running discovery
+  // from Market Matrices fixes the competitor warning, and a banner that stays
+  // after the problem is gone is just noise.
+  const extractionWarnings = activeSetupWarnings((insights as any)?.extraction?.warnings, {
+    competitorCount: workspace.competitors.length,
+  });
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-20">
