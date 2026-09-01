@@ -30,9 +30,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # No `version:` here on purpose. package.json's `packageManager`
+      # (pnpm@9.0.0) is the single source of truth; declaring both made
+      # action-setup fail with "Multiple versions of pnpm specified", which
+      # killed every CI run at the first step for 13 days.
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
       - uses: actions/setup-node@v4
         with:
