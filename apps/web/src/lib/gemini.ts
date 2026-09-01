@@ -1401,6 +1401,72 @@ Instructions:
   return fallbackDraft(brandSummary, topic, context, channel);
 }
 
+/** Channel-specific shape for one-off generation with no brand profile. */
+const INSTANT_CHANNEL_BRIEF: Record<string, string> = {
+  linkedin:
+    'A LinkedIn post of 150-300 words. Open with a hook line, use short paragraphs separated by blank lines, close with a question or invitation. End with 2-3 relevant hashtags.',
+  twitter:
+    'An X/Twitter thread of 5-7 numbered tweets. Each tweet must be 280 characters or fewer. The first tweet has to earn the scroll-stop on its own.',
+  instagram:
+    'An Instagram caption: a strong first line, a short value body with line breaks, and a clear call to action. Finish with 5-10 relevant hashtags.',
+  email:
+    'A marketing email. Start with a line "Subject: <subject line>", then the body: concise, one idea, one call to action.',
+  blog:
+    'A blog post outline: a title, a line starting "Meta: " with the meta description, an intro hook, 5-7 H2 sections each with 3 bullets, and a conclusion.',
+};
+
+/**
+ * Generates one piece of content with no workspace behind it (Instant Content).
+ *
+ * Unlike `generateContentDraftWithGemini` this returns `null` when both
+ * providers fail rather than a heuristic placeholder — the caller charges
+ * credits for the result, so it must be able to tell a real generation from
+ * a fallback and refuse to bill for the latter.
+ */
+export async function generateInstantDraft(input: {
+  topic: string;
+  channel: string;
+  tone?: string | null;
+}): Promise<{ content: string; provider: 'gemini' | 'openai' } | null> {
+  const channel = String(input.channel || 'linkedin').toLowerCase();
+  const brief = INSTANT_CHANNEL_BRIEF[channel] ?? INSTANT_CHANNEL_BRIEF.linkedin;
+  const tone = String(input.tone || 'professional').trim();
+
+  const prompt = `
+You are an expert copywriter and content marketer.
+
+Topic: ${input.topic}
+Channel: ${channel}
+Tone: ${tone}
+
+What to write:
+${brief}
+
+Rules:
+1. Write in the ${tone} tone throughout.
+2. Output only the content itself — no preface, no "Here is your post", no commentary.
+3. Do not invent statistics, client names, case studies or first-person anecdotes. If you need an example, frame it as a hypothetical.
+4. Do not use em dashes as a stylistic tic, and avoid stock AI openers like "In today's fast-paced world".
+`;
+
+  const gemini = await callGemini(prompt, false);
+  if (gemini.ok && gemini.text?.trim()) {
+    return { content: gemini.text.trim(), provider: 'gemini' };
+  }
+
+  const openAi = await callOpenAi(
+    prompt,
+    false,
+    'You are an expert copywriter. Output only the final content, with no preface.',
+  );
+  if (openAi.ok && openAi.text?.trim()) {
+    return { content: openAi.text.trim(), provider: 'openai' };
+  }
+
+  logFallback('generateInstantDraft', gemini.status, openAi.status);
+  return null;
+}
+
 export interface CompetitorExtraction {
   name: string;
   domain: string;

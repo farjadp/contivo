@@ -3,7 +3,22 @@ import { cookies } from 'next/headers';
 
 import { isUserSuspended } from '@/lib/admin-state';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-default-key-change-in-production';
+/**
+ * Session signing key.
+ *
+ * This used to fall back to a hardcoded string in every environment. The repo
+ * is public, so on any host where JWT_SECRET was unset, forging an ADMIN
+ * session was a copy-paste away. Outside development it is now required, and
+ * the app refuses to start rather than signing with a known key.
+ */
+const JWT_SECRET = (() => {
+  const fromEnv = process.env.JWT_SECRET?.trim();
+  if (fromEnv) return fromEnv;
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set. Refusing to sign sessions with a default key.');
+  }
+  return 'contivo-local-development-only-key';
+})();
 const encodedKey = new TextEncoder().encode(JWT_SECRET);
 
 export interface SessionPayload {
@@ -62,4 +77,19 @@ export async function getSession() {
   }
 
   return session;
+}
+
+/**
+ * Mints a bearer token for a server-to-server call to the Nest API.
+ *
+ * The API verifies this with the same `JWT_SECRET` (see
+ * `apps/api/src/modules/auth/guards/session-auth.guard.ts`). Only call this
+ * from server actions — the token must never reach the browser, which is
+ * exactly why the old Clerk `getToken()` path could not work: the browser had
+ * no Clerk session to mint from, so it sent `Bearer null` and got a 401.
+ */
+export async function mintApiToken(): Promise<string | null> {
+  const session = await getSession();
+  if (!session) return null;
+  return signToken(session);
 }

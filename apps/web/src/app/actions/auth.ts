@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { createSessionCookie, deleteSessionCookie } from '@/lib/auth';
 import { isUserSuspended } from '@/lib/admin-state';
+import { ensureWelcomeCredits } from '@/lib/credits';
 import { redirect } from 'next/navigation';
 
 export async function login(_prevState: any, formData: FormData) {
@@ -31,6 +32,10 @@ export async function login(_prevState: any, formData: FormData) {
   if (await isUserSuspended(user.id)) {
     return { error: 'This account has been suspended. Contact support.' };
   }
+
+  // Backfills accounts created before the welcome grant existed. Idempotent:
+  // it only fires when the account has no ledger history at all.
+  await ensureWelcomeCredits(user.id);
 
   await createSessionCookie({
     userId: user.id,
@@ -73,6 +78,10 @@ export async function register(_prevState: any, formData: FormData) {
       plan: 'FREE',
     },
   });
+
+  // Nothing outside the admin console ever wrote an ALLOCATION row, so every
+  // account started at a zero balance and the first paid action was refused.
+  await ensureWelcomeCredits(user.id);
 
   await createSessionCookie({
     userId: user.id,

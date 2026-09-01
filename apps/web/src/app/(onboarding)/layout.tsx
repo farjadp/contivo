@@ -1,4 +1,14 @@
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+import { redirect } from 'next/navigation';
+
+import { getSession } from '@/lib/auth';
+
+export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  // Onboarding is a signed-in flow: it is where a new account chooses its
+  // first path. Without this it answered 200 to anonymous visitors and both
+  // of its links led to a dead end.
+  const session = await getSession();
+  if (!session) redirect('/sign-in');
+
   return (
     <div className="min-h-screen bg-[#FDFCF8] text-[#121212] font-sans selection:bg-[#121212] selection:text-white flex flex-col">
       {/* Editorial aesthetic header, overlapping over the content to keep full layout fluid */}
@@ -12,7 +22,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
             Onboarding &mdash; Setup Workflow
          </span>
       </header>
-      
+
       <main className="flex-1 w-full h-full flex flex-col">
           {children}
       </main>

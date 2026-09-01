@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 
-import { ClerkAuthGuard } from './guards/clerk-auth.guard';
+import { SessionAuthGuard } from './guards/session-auth.guard';
 
 @Module({
   providers: [
     {
       provide: APP_GUARD,
-      useClass: ClerkAuthGuard,
+      useClass: SessionAuthGuard,
     },
   ],
 })

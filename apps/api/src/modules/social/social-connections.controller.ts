@@ -11,7 +11,7 @@
  *   PATCH  /:id                  Update connection (default flag, display name)
  *   DELETE /:id                  Disconnect an account
  *   POST   /:id/reconnect        Mark connection as PENDING_REAUTH
- * Auth: Protected by global ClerkAuthGuard. User identity available via @CurrentUser().
+ * Auth: Protected by global SessionAuthGuard. User identity available via @CurrentUser().
  * SECURITY: No token fields are ever included in responses.
  */
 

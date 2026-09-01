@@ -4,8 +4,7 @@ import { Prisma } from '@prisma/client';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 
-import { auth } from '@clerk/nextjs/server';
-import { getSession } from '@/lib/auth';
+import { getSession, mintApiToken } from '@/lib/auth';
 import {
   archiveWorkspace,
   reactivateUser,
@@ -599,8 +598,7 @@ export async function manageJob(formData: FormData): Promise<void> {
     });
 
     if (socialJob) {
-      const { getToken } = await auth();
-      const token = await getToken();
+      const token = await mintApiToken();
       const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
       if (actionType === 'CANCEL') {

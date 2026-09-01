@@ -1,7 +1,7 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 
 export interface AuthenticatedUser {
-  id: string; // The Clerk User ID
+  id: string; // Contivo user id (users.id)
   workspaceId?: string; // Optional workspace ID (handled by other logic if needed, but standardizing the interface)
 }
 
@@ -14,7 +14,7 @@ export interface AuthenticatedUser {
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): AuthenticatedUser => {
     const request = ctx.switchToHttp().getRequest();
-    // The ClerkAuthGuard will attach the verified token payload to request.user
+    // SessionAuthGuard attaches the verified session claims to request.user
     return request.user;
   },
 );

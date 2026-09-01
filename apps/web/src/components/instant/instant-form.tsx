@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { type ContentChannel, type ContentTone, type ContentItem } from '@contivo/types';
 
-import { generateInstantContent, ApiError } from '@/lib/api-client';
+import { generateInstantContentAction } from '@/app/actions/instant';
 import { cn } from '@/lib/utils';
 import { InstantResult } from './instant-result';
 
@@ -54,31 +54,23 @@ export function InstantForm() {
     setResult(null);
 
     try {
-      // Token is fetched by ClerkTokenFetcher wrapper when Clerk is active.
-      // In local dev (no Clerk), we pass no token — backend falls back to seeded dev user.
-      const token = undefined;
+      const response = await generateInstantContentAction({ topic, channel, tone });
 
-      const response = await generateInstantContent({ topic, channel, tone }, token);
+      if (!response.ok) {
+        setError(response.error);
+        return;
+      }
+
       setResult({
-        item: response.contentItem,
-        creditsRemaining: response.creditsRemaining
+        item: response.item as unknown as ContentItem,
+        creditsRemaining: response.creditsRemaining,
       });
 
-      // Force refresh of the page/components to update the credit balance 
-      // since the balance component is unlinked from the form state right now.
+      // The balance widget holds its own state, so tell it to re-read.
       window.dispatchEvent(new Event('credits-updated'));
     } catch (err) {
-      if (err instanceof ApiError) {
-        if (err.code === 'INSUFFICIENT_CREDITS') {
-          setError(err.message || 'You do not have enough credits to generate content.');
-        } else if (err.errors) {
-          setFieldErrors(err.errors);
-        } else {
-          setError(err.message);
-        }
-      } else {
-        setError('Something went wrong. Please try again.');
-      }
+      console.error('Instant generation failed:', err);
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }

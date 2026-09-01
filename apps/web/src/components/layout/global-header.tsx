@@ -2,10 +2,6 @@
 
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
-import { SignInButton, SignUpButton, UserButton } from '@clerk/nextjs';
-import { Show } from '@clerk/nextjs';
-
-const isClerkEnabled = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
 
 export function GlobalHeader() {
   const pathname = usePathname() || '';
@@ -19,33 +15,15 @@ export function GlobalHeader() {
 
   return (
     <header className="flex items-center justify-end gap-3 px-6 h-16 absolute top-0 w-full z-50 pointer-events-auto">
-      {isClerkEnabled ? (
-        <>
-          <Show when="signed-out">
-            <SignInButton />
-            <SignUpButton>
-              <button className="bg-[#6c47ff] text-white rounded-full font-medium text-sm h-10 px-4">
-                Sign Up
-              </button>
-            </SignUpButton>
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-          </Show>
-        </>
-      ) : (
-        <>
-          <Link href="/sign-in" className="text-sm font-medium text-[#121212]">
-            Sign in
-          </Link>
-          <Link
-            href="/sign-up"
-            className="bg-[#6c47ff] text-white rounded-full font-medium text-sm h-10 px-4 inline-flex items-center"
-          >
-            Sign Up
-          </Link>
-        </>
-      )}
+      <Link href="/sign-in" className="text-sm font-medium text-[#121212] hover:opacity-70 transition-opacity">
+        Sign in
+      </Link>
+      <Link
+        href="/sign-up"
+        className="bg-[#121212] text-white rounded-full font-medium text-sm h-10 px-5 inline-flex items-center hover:bg-[#C04C36] transition-colors"
+      >
+        Sign up
+      </Link>
     </header>
   );
 }

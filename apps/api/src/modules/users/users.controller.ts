@@ -10,7 +10,7 @@ export class UsersController {
 
   @Get('me')
   async getMe(@CurrentUser() currentUser: AuthenticatedUser) {
-    const user = await this.usersService.findByClerkId(currentUser.id);
+    const user = await this.usersService.findByAuthId(currentUser.id);
     
     if (!user) {
       throw new NotFoundException('User profile not found in database');

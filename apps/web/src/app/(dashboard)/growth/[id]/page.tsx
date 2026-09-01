@@ -19,6 +19,7 @@ import {
   CalendarDays,
   Lock,
   TrendingUp,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMemoryTab } from './_components/BrandMemoryTab';
@@ -432,8 +433,31 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
   const tabGroups = ['Intelligence', 'Create', 'Automate', 'Review'] as const;
 
+  // Setup problems that used to be invisible: a Gemini outage during
+  // extraction left the workspace looking like a site with no competitors,
+  // with nothing anywhere saying the AI provider had failed.
+  const extractionWarnings: string[] = Array.isArray((insights as any)?.extraction?.warnings)
+    ? (insights as any).extraction.warnings.filter((w: unknown) => typeof w === 'string')
+    : [];
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-20">
+      {extractionWarnings.length > 0 && (
+        <div className="flex items-start gap-3 border border-amber-300 bg-amber-50 px-5 py-4">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
+          <div className="min-w-0">
+            <p className="font-mono text-[10.5px] uppercase tracking-widest text-amber-800">
+              Setup finished with problems
+            </p>
+            <ul className="mt-1.5 space-y-1 text-[13px] text-ink-800">
+              {extractionWarnings.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+
       {/* ── HEADER ─────────────────────────────────────────────── */}
       <div className="border border-ink-200 bg-white">
         <div className="flex flex-col gap-6 p-6 md:p-8 lg:flex-row lg:items-start lg:justify-between">

@@ -11,7 +11,7 @@
  *   GET    /:id                  Get full job detail including audit logs
  *   POST   /:id/retry            Retry a failed job
  *   DELETE /:id                  Cancel a pending/scheduled job
- * Auth: Protected by global ClerkAuthGuard. User identity available via @CurrentUser().
+ * Auth: Protected by global SessionAuthGuard. User identity available via @CurrentUser().
  * NOTE: Publishing does NOT happen inside the HTTP response.
  *       Jobs are fire-and-forget (MVP) / BullMQ (production).
  *       Clients should poll GET /:id to observe status transitions.
