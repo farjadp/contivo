@@ -73,6 +73,8 @@ model Workspace {
   autopilotPolicies    AutopilotPolicy[]
   autopilotRuns        AutopilotRun[]
   siteConnections      SiteConnection[]
+  narrative            Narrative?
+  evidence             Evidence[]
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -335,6 +337,10 @@ model ContentItem {
   /// its own quota instead of sharing one workspace-wide queue.
   agentId           String?
   agent             AutopilotPolicy? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  /// Which storyline this advances. Nullable: content created before the
+  /// narrative layer existed has none, and must keep working.
+  storylineId       String?
+  storyline         Storyline?       @relation(fields: [storylineId], references: [id], onDelete: SetNull)
   creditsCost       Int              @default(0)
   jobId             String?
   scheduledAtUtc    DateTime?
@@ -355,6 +361,7 @@ model ContentItem {
   @@index([workspaceId])
   @@index([workspaceId, status, publishedAtUtc])
   @@index([agentId])
+  @@index([storylineId])
   @@map("content_items")
 }
 
@@ -707,4 +714,115 @@ enum SocialPublishStatus {
   PUBLISHED
   FAILED
   CANCELLED
+}
+
+/// What this company can truthfully claim. Deliberately separate from Narrative:
+/// evidence is a durable fact about the business, so regenerating the narrative
+/// must not throw it away. It also bounds the quality gate — asking a model to
+/// tell a story with no real material is how you get invented case studies.
+model Evidence {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  kind        EvidenceKind
+  /// The claim itself, in the founder's words.
+  value       String
+  /// Optional qualifier: a source, a caveat, a date.
+  detail      String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([workspaceId])
+  @@map("evidence")
+}
+
+enum EvidenceKind {
+  CUSTOMER_COUNT
+  PUBLIC_NUMBER
+  NAMED_CUSTOMER
+  FIRSTHAND_EXPERIENCE
+  /// Workspace-wide prohibition; applies to every storyline.
+  FORBIDDEN_CLAIM
+}
+
+/// The workspace's position. One per workspace, durable — not a campaign.
+/// `change` lives here rather than on Storyline on purpose: if every storyline
+/// named its own change, the company would hold four worldviews, which is the
+/// incoherence this layer exists to remove.
+model Narrative {
+  id          String          @id @default(cuid())
+  workspaceId String          @unique
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  status      NarrativeStatus @default(DRAFT)
+
+  /// Raskin's first element: the shift in the world every storyline hangs off.
+  change       String?
+  /// Whether `change` was accepted from a proposal or written by hand. If output
+  /// quality drops later, this says which narratives were built on a guess.
+  changeSource ChangeSource    @default(PROPOSED)
+  /// The hypotheses that were offered, kept so a rejected one can be revisited.
+  changeOptions Json?
+
+  /// What the intelligence looked like when this was built, so a narrative that
+  /// has gone stale is diagnosable six months on.
+  sourceSnapshot Json?
+  /// Which provider produced the draft, for the same reason.
+  generatedBy    String?
+  generatedAt    DateTime?
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  storylines Storyline[]
+
+  @@map("narratives")
+}
+
+enum NarrativeStatus {
+  DRAFT
+  ACTIVE
+  ARCHIVED
+}
+
+enum ChangeSource {
+  PROPOSED
+  EDITED
+  HUMAN
+}
+
+/// One recurring story, in Andy Raskin's five-element shape rather than fields
+/// invented here. Content ladders up to these instead of being 40 disconnected posts.
+model Storyline {
+  id          String    @id @default(cuid())
+  narrativeId String
+  narrative   Narrative @relation(fields: [narrativeId], references: [id], onDelete: Cascade)
+
+  /// Raskin 2 — who this shift rewards, and who it leaves behind.
+  winners String?
+  losers  String?
+  /// Raskin 3 — what the reader's world looks like once they get there.
+  promisedLand String
+  /// Raskin 4 — capabilities framed as the means of getting there, not a feature list.
+  gifts Json?
+  /// Raskin 5 — which Evidence rows this storyline may draw on. Anything not
+  /// referenced here is off-limits, and the gate enforces that.
+  evidenceIds String[]
+
+  /// The one-line claim this storyline exists to advance.
+  claim    String
+  audience String?
+
+  /// Which competitor, matrix position or keyword gap produced this. Without it
+  /// a wrong storyline cannot be traced to the wrong input and it becomes taste.
+  sourceRefs Json?
+  /// Prohibitions specific to this storyline, on top of workspace FORBIDDEN_CLAIMs.
+  neverClaim String[]
+
+  position  Int          @default(0)
+  enabled   Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  contentItems ContentItem[]
+
+  @@index([narrativeId])
+  @@map("storylines")
 }

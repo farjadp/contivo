@@ -20,6 +20,7 @@ import {
   Lock,
   TrendingUp,
   AlertTriangle,
+  BookOpen,
 } from 'lucide-react';
 import Link from 'next/link';
 import { BrandMemoryTab } from './_components/BrandMemoryTab';
@@ -47,10 +48,12 @@ import { ProgressReportTab } from './_components/ProgressReportTab';
 import { SeoIntelligenceTab } from './_components/SeoIntelligenceTab';
 import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
+import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { activeSetupWarnings } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
+import { getNarrative } from '@/app/actions/narrative';
 
 export const metadata = { title: 'Workspace Dashboard' };
 
@@ -118,6 +121,7 @@ function resolveTab(rawTab: string | string[] | undefined): string {
     'matrices',
     'keywords',
     'offerings',
+    'narrative',
     'calendar',
     'seo',
     'reports',
@@ -240,6 +244,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   };
 
   const autopilotState = await getAutopilotState(workspace.id);
+  const narrativeResult = await getNarrative(workspace.id);
+  const narrativeData = narrativeResult.ok ? narrativeResult : null;
   const autopilotPolicy = ('policy' in autopilotState && autopilotState.policy) || null;
   const autopilotAgents = ('agents' in autopilotState && autopilotState.agents) || [];
   const autopilotRuns = ('runs' in autopilotState && autopilotState.runs) || [];
@@ -367,6 +373,13 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       label: 'Competitor Keywords',
       helper: `${initialKeywordPayload?.competitors?.length || 0} analyzed`,
       icon: <Tags className="h-4 w-4" />,
+    },
+    {
+      key: 'narrative',
+      group: 'Intelligence',
+      label: 'Narrative',
+      helper: `${narrativeData?.narrative?.storylines?.length || 0} storylines`,
+      icon: <BookOpen className="h-4 w-4" />,
     },
     {
       key: 'offerings',
@@ -642,6 +655,14 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             initialPayload={initialKeywordPayload}
           />
         )}
+        {activeTab === 'narrative' && (
+          <NarrativeTab
+            workspaceId={workspace.id}
+            narrative={(narrativeData?.narrative as never) ?? null}
+            evidence={(narrativeData?.evidence as never) ?? []}
+          />
+        )}
+
         {activeTab === 'offerings' && (
           <ProductsServicesTab
             workspaceId={workspace.id}
