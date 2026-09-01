@@ -140,8 +140,9 @@ export function buildJourney(f: WorkspaceFacts): Journey {
       action: f.autopilotEnabled ? 'Review the policy' : 'Enable and save the policy',
       done: f.autopilotEnabled,
       detail: f.autopilotEnabled ? 'Running' : 'Off',
-      blockedBy:
-        f.hasBrandSummary && f.matrixCharts > 0 && f.keywordCompetitors > 0
+      blockedBy: f.autopilotEnabled
+        ? undefined
+        : f.hasBrandSummary && f.matrixCharts > 0 && f.keywordCompetitors > 0
           ? f.storylines > 0
             ? f.hasChannel
               ? undefined
@@ -203,8 +204,13 @@ export function tabGate(f: WorkspaceFacts): Record<string, string | undefined> {
     offerings: f.acceptedCompetitors >= 1 ? undefined : 'Accept competitors first',
     narrative:
       f.matrixCharts > 0 && f.acceptedCompetitors >= 2 ? undefined : 'Needs the market map',
-    autopilot:
-      f.matrixCharts > 0 && f.keywordCompetitors > 0
+    // An agent that is already running is not blocked, whatever it is missing —
+    // the runner never required a narrative and does not now. Telling someone
+    // their working autopilot "will produce nothing useful" is simply false, and
+    // that false warning is the whole risk of adding a step to a live chain.
+    autopilot: f.autopilotEnabled
+      ? undefined
+      : f.matrixCharts > 0 && f.keywordCompetitors > 0
         ? f.storylines > 0
           ? undefined
           : 'Needs a narrative'

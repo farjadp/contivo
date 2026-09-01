@@ -286,6 +286,13 @@ export async function runPolicy(
         claim: storyline.claim,
         boundToAgent: (policy.storylineIds ?? []).length > 0,
       });
+    } else {
+      // Not an error: workspaces that predate the narrative layer keep
+      // publishing exactly as before. Logged so "why is this content drifting"
+      // has an answer in the run log rather than being invisible.
+      note('no_storyline', {
+        detail: 'Publishing without a narrative. Content will not ladder up to a claim.',
+      });
     }
 
     for (const [channel, channelSlots] of byChannel) {

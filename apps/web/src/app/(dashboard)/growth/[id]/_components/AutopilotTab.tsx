@@ -481,6 +481,27 @@ export function AutopilotTab({
             </select>
           </Field>
 
+          {/* A workspace that predates the narrative layer keeps publishing, so
+              this is an invitation rather than a block. Saying nothing would
+              leave the agent quietly writing without a position. */}
+          {storylines.length === 0 && (
+            <div className="border border-ink-200 bg-ink-50 px-4 py-3.5">
+              <p className="text-[13px] font-medium text-ink-900">
+                This agent is publishing without a narrative.
+              </p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-600">
+                It still runs, and nothing here is blocked. But its posts are not laddering up
+                to anything, so they will not add up over a month.
+              </p>
+              <a
+                href={`/growth/${workspaceId}?tab=narrative`}
+                className="mt-2.5 inline-block text-[12.5px] font-medium text-ink-900 underline underline-offset-4 hover:text-ink-600"
+              >
+                Give it a position
+              </a>
+            </div>
+          )}
+
           {storylines.length > 0 && (
             <Field label="Which storylines this agent advances">
               <div className="space-y-2">
