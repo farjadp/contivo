@@ -11,6 +11,7 @@
  */
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
@@ -126,12 +127,12 @@ function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => 
             <RefreshCw className="w-4 h-4" />
             <span className="text-sm font-bold tracking-widest uppercase">Try again</span>
           </button>
-          <a
+          <Link
             href="/growth"
             className="inline-flex items-center py-4 px-6 border border-[#121212]/20 text-sm font-bold tracking-widest uppercase hover:border-[#121212] transition-colors"
           >
             Back to workspaces
-          </a>
+          </Link>
         </div>
       </div>
     </div>
