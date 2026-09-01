@@ -23,6 +23,8 @@ type Props = {
   connectedPlatforms: Array<{ platform: string; accountName: string }>;
   hasSiteConnection: boolean;
   ideationReady: boolean;
+  /** The workspace's storylines, so an agent can be bound to a subset. */
+  storylines?: Array<{ id: string; claim: string }>;
 };
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -38,6 +40,7 @@ const DEFAULT_FORM: AutopilotPolicyInput = {
   goal: 'authority',
   topicHints: [],
   avoidTopics: [],
+  storylineIds: [],
 };
 
 function toForm(p: SerializedPolicy | null): AutopilotPolicyInput {
@@ -53,6 +56,7 @@ function toForm(p: SerializedPolicy | null): AutopilotPolicyInput {
     goal: p.goal ?? '',
     topicHints: p.topicHints,
     avoidTopics: p.avoidTopics,
+    storylineIds: p.storylineIds ?? [],
   };
 }
 
@@ -64,6 +68,7 @@ export function AutopilotTab({
   connectedPlatforms,
   hasSiteConnection,
   ideationReady,
+  storylines = [],
 }: Props) {
   const router = useRouter();
   const agents = initialAgents ?? (initialPolicy ? [initialPolicy] : []);
@@ -475,6 +480,43 @@ export function AutopilotTab({
               <option value="education">Education</option>
             </select>
           </Field>
+
+          {storylines.length > 0 && (
+            <Field label="Which storylines this agent advances">
+              <div className="space-y-2">
+                {storylines.map((sl) => {
+                  const bound = form.storylineIds ?? [];
+                  const checked = bound.length === 0 || bound.includes(sl.id);
+                  return (
+                    <label key={sl.id} className="flex cursor-pointer items-start gap-2.5">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          // An empty list means "all", so the first deselection has
+                          // to expand it to the explicit set minus this one.
+                          const current = bound.length === 0 ? storylines.map((x) => x.id) : bound;
+                          const next = e.target.checked
+                            ? [...new Set([...current, sl.id])]
+                            : current.filter((id) => id !== sl.id);
+                          setForm({
+                            ...form,
+                            storylineIds: next.length === storylines.length ? [] : next,
+                          });
+                        }}
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-ink-900"
+                      />
+                      <span className="text-[13px] leading-snug text-ink-700">{sl.claim}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <Hint>
+                All of them unless you narrow it. The runner rotates across whichever are
+                selected, so one claim is not repeated week after week.
+              </Hint>
+            </Field>
+          )}
 
           <Field label="Lean into these themes">
             <textarea

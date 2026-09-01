@@ -63,11 +63,18 @@ export async function loadStorylineContext(
   };
 }
 
-/** Picks the storyline an autopilot run should advance next. */
+/**
+ * Picks the storyline an autopilot run should advance next.
+ *
+ * `allowedIds` is the agent's own binding. Empty means the whole workspace, so
+ * an agent created before the narrative layer keeps working and gains a
+ * position for free rather than going quiet.
+ */
 export async function pickStorylineForWorkspace(
   workspaceId: string,
   /** Storylines used by the most recent items, so the runner does not hammer one claim. */
   recentlyUsedIds: string[] = [],
+  allowedIds: string[] = [],
 ): Promise<StorylineContext | null> {
   const narrative = await prisma.narrative.findUnique({
     where: { workspaceId },
@@ -75,8 +82,14 @@ export async function pickStorylineForWorkspace(
   });
   if (!narrative?.storylines.length) return null;
 
-  const leastRecent =
-    narrative.storylines.find((s) => !recentlyUsedIds.includes(s.id)) ?? narrative.storylines[0];
+  const pool = allowedIds.length
+    ? narrative.storylines.filter((s) => allowedIds.includes(s.id))
+    : narrative.storylines;
+  // The agent's bound storylines may all have been deleted or disabled since.
+  // Falling back to the workspace beats going silent for reasons nobody can see.
+  const candidates = pool.length ? pool : narrative.storylines;
+
+  const leastRecent = candidates.find((s) => !recentlyUsedIds.includes(s.id)) ?? candidates[0];
   return loadStorylineContext(leastRecent.id);
 }
 

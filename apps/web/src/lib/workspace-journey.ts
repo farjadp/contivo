@@ -12,7 +12,7 @@
  * about what the user should do next.
  */
 
-export type StepId = 'brand' | 'market' | 'keywords' | 'channel' | 'autopilot';
+export type StepId = 'brand' | 'market' | 'keywords' | 'narrative' | 'channel' | 'autopilot';
 
 export type StepState = 'done' | 'current' | 'locked' | 'available';
 
@@ -41,6 +41,8 @@ export type WorkspaceFacts = {
   totalCompetitors: number;
   matrixCharts: number;
   keywordCompetitors: number;
+  /** Storylines on the workspace's narrative. Zero means it has no position yet. */
+  storylines: number;
   hasChannel: boolean;
   channelLabel: string | null;
   autopilotEnabled: boolean;
@@ -107,6 +109,21 @@ export function buildJourney(f: WorkspaceFacts): Journey {
       blockedBy: f.acceptedCompetitors >= 1 ? undefined : 'accepted competitors',
     },
     {
+      id: 'narrative',
+      title: 'Decide what you stand for',
+      why: 'Three or four arguments every post has to advance, so the content adds up instead of being forty unrelated posts. Drafted from the intelligence above.',
+      href: tab('narrative'),
+      action: 'Draft the narrative',
+      done: f.storylines > 0,
+      detail: f.storylines > 0 ? `${f.storylines} storylines` : 'No position yet',
+      // Needs a market frame and something to be positioned against. Keywords
+      // sharpen it but are not required, so this is reachable without them.
+      blockedBy:
+        f.hasBrandSummary && f.matrixCharts > 0 && f.acceptedCompetitors >= 2
+          ? undefined
+          : 'the market map',
+    },
+    {
       id: 'channel',
       title: 'Connect somewhere to publish',
       why: 'A social account or your own website. Without one, drafts have nowhere to go.',
@@ -125,9 +142,11 @@ export function buildJourney(f: WorkspaceFacts): Journey {
       detail: f.autopilotEnabled ? 'Running' : 'Off',
       blockedBy:
         f.hasBrandSummary && f.matrixCharts > 0 && f.keywordCompetitors > 0
-          ? f.hasChannel
-            ? undefined
-            : 'a connected channel'
+          ? f.storylines > 0
+            ? f.hasChannel
+              ? undefined
+              : 'a connected channel'
+            : 'a narrative to advance'
           : 'the intelligence steps above',
     },
   ];
@@ -182,8 +201,14 @@ export function tabGate(f: WorkspaceFacts): Record<string, string | undefined> {
         ? undefined
         : 'Needs matrices + keywords',
     offerings: f.acceptedCompetitors >= 1 ? undefined : 'Accept competitors first',
+    narrative:
+      f.matrixCharts > 0 && f.acceptedCompetitors >= 2 ? undefined : 'Needs the market map',
     autopilot:
-      f.matrixCharts > 0 && f.keywordCompetitors > 0 ? undefined : 'Needs matrices + keywords',
+      f.matrixCharts > 0 && f.keywordCompetitors > 0
+        ? f.storylines > 0
+          ? undefined
+          : 'Needs a narrative'
+        : 'Needs matrices + keywords',
     reports:
       f.matrixCharts >= 5 && f.keywordCompetitors > 0 ? undefined : 'Needs full intelligence',
   };

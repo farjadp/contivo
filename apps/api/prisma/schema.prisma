@@ -114,6 +114,10 @@ model AutopilotPolicy {
   goal        String?
   topicHints  String[] @default([])
   avoidTopics String[] @default([])
+  /// Which storylines this agent advances. Empty means every enabled storyline
+  /// on the workspace, so an agent created before the narrative layer keeps
+  /// working and quietly gains a position once one exists.
+  storylineIds String[] @default([])
 
   // Scheduling bookkeeping
   lastRunAt DateTime?

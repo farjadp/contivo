@@ -61,7 +61,9 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
       </div>
 
       {/* The chain */}
-      <ol className="grid gap-px bg-ink-100 md:grid-cols-5">
+      {/* Column count follows the chain length; hardcoding 5 left an empty
+          cell the moment Narrative made it six. */}
+      <ol className="grid gap-px bg-ink-100 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
         {journey.steps.map((s) => {
           const isCurrent = s.state === 'current';
           const isDone = s.state === 'done';

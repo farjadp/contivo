@@ -271,6 +271,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     keywordCompetitors: Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors)
       ? (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length
       : 0,
+    storylines: narrativeData?.narrative?.storylines?.length ?? 0,
     hasChannel: autopilotConnected.length > 0 || autopilotHasSite,
     channelLabel:
       autopilotConnected.length > 0
@@ -717,6 +718,10 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             initialRuns={autopilotRuns}
             connectedPlatforms={autopilotConnected}
             hasSiteConnection={autopilotHasSite}
+            storylines={(narrativeData?.narrative?.storylines ?? []).map((s: any) => ({
+              id: s.id,
+              claim: s.claim,
+            }))}
             ideationReady={ideationReady}
           />
         )}

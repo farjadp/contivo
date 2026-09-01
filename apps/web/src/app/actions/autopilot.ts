@@ -22,6 +22,8 @@ export type AutopilotPolicyInput = {
   goal?: string | null;
   topicHints?: string[];
   avoidTopics?: string[];
+  /** Storylines this agent advances. Empty means every storyline on the workspace. */
+  storylineIds?: string[];
 };
 
 type UserAuth = { ok: true; userId: string } | { ok: false; error: string };
@@ -231,6 +233,9 @@ function normalizeInput(input: AutopilotPolicyInput) {
       publishDays,
       goal: String(input.goal || '').trim().slice(0, 200) || null,
       topicHints: cleanList(input.topicHints),
+      storylineIds: Array.isArray(input.storylineIds)
+        ? input.storylineIds.map(String).filter(Boolean)
+        : [],
       avoidTopics: cleanList(input.avoidTopics),
       // Re-arm so a newly enabled agent runs on the next tick.
       nextRunAt: input.enabled ? null : undefined,
@@ -264,6 +269,7 @@ function serializePolicy(p: {
   goal: string | null;
   topicHints: string[];
   avoidTopics: string[];
+  storylineIds: string[];
   lastRunAt: Date | null;
   nextRunAt: Date | null;
 }) {
@@ -281,6 +287,7 @@ function serializePolicy(p: {
     goal: p.goal,
     topicHints: p.topicHints,
     avoidTopics: p.avoidTopics,
+    storylineIds: p.storylineIds,
     lastRunAt: p.lastRunAt?.toISOString() ?? null,
     nextRunAt: p.nextRunAt?.toISOString() ?? null,
   };

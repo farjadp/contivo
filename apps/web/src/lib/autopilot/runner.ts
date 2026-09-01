@@ -275,9 +275,17 @@ export async function runPolicy(
       .map((i) => i.storylineId)
       .filter((id): id is string => Boolean(id));
 
-    const storyline = await pickStorylineForWorkspace(policy.workspaceId, recentStorylineIds);
+    const storyline = await pickStorylineForWorkspace(
+      policy.workspaceId,
+      recentStorylineIds,
+      policy.storylineIds ?? [],
+    );
     if (storyline) {
-      note('storyline_selected', { storylineId: storyline.id, claim: storyline.claim });
+      note('storyline_selected', {
+        storylineId: storyline.id,
+        claim: storyline.claim,
+        boundToAgent: (policy.storylineIds ?? []).length > 0,
+      });
     }
 
     for (const [channel, channelSlots] of byChannel) {

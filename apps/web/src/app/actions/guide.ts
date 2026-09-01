@@ -36,7 +36,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
   });
   if (!workspace) return { error: 'Workspace not found' };
 
-  const [policy, connections, sites, published, scheduled] = await Promise.all([
+  const [policy, connections, sites, published, scheduled, storylines] = await Promise.all([
     prisma.autopilotPolicy.findFirst({ where: { workspaceId, enabled: true } }),
     prisma.socialConnection.findMany({
       where: { workspaceId, status: 'CONNECTED' },
@@ -45,6 +45,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
     prisma.siteConnection.count({ where: { workspaceId, status: 'ACTIVE' } }),
     prisma.contentItem.count({ where: { workspaceId, status: 'PUBLISHED' } }),
     prisma.contentItem.count({ where: { workspaceId, status: 'SCHEDULED' } }),
+    prisma.storyline.count({ where: { narrative: { workspaceId }, enabled: true } }),
   ]);
 
   const insights = (workspace.audienceInsights as any) || {};
@@ -59,6 +60,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
     keywordCompetitors: Array.isArray(insights?.competitorKeywordsIntel?.competitors)
       ? insights.competitorKeywordsIntel.competitors.length
       : 0,
+    storylines,
     hasChannel: connections.length > 0 || sites > 0,
     channelLabel:
       connections.length > 0

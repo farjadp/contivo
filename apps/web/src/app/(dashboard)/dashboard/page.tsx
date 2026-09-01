@@ -129,7 +129,7 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const [autopilot, lastRun, connectionsCount, sitesCount] = await Promise.all([
+  const [autopilot, lastRun, connectionsCount, sitesCount, storylineCount] = await Promise.all([
     prisma.autopilotPolicy.findFirst({
       where: { workspaceId: visibleWorkspace.id },
       orderBy: [{ enabled: 'desc' }, { createdAt: 'asc' }],
@@ -137,6 +137,7 @@ export default async function DashboardPage() {
     prisma.autopilotRun.findFirst({ where: { workspaceId: visibleWorkspace.id }, orderBy: { startedAt: 'desc' } }),
     prisma.socialConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'CONNECTED' } }),
     prisma.siteConnection.count({ where: { workspaceId: visibleWorkspace.id, status: 'ACTIVE' } }),
+    prisma.storyline.count({ where: { narrative: { workspaceId: visibleWorkspace.id }, enabled: true } }),
   ]);
 
   if (!workspace) redirect('/growth');
@@ -189,6 +190,7 @@ export default async function DashboardPage() {
     keywordCompetitors: Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors)
       ? (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length
       : 0,
+    storylines: storylineCount,
     hasChannel: connectionsCount > 0 || sitesCount > 0,
     channelLabel: connectionsCount > 0 ? 'Social' : sitesCount > 0 ? 'Website' : null,
     autopilotEnabled: Boolean(autopilot?.enabled),

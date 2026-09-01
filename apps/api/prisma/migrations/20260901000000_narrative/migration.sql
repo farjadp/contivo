@@ -67,3 +67,7 @@ ALTER TABLE "content_items" ADD COLUMN "storylineId" TEXT;
 CREATE INDEX "content_items_storylineId_idx" ON "content_items"("storylineId");
 ALTER TABLE "content_items" ADD CONSTRAINT "content_items_storylineId_fkey"
   FOREIGN KEY ("storylineId") REFERENCES "storylines"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- An agent binds to the storylines it advances. Empty means all of them, so an
+-- agent created before this layer keeps working and gains a position for free.
+ALTER TABLE "autopilot_policies" ADD COLUMN "storylineIds" TEXT[] DEFAULT ARRAY[]::TEXT[];
