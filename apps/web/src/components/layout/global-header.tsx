@@ -17,6 +17,10 @@ export function GlobalHeader() {
     '/settings',
     '/pricing',
     '/docs',
+    // These carry their own brand mark, and a "Sign up" button on the sign-up
+    // page is worse than no header at all.
+    '/sign-in',
+    '/sign-up',
   ];
   const shouldHide = pathname === '/' || hideHeaderRoutes.some(route => pathname.startsWith(route));
 

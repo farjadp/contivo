@@ -1,77 +1,71 @@
 'use client';
 
 import { useActionState } from 'react';
-import { login } from '@/app/actions/auth';
 import Link from 'next/link';
+
+import { login } from '@/app/actions/auth';
+import { AuthField, AuthShell } from '@/components/marketing/auth-shell';
 
 const initialState = { error: '' };
 
 export default function SignInPage() {
-  const [state, formAction, isPending] = useActionState(login as any, initialState);
+  const [state, formAction, isPending] = useActionState(login as never, initialState);
 
   return (
-    <div className="flex min-h-screen w-full items-center justify-center p-4 bg-[#F9F9F9]">
-      <div className="w-full max-w-sm space-y-8 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight text-[#121212]">Welcome back</h1>
-          <p className="text-sm text-gray-500 mt-2">Sign in to your account</p>
-        </div>
-
-        <form 
-          action={formAction} 
-          className="space-y-6"
-        >
-          {state?.error && (
-            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-md border border-red-100 text-center">
-              {state.error}
-            </div>
-          )}
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#121212] mb-1.5" htmlFor="email">
-                Email Address
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="block w-full rounded-md border border-gray-200 px-3 py-2 text-[#121212] placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
-                placeholder="you@example.com"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#121212] mb-1.5" htmlFor="password">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="block w-full rounded-md border border-gray-200 px-3 py-2 text-[#121212] placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black sm:text-sm"
-                placeholder="••••••••"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={isPending}
-            className="flex w-full justify-center rounded-md bg-[#121212] px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-black/80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black disabled:opacity-50 transition-colors"
+    <AuthShell
+      eyebrow="Welcome back"
+      title="Your queue kept"
+      accent="filling"
+      titleTail="itself."
+      blurb="Autopilot does not wait for you to log in. Anything it wrote while you were away is in the pipeline, already through the quality gate."
+      footer={
+        <>
+          No account yet?{' '}
+          <Link
+            href="/sign-up"
+            className="font-semibold text-carbon underline decoration-carbon/30 underline-offset-4 transition-colors hover:decoration-brick"
           >
-            {isPending ? 'Signing in...' : 'Sign in'}
-          </button>
-        </form>
-
-        <p className="text-center text-sm text-gray-500">
-          Not registered yet?{' '}
-          <Link href="/sign-up" className="font-semibold leading-6 text-[#121212] hover:underline">
-            Create an account
+            Start with your website
           </Link>
-        </p>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <form action={formAction} className="space-y-8" noValidate>
+        {state?.error && (
+          <p role="alert" className="border-l-2 border-brick pl-4 text-[14px] text-brick-deep">
+            {state.error}
+          </p>
+        )}
+
+        <AuthField
+          id="email"
+          label="Email"
+          type="email"
+          autoComplete="email"
+          placeholder="you@company.com"
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="••••••••"
+        />
+
+        <button
+          type="submit"
+          disabled={isPending}
+          className="group w-full bg-carbon px-7 py-4 text-[14.5px] font-semibold text-paper-warm transition-colors duration-300 hover:bg-brick disabled:opacity-60"
+        >
+          {isPending ? 'Signing in…' : 'Sign in'}
+          <span
+            aria-hidden
+            className="ml-3 inline-block transition-transform duration-300 group-hover:translate-x-1"
+          >
+            &rarr;
+          </span>
+        </button>
+      </form>
+    </AuthShell>
   );
 }
