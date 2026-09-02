@@ -10,7 +10,6 @@
     "typecheck": "next typegen && tsc --noEmit"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.5",
     "@contivo/api": "workspace:*",
     "@contivo/types": "workspace:*",
     "@prisma/client": "^5.13.0",
@@ -25,7 +24,7 @@
     "docx": "^9.6.1",
     "jose": "^6.2.1",
     "lucide-react": "^0.378.0",
-    "next": "15.5.12",
+    "next": "15.5.25",
     "pdf-lib": "^1.17.1",
     "pdfjs-dist": "^4.10.38",
     "puppeteer": "^24.42.0",

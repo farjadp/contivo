@@ -2,10 +2,9 @@ import { Module } from '@nestjs/common';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { ClerkWebhooksController } from './webhooks.controller';
 
 @Module({
-  controllers: [UsersController, ClerkWebhooksController],
+  controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],
 })
