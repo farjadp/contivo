@@ -295,6 +295,12 @@ export class SocialPublishService {
       });
 
       if (!isAlive) {
+        // Mark the connection itself, not just this job. Access tokens expire
+        // on a schedule — LinkedIn's after about sixty days — and until now the
+        // connection stayed CONNECTED while every publish failed, so the
+        // Connections page went on showing a healthy account and the first
+        // sign of trouble was a week with nothing posted.
+        await this.markConnectionExpired(connectionId, platform);
         throw new Error(
           `${platform} connection token is expired or invalid. Please reconnect the account.`,
         );
@@ -375,6 +381,31 @@ export class SocialPublishService {
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
+
+  /**
+   * Record that a connection can no longer publish.
+   *
+   * Only moves a CONNECTED row, so a connection already marked REVOKED or
+   * FAILED keeps the more specific reason. Never throws: failing to write the
+   * status must not turn into a second, more confusing publish failure.
+   */
+  private async markConnectionExpired(connectionId: string, platform: string): Promise<void> {
+    try {
+      const { count } = await this.prisma.socialConnection.updateMany({
+        where: { id: connectionId, status: 'CONNECTED' },
+        data:  { status: 'EXPIRED' },
+      });
+      if (count > 0) {
+        this.logger.warn(
+          `Marked ${platform} connection ${connectionId} EXPIRED: its token no longer validates.`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `Could not mark connection ${connectionId} expired: ${(err as Error).message}`,
+      );
+    }
+  }
 
   private async findJobOrThrow(id: string) {
     const job = await this.prisma.socialPublishJob.findUnique({ where: { id } });
