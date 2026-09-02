@@ -16,6 +16,28 @@ import { prisma } from '@/lib/db';
 /** Credits given to a new account so it can try the product once. */
 export const WELCOME_CREDIT_GRANT = 100;
 
+/**
+ * What each unattended AI operation costs.
+ *
+ * Only Instant Content ever spent credits. Autopilot — which runs on a cron
+ * with nobody watching and makes roughly five model calls per post, twice that
+ * when the quality gate rejects a draft — spent nothing, so the balance was
+ * decorative and there was no ceiling on what a workspace could cost.
+ *
+ * Two operations rather than five, because the run cannot usefully stop
+ * halfway through drafting one post: ideation is charged once per channel, and
+ * everything that turns one idea into a reviewed draft (draft, humanize pass,
+ * image, quality gate) is charged as a single attempt. A rejected draft is
+ * charged too — the model calls happened either way, and not charging for them
+ * would leave the exact hole this closes.
+ */
+export const AI_OPERATION_COST = {
+  AUTOPILOT_IDEATION: 2,
+  AUTOPILOT_DRAFT_ATTEMPT: 7,
+} as const;
+
+export type AiOperation = keyof typeof AI_OPERATION_COST;
+
 /** Cost per Instant Content generation, by channel. Mirrors the API's table. */
 export const INSTANT_CONTENT_COST: Record<string, number> = {
   linkedin: 5,
@@ -96,4 +118,26 @@ export async function deductCredits(
   });
 
   return balanceAfter;
+}
+
+/**
+ * Charge for one AI operation, refusing when the balance will not cover it.
+ *
+ * Throws `InsufficientCreditsError`, which callers on an unattended path
+ * (Autopilot) should catch and use to stop the run rather than to fail it: an
+ * account running out of credits is a normal state, not an error.
+ */
+export async function chargeCredits(
+  userId: string,
+  operation: AiOperation,
+  jobId?: string,
+): Promise<number> {
+  const cost = AI_OPERATION_COST[operation];
+  await assertCredits(userId, cost);
+  return deductCredits(userId, cost, operation, jobId);
+}
+
+/** Whether the account could pay for `operation` right now. */
+export async function canAfford(userId: string, operation: AiOperation): Promise<boolean> {
+  return (await getCreditBalance(userId)) >= AI_OPERATION_COST[operation];
 }

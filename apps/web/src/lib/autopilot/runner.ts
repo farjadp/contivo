@@ -20,6 +20,13 @@ import type { ContentChannel, Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import {
+  AI_OPERATION_COST,
+  InsufficientCreditsError,
+  canAfford,
+  chargeCredits,
+  getCreditBalance,
+} from '@/lib/credits';
+import {
   generateDraftForItem,
   ideateForWorkspace,
   loadIdeationContext,
@@ -187,6 +194,23 @@ export async function runPolicy(
     }
     note('prerequisites_ok');
 
+    // 1b. Can this account still pay?
+    //
+    // Autopilot runs unattended and makes roughly five model calls per post,
+    // so before it was metered a single workspace could spend without any
+    // ceiling. Running out of credits is a normal state rather than a failure:
+    // the run stops, says so, and comes back on the usual cadence in case the
+    // balance has been topped up by then.
+    const startingBalance = await getCreditBalance(policy.userId);
+    const runFloor = AI_OPERATION_COST.AUTOPILOT_IDEATION + AI_OPERATION_COST.AUTOPILOT_DRAFT_ATTEMPT;
+    if (startingBalance < runFloor) {
+      note('out_of_credits', { balance: startingBalance, needed: runFloor });
+      return finish('SKIPPED', zero, {
+        error: `Not enough credits to run: ${startingBalance} left, ${runFloor} needed for one post.`,
+      });
+    }
+    note('credits', { balance: startingBalance });
+
     // 2. Publishable channels
     const channels = await resolvePublishableChannels(policy.workspaceId, policy.channels, note);
     if (channels.length === 0) {
@@ -255,6 +279,8 @@ export async function runPolicy(
     let itemsScheduled = 0;
     let itemsSkipped = 0;
     let itemsRejected = 0;
+    /** Set when the balance runs out part-way, so both loops unwind. */
+    let outOfCredits = false;
     const usedTopics = [...recentTopics];
     const recentBodies = await loadRecentBodies(policy.workspaceId);
 
@@ -297,6 +323,13 @@ export async function runPolicy(
 
     for (const [channel, channelSlots] of byChannel) {
       const want = channelSlots.length;
+
+      if (!(await canAfford(policy.userId, 'AUTOPILOT_IDEATION'))) {
+        note('out_of_credits_mid_run', { channel, stage: 'ideation' });
+        itemsSkipped += want;
+        break;
+      }
+
       const ideation = await ideateForWorkspace(actor, {
         goal: policy.goal || undefined,
         platform: CHANNEL_TO_IDEATION_PLATFORM[channel] ?? 'linkedin',
@@ -311,6 +344,8 @@ export async function runPolicy(
         itemsSkipped += want;
         continue;
       }
+      await chargeCredits(policy.userId, 'AUTOPILOT_IDEATION', run.id);
+
       const ideas: any[] = 'ideas' in ideation && Array.isArray(ideation.ideas) ? ideation.ideas : [];
       ideasGenerated += ideas.length;
 
@@ -325,6 +360,7 @@ export async function runPolicy(
 
       let ideaCursor = 0;
       for (let i = 0; i < want; i++) {
+        if (outOfCredits) break;
         const slot = channelSlots[i];
         let filled = false;
 
@@ -333,6 +369,15 @@ export async function runPolicy(
         for (let attempt = 0; attempt < MAX_ATTEMPTS_PER_SLOT && !filled; attempt++) {
           const idea = fresh[ideaCursor++];
           if (!idea) break;
+
+          // Checked per attempt, not once per run: a rejected draft costs the
+          // same as an accepted one, so a run with a run of bad luck can empty
+          // an account it started with enough in.
+          if (!(await canAfford(policy.userId, 'AUTOPILOT_DRAFT_ATTEMPT'))) {
+            note('out_of_credits_mid_run', { channel, stage: 'draft' });
+            outOfCredits = true;
+            break;
+          }
 
           // Force the channel: idea.format drives channel resolution in the engine.
           const saved = await saveIdeaToPipelineCore(actor, {
@@ -365,6 +410,12 @@ export async function runPolicy(
             note('draft_failed', { channel, itemId, topic: idea.topic, error: drafted.error });
             continue;
           }
+
+          // Charged here rather than after the gate: the draft, humanize pass
+          // and image have all run by this point, so the cost is already
+          // incurred whether or not the gate goes on to reject it.
+          const balanceAfter = await chargeCredits(policy.userId, 'AUTOPILOT_DRAFT_ATTEMPT', run.id);
+          note('charged', { channel, itemId, operation: 'AUTOPILOT_DRAFT_ATTEMPT', balanceAfter });
 
           // ── Quality gate: the stand-in for a human reviewer ──
           const body = 'item' in drafted ? String(drafted.item?.content || '') : '';
@@ -422,13 +473,26 @@ export async function runPolicy(
           note('slot_unfilled', {
             channel,
             slot: slot.toISOString(),
-            reason: 'no idea passed the quality gate',
+            reason: outOfCredits ? 'out of credits' : 'no idea passed the quality gate',
           });
         }
       }
+
+      if (outOfCredits) break;
     }
 
     const counts = { ideasGenerated, itemsScheduled, itemsSkipped };
+
+    // An account that ran dry mid-run is not a failure to fix, so it is
+    // reported as its own outcome rather than as a broken run.
+    if (outOfCredits && itemsScheduled === 0) {
+      return finish('SKIPPED', counts, {
+        error: 'Ran out of credits before anything could be scheduled.',
+      });
+    }
+    if (outOfCredits) {
+      note('stopped_out_of_credits', { itemsScheduled });
+    }
     if (itemsRejected > 0) {
       note('gate_summary', { rejected: itemsRejected });
     }
@@ -440,6 +504,13 @@ export async function runPolicy(
     }
     return finish(itemsSkipped > 0 ? 'PARTIAL' : 'SUCCEEDED', counts);
   } catch (err) {
+    // A balance that runs out between the check and the charge is a race, not
+    // a fault: report it the same way as the checked path rather than as a
+    // failed run that someone has to look at.
+    if (err instanceof InsufficientCreditsError) {
+      note('out_of_credits_mid_run', { stage: 'charge', message: err.message });
+      return finish('SKIPPED', zero, { error: err.message });
+    }
     const message = err instanceof Error ? err.message : String(err);
     note('exception', { message });
     console.error('[autopilot] run failed', policy.id, err);
