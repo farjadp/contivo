@@ -646,6 +646,16 @@ async function discoverCompetitorsWithOpenAI(
   }
 }
 
+/**
+ * Save the user's competitor review.
+ *
+ * Both ids in here arrive from the browser, so both are checked. The
+ * workspace id was previously trusted outright, which let any signed-in user
+ * write competitors into anyone else's workspace — and because ideation reads
+ * competitors, that is content injection, not just bad data. The per-row
+ * competitor ids were trusted the same way, so a caller could rename or
+ * re-classify any competitor row in the database.
+ */
 export async function saveCompetitors(_prevState: any, formData: FormData) {
   const session = await getSession();
   if (!session) return { error: 'Not authenticated' };
@@ -655,8 +665,27 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
 
   if (!id || !competitorsJson) return { error: 'Missing data' };
 
+  // Ownership first: nothing below runs unless this workspace is the
+  // caller's. Same wording as a genuinely missing workspace so this cannot
+  // be used to probe which ids exist.
+  const workspace = await prisma.workspace.findFirst({
+    where: { id, userId: session.userId as string },
+  });
+  if (!workspace) return { error: 'Workspace not found' };
+
   try {
     const competitors = JSON.parse(competitorsJson);
+
+    // The rows this workspace actually owns. Any id the client sends that is
+    // not in here is someone else's row (or a stale one) and is skipped.
+    const ownedCompetitorIds = new Set(
+      (
+        await prisma.competitor.findMany({
+          where: { workspaceId: id },
+          select: { id: true },
+        })
+      ).map((c) => c.id),
+    );
 
     // Filter out exactly which competitors the user interacted with, or we just save the current client state array.
     for (const comp of competitors) {
@@ -673,8 +702,8 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
              type: comp.type || 'DIRECT'
            }
         });
-      } else {
-        // Existing AI generated competitor
+      } else if (ownedCompetitorIds.has(comp.id)) {
+        // Existing AI generated competitor, belonging to this workspace
         await prisma.competitor.update({
           where: { id: comp.id },
           data: {
@@ -689,11 +718,8 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
 
     // Now generate the strategic positioning insights based on exactly what the user validated
     const activeCompetitors = competitors.filter((c: any) => c.userDecision === 'ACCEPTED');
-    const workspace = await prisma.workspace.findUnique({
-      where: { id }
-    });
 
-    if (workspace && activeCompetitors.length > 0) {
+    if (activeCompetitors.length > 0) {
        const brandSummary = workspace.brandSummary as any || {};
        const insights = await generatePositioningInsights(brandSummary, activeCompetitors);
        

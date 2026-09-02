@@ -9,6 +9,12 @@
  * Auth pattern: uses getSession() from @/lib/auth (same as every other
  * action in this codebase) instead of Clerk's auth() which doesn't work
  * in the request context created by client-initiated server actions.
+ *
+ * All three took a workspaceId straight from the client and never checked
+ * that the caller owns it, so any signed-in user could generate and read
+ * another tenant's report — brand memory, competitors and positioning
+ * matrices, in one PDF. Every entry point now goes through
+ * every entry point now carries userId inside the workspace query itself.
  */
 
 'use server';
@@ -25,6 +31,10 @@ const MONTHLY_LIMIT = 5;
 
 // Reports are served as static files from /public/reports/
 const REPORTS_DIR = path.join(process.cwd(), 'public', 'reports');
+
+// A missing workspace and someone else's workspace return the same message,
+// so neither can be used to test which workspace ids exist.
+const NOT_FOUND = 'Workspace not found';
 
 // ---------------------------------------------------------------------------
 // checkReportEligibility
@@ -54,19 +64,22 @@ export async function checkReportEligibility(workspaceId: string) {
     where: { userId, reportDate: { gte: startOfMonth } },
   });
 
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
+  // findFirst, not findUnique: the userId filter belongs in the query, so a
+  // later reader of this row cannot skip the ownership check by accident.
+  const workspace = await prisma.workspace.findFirst({
+    where: { id: workspaceId, userId },
     select: {
       brandSummary: true,
       audienceInsights: true,
       competitors: { where: { userDecision: 'ACCEPTED' } },
     },
   });
+  if (!workspace) throw new Error(NOT_FOUND);
 
-  const insights = workspace?.audienceInsights as any;
+  const insights = workspace.audienceInsights as any;
   const missingData: string[] = [];
 
-  if (!workspace?.brandSummary) missingData.push('Brand Memory');
+  if (!workspace.brandSummary) missingData.push('Brand Memory');
 
   // DB key: competitiveMatrices.charts (array)
   if (!insights?.competitiveMatrices?.charts || insights.competitiveMatrices.charts.length < 5)
@@ -121,11 +134,11 @@ export async function generateStrategicReport(workspaceId: string) {
   }
 
   // Fetch the full workspace including accepted competitors
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
+  const workspace = await prisma.workspace.findFirst({
+    where: { id: workspaceId, userId },
     include: { competitors: { where: { userDecision: 'ACCEPTED' } } },
   });
-  if (!workspace) throw new Error('Workspace not found');
+  if (!workspace) throw new Error(NOT_FOUND);
 
   const insights = workspace.audienceInsights as any;
   const brandSummary = workspace.brandSummary as any;
@@ -211,6 +224,13 @@ export async function generateStrategicReport(workspaceId: string) {
 export async function getReportHistory(workspaceId: string) {
   const session = await getSession();
   if (!session) throw new Error('Unauthorized');
+
+  // Report rows carry public file URLs, so the listing is gated too.
+  const owned = await prisma.workspace.findFirst({
+    where: { id: workspaceId, userId: session.userId as string },
+    select: { id: true },
+  });
+  if (!owned) throw new Error(NOT_FOUND);
 
   return prisma.strategicReport.findMany({
     where: { workspaceId },
