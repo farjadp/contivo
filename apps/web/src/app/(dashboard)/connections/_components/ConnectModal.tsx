@@ -13,10 +13,11 @@
 
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight } from 'lucide-react';
 
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
+import { getConfiguredPlatforms, type PlatformConfig } from '@/app/actions/social-config';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,16 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
   const [selected, setSelected] = useState<Platform | null>(null);
   const [connectError, setConnectError] = useState('');
   const [isConnecting, startConnect] = useTransition();
+  // Null means "we could not ask" — the API being down is not the same as a
+  // platform being unconfigured, so the UI stays neutral rather than accusing.
+  const [config, setConfig] = useState<PlatformConfig | null>(null);
+
+  useEffect(() => {
+    void getConfiguredPlatforms().then(setConfig);
+  }, []);
+
+  /** The API names platforms `linkedin`/`x`/`facebook`/`tiktok`. */
+  const isUnavailable = (id: Platform) => config != null && config[id.toLowerCase()] === false;
 
   // The API's /connect route is opened by the browser, so it cannot carry an
   // auth header. Mint a short-lived signed link first, then navigate to it.
@@ -136,11 +147,22 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
             <div className="space-y-3">
               {PLATFORMS.map((p) => {
                 const PIcon = p.Icon;
+                const unavailable = isUnavailable(p.id);
                 return (
                   <button
                     key={p.id}
-                    onClick={() => setSelected(p.id)}
-                    className="w-full flex items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 hover:border-gray-300 hover:shadow-sm transition-all text-left group"
+                    onClick={() => !unavailable && setSelected(p.id)}
+                    disabled={unavailable}
+                    title={
+                      unavailable
+                        ? `${p.label} has no API credentials on this deployment.`
+                        : undefined
+                    }
+                    className={`w-full flex items-center gap-4 rounded-2xl border p-4 transition-all text-left group ${
+                      unavailable
+                        ? 'border-dashed border-gray-200 bg-gray-50 cursor-not-allowed'
+                        : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm'
+                    }`}
                   >
                     <div
                       className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
@@ -150,9 +172,15 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-bold text-[#121212]">{p.label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{p.description}</p>
+                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                        {unavailable
+                          ? 'Not set up on this deployment — no API credentials yet.'
+                          : p.description}
+                      </p>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors" />
+                    {!unavailable && (
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors" />
+                    )}
                   </button>
                 );
               })}

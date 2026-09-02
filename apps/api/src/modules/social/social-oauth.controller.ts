@@ -36,6 +36,18 @@ export class SocialOAuthController {
   ) {}
 
   /**
+   * Which platforms this deployment can actually connect.
+   *
+   * Exists so the Connections page can say "X is not set up on this
+   * deployment" instead of offering a Connect button that lands the user on a
+   * platform error page they cannot act on.
+   */
+  @Get('config')
+  platformConfig() {
+    return { platforms: this.oauthService.configuredPlatforms() };
+  }
+
+  /**
    * Step 1 — initiate OAuth.
    *
    * Reached by a browser navigation from the Connect button, which cannot

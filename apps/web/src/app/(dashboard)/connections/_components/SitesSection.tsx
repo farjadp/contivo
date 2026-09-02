@@ -4,6 +4,8 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Check, Copy, Globe, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react';
 
+import { SiteApiGuide } from './SiteApiGuide';
+
 import {
   createSite,
   deleteSite,
@@ -91,6 +93,8 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
           Add site
         </button>
       </div>
+
+      <SiteApiGuide appUrl={appUrl} />
 
       {freshKey && <FreshKeyCard siteName={freshKey.siteName} apiKey={freshKey.key} appUrl={appUrl} onDismiss={() => setFreshKey(null)} />}
 

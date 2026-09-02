@@ -42,7 +42,42 @@ export class SocialOAuthService {
 
   // ─── Step 1: Build redirect URL ──────────────────────────────────────────
 
+  /**
+   * Which env vars each platform's OAuth flow needs. Without this the service
+   * happily built `client_id=undefined` and sent the user to a platform error
+   * page, so a deployment that had simply never been given X credentials was
+   * indistinguishable from a genuine OAuth failure.
+   */
+  private static readonly REQUIRED_ENV: Record<Platform, string[]> = {
+    linkedin: ['LINKEDIN_CLIENT_ID', 'LINKEDIN_CLIENT_SECRET', 'LINKEDIN_REDIRECT_URI'],
+    x: ['TWITTER_CLIENT_ID', 'TWITTER_CLIENT_SECRET', 'TWITTER_REDIRECT_URI'],
+    facebook: ['FACEBOOK_APP_ID', 'FACEBOOK_APP_SECRET', 'FACEBOOK_REDIRECT_URI'],
+    tiktok: ['TIKTOK_CLIENT_KEY', 'TIKTOK_CLIENT_SECRET', 'TIKTOK_REDIRECT_URI'],
+  };
+
+  /** Env vars this deployment is missing for a platform. Empty means ready. */
+  missingConfig(platform: Platform): string[] {
+    const required = SocialOAuthService.REQUIRED_ENV[platform] ?? [];
+    return required.filter((key) => !process.env[key]?.trim());
+  }
+
+  /** Configuration status for every platform, for the Connections UI. */
+  configuredPlatforms(): Record<Platform, boolean> {
+    const platforms = Object.keys(SocialOAuthService.REQUIRED_ENV) as Platform[];
+    return Object.fromEntries(
+      platforms.map((p) => [p, this.missingConfig(p).length === 0]),
+    ) as Record<Platform, boolean>;
+  }
+
   getAuthUrl(platform: Platform, workspaceId: string): string {
+    const missing = this.missingConfig(platform);
+    if (missing.length > 0) {
+      this.logger.error(`OAuth blocked: ${platform} is missing ${missing.join(', ')}`);
+      throw new BadRequestException(
+        `${platform} is not configured on this deployment. Missing: ${missing.join(', ')}.`,
+      );
+    }
+
     switch (platform) {
       case 'linkedin': return this.linkedInAuthUrl(workspaceId);
       case 'x':        return this.xAuthUrl(workspaceId);
