@@ -110,3 +110,31 @@
     font-feature-settings: 'tnum' 1;
   }
 }
+
+/* ── Print: the docs page doubles as the PDF ────────────────────────────────
+   Cmd-P on /docs/site-api should produce something worth keeping, so nav,
+   footer and the sticky contents drop out and the ink blocks stay legible
+   on white paper rather than burning a cartridge on a dark background. */
+@media print {
+  .theme-editorial {
+    background: #fff !important;
+  }
+  .theme-editorial pre {
+    background: #f4f2ee !important;
+    color: #121212 !important;
+    border: 1px solid #d6d3ca !important;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .theme-editorial a {
+    text-decoration: none;
+  }
+  .theme-editorial h2,
+  .theme-editorial h3 {
+    break-after: avoid;
+  }
+  .theme-editorial figure,
+  .theme-editorial table {
+    break-inside: avoid;
+  }
+}

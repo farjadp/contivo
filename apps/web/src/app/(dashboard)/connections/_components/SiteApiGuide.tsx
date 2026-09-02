@@ -193,6 +193,15 @@ do {
             Optional: set a revalidate URL on the site connection and Contivo will ping it after
             each publish, so your cache refreshes immediately instead of on the next interval.
           </p>
+
+          <a
+            href="/docs/site-api"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2B2DFF] hover:opacity-80"
+          >
+            Full API reference — every parameter, field and error →
+          </a>
         </div>
       )}
     </div>

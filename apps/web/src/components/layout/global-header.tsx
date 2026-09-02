@@ -6,9 +6,18 @@ import Link from 'next/link';
 export function GlobalHeader() {
   const pathname = usePathname() || '';
 
-  // Hide the global header on onboarding and dashboard routes where we have custom layouts
-  // Marketing pages ship their own SiteNav; dashboard routes have the AppShell.
-  const hideHeaderRoutes = ['/onboarding', '/dashboard', '/growth', '/connections', '/instant', '/settings', '/pricing'];
+  // Routes that ship their own header. Marketing pages render SiteNav, so
+  // leaving them out here stacks two headers on top of each other.
+  const hideHeaderRoutes = [
+    '/onboarding',
+    '/dashboard',
+    '/growth',
+    '/connections',
+    '/instant',
+    '/settings',
+    '/pricing',
+    '/docs',
+  ];
   const shouldHide = pathname === '/' || hideHeaderRoutes.some(route => pathname.startsWith(route));
 
   if (shouldHide) return null;
