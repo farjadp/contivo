@@ -7,6 +7,7 @@ import { AIModule } from './modules/ai/ai.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { CreditsModule } from './modules/credits/credits.module';
+import { CronModule } from './modules/cron/cron.module';
 import { HealthModule } from './modules/health/health.module';
 import { InstantContentModule } from './modules/instant-content/instant-content.module';
 import { JobsModule } from './modules/jobs/jobs.module';
@@ -30,6 +31,7 @@ import { WorkspacesModule } from './modules/workspaces/workspaces.module';
     JobsModule,
     AIModule,
     CreditsModule,
+    CronModule,
 
     // Auth
     AuthModule,
