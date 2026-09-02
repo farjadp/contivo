@@ -4,7 +4,15 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime connections. On Vercel this is Neon's pooled endpoint: every
+  // serverless invocation otherwise opens its own connection straight to the
+  // database, and the connection limit is reached long before the traffic is
+  // interesting.
+  url = env("DATABASE_URL")
+  // Migrations and introspection, which a connection pooler cannot serve.
+  // Falls back to DATABASE_URL where DIRECT_URL is not set, so a local
+  // checkout and the long-running API keep working with one variable.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
