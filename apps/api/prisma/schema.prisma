@@ -111,9 +111,9 @@ model AutopilotPolicy {
   publishDays     Int[]  @default([1, 2, 3, 4, 5]) // 0=Sun … 6=Sat
 
   // Steering
-  goal        String?
-  topicHints  String[] @default([])
-  avoidTopics String[] @default([])
+  goal         String?
+  topicHints   String[] @default([])
+  avoidTopics  String[] @default([])
   /// Which storylines this agent advances. Empty means every enabled storyline
   /// on the workspace, so an agent created before the narrative layer keeps
   /// working and quietly gains a position once one exists.
@@ -760,10 +760,10 @@ model Narrative {
   status      NarrativeStatus @default(DRAFT)
 
   /// Raskin's first element: the shift in the world every storyline hangs off.
-  change       String?
+  change        String?
   /// Whether `change` was accepted from a proposal or written by hand. If output
   /// quality drops later, this says which narratives were built on a guess.
-  changeSource ChangeSource    @default(PROPOSED)
+  changeSource  ChangeSource @default(PROPOSED)
   /// The hypotheses that were offered, kept so a rejected one can be revisited.
   changeOptions Json?
 
@@ -774,8 +774,8 @@ model Narrative {
   generatedBy    String?
   generatedAt    DateTime?
 
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
   storylines Storyline[]
 
   @@map("narratives")
@@ -801,15 +801,15 @@ model Storyline {
   narrative   Narrative @relation(fields: [narrativeId], references: [id], onDelete: Cascade)
 
   /// Raskin 2 — who this shift rewards, and who it leaves behind.
-  winners String?
-  losers  String?
+  winners      String?
+  losers       String?
   /// Raskin 3 — what the reader's world looks like once they get there.
   promisedLand String
   /// Raskin 4 — capabilities framed as the means of getting there, not a feature list.
-  gifts Json?
+  gifts        Json?
   /// Raskin 5 — which Evidence rows this storyline may draw on. Anything not
   /// referenced here is off-limits, and the gate enforces that.
-  evidenceIds String[]
+  evidenceIds  String[]
 
   /// The one-line claim this storyline exists to advance.
   claim    String
@@ -821,12 +821,30 @@ model Storyline {
   /// Prohibitions specific to this storyline, on top of workspace FORBIDDEN_CLAIMs.
   neverClaim String[]
 
-  position  Int          @default(0)
-  enabled   Boolean      @default(true)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  position     Int           @default(0)
+  enabled      Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   contentItems ContentItem[]
 
   @@index([narrativeId])
   @@map("storylines")
+}
+
+/// Fixed-window rate limit counters.
+///
+/// Kept in the database rather than in process memory because the web app runs
+/// on serverless functions: an in-memory counter would be per-instance, which
+/// is exactly no limit at all for the login and sign-up endpoints that need one
+/// most. One row per bucket, e.g. "login:ip:203.0.113.4" or
+/// "register:email:someone@example.com".
+model RateLimit {
+  key         String   @id
+  count       Int      @default(0)
+  /// Start of the current window. Once it is older than the window length the
+  /// row is reset rather than deleted, so a busy key stays a single row.
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+  @@map("rate_limits")
 }

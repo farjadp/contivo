@@ -56,7 +56,7 @@ export default function SignUpPage() {
           label="Password"
           type="password"
           autoComplete="new-password"
-          placeholder="At least 8 characters"
+          placeholder="At least 10 characters"
         />
 
         <button
