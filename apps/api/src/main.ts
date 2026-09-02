@@ -1,3 +1,6 @@
+// Must be first: the SDK patches the runtime before anything else loads.
+import { sentryEnabled } from './instrument';
+
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 
@@ -23,6 +26,12 @@ async function bootstrap() {
   await app.listen(port);
 
   Logger.log(`🚀 API running → http://localhost:${port}/api/v1`, 'Bootstrap');
+  Logger.log(
+    sentryEnabled
+      ? 'Error reporting is on.'
+      : 'Error reporting is OFF — SENTRY_DSN is unset or still a placeholder.',
+    'Bootstrap',
+  );
   Logger.log(`📋 Health       → http://localhost:${port}/api/v1/health`, 'Bootstrap');
 }
 
