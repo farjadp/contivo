@@ -67,7 +67,15 @@ export function NarrativeTab({
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [options, setOptions] = useState(asChangeOptions(narrative?.changeOptions));
+  /**
+   * The proposals stay in the database after one is accepted, so loading the
+   * page again would otherwise show the alternatives sitting beside the answer
+   * as though nothing had been decided. Once there is an agreed change the
+   * question is closed; "Propose again" is how it reopens.
+   */
+  const [options, setOptions] = useState(
+    narrative?.change ? [] : asChangeOptions(narrative?.changeOptions),
+  );
   const [draftChange, setDraftChange] = useState(narrative?.change ?? '');
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -144,7 +152,20 @@ export function NarrativeTab({
                 )}
                 <div className="mt-3 flex flex-wrap gap-2">
                   <button
-                    onClick={() => run('accept', () => setChange(workspaceId, o.change, 'PROPOSED'))}
+                    onClick={() =>
+                      run('accept', async () => {
+                        const res = await setChange(workspaceId, o.change, 'PROPOSED');
+                        // The save always worked; nothing moved on screen. The
+                        // label above and step 3 below are driven by the server
+                        // prop and do update, but the list being looked at is
+                        // local state, so accepting appeared to do nothing.
+                        if (res.ok) {
+                          setOptions([]);
+                          setDraftChange(o.change);
+                        }
+                        return res;
+                      })
+                    }
                     disabled={pending}
                     className="inline-flex items-center gap-1.5 bg-ink-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-ink-800 disabled:opacity-50"
                   >
@@ -177,13 +198,18 @@ export function NarrativeTab({
           <div className="mt-3 flex flex-wrap gap-2">
             <button
               onClick={() =>
-                run('save-change', () =>
-                  setChange(
-                    workspaceId,
-                    draftChange,
-                    narrative?.change === draftChange ? 'PROPOSED' : options.length ? 'EDITED' : 'HUMAN',
-                  ),
-                )
+                run('save-change', async () => {
+                  const source =
+                    narrative?.change === draftChange
+                      ? 'PROPOSED'
+                      : options.length
+                        ? 'EDITED'
+                        : 'HUMAN';
+                  const res = await setChange(workspaceId, draftChange, source);
+                  // Same reason as accepting: close the question visibly.
+                  if (res.ok) setOptions([]);
+                  return res;
+                })
               }
               disabled={pending || draftChange.trim().length < 10}
               className="inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
