@@ -65,25 +65,58 @@ function summariseIntelligence(ctx: NarrativeContext): string {
     ? ctx.competitorKeywordsIntel.competitors
     : [];
 
+  // The property names here are the ones the matrix and keyword writers
+  // actually store. They used to be guesses — title/xAxisLabel/points and
+  // gaps/clusters — none of which exist in the stored shape, so every chart
+  // reached the model as "- chart [x=?, y=?]:" and every competitor as
+  // "clusters: n/a · gaps: n/a". Asked to cite positions it had never been
+  // shown, the model invented plausible axes and cited those, which is the one
+  // thing this layer exists to prevent. Older keys are kept as fallbacks so an
+  // earlier snapshot still renders.
   const chartLines = charts.slice(0, 5).map((c: any) => {
-    const title = c?.title ?? c?.name ?? 'chart';
-    const x = c?.xAxisLabel ?? c?.xLabel ?? '?';
-    const y = c?.yAxisLabel ?? c?.yLabel ?? '?';
-    const points = Array.isArray(c?.points ?? c?.data) ? (c.points ?? c.data) : [];
+    const title = c?.chart_name ?? c?.title ?? c?.name ?? 'chart';
+    const x = c?.axes?.x ?? c?.xAxisLabel ?? c?.xLabel ?? '?';
+    const y = c?.axes?.y ?? c?.yAxisLabel ?? c?.yLabel ?? '?';
+    const points = Array.isArray(c?.companies ?? c?.points ?? c?.data)
+      ? (c.companies ?? c.points ?? c.data)
+      : [];
     const plotted = points
-      .slice(0, 8)
-      .map((p: any) => `${p?.name ?? p?.label ?? '?'}(${p?.x ?? '?'},${p?.y ?? '?'})`)
+      .slice(0, 10)
+      .map((p: any) => {
+        const px = p?.x_score ?? p?.x ?? '?';
+        const py = p?.y_score ?? p?.y ?? '?';
+        // Marking which one is the customer matters: a storyline about an
+        // exposed rival position is only meaningful relative to where they sit.
+        const mark = p?.type === 'TARGET' ? '*' : '';
+        return `${p?.name ?? p?.label ?? '?'}${mark}(${px},${py})`;
+      })
       .join(' ');
-    return `- ${title} [x=${x}, y=${y}]: ${plotted}`;
+    // The writer's own read of the chart is the highest-signal line in it.
+    const opening = c?.summary?.positioning_opportunity ?? '';
+    return `- ${title} [x=${x}, y=${y}]: ${plotted}${opening ? `\n    opening: ${opening}` : ''}`;
   });
 
   const gapLines = kwCompetitors.slice(0, 6).map((c: any) => {
-    const gaps = Array.isArray(c?.gaps) ? c.gaps.slice(0, 6).join(', ') : '';
-    const clusters = Array.isArray(c?.clusters)
-      ? c.clusters.slice(0, 4).map((k: any) => k?.name ?? k).join(', ')
-      : '';
-    return `- ${c?.domain ?? c?.name ?? '?'} — clusters: ${clusters || 'n/a'} · gaps: ${gaps || 'n/a'}`;
+    const clusters = Array.isArray(c?.keyword_clusters)
+      ? c.keyword_clusters.slice(0, 4).map((k: any) => k?.cluster ?? k?.name ?? k).join(', ')
+      : Array.isArray(c?.clusters)
+        ? c.clusters.slice(0, 4).map((k: any) => k?.name ?? k).join(', ')
+        : '';
+    const weakness = c?.strategy_signals?.strategic_weakness ?? '';
+    const name = c?.competitor ?? c?.name ?? c?.domain ?? '?';
+    return `- ${name} (${c?.domain ?? '?'}) — owns: ${clusters || 'n/a'}${weakness ? ` · weak on: ${weakness}` : ''}`;
   });
+
+  // Topics no competitor covers well. This is the sharpest input the whole
+  // pipeline produces and it was not being passed at all.
+  const contentGaps = Array.isArray(ctx.competitorKeywordsIntel?.content_gaps)
+    ? ctx.competitorKeywordsIntel.content_gaps
+    : [];
+  const gapTopicLines = contentGaps.slice(0, 8).map((g: any) =>
+    typeof g === 'string'
+      ? `- ${g}`
+      : `- ${g?.topic ?? '?'} — nobody covers it because: ${g?.competitor_weakness ?? 'unstated'}`,
+  );
 
   return `
 BRAND
@@ -100,8 +133,11 @@ ${ctx.competitors.map((c) => `- ${c.name} (${c.domain ?? '?'}) — ${c.descripti
 MARKET FRAME — positioning charts, each scoring every company 1-10 on two axes
 ${chartLines.join('\n') || '- none'}
 
-KEYWORD TERRITORY — what competitors own and what they leave open
+KEYWORD TERRITORY — what competitors own and where each is weak
 ${gapLines.join('\n') || '- none'}
+
+OPEN GROUND — topics the market leaves uncovered
+${gapTopicLines.join('\n') || '- none'}
 `.trim();
 }
 
