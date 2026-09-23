@@ -8,10 +8,13 @@
  * address into sign-up, so the first screen after the page is already filled in.
  */
 
-import { useRouter } from '@/i18n/navigation';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
+import { useRouter } from '@/i18n/navigation';
+
 export function UrlIntake() {
+  const t = useTranslations('intake');
   const router = useRouter();
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +24,7 @@ export function UrlIntake() {
     e.preventDefault();
     const raw = value.trim();
     if (!raw) {
-      setError('Type the address of the site you want read.');
+      setError(t('errorEmpty'));
       return;
     }
     let host: string;
@@ -29,7 +32,7 @@ export function UrlIntake() {
       host = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`).hostname;
       if (!host.includes('.')) throw new Error('no tld');
     } catch {
-      setError('That does not look like a website address.');
+      setError(t('errorInvalid'));
       return;
     }
     setError(null);
@@ -43,12 +46,16 @@ export function UrlIntake() {
         htmlFor="site"
         className="block font-display text-[clamp(1.05rem,1.7vw,1.3rem)] font-medium tracking-[-0.02em] text-carbon-80"
       >
-        Start with the only thing it needs
+        {t('label')}
       </label>
 
       <div className="mt-4 flex items-baseline gap-3 border-b-2 border-carbon/25 pb-3 transition-colors duration-300 focus-within:border-brick">
+        {/* `dir="ltr"` is load-bearing, not decoration: inside the Persian
+            page this scheme renders as "//:https" without it, because bidi
+            reorders the trailing punctuation around a neutral run. */}
         <span
           aria-hidden
+          dir="ltr"
           className="hidden select-none font-display text-[clamp(1.5rem,2.9vw,2.5rem)] font-medium leading-none tracking-[-0.04em] text-carbon-40 sm:block"
         >
           https://
@@ -58,9 +65,10 @@ export function UrlIntake() {
           name="site"
           type="text"
           inputMode="url"
+          dir="ltr"
           autoComplete="url"
           spellCheck={false}
-          placeholder="your-company.com"
+          placeholder={t('placeholder')}
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
@@ -80,10 +88,10 @@ export function UrlIntake() {
           disabled={pending}
           className="group bg-carbon px-7 py-4 text-[14.5px] font-semibold text-paper-warm transition-colors duration-300 hover:bg-brick disabled:opacity-60"
         >
-          {pending ? 'Opening…' : 'Read my site'}
+          {pending ? t('submitting') : t('submit')}
           <span
             aria-hidden
-            className="ml-3 inline-block transition-transform duration-300 group-hover:translate-x-1"
+            className="ms-3 inline-block transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180"
           >
             &rarr;
           </span>

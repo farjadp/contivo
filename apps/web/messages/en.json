@@ -1,1 +1,126 @@
-{}
+{
+  "meta": {
+    "title": "Contivo — Marketing on autopilot",
+    "description": "Contivo turns your website into brand memory, competitive intelligence and a publishing autopilot: it writes, reviews and posts for you, on a schedule you set."
+  },
+  "nav": {
+    "refusal": "The refusal",
+    "intelligence": "Intelligence",
+    "autopilot": "Autopilot",
+    "pricing": "Pricing",
+    "signIn": "Sign in",
+    "startFree": "Start free"
+  },
+  "localeSwitcher": {
+    "label": "Language",
+    "en": "English",
+    "fa": "فارسی"
+  },
+  "intake": {
+    "label": "Start with the only thing it needs",
+    "placeholder": "your-company.com",
+    "submit": "Read my site",
+    "submitting": "Opening…",
+    "errorEmpty": "Type the address of the site you want read.",
+    "errorInvalid": "That does not look like a website address."
+  },
+  "home": {
+    "actOne": {
+      "headline": "Give it your website. <accent>Keep</accent> the rest of your day.",
+      "body": "Contivo reads your site into a brand memory, maps the competitors you actually have, and works out which keywords they leave open. Only then does it write — and only what survives a quality gate built to reject it.",
+      "evidence": {
+        "readTime": "Time to read a site",
+        "readTimeValue": "≈ 20 sec",
+        "readCost": "AI cost of that read",
+        "readCostValue": "$0.03",
+        "competitors": "Competitors mapped",
+        "competitorsValue": "5 of 9 kept",
+        "charts": "Positioning charts built",
+        "chartsValue": "5",
+        "note": "Measured on an example workspace built from a public website while writing this page. Contivo has no customers yet — its only live deployment is its founder's."
+      }
+    },
+    "reel": {
+      "headline": "This is the actual software.",
+      "body": "Twelve seconds, four screens, no mockups: brand memory, the market map, the steps still locked, and a post it wrote."
+    },
+    "intelligence": {
+      "headline": "Most tools start from a blank prompt. <accent>That</accent> is why they read like one.",
+      "brandTitle": "Your brand, read back to you",
+      "brandBody": "Paste a URL. Contivo pulls out the business summary, the value proposition, the audience it is actually written for and the tone it is written in — then lets you correct all of it. Every draft afterwards is built from this, not from your prompt.",
+      "brandAlt": "Contivo's Brand Memory screen showing an extracted business summary, value proposition, target audience persona and brand tone tags.",
+      "marketTitle": "The market, with you on it",
+      "marketBody": "It finds competitors at your scale, checks they exist, and lets you throw out the ones that are not really yours. What survives gets scored on five positioning charts — and you are plotted among them, not described in a paragraph.",
+      "marketAlt": "Contivo's competitive landscape chart plotting the customer's brand among discovered competitors by audience size and product sophistication."
+    },
+    "actTwo": {
+      "headline": "It will not write <accent>yet</accent>.",
+      "body": "Ideation is locked until the intelligence underneath it exists. You cannot talk your way past this, and neither can the model. It is the whole reason the output is worth reading.",
+      "chainAlt": "Contivo's setup chain: brand memory and market map complete, keyword analysis next, and Autopilot locked with the note 'Needs the intelligence steps above'.",
+      "chainCaption": "The real lock, in the real product. Autopilot cannot be switched on above it.",
+      "checksTitle": "Checks that cannot be argued with",
+      "checks": {
+        "limits": "Platform limits and the word range you set",
+        "scaffolding": "Leaked scaffolding, placeholders, “as an AI…”",
+        "blocklist": "Your never-write-about list, in the body and not just the title",
+        "duplicates": "Near-duplicates of anything already published"
+      },
+      "judgeTitle": "A judge that can veto",
+      "judge": {
+        "scores": "Scores brand fit, factual safety and clarity out of ten",
+        "strictest": "Factual safety is the strictest threshold of the three",
+        "vetoes": "Vetoes invented statistics, named studies and client anecdotes",
+        "held": "Both providers down? The post is held. Never published unreviewed."
+      }
+    },
+    "actThree": {
+      "headline": "Then it writes, and it <accent>posts</accent>.",
+      "body": "You set a cadence, the channels, and the hours it is allowed to publish in. It keeps the coming week full, spreads posts across your window, avoids repeating itself, and retries when the queue runs low. Nobody approves anything unless you want to.",
+      "cadence": "Cadence",
+      "cadenceValue": "1–14 posts a week, kept full 7 days ahead",
+      "channels": "Channels",
+      "channelsValue": "LinkedIn · X · Instagram · your own site",
+      "window": "Window",
+      "windowValue": "The days and local hours you choose",
+      "steering": "Steering",
+      "steeringValue": "A goal, themes to lean into, topics to never touch",
+      "postAlt": "A LinkedIn post generated by Contivo about treating a changelog as a marketing channel, with hashtags and the credits consumed shown underneath.",
+      "postCaption": "Generated while building this page, on the topic in the field above it."
+    },
+    "channels": {
+      "headline": "Social through OAuth. Your own site through one key.",
+      "body": "Connect LinkedIn, X, Instagram, Facebook or TikTok once and Contivo posts to them on your behalf. For your own website — any stack, any host — you get an API key and your site reads its posts. Nothing is ever pushed into your codebase, and no plugin is installed.",
+      "connect": "Connect",
+      "connectBody": "One OAuth pass per network, or one key for your site.",
+      "schedule": "Schedule",
+      "scheduleBody": "Contivo picks slots inside the window you allowed.",
+      "publish": "Publish",
+      "publishBody": "A scheduler fires every minute and posts what is due.",
+      "record": "Record",
+      "recordBody": "Every run is logged, step by step, including what it rejected."
+    },
+    "close": {
+      "headline": "Paste a URL and go back to <accent>work</accent>.",
+      "body": "In under a minute you have a brand memory and a competitive map. From there the queue fills itself, and the only thing it will not do is publish something it could not stand behind.",
+      "cta": "Create your workspace",
+      "pricing": "See pricing"
+    }
+  },
+  "footer": {
+    "blurb": "Reads your website into brand memory and a competitive map, then writes, reviews and publishes on a schedule you set.",
+    "provenance": "Built and run first on its founder's own sites. No customers to name yet, so nothing here claims otherwise.",
+    "productTitle": "The product",
+    "intelligence": "Intelligence",
+    "qualityGate": "The quality gate",
+    "autopilot": "Autopilot",
+    "pricing": "Pricing",
+    "publishesTitle": "Publishes to",
+    "ownSite": "Your own website",
+    "socialCluster": "Instagram · TikTok · Facebook",
+    "accountTitle": "Account",
+    "signIn": "Sign in",
+    "createWorkspace": "Create a workspace",
+    "copyright": "© {year} Contivo",
+    "standBehind": "Nothing goes out that the quality gate would not stand behind."
+  }
+}

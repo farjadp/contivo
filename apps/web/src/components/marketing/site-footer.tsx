@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import type { ComponentProps } from 'react';
 
 import { Link } from '@/i18n/navigation';
@@ -11,57 +12,60 @@ import { Link } from '@/i18n/navigation';
 type FooterHref = ComponentProps<typeof Link>['href'];
 
 export function SiteFooter() {
+  const t = useTranslations('footer');
+
   return (
     <footer className="border-t border-carbon/12 bg-paper-warm text-carbon">
       <div className="mx-auto grid max-w-[92rem] gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-12 md:py-20">
         <div>
           <div className="flex items-center gap-3">
             <span aria-hidden className="inline-block h-3.5 w-3.5 bg-brick" />
-            <span className="font-display text-[19px] font-semibold tracking-[-0.035em]">
+            <bdi className="font-display text-[19px] font-semibold tracking-[-0.035em]">
               Contivo
-            </span>
+            </bdi>
           </div>
           <p className="mt-5 max-w-xs text-[14.5px] leading-[1.65] text-carbon-80">
-            Reads your website into brand memory and a competitive map, then writes,
-            reviews and publishes on a schedule you set.
+            {t('blurb')}
           </p>
           <p className="mt-7 max-w-xs text-[13px] leading-relaxed text-carbon-60">
-            Built and run first on its founder&apos;s own sites. No customers to name yet,
-            so nothing here claims otherwise.
+            {t('provenance')}
           </p>
         </div>
 
         <FooterCol
-          title="The product"
+          title={t('productTitle')}
           links={[
-            [{ pathname: '/', hash: 'intelligence' }, 'Intelligence'],
-            [{ pathname: '/', hash: 'how' }, 'The quality gate'],
-            [{ pathname: '/', hash: 'autopilot' }, 'Autopilot'],
-            [{ pathname: '/pricing' }, 'Pricing'],
+            [{ pathname: '/', hash: 'intelligence' }, t('intelligence')],
+            [{ pathname: '/', hash: 'how' }, t('qualityGate')],
+            [{ pathname: '/', hash: 'autopilot' }, t('autopilot')],
+            [{ pathname: '/pricing' }, t('pricing')],
           ]}
         />
         <FooterCol
-          title="Publishes to"
+          title={t('publishesTitle')}
           links={[
+            /* Network names are proper nouns and stay Latin in both
+               languages, except where Persian has a settled spelling of its
+               own — which the message catalogue decides, not this file. */
             [{ pathname: '/', hash: 'channels' }, 'LinkedIn'],
             [{ pathname: '/', hash: 'channels' }, 'X'],
-            [{ pathname: '/', hash: 'channels' }, 'Your own website'],
-            [{ pathname: '/', hash: 'channels' }, 'Instagram · TikTok · Facebook'],
+            [{ pathname: '/', hash: 'channels' }, t('ownSite')],
+            [{ pathname: '/', hash: 'channels' }, t('socialCluster')],
           ]}
         />
         <FooterCol
-          title="Account"
+          title={t('accountTitle')}
           links={[
-            [{ pathname: '/sign-in' }, 'Sign in'],
-            [{ pathname: '/sign-up' }, 'Create a workspace'],
+            [{ pathname: '/sign-in' }, t('signIn')],
+            [{ pathname: '/sign-up' }, t('createWorkspace')],
           ]}
         />
       </div>
 
       <div className="border-t border-carbon/12">
         <div className="mx-auto flex max-w-[92rem] flex-wrap items-center justify-between gap-3 px-6 py-5 text-[13px] text-carbon-60 md:px-12">
-          <span>© {new Date().getFullYear()} Contivo</span>
-          <span>Nothing goes out that the quality gate would not stand behind.</span>
+          <span>{t('copyright', { year: new Date().getFullYear() })}</span>
+          <span>{t('standBehind')}</span>
         </div>
       </div>
     </footer>
