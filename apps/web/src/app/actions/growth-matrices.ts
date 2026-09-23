@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { actionError } from '@/lib/action-errors';
 
 type MatrixAxis = {
   x: string;
@@ -555,19 +556,19 @@ function mergeCompetitiveMatricesInAudienceInsights(
 
 export async function generateWorkspaceCompetitiveMatrices(workspaceId: string) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
       include: { competitors: true },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const competitors = extractCompetitorInput(workspace);
     if (competitors.length < 2) {
-      return { error: 'At least 2 reviewed competitors are required to generate matrices.' };
+      return { error: await actionError('needTwoReviewedMatrices') };
     }
 
     const prompt = buildMatricesPrompt({
@@ -620,7 +621,7 @@ export async function generateWorkspaceCompetitiveMatrices(workspaceId: string) 
     return { success: true, matrices: payload };
   } catch (error) {
     console.error('generateWorkspaceCompetitiveMatrices failed:', error);
-    return { error: 'Could not generate matrices right now.' };
+    return { error: await actionError('matricesFailed') };
   }
 }
 
@@ -629,15 +630,15 @@ export async function saveWorkspaceCompetitiveMatricesEdits(
   payload: CompetitiveMatrixPayload,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
       include: { competitors: true },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const competitors = extractCompetitorInput(workspace);
     const normalized = normalizeMatrixPayload(payload, {
@@ -670,6 +671,6 @@ export async function saveWorkspaceCompetitiveMatricesEdits(
     return { success: true, matrices: normalized };
   } catch (error) {
     console.error('saveWorkspaceCompetitiveMatricesEdits failed:', error);
-    return { error: 'Could not save matrix edits.' };
+    return { error: await actionError('matrixSaveFailed') };
   }
 }

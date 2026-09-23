@@ -14,6 +14,12 @@ import {
   selectFramework,
   shouldUseFallback,
 } from '@/lib/framework-engine';
+import {
+  adjustWordCountForLanguage,
+  DEFAULT_CONTENT_LANGUAGE,
+  languageInstructions,
+  type ContentLanguage,
+} from '@/lib/content-language';
 
 interface GeminiCallResult {
   ok: boolean;
@@ -789,10 +795,26 @@ function normalizeBrandExtraction(
   };
 }
 
-export async function analyzeWebsiteWithGemini(url: string, htmlText: string): Promise<BrandExtraction | null> {
+export async function analyzeWebsiteWithGemini(
+  url: string,
+  htmlText: string,
+  /*
+    The site being read may be in any language; this is the language the
+    extracted brand memory is WRITTEN IN, because every draft afterwards is
+    built from it. A Persian workspace whose brand memory is in English
+    produces Persian posts arguing an English-phrased position, which is how
+    a translated-feeling product happens even when every visible label is
+    Persian.
+  */
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+): Promise<BrandExtraction | null> {
   const prompt = `
 You are an expert Brand Strategist and Marketing Analyst.
 I am providing you with the scraped text from a company's website (${url}).
+
+${languageInstructions(language)}
+The JSON KEYS stay exactly as listed below, in English. Only the VALUES are
+written in the language above.
 
 Your goal is to extract key marketing intelligence and output ONLY a valid JSON object matching the requested schema. Do not include markdown formatting or commentary. Just output the raw JSON.
 
@@ -856,6 +878,13 @@ export interface ContentIdea {
 }
 
 export type IdeationRequestOptions = FrameworkSelectionInput & {
+  /**
+   * The language the ideas — titles, angles, hooks — come back in. Ideas are
+   * what the drafts are written from, so an English idea list produces an
+   * English-shaped Persian post: the topic survives translation, the phrasing
+   * does not.
+   */
+  language?: ContentLanguage;
   requestedIdeaCount?: number;
   maxIdeaCount?: number;
   includeImages?: boolean;
@@ -974,10 +1003,15 @@ function buildIdeasPrompt(input: {
   platform: string;
   funnelStage: string;
   steeringNotes?: string | null;
+  language: ContentLanguage;
 }): string {
   return `
 You are Contivo Framework Engine.
 Generate high-quality content ideas using the selected framework and return ONLY valid JSON.
+
+${languageInstructions(input.language)}
+The JSON KEYS stay exactly as specified in English. Only the VALUES — titles,
+angles, hooks, rationales — are written in the language above.
 
 Brand Strategy Profile:
 ${JSON.stringify(input.brandSummary, null, 2)}
@@ -1075,7 +1109,13 @@ async function generateIdeasWithFramework(
     imageCount: number;
     autoInsertToCalendar: boolean;
   },
-  context: { goal: string; platform: string; funnelStage: string; steeringNotes?: string | null },
+  context: {
+    goal: string;
+    platform: string;
+    funnelStage: string;
+    steeringNotes?: string | null;
+    language: ContentLanguage;
+  },
   intelligenceContext: {
     marketMetricContext: string;
     competitorKeywordContext: string;
@@ -1105,6 +1145,7 @@ async function generateIdeasWithFramework(
     platform: context.platform,
     funnelStage: context.funnelStage,
     steeringNotes: context.steeringNotes,
+    language: context.language,
   });
 
   const gemini = await callGemini(prompt, true);
@@ -1165,6 +1206,7 @@ export async function generateContentIdeasWithGemini(
   const includeImages = Boolean(options?.includeImages);
   const imageCount = Math.max(1, Math.min(3, Number(options?.imageCount || 1)));
   const autoInsertToCalendar = options?.autoInsertToCalendar !== false;
+  const language = options?.language ?? DEFAULT_CONTENT_LANGUAGE;
   const selection = selectFramework({
     goal: options?.goal,
     platform: options?.platform,
@@ -1196,7 +1238,7 @@ export async function generateContentIdeasWithGemini(
       imageCount,
       autoInsertToCalendar,
     },
-    { goal, platform, funnelStage, steeringNotes },
+    { goal, platform, funnelStage, steeringNotes, language },
     intelligenceContext,
   );
 
@@ -1226,7 +1268,7 @@ export async function generateContentIdeasWithGemini(
             imageCount,
             autoInsertToCalendar,
           },
-          { goal, platform, funnelStage, steeringNotes },
+          { goal, platform, funnelStage, steeringNotes, language },
           intelligenceContext,
         );
         if (fallbackResult && fallbackResult.qualityScores.overall_score >= primary.qualityScores.overall_score) {
@@ -1337,15 +1379,31 @@ export async function generateContentDraftWithGemini(
    * constraint the quality gate will hold the draft to, not background colour.
    */
   storylineBlock?: string | null,
+  /** The workspace's content language. See lib/content-language.ts. */
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
 ): Promise<string | null> {
   const frameworkId = String(frameworkContext?.frameworkId || '').trim();
   const frameworkGuide =
     frameworkId && frameworkId in FRAMEWORK_LABELS
       ? getFrameworkGuidance(frameworkId as FrameworkId)
       : '';
-  const wordCountTarget = Number(frameworkContext?.wordCount?.target || 0);
-  const wordCountMin = Number(frameworkContext?.wordCount?.min || 0);
-  const wordCountMax = Number(frameworkContext?.wordCount?.max || 0);
+  /*
+    The configured ranges are English word counts. Persian says the same thing
+    in fewer words, so holding it to an English range makes the model pad —
+    and padding is precisely what the quality gate rejects.
+  */
+  const wordCountTarget = adjustWordCountForLanguage(
+    Number(frameworkContext?.wordCount?.target || 0),
+    language,
+  );
+  const wordCountMin = adjustWordCountForLanguage(
+    Number(frameworkContext?.wordCount?.min || 0),
+    language,
+  );
+  const wordCountMax = adjustWordCountForLanguage(
+    Number(frameworkContext?.wordCount?.max || 0),
+    language,
+  );
   const wordCountPlatform = String(frameworkContext?.wordCount?.platform || channel || '').trim();
   const hasWordCountRange =
     Number.isFinite(wordCountMin) &&
@@ -1366,6 +1424,8 @@ export async function generateContentDraftWithGemini(
   const prompt = `
 You are an expert Copywriter and Content Marketer.
 Your task is to write a high-converting, engaging post for the requested channel.
+
+${languageInstructions(language)}
 
 Brand Strategy Profile:
 ${JSON.stringify(brandSummary, null, 2)}
@@ -1440,13 +1500,19 @@ export async function generateInstantDraft(input: {
   topic: string;
   channel: string;
   tone?: string | null;
+  /** Instant Content has no workspace, so this comes from the UI locale. */
+  language?: ContentLanguage;
 }): Promise<{ content: string; provider: 'gemini' | 'openai' } | null> {
   const channel = String(input.channel || 'linkedin').toLowerCase();
   const brief = INSTANT_CHANNEL_BRIEF[channel] ?? INSTANT_CHANNEL_BRIEF.linkedin;
   const tone = String(input.tone || 'professional').trim();
 
+  const language = input.language ?? DEFAULT_CONTENT_LANGUAGE;
+
   const prompt = `
 You are an expert copywriter and content marketer.
+
+${languageInstructions(language)}
 
 Topic: ${input.topic}
 Channel: ${channel}
@@ -1460,6 +1526,10 @@ Rules:
 2. Output only the content itself — no preface, no "Here is your post", no commentary.
 3. Do not invent statistics, client names, case studies or first-person anecdotes. If you need an example, frame it as a hypothetical.
 4. Do not use em dashes as a stylistic tic, and avoid stock AI openers like "In today's fast-paced world".
+
+Where the LANGUAGE section above gives its own rules on punctuation, register
+or stock phrases, those win: they are written for that language, and these
+four are written for English.
 `;
 
   const gemini = await callGemini(prompt, false);
@@ -1488,9 +1558,19 @@ export interface CompetitorExtraction {
   audienceGuess: string;
 }
 
-export async function discoverCompetitorsWithGemini(brandSummary: any): Promise<CompetitorExtraction[] | null> {
+export async function discoverCompetitorsWithGemini(
+  brandSummary: any,
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+): Promise<CompetitorExtraction[] | null> {
   const prompt = `
-You are an expert Market Analyst. Determine 5 to 8 potential competitors for the following brand. 
+You are an expert Market Analyst. Determine 5 to 8 potential competitors for the following brand.
+
+${languageInstructions(language)}
+The JSON KEYS stay exactly as listed below, in English. Only the VALUES are
+written in the language above.
+
+Company names and domains are proper nouns and stay in their own script.
+
 Output ONLY a raw JSON array matching the required schema. Do not use markdown formatting.
 
 Brand Strategy Profile:
@@ -1532,10 +1612,15 @@ export interface PositioningInsights {
 export async function generatePositioningInsights(
   brandSummary: any,
   competitors: any[],
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
 ): Promise<PositioningInsights | null> {
   const prompt = `
 You are an expert Brand Strategist and Marketing Analyst.
 Review the following user brand's preliminary profile and a list of their validated competitors in the market.
+
+${languageInstructions(language)}
+The JSON KEYS stay exactly as listed below, in English. Only the VALUES are
+written in the language above.
 
 User Brand Profile:
 ${JSON.stringify(brandSummary, null, 2)}
@@ -1590,6 +1675,7 @@ type SerpItem = {
 export async function analyzeSerpResultsWithGemini(
   keyword: string,
   serpItems: SerpItem[],
+  language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
 ): Promise<string | null> {
   const serpList = serpItems
     .map(
@@ -1599,6 +1685,12 @@ export async function analyzeSerpResultsWithGemini(
     .join('\n\n');
 
   const prompt = `You are an expert SEO content strategist.
+
+${languageInstructions(language)}
+The six section HEADINGS below keep their English names so the report parses.
+Everything you write under them is in the language above. The keyword itself,
+the URLs and the domains are quoted as they appear in the search results and
+are never translated.
 
 Analyze the following top ${serpItems.length} Google search results for the keyword: "${keyword}"
 

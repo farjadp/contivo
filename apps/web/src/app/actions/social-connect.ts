@@ -4,6 +4,7 @@ import { createHmac } from 'crypto';
 
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { actionError } from '@/lib/action-errors';
 
 /**
  * Builds the URL that starts an OAuth connect flow.
@@ -25,7 +26,7 @@ export async function getSocialConnectUrl(
   workspaceId: string,
 ): Promise<ConnectUrlResult> {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
 
   const userId = session.userId as string;
   const normalizedPlatform = String(platform || '').toLowerCase().trim();
@@ -40,7 +41,7 @@ export async function getSocialConnectUrl(
   // Admins may operate on any workspace; the API re-checks access regardless.
   if (!workspace) {
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (user?.role !== 'ADMIN') return { error: 'Workspace not found.' };
+    if (user?.role !== 'ADMIN') return { error: await actionError('workspaceNotFoundDot') };
   }
 
   const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';

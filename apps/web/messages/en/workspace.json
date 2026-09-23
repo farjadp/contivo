@@ -1,1 +1,80 @@
-{}
+{
+  "journey": {
+    "steps": {
+      "brand": {
+        "title": "Build Brand Memory",
+        "why": "Everything Contivo writes is grounded in this. Without it there is no voice to write in.",
+        "action": "Review or rescrape brand memory",
+        "detailDone": "Extracted from your site",
+        "detailTodo": "Not extracted yet"
+      },
+      "market": {
+        "title": "Map the market",
+        "why": "Accept the competitors that are really yours, then generate the positioning charts. Ideas are built from the gaps this reveals.",
+        "actionDiscover": "Discover and accept at least 2 competitors",
+        "actionCharts": "Generate the positioning matrices",
+        "detailDone": "{charts, number} charts · {competitors, number} competitors accepted",
+        "detailPartial": "{accepted, number} of {total, number} competitors accepted · no charts yet",
+        "detailNone": "No competitors discovered yet"
+      },
+      "keywords": {
+        "title": "Analyse competitor keywords",
+        "why": "Shows which topics competitors own and which they leave open. This is where content gets its angle.",
+        "action": "Run keyword analysis",
+        "detailDone": "{count, number} competitors analysed",
+        "detailTodo": "Not analysed yet"
+      },
+      "narrative": {
+        "title": "Decide what you stand for",
+        "why": "Three or four arguments every post has to advance, so the content adds up instead of being forty unrelated posts. Drafted from the intelligence above.",
+        "action": "Draft the narrative",
+        "detailDone": "{count, number} storylines",
+        "detailTodo": "No position yet"
+      },
+      "channel": {
+        "title": "Connect somewhere to publish",
+        "why": "A social account or your own website. Without one, drafts have nowhere to go.",
+        "action": "Connect an account or add a site",
+        "detailDone": "Connected",
+        "detailNamed": "{name}",
+        "detailTodo": "Nothing connected"
+      },
+      "autopilot": {
+        "title": "Turn on Autopilot",
+        "why": "Contivo then ideates, drafts, quality-checks and publishes on your schedule without being asked.",
+        "actionReview": "Review the policy",
+        "actionEnable": "Enable and save the policy",
+        "detailOn": "Running",
+        "detailOff": "Off"
+      }
+    },
+    "blockers": {
+      "brandMemory": "Brand Memory",
+      "acceptedCompetitors": "accepted competitors",
+      "marketMap": "the market map",
+      "connectedChannel": "a connected channel",
+      "narrative": "a narrative to advance",
+      "intelligenceSteps": "the intelligence steps above"
+    },
+    "gates": {
+      "acceptCompetitors": "Accept competitors first",
+      "matricesAndKeywords": "Needs matrices + keywords",
+      "marketMap": "Needs the market map",
+      "narrative": "Needs a narrative",
+      "fullIntelligence": "Needs full intelligence"
+    }
+  },
+  "journeyGuide": {
+    "complete": "Setup complete — brand, market, keywords, channel and Autopilot are all in place.",
+    "whatNow": "What now?",
+    "youAreHere": "You are here:",
+    "needs": "Needs {what}",
+    "doneHeadline": "Setup is complete.",
+    "doneRunning": "Autopilot is on. {scheduled, plural, one {# post} other {# posts}} queued, {published, number} published so far. Nothing needs you right now — check the Autopilot run history if you want to see what it decided.",
+    "doneIdle": "Everything is connected and analysed. Ideate by hand, or turn on Autopilot to let it run without you.",
+    "nextHeadline": "Next: {step}",
+    "nextBody": "{why} Right now: {detail}.",
+    "gateBlocked": "This step is not ready yet — {reason}.",
+    "gateConsequence": "Running it now will produce nothing useful."
+  }
+}

@@ -1,9 +1,16 @@
 'use server';
 
+import { getTranslations } from 'next-intl/server';
+
 import { getSession } from '@/lib/auth';
+import {
+  asContentLanguage,
+  languageInstructions,
+} from '@/lib/content-language';
 import { prisma } from '@/lib/db';
 import { requestJsonFromAi } from '@/lib/gemini';
 import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { actionError } from '@/lib/action-errors';
 
 /**
  * The guide's advice is deterministic — it comes from the journey model, not
@@ -24,8 +31,18 @@ export type GuideAnswer = {
 
 export async function explainNextStep(workspaceId: string): Promise<GuideAnswer | { error: string }> {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   const userId = session.userId as string;
+
+  /*
+    `buildJourney` names its sentences rather than writing them, because it
+    runs without a request context. This action has one, so it is the place
+    they become words — both for what the user reads and for the prompt, which
+    would otherwise describe the step to the model in a language the model has
+    just been told not to answer in.
+  */
+  const tj = await getTranslations('journey');
+  const tg = await getTranslations('journeyGuide');
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId, userId },
@@ -34,7 +51,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
       _count: { select: { contentItems: true } },
     },
   });
-  if (!workspace) return { error: 'Workspace not found' };
+  if (!workspace) return { error: await actionError('workspaceNotFound') };
 
   const [policy, connections, sites, published, scheduled, storylines] = await Promise.all([
     prisma.autopilotPolicy.findFirst({ where: { workspaceId, enabled: true } }),
@@ -80,21 +97,35 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
   if (!step) {
     return {
       stepTitle: null,
-      headline: 'Setup is complete.',
+      headline: tg('doneHeadline'),
       body: facts.autopilotEnabled
-        ? `Autopilot is on. ${facts.scheduledCount} post${facts.scheduledCount === 1 ? '' : 's'} queued, ${facts.publishedCount} published so far. Nothing needs you right now — check the Autopilot run history if you want to see what it decided.`
-        : 'Everything is connected and analysed. Ideate by hand, or turn on Autopilot to let it run without you.',
+        ? tg('doneRunning', {
+            scheduled: facts.scheduledCount,
+            published: facts.publishedCount,
+          })
+        : tg('doneIdle'),
       action: null,
       href: null,
       source: 'fallback',
     };
   }
 
+  const stepTitle = tj(step.title.key, step.title.values);
+  const stepWhy = tj(step.why.key, step.why.values);
+  const stepDetail = tj(step.detail.key, step.detail.values);
+  const stepAction = tj(step.action.key, step.action.values);
+
   const fallback: GuideAnswer = {
-    stepTitle: step.title,
-    headline: `Next: ${step.title.toLowerCase()}`,
-    body: `${step.why} Right now: ${step.detail.toLowerCase()}.`,
-    action: step.action,
+    stepTitle,
+    /*
+      Built from whole translated sentences rather than by lower-casing the
+      title and splicing it into a frame. Persian has no letter case, so
+      `toLowerCase()` was a no-op there, and an English sentence frame around a
+      Persian clause reads as broken in a way the English side never shows.
+    */
+    headline: tg('nextHeadline', { step: stepTitle }),
+    body: tg('nextBody', { why: stepWhy, detail: stepDetail }),
+    action: stepAction,
     href: step.href,
     source: 'fallback',
   };
@@ -103,6 +134,9 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
   if (!brand) return fallback;
 
   const prompt = `You are a calm, concrete product guide inside a marketing tool. The user has one job right now. Explain it in their brand's terms.
+
+${languageInstructions(asContentLanguage(workspace.contentLanguage))}
+The two JSON keys stay in English; only their values are written in that language.
 
 Brand: ${JSON.stringify(
     {
@@ -114,10 +148,10 @@ Brand: ${JSON.stringify(
     2,
   ).slice(0, 900)}
 
-The step they must do: ${step.title}
-Why the product requires it: ${step.why}
-Their current state: ${step.detail}
-The button they will click: ${step.action}
+The step they must do: ${stepTitle}
+Why the product requires it: ${stepWhy}
+Their current state: ${stepDetail}
+The button they will click: ${stepAction}
 
 Write JSON only:
 {"headline": "max 8 words, imperative, no fluff", "body": "2-3 sentences, max 55 words. Say what this step will do FOR THIS BRAND specifically, and what it unlocks next. No greetings, no marketing language, no exclamation marks."}`;
@@ -132,5 +166,5 @@ Write JSON only:
   const body = String(ai.data.body || '').trim();
   if (!headline || !body || body.length > 420) return fallback;
 
-  return { stepTitle: step.title, headline, body, action: step.action, href: step.href, source: 'ai' };
+  return { stepTitle, headline, body, action: stepAction, href: step.href, source: 'ai' };
 }

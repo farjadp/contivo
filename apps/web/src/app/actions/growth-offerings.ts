@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { actionError } from '@/lib/action-errors';
 
 type TokenUsageRun = {
   model: string;
@@ -772,24 +773,24 @@ function mergeOfferingsInAudienceInsights(currentAudienceInsights: any, payload:
 
 export async function generateWorkspaceProductsServicesIntel(workspaceId: string) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
       include: { competitors: true },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const competitors = pickCompetitors(workspace);
     if (competitors.length < 1) {
-      return { error: 'At least 1 competitor is required before offerings analysis.' };
+      return { error: await actionError('needOneCompetitorOfferings') };
     }
 
     const clientSignals = await collectOfferingSignals(workspace.websiteUrl || '');
     if (!clientSignals.evidence) {
-      return { error: 'Could not collect enough signals from client website.' };
+      return { error: await actionError('notEnoughClientSignals') };
     }
 
     const competitorSignals = [];
@@ -807,7 +808,7 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     }
 
     if (competitorSignals.length === 0) {
-      return { error: 'Could not collect enough signals from competitor websites.' };
+      return { error: await actionError('notEnoughCompetitorSiteSignals') };
     }
 
     const extractionPrompt = buildExtractionPrompt({
@@ -872,7 +873,7 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     return { success: true, payload };
   } catch (error) {
     console.error('generateWorkspaceProductsServicesIntel failed:', error);
-    return { error: 'Could not generate products and services intelligence right now.' };
+    return { error: await actionError('offeringsFailed') };
   }
 }
 
@@ -881,14 +882,14 @@ export async function saveWorkspaceProductsServicesIntelEdits(
   payload: ProductsServicesPayload,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const normalized = normalizePayload(payload, {
       clientName: workspace.name,
@@ -921,6 +922,6 @@ export async function saveWorkspaceProductsServicesIntelEdits(
     return { success: true, payload: normalized };
   } catch (error) {
     console.error('saveWorkspaceProductsServicesIntelEdits failed:', error);
-    return { error: 'Could not save products and services intelligence edits.' };
+    return { error: await actionError('offeringsSaveFailed') };
   }
 }

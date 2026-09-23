@@ -42,7 +42,11 @@
     },
     "reel": {
       "headline": "This is the actual software.",
-      "body": "Twelve seconds, four screens, no mockups: brand memory, the market map, the steps still locked, and a post it wrote."
+      "body": "Twelve seconds, four screens, no mockups: brand memory, the market map, the steps still locked, and a post it wrote.",
+      "play": "Play",
+      "pause": "Pause",
+      "videoAlt": "Screen recording of Contivo: brand memory, the market map, the setup steps still locked, and a post it wrote.",
+      "caption": "Recorded from a running workspace. No narration, no sound."
     },
     "intelligence": {
       "headline": "Most tools start from a blank prompt. <accent>That</accent> is why they read like one.",

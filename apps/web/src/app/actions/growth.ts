@@ -8,6 +8,9 @@ import { writeActivityLog } from '@/lib/activity-log';
 import { createWorkspaceProgressBaseline } from '@/lib/workspace-progress';
 import { COMPETITOR_DISCOVERY_WARNING } from '@/lib/workspace-setup-warnings';
 import { getLocale } from 'next-intl/server';
+import { asContentLanguage } from '@/lib/content-language';
+import { contentLanguageForLocale } from '@/lib/content-language';
+import { actionError } from '@/lib/action-errors';
 
 /**
  * Step 1 of workspace creation: record the workspace and get out of the way.
@@ -20,13 +23,13 @@ import { getLocale } from 'next-intl/server';
  */
 export async function createNewWorkspace(_prevState: any, formData: FormData) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
 
   const name = String(formData.get('name') ?? '').trim();
   const url = String(formData.get('url') ?? '').trim();
 
   if (!name || !url) {
-    return { error: 'Please provide both Company Name and Website URL.' };
+    return { error: await actionError('nameAndUrl') };
   }
 
   let normalizedUrl: string;
@@ -37,7 +40,7 @@ export async function createNewWorkspace(_prevState: any, formData: FormData) {
     }
     normalizedUrl = parsed.toString();
   } catch {
-    return { error: 'That does not look like a valid website address.' };
+    return { error: await actionError('invalidUrl') };
   }
 
   const progressBaseline = createWorkspaceProgressBaseline({ brandSummary: {} });
@@ -48,6 +51,14 @@ export async function createNewWorkspace(_prevState: any, formData: FormData) {
       name,
       websiteUrl: normalizedUrl,
       status: 'PENDING',
+      /*
+        Seeded from the locale the workspace was created in, so someone who
+        signed up on the Persian site gets Persian content without having to
+        find a setting first. It is only a starting value: the two are
+        deliberately separate afterwards, because reading the dashboard in
+        Persian and publishing in English is a real combination.
+      */
+      contentLanguage: contentLanguageForLocale(await getLocale()),
       brandSummary: {},
       audienceInsights: {
         progressReport: { baseline: progressBaseline },
@@ -87,14 +98,26 @@ export type EnrichmentResult = {
  */
 export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentResult> {
   const session = await getSession();
-  if (!session) return { ok: false, error: 'Not authenticated', warnings: [], competitorsFound: 0 };
+  if (!session) return { ok: false, error: await actionError('notAuthenticated'), warnings: [], competitorsFound: 0 };
 
   const workspace = await prisma.workspace.findFirst({
     where: { id: workspaceId, userId: session.userId as string },
-    select: { id: true, name: true, websiteUrl: true, audienceInsights: true },
+    /*
+      An explicit select, so a new column is invisible here until it is named.
+      `contentLanguage` decides what language this whole enrichment run writes
+      in, and leaving it out does not fail — it silently defaults every
+      workspace back to English.
+    */
+    select: {
+      id: true,
+      name: true,
+      websiteUrl: true,
+      audienceInsights: true,
+      contentLanguage: true,
+    },
   });
   if (!workspace) {
-    return { ok: false, error: 'Workspace not found.', warnings: [], competitorsFound: 0 };
+    return { ok: false, error: await actionError('workspaceNotFoundDot'), warnings: [], competitorsFound: 0 };
   }
 
   const url = workspace.websiteUrl ?? '';
@@ -120,9 +143,17 @@ export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentRe
     };
   }
 
+  /*
+    Read once, here, and used for every model call in this run: brand memory,
+    competitor discovery and positioning all have to come back in the same
+    language, or the workspace ends up with a Persian brand summary sitting
+    next to English competitor descriptions.
+  */
+  const workspaceLanguage = asContentLanguage(workspace.contentLanguage);
+
   // ── Brand memory ──────────────────────────────────────────────────────────
   try {
-    const aiResult = await analyzeWebsiteWithGemini(url, scrapedText);
+    const aiResult = await analyzeWebsiteWithGemini(url, scrapedText, workspaceLanguage);
     if (aiResult) {
       brandSummary = {
         heroMessage: aiResult.heroMessage,
@@ -153,7 +184,7 @@ export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentRe
 
   // ── Competitors (best effort — a failure must not lose the brand memory) ──
   try {
-    const comps = await discoverCompetitorsWithGemini(brandSummary);
+    const comps = await discoverCompetitorsWithGemini(brandSummary, workspaceLanguage);
     if (comps && comps.length > 0) {
       competitorsData = comps;
     } else {

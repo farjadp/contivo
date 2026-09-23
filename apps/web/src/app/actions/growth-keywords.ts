@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { actionError } from '@/lib/action-errors';
 
 type TokenUsageRun = {
   model: string;
@@ -741,19 +742,19 @@ function mergeCompetitorKeywordsInAudienceInsights(currentAudienceInsights: any,
 
 export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
       include: { competitors: true },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const competitors = pickCompetitors(workspace);
     if (competitors.length < 2) {
-      return { error: 'At least 2 reviewed competitors are required.' };
+      return { error: await actionError('needTwoReviewed') };
     }
 
     const competitorSignals = [];
@@ -768,7 +769,7 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
     }
 
     if (competitorSignals.length < 2) {
-      return { error: 'Could not collect enough competitor website signals.' };
+      return { error: await actionError('notEnoughCompetitorSignals') };
     }
 
     const prompt = buildKeywordAnalysisPrompt({
@@ -818,6 +819,6 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
     return { success: true, payload };
   } catch (error) {
     console.error('generateWorkspaceCompetitorKeywords failed:', error);
-    return { error: 'Could not analyze competitor keywords right now.' };
+    return { error: await actionError('keywordsFailed') };
   }
 }

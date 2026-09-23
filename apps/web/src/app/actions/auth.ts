@@ -19,6 +19,7 @@ import { checkPassword } from '@/lib/password-policy';
 import { callerIp, consumeRateLimit, retryAfterLabel } from '@/lib/rate-limit';
 import { redirect } from '@/i18n/navigation';
 import { getLocale } from 'next-intl/server';
+import { actionError } from '@/lib/action-errors';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -44,7 +45,7 @@ export async function login(_prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   if (!email || !password) {
-    return { error: 'Please enter both email and password' };
+    return { error: await actionError('emailAndPassword') };
   }
 
   const ip = await callerIp();
@@ -67,17 +68,17 @@ export async function login(_prevState: any, formData: FormData) {
   });
 
   if (!user || !user.passwordHash) {
-    return { error: 'Invalid credentials' };
+    return { error: await actionError('invalidCredentials') };
   }
 
   const isValidPassword = await bcrypt.compare(password, user.passwordHash);
 
   if (!isValidPassword) {
-    return { error: 'Invalid credentials' };
+    return { error: await actionError('invalidCredentials') };
   }
 
   if (await isUserSuspended(user.id)) {
-    return { error: 'This account has been suspended. Contact support.' };
+    return { error: await actionError('accountSuspended') };
   }
 
   // Backfills accounts created before the welcome grant existed. Idempotent:
@@ -103,12 +104,12 @@ export async function register(_prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   if (!name || !email || !password) {
-    return { error: 'Please fill out all fields' };
+    return { error: await actionError('fillAllFields') };
   }
 
   const passwordProblem = checkPassword(password, email);
   if (passwordProblem) {
-    return { error: passwordProblem };
+    return { error: await actionError(`password.${passwordProblem}`) };
   }
 
   const ip = await callerIp();
@@ -128,7 +129,7 @@ export async function register(_prevState: any, formData: FormData) {
   });
 
   if (existingUser) {
-    return { error: 'User already exists' };
+    return { error: await actionError('userExists') };
   }
 
   const passwordHash = await bcrypt.hash(password, 10);

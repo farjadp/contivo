@@ -27,6 +27,9 @@ import {
   getCreditBalance,
 } from '@/lib/credits';
 import { writeActivityLog } from '@/lib/activity-log';
+import { contentLanguageForLocale } from '@/lib/content-language';
+import { getLocale } from 'next-intl/server';
+import { actionError } from '@/lib/action-errors';
 
 const CHANNEL_TYPE: Record<string, 'POST' | 'THREAD' | 'CAPTION' | 'EMAIL' | 'OUTLINE'> = {
   linkedin: 'POST',
@@ -52,15 +55,15 @@ export async function generateInstantContentAction(input: {
   tone?: string;
 }): Promise<InstantContentResult> {
   const session = await getSession();
-  if (!session) return { ok: false, error: 'Your session has expired. Please sign in again.' };
+  if (!session) return { ok: false, error: await actionError('sessionExpired') };
 
   const userId = session.userId as string;
   const topic = String(input.topic ?? '').trim();
   const channel = String(input.channel ?? '').toLowerCase();
   const tone = TONES.includes(input.tone as never) ? (input.tone as string) : 'professional';
 
-  if (topic.length < 3) return { ok: false, error: 'Give the topic a bit more to work with.' };
-  if (topic.length > 500) return { ok: false, error: 'That topic is too long — keep it under 500 characters.' };
+  if (topic.length < 3) return { ok: false, error: await actionError('topicTooThin') };
+  if (topic.length > 500) return { ok: false, error: await actionError('topicTooLong') };
   if (!(channel in CHANNEL_TYPE)) return { ok: false, error: `Unsupported channel: ${input.channel}` };
 
   const cost = INSTANT_CONTENT_COST[channel] ?? 5;
@@ -89,7 +92,17 @@ export async function generateInstantContentAction(input: {
     },
   });
 
-  const draft = await generateInstantDraft({ topic, channel, tone });
+  /*
+    Instant Content has no workspace behind it, so there is nothing to read a
+    language off — the locale the person is using the product in is the only
+    signal available, and it is the right one.
+  */
+  const draft = await generateInstantDraft({
+    topic,
+    channel,
+    tone,
+    language: contentLanguageForLocale(await getLocale()),
+  });
 
   // Both providers failed. Fail loudly and do not charge — the previous
   // behaviour elsewhere in the codebase was to write heuristic filler and
@@ -102,7 +115,7 @@ export async function generateInstantContentAction(input: {
     return {
       ok: false,
       code: 'PROVIDER_UNAVAILABLE',
-      error: 'Both AI providers are unavailable right now. Nothing was charged — try again in a minute.',
+      error: await actionError('providersDownNoCharge'),
     };
   }
 
@@ -155,7 +168,7 @@ export async function generateInstantContentAction(input: {
 /** Balance for the header widget. Grants the welcome credits on first read. */
 export async function getCreditBalanceAction(): Promise<{ balance: number } | { error: string }> {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   const userId = session.userId as string;
   await ensureWelcomeCredits(userId);
   return { balance: await getCreditBalance(userId) };

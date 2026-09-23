@@ -25,6 +25,7 @@ import { generateReportHTML } from '@/lib/ai-report-designer';
 import { convertHtmlToPdf } from '@/lib/html-to-pdf';
 import path from 'path';
 import fs from 'fs/promises';
+import { asContentLanguage } from '@/lib/content-language';
 
 // How many reports a user may generate per calendar month
 const MONTHLY_LIMIT = 5;
@@ -167,6 +168,7 @@ export async function generateStrategicReport(workspaceId: string) {
     matrices: insights?.competitiveMatrices ?? null,
     keywords: insights?.competitorKeywordsIntel ?? null,
     offerings: insights?.productsServicesIntel ?? null,
+    language: asContentLanguage(workspace.contentLanguage),
   });
 
   // Step 2 — Persist HTML (useful for debugging and as an "editable" copy)
@@ -174,7 +176,7 @@ export async function generateStrategicReport(workspaceId: string) {
 
   // Step 3 — Convert to PDF via Puppeteer
   console.log('[strategic-reports] Converting to PDF with Puppeteer...');
-  await convertHtmlToPdf(reportHTML, pdfPath);
+  await convertHtmlToPdf(reportHTML, pdfPath, asContentLanguage(workspace.contentLanguage));
 
   // Step 4 — Record the generated report in the database
   const pdfStats = await fs.stat(pdfPath);

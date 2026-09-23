@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { actionError } from '@/lib/action-errors';
 
 type TokenUsageRun = {
   model: string;
@@ -853,19 +854,19 @@ function mergeBrandAssetsInAudienceInsights(currentAudienceInsights: any, payloa
 
 export async function generateWorkspaceBrandAssets(workspaceId: string) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
     });
-    if (!workspace) return { error: 'Workspace not found' };
-    if (!workspace.websiteUrl) return { error: 'Workspace has no website URL.' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
+    if (!workspace.websiteUrl) return { error: await actionError('workspaceNoUrl') };
 
     const signals = await collectBrandAssetSignals(workspace.websiteUrl);
     if (!signals.textual_evidence) {
-      return { error: 'Could not collect enough website evidence for brand assets extraction.' };
+      return { error: await actionError('notEnoughBrandEvidence') };
     }
 
     const previousPayload = ((workspace.audienceInsights as any)?.brandAssets as BrandAssetsPayload) || null;
@@ -884,7 +885,7 @@ export async function generateWorkspaceBrandAssets(workspaceId: string) {
 
     const result = await callOpenAiJson(prompt);
     if (!result?.parsed) {
-      return { error: 'AI could not produce brand assets from current evidence.' };
+      return { error: await actionError('brandAssetsNoEvidence') };
     }
 
     const payload = enrichVisualIdentityAssets(
@@ -919,7 +920,7 @@ export async function generateWorkspaceBrandAssets(workspaceId: string) {
     return { success: true, payload };
   } catch (error) {
     console.error('generateWorkspaceBrandAssets failed:', error);
-    return { error: 'Could not generate brand assets right now.' };
+    return { error: await actionError('brandAssetsFailed') };
   }
 }
 
@@ -928,14 +929,14 @@ export async function saveWorkspaceBrandAssetsEdits(
   payload: BrandAssetsPayload,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
       where: { id: workspaceId, userId: session.userId as string },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const previousPayload = ((workspace.audienceInsights as any)?.brandAssets as BrandAssetsPayload) || null;
     const normalized = normalizeManualAssetsPayload(payload, previousPayload);
@@ -959,6 +960,6 @@ export async function saveWorkspaceBrandAssetsEdits(
     return { success: true, payload: normalized };
   } catch (error) {
     console.error('saveWorkspaceBrandAssetsEdits failed:', error);
-    return { error: 'Could not save Brand Assets edits.' };
+    return { error: await actionError('brandAssetsSaveFailed') };
   }
 }

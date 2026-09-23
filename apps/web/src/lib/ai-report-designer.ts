@@ -6,6 +6,13 @@
  * Falls back to OpenAI if Gemini fails.
  */
 
+import {
+  DEFAULT_CONTENT_LANGUAGE,
+  isRtlContentLanguage,
+  languageInstructions,
+  type ContentLanguage,
+} from '@/lib/content-language';
+
 // Default model matches the project's existing DEFAULT_GEMINI_MODEL constant.
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-pro';
 
@@ -18,6 +25,8 @@ export interface ReportWorkspaceData {
   matrices: any;
   keywords: any;
   offerings: any;
+  /** The workspace's content language. Decides the report's prose AND its direction. */
+  language?: ContentLanguage;
 }
 
 /**
@@ -148,7 +157,28 @@ function buildPrompt(data: ReportWorkspaceData): string {
   const competitorOfferings = (data.offerings?.competitor_offerings ?? []).slice(0, 4);
   const brand = data.brandSummary ?? {};
 
+  const language = data.language ?? DEFAULT_CONTENT_LANGUAGE;
+  /*
+    The model writes the report's markup itself, so direction has to be part of
+    the brief rather than something the PDF shell bolts on afterwards: an RTL
+    stylesheet wrapped around a document built out of `text-left` and `ml-*`
+    utilities fights itself on every page.
+  */
+  const directionBrief = isRtlContentLanguage(language)
+    ? `
+DIRECTION: This report is right-to-left. Put dir="rtl" on the <html> element.
+Use Tailwind's logical utilities — ms-*/me-*/ps-*/pe-*/text-start/text-end —
+and never text-left, ml-*, pl-*, border-l or border-r. Tables and flex rows
+mirror on their own under dir="rtl"; do not reverse them yourself. Do not set
+any letter-spacing (tracking-*) on Persian text: it breaks letter joining.`
+    : '';
+
   return `You are an expert strategic consultant creating a professional market intelligence report for ${data.companyName}.
+
+${languageInstructions(language)}
+HTML tag names, attributes, CSS class names and Tailwind utilities are code and
+stay in English. Only the text a reader sees is written in the language above.
+${directionBrief}
 
 === BRAND IDENTITY ===
 Primary color: #DC2626 (vibrant red)

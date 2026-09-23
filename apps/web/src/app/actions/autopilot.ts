@@ -9,6 +9,7 @@ import { writeActivityLog } from '@/lib/activity-log';
 import { PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
 import { getRecipe } from '@/lib/autopilot/recipes';
 import { runPolicy } from '@/lib/autopilot/runner';
+import { actionError } from '@/lib/action-errors';
 
 export type AutopilotPolicyInput = {
   name?: string;
@@ -30,7 +31,7 @@ type UserAuth = { ok: true; userId: string } | { ok: false; error: string };
 
 async function requireUser(): Promise<UserAuth> {
   const session = await getSession();
-  if (!session) return { ok: false, error: 'Not authenticated' };
+  if (!session) return { ok: false, error: await actionError('notAuthenticated') };
   return { ok: true, userId: session.userId as string };
 }
 
@@ -80,13 +81,13 @@ export async function getAutopilotState(workspaceId: string) {
 export async function createAgent(workspaceId: string, recipeKey: string) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
-  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };
 
   const recipe = getRecipe(recipeKey);
   if (!recipe) return { error: `Unknown agent type: ${recipeKey}` };
 
   const existing = await prisma.autopilotPolicy.count({ where: { workspaceId } });
-  if (existing >= 8) return { error: 'A workspace can run at most 8 agents.' };
+  if (existing >= 8) return { error: await actionError('agentLimit') };
 
   const agent = await prisma.autopilotPolicy.create({
     data: {
@@ -124,9 +125,9 @@ export async function saveAutopilotPolicy(
 ) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
-  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };
 
-  const clean = normalizeInput(input);
+  const clean = await normalizeInput(input);
   if ('error' in clean) return { error: clean.error };
 
   // Target an explicit agent when given; otherwise the workspace's first one,
@@ -155,10 +156,10 @@ export async function saveAutopilotPolicy(
 export async function deleteAgent(workspaceId: string, agentId: string) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
-  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };
 
   const agent = await prisma.autopilotPolicy.findFirst({ where: { id: agentId, workspaceId } });
-  if (!agent) return { error: 'Agent not found.' };
+  if (!agent) return { error: await actionError('agentNotFound') };
 
   // Content it already produced survives; only the agent link is cleared.
   await prisma.autopilotPolicy.delete({ where: { id: agent.id } });
@@ -176,14 +177,14 @@ export async function deleteAgent(workspaceId: string, agentId: string) {
 export async function runAutopilotNow(workspaceId: string, agentId?: string) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
-  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: 'Workspace not found.' };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };
 
   const agent = agentId
     ? await prisma.autopilotPolicy.findFirst({ where: { id: agentId, workspaceId } })
     : await prisma.autopilotPolicy.findFirst({ where: { workspaceId, enabled: true } });
 
-  if (!agent) return { error: 'Create an agent first.' };
-  if (!agent.enabled) return { error: 'Enable this agent before running it.' };
+  if (!agent) return { error: await actionError('createAgentFirst') };
+  if (!agent.enabled) return { error: await actionError('enableAgentFirst') };
 
   const result = await runPolicy(agent.id, { trigger: 'manual' });
   revalidatePath(`/growth/${workspaceId}`);
@@ -192,27 +193,32 @@ export async function runAutopilotNow(workspaceId: string, agentId?: string) {
 
 // ---------------------------------------------------------------------------
 
-function normalizeInput(input: AutopilotPolicyInput) {
+/*
+  Async only because its validation messages are translated, and reading the
+  caller's locale is itself an async lookup. It is called from server actions,
+  which are async already.
+*/
+async function normalizeInput(input: AutopilotPolicyInput) {
   const postsPerWeek = Math.floor(Number(input.postsPerWeek));
   if (!Number.isFinite(postsPerWeek) || postsPerWeek < 1 || postsPerWeek > 14) {
-    return { error: 'Posts per week must be between 1 and 14.' };
+    return { error: await actionError('postsPerWeekRange') };
   }
   const channels = (Array.isArray(input.channels) ? input.channels : []).filter((c) =>
     PUBLISHABLE_CHANNELS.includes(c),
   );
   if (input.enabled && channels.length === 0) {
-    return { error: 'Pick at least one channel.' };
+    return { error: await actionError('pickChannel') };
   }
   const windowStartHour = clampInt(input.windowStartHour, 0, 23, 9);
   const windowEndHour = clampInt(input.windowEndHour, 1, 24, 18);
   if (windowEndHour <= windowStartHour) {
-    return { error: 'Publish window must end after it starts.' };
+    return { error: await actionError('windowOrder') };
   }
   const publishDays = Array.from(
     new Set((Array.isArray(input.publishDays) ? input.publishDays : []).map((d) => clampInt(d, 0, 6, 1))),
   ).sort();
   if (input.enabled && publishDays.length === 0) {
-    return { error: 'Pick at least one publish day.' };
+    return { error: await actionError('pickDay') };
   }
   const timezone = String(input.timezone || 'America/Toronto').trim();
   try {
