@@ -8,7 +8,7 @@
  * address into sign-up, so the first screen after the page is already filled in.
  */
 
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/navigation';
 import { useState } from 'react';
 
 export function UrlIntake() {
@@ -34,7 +34,7 @@ export function UrlIntake() {
     }
     setError(null);
     setPending(true);
-    router.push(`/sign-up?site=${encodeURIComponent(raw)}`);
+    router.push({ pathname: '/sign-up', query: { site: raw } });
   }
 
   return (

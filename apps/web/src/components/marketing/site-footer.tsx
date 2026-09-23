@@ -1,5 +1,14 @@
-import Link from 'next/link';
-import type { Route } from 'next';
+import type { ComponentProps } from 'react';
+
+import { Link } from '@/i18n/navigation';
+
+/*
+  The footer's link targets, typed off the locale-aware Link itself rather than
+  off Next's `Route`. Under /[locale] a Next `Route` is '/[locale]/pricing',
+  which no column in this footer will ever write — taking the type from the
+  component that has to accept it keeps the two from drifting.
+*/
+type FooterHref = ComponentProps<typeof Link>['href'];
 
 export function SiteFooter() {
   return (
@@ -25,26 +34,26 @@ export function SiteFooter() {
         <FooterCol
           title="The product"
           links={[
-            ['/#intelligence', 'Intelligence'],
-            ['/#how', 'The quality gate'],
-            ['/#autopilot', 'Autopilot'],
-            ['/pricing', 'Pricing'],
+            [{ pathname: '/', hash: 'intelligence' }, 'Intelligence'],
+            [{ pathname: '/', hash: 'how' }, 'The quality gate'],
+            [{ pathname: '/', hash: 'autopilot' }, 'Autopilot'],
+            [{ pathname: '/pricing' }, 'Pricing'],
           ]}
         />
         <FooterCol
           title="Publishes to"
           links={[
-            ['/#channels', 'LinkedIn'],
-            ['/#channels', 'X'],
-            ['/#channels', 'Your own website'],
-            ['/#channels', 'Instagram · TikTok · Facebook'],
+            [{ pathname: '/', hash: 'channels' }, 'LinkedIn'],
+            [{ pathname: '/', hash: 'channels' }, 'X'],
+            [{ pathname: '/', hash: 'channels' }, 'Your own website'],
+            [{ pathname: '/', hash: 'channels' }, 'Instagram · TikTok · Facebook'],
           ]}
         />
         <FooterCol
           title="Account"
           links={[
-            ['/sign-in', 'Sign in'],
-            ['/sign-up', 'Create a workspace'],
+            [{ pathname: '/sign-in' }, 'Sign in'],
+            [{ pathname: '/sign-up' }, 'Create a workspace'],
           ]}
         />
       </div>
@@ -59,7 +68,7 @@ export function SiteFooter() {
   );
 }
 
-function FooterCol({ title, links }: { title: string; links: Array<[Route, string]> }) {
+function FooterCol({ title, links }: { title: string; links: ReadonlyArray<readonly [FooterHref, string]> }) {
   return (
     <div>
       <h2 className="font-display text-[15px] font-semibold tracking-[-0.02em]">{title}</h2>

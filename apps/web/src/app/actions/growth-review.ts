@@ -2,7 +2,8 @@
 
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { getLocale } from 'next-intl/server';
 
 export async function confirmGrowthStrategy(_prevState: any, formData: FormData) {
   const session = await getSession();
@@ -40,5 +41,5 @@ export async function confirmGrowthStrategy(_prevState: any, formData: FormData)
     },
   });
 
-  redirect('/growth');
+  redirect({ href: '/growth', locale: await getLocale() });
 }

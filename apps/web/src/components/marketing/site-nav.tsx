@@ -1,10 +1,15 @@
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
+/*
+  Hashes travel as their own field rather than glued onto the pathname: the
+  locale-aware Link builds `/fa/#how` from these parts, where a literal
+  '/#how' would have to be re-parsed to know which half is the route.
+*/
 const LINKS = [
-  { href: '/#how', label: 'The refusal' },
-  { href: '/#intelligence', label: 'Intelligence' },
-  { href: '/#autopilot', label: 'Autopilot' },
-  { href: '/pricing', label: 'Pricing' },
+  { href: { pathname: '/', hash: 'how' }, label: 'The refusal' },
+  { href: { pathname: '/', hash: 'intelligence' }, label: 'Intelligence' },
+  { href: { pathname: '/', hash: 'autopilot' }, label: 'Autopilot' },
+  { href: { pathname: '/pricing' }, label: 'Pricing' },
 ] as const;
 
 export function SiteNav() {

@@ -1,7 +1,7 @@
 'use server';
 
 import { Prisma } from '@prisma/client';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import { revalidatePath } from 'next/cache';
 
 import { getSession, mintApiToken } from '@/lib/auth';
@@ -38,6 +38,7 @@ import {
   WORD_COUNT_PLATFORMS,
   type ContentWordCountLimits,
 } from '@/lib/content-word-count';
+import { getLocale } from 'next-intl/server';
 
 const MODEL_PATTERN = /^[a-zA-Z0-9._-]+$/;
 
@@ -49,7 +50,7 @@ function toDateOrNull(unixSeconds: number | null | undefined): Date | null {
 async function requireAdmin() {
   const session = await getSession();
   if (!session || session.role !== 'ADMIN') {
-    redirect('/dashboard');
+    redirect({ href: '/dashboard', locale: await getLocale() });
   }
   return session;
 }
@@ -67,11 +68,11 @@ export async function updateGeminiModel(formData: FormData): Promise<void> {
 
   const model = String(formData.get('geminiModel') || '').trim();
   if (!model) {
-    redirect('/admin?settings=empty');
+    redirect({ href: { pathname: '/admin', query: { settings: 'empty' } }, locale: await getLocale() });
   }
 
   if (model.length > 120 || !MODEL_PATTERN.test(model)) {
-    redirect('/admin?settings=invalid');
+    redirect({ href: { pathname: '/admin', query: { settings: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -79,11 +80,11 @@ export async function updateGeminiModel(formData: FormData): Promise<void> {
     await writeAdminAudit(session, 'GEMINI_MODEL_UPDATED', { model });
   } catch (error) {
     console.error('Failed to update Gemini model from admin:', error);
-    redirect('/admin?settings=failed');
+    redirect({ href: { pathname: '/admin', query: { settings: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?settings=saved');
+  redirect({ href: { pathname: '/admin', query: { settings: 'saved' } }, locale: await getLocale() });
 }
 
 function parseLimit(value: FormDataEntryValue | null): number | null {
@@ -127,7 +128,7 @@ export async function updatePlatformLimits(formData: FormData): Promise<void> {
     (ideationMaxContentCountRaw != null && ideationMaxContentCountParsed == null) ||
     (scheduleDelayRaw != null && scheduleDelayParsed == null)
   ) {
-    redirect(`${redirectBase}?limits=invalid`);
+    redirect({ href: { pathname: redirectBase, query: { limits: 'invalid' } }, locale: await getLocale() });
   }
 
   const ideationMaxContentCount =
@@ -150,7 +151,7 @@ export async function updatePlatformLimits(formData: FormData): Promise<void> {
     const min = parseWordCount(minRaw);
     const max = parseWordCount(maxRaw);
     if (min == null || max == null || min > max) {
-      redirect(`${redirectBase}?limits=invalid`);
+      redirect({ href: { pathname: redirectBase, query: { limits: 'invalid' } }, locale: await getLocale() });
     }
     nextWordCountLimits[platform] = { min, max };
   }
@@ -172,13 +173,13 @@ export async function updatePlatformLimits(formData: FormData): Promise<void> {
     });
   } catch (error) {
     console.error('Failed to update platform limits from admin:', error);
-    redirect(`${redirectBase}?limits=failed`);
+    redirect({ href: { pathname: redirectBase, query: { limits: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
   revalidatePath('/settings');
   revalidatePath('/growth');
-  redirect(`${redirectBase}?limits=saved`);
+  redirect({ href: { pathname: redirectBase, query: { limits: 'saved' } }, locale: await getLocale() });
 }
 
 export async function updateAiControls(formData: FormData): Promise<void> {
@@ -197,7 +198,7 @@ export async function updateAiControls(formData: FormData): Promise<void> {
     cooldownRaw < GEMINI_COOLDOWN_SECONDS_MIN ||
     cooldownRaw > GEMINI_COOLDOWN_SECONDS_MAX
   ) {
-    redirect('/admin?section=ai&settings=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'ai', settings: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -213,11 +214,11 @@ export async function updateAiControls(formData: FormData): Promise<void> {
     });
   } catch (error) {
     console.error('Failed to update AI controls from admin:', error);
-    redirect('/admin?section=ai&settings=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'ai', settings: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=ai&settings=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'ai', settings: 'saved' } }, locale: await getLocale() });
 }
 
 function parseInteger(value: FormDataEntryValue | null): number | null {
@@ -232,7 +233,7 @@ export async function updateUserAccess(formData: FormData): Promise<void> {
   const role = String(formData.get('role') || '').trim();
   const plan = String(formData.get('plan') || '').trim();
 
-  if (!userId) redirect('/admin?section=users&users=invalid');
+  if (!userId) redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'invalid' } }, locale: await getLocale() });
 
   try {
     if (role) {
@@ -256,11 +257,11 @@ export async function updateUserAccess(formData: FormData): Promise<void> {
     }
   } catch (error) {
     console.error('Failed to update user access from admin:', error);
-    redirect('/admin?section=users&users=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=users&users=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'saved' } }, locale: await getLocale() });
 }
 
 export async function manageUserLifecycle(formData: FormData): Promise<void> {
@@ -270,7 +271,7 @@ export async function manageUserLifecycle(formData: FormData): Promise<void> {
   const reason = String(formData.get('reason') || '').trim();
 
   if (!userId || !actionType) {
-    redirect('/admin?section=users&users=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -281,15 +282,15 @@ export async function manageUserLifecycle(formData: FormData): Promise<void> {
       await reactivateUser(userId);
       await writeAdminAudit(session, 'USER_REACTIVATED', { userId });
     } else {
-      redirect('/admin?section=users&users=invalid');
+      redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'invalid' } }, locale: await getLocale() });
     }
   } catch (error) {
     console.error('Failed to manage user lifecycle from admin:', error);
-    redirect('/admin?section=users&users=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=users&users=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'users', users: 'saved' } }, locale: await getLocale() });
 }
 
 export async function adjustCredits(formData: FormData): Promise<void> {
@@ -300,7 +301,7 @@ export async function adjustCredits(formData: FormData): Promise<void> {
   const note = String(formData.get('note') || '').trim();
 
   if (!userId || amount == null || amount <= 0 || !adjustmentType) {
-    redirect('/admin?section=credits&credits=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'credits', credits: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -341,11 +342,11 @@ export async function adjustCredits(formData: FormData): Promise<void> {
     });
   } catch (error) {
     console.error('Failed to adjust credits from admin:', error);
-    redirect('/admin?section=credits&credits=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'credits', credits: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=credits&credits=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'credits', credits: 'saved' } }, locale: await getLocale() });
 }
 
 export async function manageWorkspace(formData: FormData): Promise<void> {
@@ -356,7 +357,7 @@ export async function manageWorkspace(formData: FormData): Promise<void> {
   const reason = String(formData.get('reason') || '').trim();
 
   if (!workspaceId || !actionType) {
-    redirect('/admin?section=workspaces&workspaces=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'workspaces', workspaces: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -384,15 +385,15 @@ export async function manageWorkspace(formData: FormData): Promise<void> {
       });
       await writeAdminAudit(session, 'WORKSPACE_DELETED', { workspaceId });
     } else {
-      redirect('/admin?section=workspaces&workspaces=invalid');
+      redirect({ href: { pathname: '/admin', query: { section: 'workspaces', workspaces: 'invalid' } }, locale: await getLocale() });
     }
   } catch (error) {
     console.error('Failed to manage workspace from admin:', error);
-    redirect('/admin?section=workspaces&workspaces=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'workspaces', workspaces: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=workspaces&workspaces=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'workspaces', workspaces: 'saved' } }, locale: await getLocale() });
 }
 
 async function syncStripeSubscriptionToDb(userId: string) {
@@ -463,7 +464,7 @@ export async function manageBilling(formData: FormData): Promise<void> {
   const note = String(formData.get('note') || '').trim();
 
   if (!userId || !actionType) {
-    redirect('/admin?section=credits&billing=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'credits', billing: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -504,7 +505,7 @@ export async function manageBilling(formData: FormData): Promise<void> {
       });
     } else if (actionType === 'APPLY_PROMO') {
       if (promoCredits == null || promoCredits <= 0) {
-        redirect('/admin?section=credits&billing=invalid');
+        redirect({ href: { pathname: '/admin', query: { section: 'credits', billing: 'invalid' } }, locale: await getLocale() });
       }
 
       const aggregate = await prisma.creditLedger.aggregate({
@@ -529,15 +530,15 @@ export async function manageBilling(formData: FormData): Promise<void> {
         balanceAfter: currentBalance + promoCredits,
       });
     } else {
-      redirect('/admin?section=credits&billing=invalid');
+      redirect({ href: { pathname: '/admin', query: { section: 'credits', billing: 'invalid' } }, locale: await getLocale() });
     }
   } catch (error) {
     console.error('Failed to manage billing from admin:', error);
-    redirect('/admin?section=credits&billing=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'credits', billing: 'failed' } }, locale: await getLocale() });
   }
 
   revalidatePath('/admin');
-  redirect('/admin?section=credits&billing=saved');
+  redirect({ href: { pathname: '/admin', query: { section: 'credits', billing: 'saved' } }, locale: await getLocale() });
 }
 
 export async function manageJob(formData: FormData): Promise<void> {
@@ -546,7 +547,7 @@ export async function manageJob(formData: FormData): Promise<void> {
   const actionType = String(formData.get('actionType') || '').trim();
 
   if (!jobId || !actionType) {
-    redirect('/admin?section=jobs&jobs=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'invalid' } }, locale: await getLocale() });
   }
 
   try {
@@ -586,10 +587,10 @@ export async function manageJob(formData: FormData): Promise<void> {
           previousStatus: job.status,
         });
       } else {
-        redirect('/admin?section=jobs&jobs=invalid');
+        redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'invalid' } }, locale: await getLocale() });
       }
       revalidatePath('/admin');
-      redirect('/admin?section=jobs&jobs=saved');
+      redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'saved' } }, locale: await getLocale() });
       return; // Ensure we exit
     }
 
@@ -616,17 +617,17 @@ export async function manageJob(formData: FormData): Promise<void> {
         if (!res.ok) throw new Error(`Retry failed with ${res.status}`);
         await writeAdminAudit(session, 'SOCIAL_JOB_RETRIED', { jobId, previousStatus: socialJob.status });
       } else {
-        redirect('/admin?section=jobs&jobs=invalid');
+        redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'invalid' } }, locale: await getLocale() });
       }
 
       revalidatePath('/admin');
-      redirect('/admin?section=jobs&jobs=saved');
+      redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'saved' } }, locale: await getLocale() });
       return;
     }
 
-    redirect('/admin?section=jobs&jobs=invalid');
+    redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'invalid' } }, locale: await getLocale() });
   } catch (error) {
     console.error('Failed to manage job from admin:', error);
-    redirect('/admin?section=jobs&jobs=failed');
+    redirect({ href: { pathname: '/admin', query: { section: 'jobs', jobs: 'failed' } }, locale: await getLocale() });
   }
 }
