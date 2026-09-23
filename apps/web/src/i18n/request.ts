@@ -39,14 +39,14 @@ const NAMESPACES = [
 /**
  * Narrows the cookie to something `Intl` will accept, so a junk value cannot throw.
  *
- * Reading a cookie here opts every page into dynamic rendering, including the
- * three marketing pages that have no timestamps on them. That is a real cost
- * and it is taken deliberately: the rest of the product is authenticated and
- * reads a session cookie anyway, so it was already dynamic, and a timestamp
- * silently four hours wrong is a correctness bug where a dynamically rendered
- * landing page is a performance choice. If the landing page's render time ever
- * matters more, the fix is to move the zone out of here and onto the subtree
- * that actually formats dates, not to go back to guessing UTC.
+ * Reading a cookie here does not cost the marketing pages their prerendering:
+ * `next build` still reports the landing page, pricing and the API docs as
+ * static in both locales. Pages that read a session cookie were already
+ * dynamic, and those are the only ones that show a timestamp — a prerendered
+ * page renders with the fallback zone and has no date on it to be wrong.
+ * Checked against a production build rather than assumed: the same settings
+ * row renders 6:39 PM under America/Toronto and 7:39 AM the next day under
+ * Asia/Tokyo.
  */
 function resolveTimeZone(store: Awaited<ReturnType<typeof cookies>>, locale: string): string {
   const fallback = locale === 'fa' ? 'Asia/Tehran' : 'UTC';
