@@ -1,1 +1,20 @@
-{}
+{
+  "shell": {
+    "nav": {
+      "overview": "نمای کلی",
+      "growth": "موتور رشد",
+      "connections": "اتصال‌ها",
+      "instant": "محتوای فوری",
+      "settings": "تنظیمات"
+    },
+    "railBadge": "نسخهٔ آمادهٔ اتوپایلت",
+    "signOut": "خروج",
+    "header": {
+      "signIn": "ورود",
+      "signUp": "ثبت‌نام"
+    },
+    "credits": {
+      "label": "{count, number} اعتبار"
+    }
+  }
+}

@@ -1,1 +1,39 @@
-{}
+{
+  "settings": {
+    "meta": { "title": "Settings" },
+    "title": "Settings",
+    "subtitle": "Account preferences and activity logs for your workspace operations.",
+    "limits": {
+      "title": "Workspace Limits",
+      "saved": "Limits updated successfully.",
+      "invalid": "Invalid limit value. Use an integer between {min, number} and {max, number}.",
+      "failed": "Could not save limits. Check database connection and retry.",
+      "competitiveLabel": "Competitive Landscape",
+      "competitiveValue": "{count, number} AI discovery runs per workspace",
+      "brandLabel": "Brand Memory",
+      "brandValue": "{count, number} rescrape attempts per workspace",
+      "ideationLabel": "Ideation",
+      "ideationValue": "{count, number} max ideas per generation",
+      "wordCountTitle": "Content Word Count Limits (Per Platform)",
+      "wordCountRange": "{min, number} - {max, number} words",
+      "competitiveField": "Competitive Landscape Limit",
+      "brandField": "Brand Memory Limit",
+      "ideationField": "Ideation Max Content Count",
+      "wordCountField": "Word Count Limits",
+      "min": "Min",
+      "max": "Max",
+      "save": "Save Limits"
+    },
+    "account": {
+      "title": "Account",
+      "email": "Email",
+      "role": "Role"
+    },
+    "activity": {
+      "title": "Activity Logs",
+      "empty": "No activity logs yet.",
+      "workspace": "Workspace: {name}",
+      "workspaceNone": "Workspace: n/a"
+    }
+  }
+}

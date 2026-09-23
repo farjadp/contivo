@@ -1,1 +1,20 @@
-{}
+{
+  "shell": {
+    "nav": {
+      "overview": "Overview",
+      "growth": "Growth Engine",
+      "connections": "Connections",
+      "instant": "Instant Content",
+      "settings": "Settings"
+    },
+    "railBadge": "autopilot-ready build",
+    "signOut": "Sign out",
+    "header": {
+      "signIn": "Sign in",
+      "signUp": "Sign up"
+    },
+    "credits": {
+      "label": "{count, number} credits"
+    }
+  }
+}

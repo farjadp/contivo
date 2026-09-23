@@ -1,9 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 import { usePathname, Link } from '@/i18n/navigation';
+import { LocaleSwitcher } from '@/components/marketing/locale-switcher';
 
 export function GlobalHeader() {
   const pathname = usePathname() || '';
+  const t = useTranslations('shell');
 
   // Routes that ship their own header. Marketing pages render SiteNav, so
   // leaving them out here stacks two headers on top of each other.
@@ -27,14 +31,15 @@ export function GlobalHeader() {
 
   return (
     <header className="flex items-center justify-end gap-3 px-6 h-16 absolute top-0 w-full z-50 pointer-events-auto">
+      <LocaleSwitcher />
       <Link href="/sign-in" className="text-sm font-medium text-[#121212] hover:opacity-70 transition-opacity">
-        Sign in
+        {t('header.signIn')}
       </Link>
       <Link
         href="/sign-up"
         className="bg-[#121212] text-white rounded-full font-medium text-sm h-10 px-5 inline-flex items-center hover:bg-[#C04C36] transition-colors"
       >
-        Sign up
+        {t('header.signUp')}
       </Link>
     </header>
   );

@@ -1,1 +1,48 @@
-{}
+{
+  "instant": {
+    "meta": { "title": "Instant Content — Contivo" },
+    "title": "Instant Content",
+    "subtitle": "Enter a topic and channel. Get publish-ready content in seconds.",
+    "form": {
+      "channel": "Channel",
+      "topic": "Topic",
+      "topicPlaceholder": "e.g. Why B2B founders should invest in thought leadership before hiring a marketing team",
+      "tone": "Tone",
+      "generating": "Generating…",
+      "generate": "Generate content",
+      "unexpectedError": "Something went wrong. Please try again."
+    },
+    "channels": {
+      "linkedin": "Post",
+      "twitter": "Thread",
+      "instagram": "Caption",
+      "email": "Draft",
+      "blog": "Outline"
+    },
+    "channelNames": {
+      "email": "Email",
+      "blog": "Blog"
+    },
+    "tones": {
+      "professional": "Professional",
+      "friendly": "Friendly",
+      "bold": "Bold",
+      "educational": "Educational",
+      "persuasive": "Persuasive"
+    },
+    "result": {
+      "linkedin": "LinkedIn Post",
+      "twitter": "X Thread",
+      "instagram": "Instagram Caption",
+      "email": "Email Draft",
+      "blog": "Blog Outline",
+      "copy": "Copy",
+      "copied": "Copied!",
+      "new": "New",
+      "regenerate": "Generate again",
+      "topicLabel": "Topic: ",
+      "creditsUsed": "{count, plural, one {# credit used} other {# credits used}}",
+      "creditsRemaining": "{count, number} remaining"
+    }
+  }
+}

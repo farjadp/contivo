@@ -5,19 +5,37 @@
  * and lib/site-api — every field, status code and header here was read out of
  * the code rather than assumed. Print styles are included so Cmd-P produces a
  * usable PDF without a separate export.
+ *
+ * Only the prose is translated. Endpoints, headers, JSON field names, status
+ * codes and every code sample stay Latin with Latin digits in both languages,
+ * because they are the literal thing a reader has to type — a Persian ۴۰۱ or a
+ * translated `nextCursor` would be a lie about the wire format. Code blocks
+ * carry `dir="ltr"` so an RTL page cannot reorder them, and the mono cells that
+ * hold identifiers are wrapped in `bdi` for the same reason.
  */
 
 import type { Metadata } from 'next';
+import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+
 import { Link } from '@/i18n/navigation';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
 
-export const metadata: Metadata = {
-  title: 'Content API — Contivo for developers',
-  description:
-    'Read your published Contivo posts from any stack with one authenticated GET. Endpoints, parameters, response shape, errors, caching and the revalidate webhook.',
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'siteApi.meta' });
+
+  return {
+    title: t('title'),
+    description: t('description'),
+  };
+}
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.contivo.app';
 
@@ -56,7 +74,10 @@ function Block({ children, label }: { children: string; label?: string }) {
   return (
     <figure className="mt-4">
       {label && <figcaption className="mb-1.5 text-[12.5px] text-carbon-60">{label}</figcaption>}
-      <pre className="overflow-x-auto border border-carbon/15 bg-carbon p-4 text-[12.5px] leading-relaxed text-paper-warm">
+      <pre
+        dir="ltr"
+        className="overflow-x-auto border border-carbon/15 bg-carbon p-4 text-left text-[12.5px] leading-relaxed text-paper-warm"
+      >
         <code>{children}</code>
       </pre>
     </figure>
@@ -66,11 +87,11 @@ function Block({ children, label }: { children: string; label?: string }) {
 function Table({ rows, head }: { rows: Array<[string, string, string]>; head: [string, string, string] }) {
   return (
     <div className="mt-5 overflow-x-auto">
-      <table className="w-full min-w-[34rem] border-collapse text-left">
+      <table className="w-full min-w-[34rem] border-collapse text-start">
         <thead>
           <tr className="border-b border-carbon/20">
             {head.map((h, i) => (
-              <th key={i} className="py-2.5 pr-6 text-[12px] font-semibold uppercase tracking-wide text-carbon-60">
+              <th key={i} className="py-2.5 pe-6 text-[12px] font-semibold uppercase tracking-wide text-carbon-60">
                 {h}
               </th>
             ))}
@@ -79,8 +100,12 @@ function Table({ rows, head }: { rows: Array<[string, string, string]>; head: [s
         <tbody>
           {rows.map(([a, b, c]) => (
             <tr key={a} className="border-b border-carbon/10 align-top">
-              <td className="py-3 pr-6 font-mono text-[13px] text-carbon">{a}</td>
-              <td className="py-3 pr-6 font-mono text-[12.5px] text-carbon-60">{b}</td>
+              <td className="py-3 pe-6 font-mono text-[13px] text-carbon">
+                <bdi>{a}</bdi>
+              </td>
+              <td className="py-3 pe-6 font-mono text-[12.5px] text-carbon-60">
+                <bdi>{b}</bdi>
+              </td>
               <td className="py-3 text-[14px] leading-relaxed text-carbon-80">{c}</td>
             </tr>
           ))}
@@ -90,22 +115,27 @@ function Table({ rows, head }: { rows: Array<[string, string, string]>; head: [s
   );
 }
 
-const TOC: Array<[string, string]> = [
-  ['how-it-works', 'How it works'],
-  ['auth', 'Authentication'],
-  ['list', 'List posts'],
-  ['single', 'Get one post'],
-  ['post-object', 'The post object'],
-  ['errors', 'Errors'],
-  ['caching', 'Caching and freshness'],
-  ['revalidate', 'Revalidate webhook'],
-  ['recipes', 'Recipes'],
-  ['limits', 'Limits and guarantees'],
-];
+const TOC = [
+  'how-it-works',
+  'auth',
+  'list',
+  'single',
+  'post-object',
+  'errors',
+  'caching',
+  'revalidate',
+  'recipes',
+  'limits',
+] as const;
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 
 export default function SiteApiDocsPage() {
+  const t = useTranslations('siteApi');
+
+  /** Inline `<code>` inside a translated sentence, so a translator can move it. */
+  const code = (chunks: React.ReactNode) => <Code>{chunks}</Code>;
+
   return (
     <div className="theme-editorial min-h-screen bg-paper-warm font-sans text-carbon">
       <div className="print:hidden">
@@ -115,31 +145,31 @@ export default function SiteApiDocsPage() {
       <header className="border-b border-carbon/10">
         <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-20">
           <h1 className="max-w-[20ch] font-display text-[clamp(2.4rem,6vw,4.6rem)] font-semibold leading-[0.98] tracking-[-0.045em]">
-            Content API
+            {t('title')}
           </h1>
           <p className="mt-6 max-w-[62ch] text-[17px] leading-[1.65] text-carbon-80">
-            Your site reads its published posts from Contivo with one authenticated{' '}
-            <Code>GET</Code>. Nothing is pushed into your codebase, there is no plugin, and it works
-            with any stack that can make an HTTP request.
+            {t.rich('lede', { code })}
           </p>
           <p className="mt-4 text-[13px] text-carbon-60">
-            Base URL <Code>{APP_URL}</Code> · read-only · JSON
+            {t('baseLabel')} <Code>{APP_URL}</Code> · {t('readOnly')} · JSON
           </p>
         </div>
       </header>
 
       <div className="mx-auto max-w-[92rem] gap-16 px-6 py-16 md:px-12 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
         {/* Contents */}
-        <nav aria-label="Contents" className="mb-12 lg:sticky lg:top-24 lg:mb-0 lg:self-start print:hidden">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-carbon-60">Contents</p>
-          <ul className="mt-4 space-y-2.5 border-l border-carbon/15 pl-4">
-            {TOC.map(([id, label]) => (
+        <nav aria-label={t('contents')} className="mb-12 lg:sticky lg:top-24 lg:mb-0 lg:self-start print:hidden">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-carbon-60">
+            {t('contents')}
+          </p>
+          <ul className="mt-4 space-y-2.5 border-s border-carbon/15 ps-4">
+            {TOC.map((id) => (
               <li key={id}>
                 <a
                   href={`#${id}`}
                   className="text-[14px] text-carbon-80 underline decoration-transparent underline-offset-4 transition-colors hover:text-carbon hover:decoration-brick"
                 >
-                  {label}
+                  {t(`toc.${id}`)}
                 </a>
               </li>
             ))}
@@ -148,50 +178,45 @@ export default function SiteApiDocsPage() {
 
         <main className="min-w-0">
           {/* ── How it works ───────────────────────────────────────────── */}
-          <H2 id="how-it-works">How it works</H2>
-          <P>
-            Contivo writes and publishes on the schedule you set. When a post goes live it is
-            assigned a permanent slug and marked published — and that is the end of Contivo&apos;s
-            involvement. Your site asks for posts when it wants them.
-          </P>
-          <P>
-            That direction matters: Contivo never has write access to your codebase, your deploy
-            pipeline or your CMS. If you turn Contivo off, your site keeps serving whatever it last
-            fetched.
-          </P>
+          <H2 id="how-it-works">{t('toc.how-it-works')}</H2>
+          <P>{t('howItWorks.p1')}</P>
+          <P>{t('howItWorks.p2')}</P>
 
           {/* ── Auth ───────────────────────────────────────────────────── */}
-          <H2 id="auth">Authentication</H2>
+          <H2 id="auth">{t('toc.auth')}</H2>
           <P>
-            Every request carries a site key as a bearer token. Create one under{' '}
-            <Link href="/connections" className="underline decoration-carbon/30 underline-offset-4 hover:decoration-brick">
-              Connections → Websites
-            </Link>
-            . It is shown once, at creation, and cannot be recovered afterwards — if you lose it,
-            create a new site connection.
+            {t.rich('auth.p1', {
+              link: (chunks) => (
+                <Link
+                  href="/connections"
+                  className="underline decoration-carbon/30 underline-offset-4 hover:decoration-brick"
+                >
+                  {chunks}
+                </Link>
+              ),
+            })}
           </P>
-          <Block label="Every request">{`Authorization: Bearer ctv_your_site_key`}</Block>
+          <Block label={t('auth.blockLabel')}>{`Authorization: Bearer ctv_your_site_key`}</Block>
           <P>
-            <strong className="font-semibold text-carbon">Keep the key server-side.</strong> It can
-            read everything this workspace has ever published. The endpoints do send permissive CORS
-            headers, so a browser <em>can</em> call them — but doing so ships your key to every
-            visitor. Fetch in a server component, a route handler, at build time, or from your
-            backend.
+            {t.rich('auth.p2', {
+              strong: (chunks) => <strong className="font-semibold text-carbon">{chunks}</strong>,
+              em: (chunks) => <em>{chunks}</em>,
+            })}
           </P>
 
           {/* ── List ───────────────────────────────────────────────────── */}
-          <H2 id="list">List posts</H2>
+          <H2 id="list">{t('toc.list')}</H2>
           <Block>{`GET ${APP_URL}/api/v1/posts`}</Block>
-          <P>Returns published posts for the workspace that owns the key, newest first.</P>
+          <P>{t('list.p1')}</P>
           <Table
-            head={['Parameter', 'Type', 'Meaning']}
+            head={[t('list.head.name'), t('list.head.type'), t('list.head.meaning')]}
             rows={[
-              ['limit', '1–100, default 20', 'How many posts to return. Values outside the range are clamped, not rejected.'],
-              ['cursor', 'string', 'The nextCursor from a previous response. Omit for the first page.'],
-              ['channel', 'default "blog"', 'Which channel to return. Pass "all" to include social posts too — usually you do not want these on a website.'],
+              ['limit', '1–100, default 20', t('list.limit')],
+              ['cursor', 'string', t('list.cursor')],
+              ['channel', 'default "blog"', t('list.channel')],
             ]}
           />
-          <Block label="Response">{`{
+          <Block label={t('list.responseLabel')}>{`{
   "posts": [
     {
       "id": "cmtj8m9cw0004669budmzpagu",
@@ -206,79 +231,71 @@ export default function SiteApiDocsPage() {
   ],
   "nextCursor": "cmtj8m9cw0004669budmzpagu"
 }`}</Block>
-          <P>
-            <Code>nextCursor</Code> is <Code>null</Code> when there are no more pages. That is the
-            only reliable end-of-list signal — do not stop on a short page.
-          </P>
+          <P>{t.rich('list.p2', { code })}</P>
 
           {/* ── Single ─────────────────────────────────────────────────── */}
-          <H2 id="single">Get one post</H2>
+          <H2 id="single">{t('toc.single')}</H2>
           <Block>{`GET ${APP_URL}/api/v1/posts/{slug}`}</Block>
           <P>
-            Returns <Code>{`{ "post": { … } }`}</Code> with the same object as above. Route your
-            pages on <Code>slug</Code>, never on <Code>id</Code>: the slug is assigned once at
-            publish and never changes, which is what keeps your URLs stable.
+            {t.rich('single.p1', {
+              code,
+              /* The braces are built here rather than written into the message,
+                 where ICU would read them as placeholders. The tag wraps the
+                 one word that is actually a field name. */
+              shape: (chunks) => <Code>{`{ "`}{chunks}{`": { … } }`}</Code>,
+            })}
           </P>
 
           {/* ── Post object ────────────────────────────────────────────── */}
-          <H2 id="post-object">The post object</H2>
+          <H2 id="post-object">{t('toc.post-object')}</H2>
           <Table
-            head={['Field', 'Type', 'Notes']}
+            head={[t('postObject.head.name'), t('postObject.head.type'), t('postObject.head.notes')]}
             rows={[
-              ['id', 'string', 'Stable internal identifier. Good as a React key, not for URLs.'],
-              ['slug', 'string', 'URL-safe, unique per workspace, permanent from the moment of publish.'],
-              ['title', 'string', 'The post topic.'],
-              ['content', 'string', 'The full body, as Markdown. Render it with whatever you already use.'],
-              ['excerpt', 'string', 'First ~200 characters with Markdown stripped. For cards, lists and meta descriptions.'],
-              ['channel', 'string', 'Normally "blog". Only other values if you asked for channel=all.'],
-              ['publishedAt', 'string | null', 'ISO 8601 UTC.'],
-              ['updatedAt', 'string', 'ISO 8601 UTC. Useful for cache keys, sitemaps and lastmod.'],
+              ['id', 'string', t('postObject.id')],
+              ['slug', 'string', t('postObject.slug')],
+              ['title', 'string', t('postObject.title')],
+              ['content', 'string', t('postObject.content')],
+              ['excerpt', 'string', t('postObject.excerpt')],
+              ['channel', 'string', t('postObject.channel')],
+              ['publishedAt', 'string | null', t('postObject.publishedAt')],
+              ['updatedAt', 'string', t('postObject.updatedAt')],
             ]}
           />
 
           {/* ── Errors ─────────────────────────────────────────────────── */}
-          <H2 id="errors">Errors</H2>
+          <H2 id="errors">{t('toc.errors')}</H2>
           <Table
-            head={['Status', 'Body error', 'What it means']}
+            head={[t('errors.head.status'), t('errors.head.body'), t('errors.head.meaning')]}
             rows={[
-              ['401', 'unauthorized', 'Missing, malformed, unknown or revoked key — or the site connection is not active. All four return the same response on purpose, so nobody can use this endpoint to work out which keys exist.'],
-              ['404', 'not_found', 'Single post only. No published post with that slug in this workspace. A slug belonging to another customer also returns 404, never 403.'],
+              ['401', 'unauthorized', t('errors.unauthorized')],
+              ['404', 'not_found', t('errors.notFound')],
             ]}
           />
           <P>
-            An empty <Code>posts</Code> array is <em>not</em> an error. It means the key is valid and
-            nothing has been published to that channel yet — Autopilot has to publish something
-            before anything appears here.
+            {t.rich('errors.p1', {
+              code,
+              em: (chunks) => <em>{chunks}</em>,
+            })}
           </P>
 
           {/* ── Caching ────────────────────────────────────────────────── */}
-          <H2 id="caching">Caching and freshness</H2>
-          <P>
-            Responses are sent with <Code>Cache-Control: no-store</Code>, so the API never asks a
-            CDN or browser to hold onto them. Caching is entirely yours to decide, which is the right
-            way round: your framework knows your traffic and your tolerance for staleness.
-          </P>
-          <Block label="Next.js — revalidate every five minutes">{`const res = await fetch("${APP_URL}/api/v1/posts", {
+          <H2 id="caching">{t('toc.caching')}</H2>
+          <P>{t.rich('caching.p1', { code })}</P>
+          <Block label={t('caching.blockLabel')}>{`const res = await fetch("${APP_URL}/api/v1/posts", {
   headers: { Authorization: \`Bearer \${process.env.CONTIVO_SITE_KEY}\` },
   next: { revalidate: 300 },
 });`}</Block>
-          <P>
-            A five-minute window is a sensible default. For instant updates, pair a long revalidate
-            with the webhook below rather than polling harder.
-          </P>
+          <P>{t('caching.p2')}</P>
 
           {/* ── Revalidate ─────────────────────────────────────────────── */}
-          <H2 id="revalidate">Revalidate webhook</H2>
-          <P>
-            Optional. Set a revalidate URL on the site connection and Contivo will call it right
-            after each publish, so your cache clears immediately instead of on the next interval.
-          </P>
-          <Block label="What Contivo sends">{`POST <your revalidate URL>
+          <H2 id="revalidate">{t('toc.revalidate')}</H2>
+          <P>{t('revalidate.p1')}</P>
+          <Block label={t('revalidate.sendsLabel')}>{`POST <your revalidate URL>
 Content-Type: application/json
 Authorization: Bearer <your revalidate secret>   // only if you set one
 
 { "slug": "eliminating-the-triage-bottleneck", "event": "post.published" }`}</Block>
-          <Block label="Next.js — app/api/revalidate/route.ts">{`import { revalidatePath } from "next/cache";
+          <Block label={t('revalidate.routeLabel')}>{`import { revalidatePath } from "next/cache";
 
 export async function POST(req: Request) {
   if (req.headers.get("authorization") !== \`Bearer \${process.env.CONTIVO_REVALIDATE_SECRET}\`) {
@@ -289,20 +306,16 @@ export async function POST(req: Request) {
   revalidatePath(\`/blog/\${slug}\`);
   return Response.json({ revalidated: true });
 }`}</Block>
-          <P>
-            The call times out after 8 seconds and its status is recorded against the site
-            connection. A failure is logged and never blocks the publish — the post is already live
-            and your site will pick it up on its next scheduled fetch regardless.
-          </P>
+          <P>{t('revalidate.p2')}</P>
 
           {/* ── Recipes ────────────────────────────────────────────────── */}
-          <H2 id="recipes">Recipes</H2>
+          <H2 id="recipes">{t('toc.recipes')}</H2>
 
-          <H3>Check your key from a terminal</H3>
+          <H3>{t('recipes.curl')}</H3>
           <Block>{`curl -sS -H "Authorization: Bearer $CONTIVO_SITE_KEY" \\
   "${APP_URL}/api/v1/posts?limit=1" | jq`}</Block>
 
-          <H3>Fetch every post, one page at a time</H3>
+          <H3>{t('recipes.paging')}</H3>
           <Block>{`async function allPosts(key) {
   const out = [];
   let cursor = null;
@@ -321,8 +334,8 @@ export async function POST(req: Request) {
   return out;
 }`}</Block>
 
-          <H3>Static site generation</H3>
-          <Block label="Next.js — generateStaticParams">{`export async function generateStaticParams() {
+          <H3>{t('recipes.ssg')}</H3>
+          <Block label={t('recipes.ssgLabel')}>{`export async function generateStaticParams() {
   const res = await fetch("${APP_URL}/api/v1/posts?limit=100", {
     headers: { Authorization: \`Bearer \${process.env.CONTIVO_SITE_KEY}\` },
   });
@@ -330,7 +343,7 @@ export async function POST(req: Request) {
   return posts.map((p) => ({ slug: p.slug }));
 }`}</Block>
 
-          <H3>Python</H3>
+          <H3>{t('recipes.python')}</H3>
           <Block>{`import os, requests
 
 r = requests.get(
@@ -343,7 +356,7 @@ r.raise_for_status()
 for post in r.json()["posts"]:
     print(post["slug"], "-", post["title"])`}</Block>
 
-          <H3>PHP / WordPress</H3>
+          <H3>{t('recipes.php')}</H3>
           <Block>{`$response = wp_remote_get(
   '${APP_URL}/api/v1/posts?limit=20',
   ['headers' => ['Authorization' => 'Bearer ' . getenv('CONTIVO_SITE_KEY')]]
@@ -351,27 +364,21 @@ for post in r.json()["posts"]:
 $posts = json_decode(wp_remote_retrieve_body($response), true)['posts'];`}</Block>
 
           {/* ── Limits ─────────────────────────────────────────────────── */}
-          <H2 id="limits">Limits and guarantees</H2>
+          <H2 id="limits">{t('toc.limits')}</H2>
           <Table
-            head={['Property', 'Value', 'Notes']}
+            head={[t('limits.head.property'), t('limits.head.value'), t('limits.head.notes')]}
             rows={[
-              ['Methods', 'GET, OPTIONS', 'Read-only. There is no way to write content through this API.'],
-              ['Page size', 'max 100', 'Larger values are clamped rather than rejected.'],
-              ['Scope', 'one workspace', 'A key can only ever read the workspace it was created in.'],
-              ['Slugs', 'permanent', 'Assigned at publish, never rewritten. Safe to use in URLs and sitemaps.'],
-              ['Revoking', 'immediate', 'Deleting or disabling a site connection makes its key 401 on the next request.'],
+              [t('limits.methods'), t('limits.methodsValue'), t('limits.methodsNotes')],
+              [t('limits.pageSize'), t('limits.pageSizeValue'), t('limits.pageSizeNotes')],
+              [t('limits.scope'), t('limits.scopeValue'), t('limits.scopeNotes')],
+              [t('limits.slugs'), t('limits.slugsValue'), t('limits.slugsNotes')],
+              [t('limits.revoking'), t('limits.revokingValue'), t('limits.revokingNotes')],
             ]}
           />
-          <P>
-            There is no published rate limit today. Cache your responses anyway — a site that fetches
-            on every page view is fragile for its own reasons, not just ours.
-          </P>
+          <P>{t('limits.p1')}</P>
 
           <hr className="mt-16 border-carbon/15" />
-          <p className="mt-6 text-[13.5px] leading-relaxed text-carbon-60">
-            Something here wrong or missing? It is generated from the same code that serves the API,
-            so a mismatch is a bug worth reporting. Print this page to save it as a PDF.
-          </p>
+          <p className="mt-6 text-[13.5px] leading-relaxed text-carbon-60">{t('footerNote')}</p>
         </main>
       </div>
 

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { type ContentChannel, type ContentTone, type ContentItem } from '@contivo/types';
 
@@ -10,26 +11,27 @@ import { InstantResult } from './instant-result';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CHANNELS: { value: ContentChannel; label: string; description: string }[] = [
-  { value: 'linkedin', label: 'LinkedIn', description: 'Post' },
-  { value: 'twitter', label: 'X / Twitter', description: 'Thread' },
-  { value: 'instagram', label: 'Instagram', description: 'Caption' },
-  { value: 'email', label: 'Email', description: 'Draft' },
-  { value: 'blog', label: 'Blog', description: 'Outline' },
+/*
+  Network names are brands, not words: LinkedIn, Instagram and X read the same
+  in both languages, so only the format underneath them is translated. Email
+  and Blog are ordinary nouns and do get a Persian name, which is why they
+  carry a `nameKey` and the networks do not.
+*/
+const CHANNELS: { value: ContentChannel; label?: string; nameKey?: string }[] = [
+  { value: 'linkedin', label: 'LinkedIn' },
+  { value: 'twitter', label: 'X / Twitter' },
+  { value: 'instagram', label: 'Instagram' },
+  { value: 'email', nameKey: 'email' },
+  { value: 'blog', nameKey: 'blog' },
 ];
 
-const TONES: { value: ContentTone; label: string }[] = [
-  { value: 'professional', label: 'Professional' },
-  { value: 'friendly', label: 'Friendly' },
-  { value: 'bold', label: 'Bold' },
-  { value: 'educational', label: 'Educational' },
-  { value: 'persuasive', label: 'Persuasive' },
-];
+const TONES: ContentTone[] = ['professional', 'friendly', 'bold', 'educational', 'persuasive'];
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function InstantForm() {
+  const t = useTranslations('instant');
   const [topic, setTopic] = useState('');
   const [channel, setChannel] = useState<ContentChannel>('linkedin');
   const [tone, setTone] = useState<ContentTone>('professional');
@@ -70,7 +72,7 @@ export function InstantForm() {
       window.dispatchEvent(new Event('credits-updated'));
     } catch (err) {
       console.error('Instant generation failed:', err);
-      setError('Something went wrong. Please try again.');
+      setError(t('form.unexpectedError'));
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +89,7 @@ export function InstantForm() {
 
         {/* Channel picker */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Channel</label>
+          <label className="text-sm font-medium">{t('form.channel')}</label>
           <div className="grid grid-cols-5 gap-2">
             {CHANNELS.map((c) => (
               <button
@@ -101,8 +103,10 @@ export function InstantForm() {
                     : 'border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground hover:text-foreground',
                 )}
               >
-                <span className="font-semibold">{c.label}</span>
-                <span className="text-[10px] opacity-70">{c.description}</span>
+                <span className="font-semibold">
+                  {c.label ? <bdi>{c.label}</bdi> : t(`channelNames.${c.nameKey}`)}
+                </span>
+                <span className="text-[10px] opacity-70">{t(`channels.${c.value}`)}</span>
               </button>
             ))}
           </div>
@@ -111,13 +115,13 @@ export function InstantForm() {
         {/* Topic */}
         <div className="space-y-2">
           <label htmlFor="topic" className="text-sm font-medium">
-            Topic
+            {t('form.topic')}
           </label>
           <textarea
             id="topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="e.g. Why B2B founders should invest in thought leadership before hiring a marketing team"
+            placeholder={t('form.topicPlaceholder')}
             rows={3}
             required
             className={cn(
@@ -133,21 +137,21 @@ export function InstantForm() {
 
         {/* Tone */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Tone</label>
+          <label className="text-sm font-medium">{t('form.tone')}</label>
           <div className="flex flex-wrap gap-2">
-            {TONES.map((t) => (
+            {TONES.map((value) => (
               <button
-                key={t.value}
+                key={value}
                 type="button"
-                onClick={() => setTone(t.value)}
+                onClick={() => setTone(value)}
                 className={cn(
                   'rounded-full border px-3.5 py-1.5 text-xs font-medium transition-all',
-                  tone === t.value
+                  tone === value
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border bg-muted/30 text-muted-foreground hover:border-muted-foreground hover:text-foreground',
                 )}
               >
-                {t.label}
+                {t(`tones.${value}`)}
               </button>
             ))}
           </div>
@@ -167,10 +171,10 @@ export function InstantForm() {
           {isLoading ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              Generating…
+              {t('form.generating')}
             </>
           ) : (
-            'Generate content'
+            t('form.generate')
           )}
         </button>
       </form>

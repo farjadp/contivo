@@ -1,55 +1,54 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useActionState } from 'react';
-import { Link } from '@/i18n/navigation';
 
 import { login } from '@/app/actions/auth';
-import { AuthField, AuthShell } from '@/components/marketing/auth-shell';
+import { AuthField, AuthShell, authAccent } from '@/components/marketing/auth-shell';
+import { Link } from '@/i18n/navigation';
 
 const initialState = { error: '' };
 
 export default function SignInPage() {
+  const t = useTranslations('auth.signIn');
   const [state, formAction, isPending] = useActionState(login as never, initialState);
 
   return (
     <AuthShell
-      eyebrow="Welcome back"
-      title="Your queue kept"
-      accent="filling"
-      titleTail="itself."
-      blurb="Autopilot does not wait for you to log in. Anything it wrote while you were away is in the pipeline, already through the quality gate."
-      footer={
-        <>
-          No account yet?{' '}
+      eyebrow={t('eyebrow')}
+      title={t.rich('title', { accent: authAccent })}
+      blurb={t('blurb')}
+      footer={t.rich('footer', {
+        link: (chunks) => (
           <Link
             href="/sign-up"
             className="font-semibold text-carbon underline decoration-carbon/30 underline-offset-4 transition-colors hover:decoration-brick"
           >
-            Start with your website
+            {chunks}
           </Link>
-        </>
-      }
+        ),
+      })}
     >
       <form action={formAction} className="space-y-8" noValidate>
         {state?.error && (
-          <p role="alert" className="border-l-2 border-brick pl-4 text-[14px] text-brick-deep">
+          <p role="alert" className="border-s-2 border-brick ps-4 text-[14px] text-brick-deep">
             {state.error}
           </p>
         )}
 
         <AuthField
           id="email"
-          label="Email"
+          label={t('emailLabel')}
           type="email"
           autoComplete="email"
-          placeholder="you@company.com"
+          placeholder={t('emailPlaceholder')}
         />
         <AuthField
           id="password"
-          label="Password"
+          label={t('passwordLabel')}
           type="password"
           autoComplete="current-password"
-          placeholder="••••••••"
+          placeholder={t('passwordPlaceholder')}
         />
 
         <button
@@ -57,10 +56,10 @@ export default function SignInPage() {
           disabled={isPending}
           className="group w-full bg-carbon px-7 py-4 text-[14.5px] font-semibold text-paper-warm transition-colors duration-300 hover:bg-brick disabled:opacity-60"
         >
-          {isPending ? 'Signing in…' : 'Sign in'}
+          {isPending ? t('submitting') : t('submit')}
           <span
             aria-hidden
-            className="ml-3 inline-block transition-transform duration-300 group-hover:translate-x-1"
+            className="ms-3 inline-block transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180"
           >
             &rarr;
           </span>

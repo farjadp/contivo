@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/navigation';
 import { AlertCircle, Check, Copy, Globe, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react';
 
@@ -20,7 +21,12 @@ type Props = {
   appUrl: string;
 };
 
+/** Brand names stay Latin; isolating them keeps Persian punctuation on its own side. */
+const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
+
 export function SitesSection({ sites, workspaces, appUrl }: Props) {
+  const t = useTranslations('connections.sites');
+  const format = useFormatter();
   const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
@@ -66,37 +72,47 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
     });
   };
 
+  /*
+    Dates go through next-intl rather than `toLocaleString()`, so the Persian
+    side gets the Persian calendar, Persian digits and Tehran time.
+  */
+  const formatDate = (iso: string) => {
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime())
+      ? iso
+      : format.dateTime(d, { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
   if (workspaces.length === 0) {
-    return (
-      <Empty
-        title="No workspace yet"
-        body="Create a Growth Engine workspace first — a site connection serves the content of one workspace."
-      />
-    );
+    return <Empty title={t('noWorkspaceTitle')} body={t('noWorkspaceBody')} />;
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-[#121212]">Websites</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-xl">
-            Give a site an API key and it can pull its published posts from Contivo. Works with any
-            stack — the site fetches, Contivo never pushes into your codebase.
-          </p>
+          <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
+          <p className="text-sm text-gray-500 mt-1 max-w-xl">{t.rich('subtitle', { bdi })}</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
           className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-[#121212] text-white text-sm font-semibold hover:bg-black/80"
         >
           <Plus className="w-4 h-4" />
-          Add site
+          {t('add')}
         </button>
       </div>
 
       <SiteApiGuide appUrl={appUrl} />
 
-      {freshKey && <FreshKeyCard siteName={freshKey.siteName} apiKey={freshKey.key} appUrl={appUrl} onDismiss={() => setFreshKey(null)} />}
+      {freshKey && (
+        <FreshKeyCard
+          siteName={freshKey.siteName}
+          apiKey={freshKey.key}
+          appUrl={appUrl}
+          onDismiss={() => setFreshKey(null)}
+        />
+      )}
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800 flex items-start gap-2">
@@ -108,7 +124,7 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
       {showForm && (
         <div className="rounded-2xl border border-gray-200 p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Field label="Workspace" hint="Whose content this site serves.">
+            <Field label={t('fieldWorkspace')} hint={t('fieldWorkspaceHint')}>
               <select
                 className={inputCls}
                 value={form.workspaceId}
@@ -119,59 +135,59 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
                 ))}
               </select>
             </Field>
-            <Field label="Site name">
+            <Field label={t('fieldName')}>
               <input
+                dir="ltr"
                 className={inputCls}
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                 placeholder="farjadp.info"
               />
             </Field>
-            <Field label="Site URL">
+            <Field label={t('fieldUrl')}>
               <input
+                type="url"
                 className={inputCls}
                 value={form.siteUrl}
                 onChange={(e) => setForm((f) => ({ ...f, siteUrl: e.target.value }))}
                 placeholder="https://www.farjadp.info"
               />
             </Field>
-            <Field label="Revalidate URL (optional)" hint="Called after each publish so your site can clear its cache.">
+            <Field label={t('fieldRevalidateUrl')} hint={t('fieldRevalidateUrlHint')}>
               <input
+                type="url"
                 className={inputCls}
                 value={form.revalidateUrl}
                 onChange={(e) => setForm((f) => ({ ...f, revalidateUrl: e.target.value }))}
                 placeholder="https://www.farjadp.info/api/revalidate"
               />
             </Field>
-            <Field label="Revalidate secret (optional)" hint="Sent as a Bearer token to that URL.">
+            <Field label={t('fieldRevalidateSecret')} hint={t('fieldRevalidateSecretHint')}>
               <input
                 className={inputCls}
                 value={form.revalidateSecret}
                 onChange={(e) => setForm((f) => ({ ...f, revalidateSecret: e.target.value }))}
-                placeholder="a random string your site checks"
+                placeholder={t('secretPlaceholder')}
               />
             </Field>
           </div>
           <div className="flex justify-end gap-2">
             <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600">
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleCreate}
               disabled={isPending}
               className="px-4 py-2 rounded-xl bg-[#2B2DFF] text-white text-sm font-semibold disabled:opacity-60"
             >
-              {isPending ? 'Creating…' : 'Create site & key'}
+              {isPending ? t('creating') : t('create')}
             </button>
           </div>
         </div>
       )}
 
       {sites.length === 0 && !showForm ? (
-        <Empty
-          title="No sites connected"
-          body="Add a site to give it an API key. Autopilot can then write for the blog channel and your site will serve the posts."
-        />
+        <Empty title={t('emptyTitle')} body={t('emptyBody')} />
       ) : (
         <ul className="space-y-3">
           {sites.map((site) => (
@@ -181,32 +197,41 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
                   <div className="flex items-center gap-2">
                     <Globe className="w-4 h-4 text-gray-400 shrink-0" />
                     <span className="font-semibold text-[#121212]">{site.name}</span>
-                    <StatusPill status={site.status} />
+                    <StatusPill status={site.status} label={t(statusKey(site.status))} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 break-all">{site.siteUrl}</p>
+                  <p className="text-xs text-gray-500 mt-1 break-all" dir="ltr">
+                    {site.siteUrl}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-                    <span>Workspace: {site.workspaceName}</span>
-                    <span>{site.publishedCount} published</span>
-                    <span className="font-mono">{site.keyPrefix}…</span>
-                    {site.lastFetchedAt && <span>Last fetch: {formatDate(site.lastFetchedAt)}</span>}
+                    <span>{t('metaWorkspace', { name: site.workspaceName })}</span>
+                    <span>{t('metaPublished', { count: site.publishedCount })}</span>
+                    <span className="font-mono" dir="ltr">{site.keyPrefix}…</span>
+                    {site.lastFetchedAt && (
+                      <span>{t('metaLastFetch', { date: formatDate(site.lastFetchedAt) })}</span>
+                    )}
                     {site.revalidateUrl && (
                       <span>
-                        Revalidate:{' '}
-                        {site.lastRevalidateStatus == null
-                          ? 'not called yet'
-                          : site.lastRevalidateStatus === 0
-                            ? 'failed'
-                            : `HTTP ${site.lastRevalidateStatus}`}
+                        {t('metaRevalidate', {
+                          status:
+                            site.lastRevalidateStatus == null
+                              ? t('revalidateNotCalled')
+                              : site.lastRevalidateStatus === 0
+                                ? t('revalidateFailed')
+                                : /* a status code, so Latin digits */
+                                  t('revalidateHttp', {
+                                    status: String(site.lastRevalidateStatus),
+                                  }),
+                        })}
                       </span>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <IconButton title="Issue a new key (invalidates the current one)" onClick={() => handleRotate(site)} disabled={isPending}>
+                  <IconButton title={t('actionRotate')} onClick={() => handleRotate(site)} disabled={isPending}>
                     <RefreshCw className="w-4 h-4" />
                   </IconButton>
                   <IconButton
-                    title={site.status === 'ACTIVE' ? 'Disable this key' : 'Re-enable this key'}
+                    title={site.status === 'ACTIVE' ? t('actionDisable') : t('actionEnable')}
                     onClick={() =>
                       start(async () => {
                         await setSiteStatus(site.id, site.status === 'ACTIVE' ? 'DISABLED' : 'ACTIVE');
@@ -218,7 +243,7 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
                     <KeyRound className="w-4 h-4" />
                   </IconButton>
                   <IconButton
-                    title="Delete this site"
+                    title={t('actionDelete')}
                     danger
                     onClick={() =>
                       start(async () => {
@@ -253,6 +278,7 @@ function FreshKeyCard({
   appUrl: string;
   onDismiss: () => void;
 }) {
+  const t = useTranslations('connections.sites');
   const [copied, setCopied] = useState<'key' | 'snippet' | null>(null);
   const snippet = `const res = await fetch("${appUrl}/api/v1/posts", {
   headers: { Authorization: \`Bearer \${process.env.CONTIVO_API_KEY}\` },
@@ -274,19 +300,18 @@ const { posts } = await res.json();`;
     <div className="rounded-2xl border-2 border-[#2B2DFF] bg-[#2B2DFF]/5 p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h4 className="font-bold text-[#121212]">API key for {siteName}</h4>
-          <p className="text-sm text-gray-600 mt-1">
-            Copy it now — this is the only time it is shown. Contivo stores only a hash, so it
-            cannot be shown again. Lost it? Rotate to issue a new one.
-          </p>
+          <h4 className="font-bold text-[#121212]">
+            {t.rich('keyTitle', { bdi, site: siteName })}
+          </h4>
+          <p className="text-sm text-gray-600 mt-1">{t.rich('keyBody', { bdi })}</p>
         </div>
         <button onClick={onDismiss} className="text-sm font-semibold text-gray-500 shrink-0">
-          Done
+          {t('keyDone')}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
-        <code className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono break-all">
+        <code dir="ltr" className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono break-all">
           {apiKey}
         </code>
         <button
@@ -294,30 +319,33 @@ const { posts } = await res.json();`;
           className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#121212] text-white text-xs font-semibold"
         >
           {copied === 'key' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-          {copied === 'key' ? 'Copied' : 'Copy'}
+          {copied === 'key' ? t('keyCopied') : t('keyCopy')}
         </button>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
           <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
-            Fetch your posts
+            {t('keyFetchPosts')}
           </span>
           <button onClick={() => copy(snippet, 'snippet')} className="text-xs font-semibold text-[#2B2DFF]">
-            {copied === 'snippet' ? 'Copied' : 'Copy snippet'}
+            {copied === 'snippet' ? t('keyCopied') : t('keyCopySnippet')}
           </button>
         </div>
-        <pre className="bg-white border border-gray-200 rounded-lg p-3 text-xs font-mono overflow-x-auto">
+        <pre dir="ltr" className="bg-white border border-gray-200 rounded-lg p-3 text-xs font-mono overflow-x-auto text-start">
           {snippet}
         </pre>
         <p className="text-xs text-gray-500 mt-2">
-          Store the key as <code className="font-mono">CONTIVO_API_KEY</code> on your site — server-side
-          only. Single post: <code className="font-mono">/api/v1/posts/&lt;slug&gt;</code>
+          {t.rich('keyStore', { code })}{' '}
+          {t.rich('keySinglePost', { code, slug: '<slug>' })}
         </p>
       </div>
     </div>
   );
 }
+
+/** Code fragments are Latin by nature; `globals.css` isolates <code> under fa. */
+const code = (chunks: React.ReactNode) => <code className="font-mono">{chunks}</code>;
 
 const inputCls =
   'block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black';
@@ -359,7 +387,16 @@ function IconButton({
   );
 }
 
-function StatusPill({ status }: { status: string }) {
+/** The raw enum used to be rendered straight to screen; it is a label now. */
+function statusKey(status: string) {
+  return status === 'ACTIVE'
+    ? 'statusActive'
+    : status === 'REVOKED'
+      ? 'statusRevoked'
+      : 'statusDisabled';
+}
+
+function StatusPill({ status, label }: { status: string; label: string }) {
   const styles: Record<string, string> = {
     ACTIVE: 'bg-green-100 text-green-800',
     DISABLED: 'bg-gray-100 text-gray-700',
@@ -367,7 +404,7 @@ function StatusPill({ status }: { status: string }) {
   };
   return (
     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${styles[status] ?? styles.DISABLED}`}>
-      {status}
+      {label}
     </span>
   );
 }
@@ -382,9 +419,4 @@ function Empty({ title, body }: { title: string; body: string }) {
       <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">{body}</p>
     </div>
   );
-}
-
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 }

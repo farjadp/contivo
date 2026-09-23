@@ -14,6 +14,7 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight } from 'lucide-react';
 
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
@@ -31,10 +32,13 @@ type Platform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'TIKTOK';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 
+/**
+ * Visual identity only. The label and the description are message keys, because
+ * "Facebook Page" and "Post tweets and threads…" are copy, not configuration.
+ */
 const PLATFORMS: {
   id: Platform;
-  label: string;
-  description: string;
+  key: string;
   color: string;
   bg: string;
   border: string;
@@ -43,8 +47,7 @@ const PLATFORMS: {
 }[] = [
   {
     id: 'LINKEDIN',
-    label: 'LinkedIn',
-    description: 'Publish text posts and articles to your LinkedIn profile or company page.',
+    key: 'linkedin',
     color: '#0A66C2',
     bg: '#EFF7FF',
     border: '#BFDBFE',
@@ -53,8 +56,7 @@ const PLATFORMS: {
   },
   {
     id: 'X',
-    label: 'X (Twitter)',
-    description: 'Post tweets and threads to your X account.',
+    key: 'x',
     color: '#000000',
     bg: '#F0F0F0',
     border: '#E5E7EB',
@@ -63,8 +65,7 @@ const PLATFORMS: {
   },
   {
     id: 'FACEBOOK',
-    label: 'Facebook Page',
-    description: 'Publish posts and link shares to a Facebook Page you manage.',
+    key: 'facebook',
     color: '#1877F2',
     bg: '#EEF4FF',
     border: '#BFDBFE',
@@ -73,8 +74,7 @@ const PLATFORMS: {
   },
   {
     id: 'TIKTOK',
-    label: 'TikTok',
-    description: 'Publish photo carousel posts and videos to your TikTok account.',
+    key: 'tiktok',
     color: '#010101',
     bg: '#F0F0F0',
     border: '#E5E7EB',
@@ -83,9 +83,13 @@ const PLATFORMS: {
   },
 ];
 
+/** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
+const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
+  const t = useTranslations('connections.modal');
   const [selected, setSelected] = useState<Platform | null>(null);
   const [connectError, setConnectError] = useState('');
   const [isConnecting, startConnect] = useTransition();
@@ -128,13 +132,14 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
           <div>
-            <h2 className="text-lg font-bold text-[#121212]">Connect a Social Account</h2>
+            <h2 className="text-lg font-bold text-[#121212]">{t('title')}</h2>
             <p className="text-xs text-gray-400 mt-0.5">
-              {selected ? 'Review permissions and connect' : 'Choose a platform to connect'}
+              {selected ? t('subtitleReview') : t('subtitleChoose')}
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label={t('close')}
             className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -148,17 +153,14 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
               {PLATFORMS.map((p) => {
                 const PIcon = p.Icon;
                 const unavailable = isUnavailable(p.id);
+                const label = t(`platforms.${p.key}Label`);
                 return (
                   <button
                     key={p.id}
                     onClick={() => !unavailable && setSelected(p.id)}
                     disabled={unavailable}
-                    title={
-                      unavailable
-                        ? `${p.label} has no API credentials on this deployment.`
-                        : undefined
-                    }
-                    className={`w-full flex items-center gap-4 rounded-2xl border p-4 transition-all text-left group ${
+                    title={unavailable ? t('unavailableTitle', { platform: label }) : undefined}
+                    className={`w-full flex items-center gap-4 rounded-2xl border p-4 transition-all text-start group ${
                       unavailable
                         ? 'border-dashed border-gray-200 bg-gray-50 cursor-not-allowed'
                         : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm'
@@ -171,15 +173,15 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                       <PIcon className="w-5 h-5" style={{ color: p.color }} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-[#121212]">{p.label}</p>
+                      <p className="text-sm font-bold text-[#121212]">{label}</p>
                       <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
                         {unavailable
-                          ? 'Not set up on this deployment — no API credentials yet.'
-                          : p.description}
+                          ? t('unavailableDescription')
+                          : t.rich(`platforms.${p.key}Description`, { bdi })}
                       </p>
                     </div>
                     {!unavailable && (
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors" />
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors rtl:rotate-180" />
                     )}
                   </button>
                 );
@@ -191,10 +193,12 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                   <span className="text-lg">📸</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-600">Instagram Business</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Coming in Phase 2 — requires media pipeline.</p>
+                  <p className="text-sm font-bold text-gray-600">{t('instagramLabel')}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{t('instagramNote')}</p>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">Soon</span>
+                <span className="text-[10px] font-bold text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">
+                  {t('instagramBadge')}
+                </span>
               </div>
             </div>
           ) : (
@@ -202,9 +206,12 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
             <div>
               <button
                 onClick={() => setSelected(null)}
-                className="text-xs text-[#2B2DFF] font-semibold hover:underline mb-4 block"
+                className="text-xs text-[#2B2DFF] font-semibold hover:underline mb-4 flex items-center gap-1.5"
               >
-                ← Back to platform list
+                <span aria-hidden className="rtl:rotate-180">
+                  &larr;
+                </span>
+                {t('backToList')}
               </button>
 
               <div
@@ -216,14 +223,20 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                   <SelectedIcon className="w-5 h-5" style={{ color: platform!.color }} />
                 </div>); })()}
                 <div>
-                  <p className="text-sm font-bold text-[#121212]">{platform!.label}</p>
-                  <p className="text-xs text-gray-500">{platform!.description}</p>
+                  <p className="text-sm font-bold text-[#121212]">
+                    {t(`platforms.${platform!.key}Label`)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {t.rich(`platforms.${platform!.key}Description`, { bdi })}
+                  </p>
                 </div>
               </div>
 
               {/* Permissions */}
               <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Permissions requested</p>
+                <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                  {t('permissionsTitle')}
+                </p>
                 <div className="space-y-1.5">
                   {platform!.scopes.map((scope) => (
                     <div key={scope} className="flex items-center gap-2 text-xs text-gray-600">
@@ -237,10 +250,7 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
               {/* Security note */}
               <div className="flex gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-5">
                 <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700">
-                  Your access token is encrypted and stored securely. It is never exposed to the frontend.
-                  You can revoke access at any time.
-                </p>
+                <p className="text-xs text-amber-700">{t('securityNote')}</p>
               </div>
 
               {/* CTA — mints a signed handoff link, then redirects to the provider */}
@@ -253,7 +263,20 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                 className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
                 style={{ backgroundColor: platform!.color }}
               >
-                {isConnecting ? 'Preparing…' : `Continue to ${platform!.label} OAuth →`}
+                {isConnecting ? (
+                  t('preparing')
+                ) : (
+                  <>
+                    {/* The label is Latin either way, so it needs no isolation
+                        of its own: the whole button is a Latin run. */}
+                    {t('continueOAuth', {
+                      platform: t(`platforms.${platform!.key}Label`),
+                    })}
+                    <span aria-hidden className="rtl:rotate-180">
+                      &rarr;
+                    </span>
+                  </>
+                )}
               </button>
             </div>
           )}

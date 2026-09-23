@@ -1,8 +1,19 @@
-import { Link } from '@/i18n/navigation';
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 
+import { Link, getPathname } from '@/i18n/navigation';
 import { getUserAccessState } from '@/lib/admin-state';
-import { Panel, PageHeader, MetricCard, KeyValueGrid, InfoPill, LogList, StatusBadge, formatDateTime, formatUsd, EmptyState } from '../../_components/AdminUi';
+import {
+  Panel,
+  PageHeader,
+  MetricCard,
+  KeyValueGrid,
+  InfoPill,
+  LogList,
+  StatusBadge,
+  EmptyState,
+  createAdminFormat,
+} from '../../_components/AdminUi';
 import { listUserActivityLogs } from '@/lib/activity-log';
 import { prisma } from '@/lib/db';
 
@@ -12,6 +23,9 @@ type Props = {
 
 export default async function AdminUserDetailPage({ params }: Props) {
   const { userId } = await params;
+  const t = await getTranslations('admin');
+  const locale = await getLocale();
+  const fmt = createAdminFormat(await getFormatter(), t);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -82,62 +96,66 @@ export default async function AdminUserDetailPage({ params }: Props) {
   return (
     <div className="space-y-6">
       <PageHeader
-        backHref="/admin?section=users"
-        backLabel="← Back to Users"
+        backHref={`${getPathname({ href: '/admin', locale })}?section=users`}
+        backLabel={t('userDetail.back')}
         title={user.name || user.email}
-        subtitle="User detail view for subscription state, credits, workspaces, and recent platform activity."
+        subtitle={t('userDetail.subtitle')}
         actions={
           <>
             <Link
               href={{ pathname: '/admin', query: { section: 'credits', userId: user.id } }}
               className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
             >
-              Open Ledger
+              {t('userDetail.openLedger')}
             </Link>
             <Link
               href={{ pathname: '/admin', query: { section: 'users', q: encodeURIComponent(user.email) } }}
               className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
             >
-              Search in Users
+              {t('userDetail.searchInUsers')}
             </Link>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Current Credits" value={currentCreditBalance.toLocaleString()} />
-        <MetricCard label="Lifetime AI Cost" value={formatUsd(totalAiCost)} />
-        <MetricCard label="Total Tokens" value={totalTokens.toLocaleString()} />
-        <MetricCard label="Access Status" value={accessState.status} helper={accessState.suspendedReason || `${user._count.workspaces} workspaces`} />
+        <MetricCard label={t('userDetail.currentCredits')} value={fmt.number(currentCreditBalance)} />
+        <MetricCard label={t('userDetail.lifetimeAiCost')} value={fmt.usd(totalAiCost)} />
+        <MetricCard label={t('userDetail.totalTokens')} value={fmt.number(totalTokens)} />
+        <MetricCard
+          label={t('userDetail.accessStatus')}
+          value={accessState.status}
+          helper={accessState.suspendedReason || t('userDetail.workspacesHelper', { count: fmt.number(user._count.workspaces) })}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Panel title="Profile" subtitle="Core account and access state">
+        <Panel title={t('userDetail.profileTitle')} subtitle={t('userDetail.profileSubtitle')}>
           <KeyValueGrid
             items={[
-              { label: 'Email', value: user.email },
-              { label: 'User ID', value: user.id },
-              { label: 'Role', value: <StatusBadge status={user.role} /> },
-              { label: 'Plan', value: <StatusBadge status={user.plan} /> },
-              { label: 'Access Status', value: <StatusBadge status={accessState.status} /> },
-              { label: 'Created At', value: formatDateTime(user.createdAt) },
-              { label: 'Updated At', value: formatDateTime(user.updatedAt) },
-              { label: 'Suspended At', value: formatDateTime(accessState.suspendedAt) },
-              { label: 'Suspension Reason', value: accessState.suspendedReason || '-' },
+              { label: t('userDetail.email'), value: <bdi>{user.email}</bdi> },
+              { label: t('userDetail.userId'), value: <span dir="ltr">{user.id}</span> },
+              { label: t('userDetail.role'), value: <StatusBadge status={user.role} /> },
+              { label: t('userDetail.plan'), value: <StatusBadge status={user.plan} /> },
+              { label: t('userDetail.accessStatus'), value: <StatusBadge status={accessState.status} /> },
+              { label: t('userDetail.createdAt'), value: fmt.dateTime(user.createdAt) },
+              { label: t('userDetail.updatedAt'), value: fmt.dateTime(user.updatedAt) },
+              { label: t('userDetail.suspendedAt'), value: fmt.dateTime(accessState.suspendedAt) },
+              { label: t('userDetail.suspensionReason'), value: accessState.suspendedReason || '-' },
             ]}
             columns={2}
           />
         </Panel>
 
-        <Panel title="Subscription" subtitle="Billing-facing state available in the current schema">
+        <Panel title={t('userDetail.subscriptionTitle')} subtitle={t('userDetail.subscriptionSubtitle')}>
           <KeyValueGrid
             items={[
-              { label: 'Stripe Customer', value: user.subscription?.stripeCustomerId || '-' },
-              { label: 'Stripe Subscription', value: user.subscription?.stripeSubscriptionId || '-' },
-              { label: 'Subscription Status', value: user.subscription ? <StatusBadge status={user.subscription.status} /> : 'No subscription' },
-              { label: 'Subscription Plan', value: user.subscription?.plan || user.plan },
-              { label: 'Period Start', value: formatDateTime(user.subscription?.currentPeriodStart) },
-              { label: 'Period End', value: formatDateTime(user.subscription?.currentPeriodEnd) },
+              { label: t('userDetail.stripeCustomer'), value: <span dir="ltr">{user.subscription?.stripeCustomerId || '-'}</span> },
+              { label: t('userDetail.stripeSubscription'), value: <span dir="ltr">{user.subscription?.stripeSubscriptionId || '-'}</span> },
+              { label: t('userDetail.subscriptionStatus'), value: user.subscription ? <StatusBadge status={user.subscription.status} /> : t('userDetail.noSubscription') },
+              { label: t('userDetail.subscriptionPlan'), value: user.subscription?.plan || user.plan },
+              { label: t('userDetail.periodStart'), value: fmt.dateTime(user.subscription?.currentPeriodStart) },
+              { label: t('userDetail.periodEnd'), value: fmt.dateTime(user.subscription?.currentPeriodEnd) },
             ]}
             columns={2}
           />
@@ -145,9 +163,9 @@ export default async function AdminUserDetailPage({ params }: Props) {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="Workspaces" subtitle="Current workspaces owned by this user">
+        <Panel title={t('userDetail.workspacesTitle')} subtitle={t('userDetail.workspacesSubtitle')}>
           {user.workspaces.length === 0 ? (
-            <EmptyState text="No workspaces found for this user." />
+            <EmptyState text={t('userDetail.noWorkspaces')} />
           ) : (
             <div className="space-y-3">
               {user.workspaces.map((workspace: any) => (
@@ -157,14 +175,16 @@ export default async function AdminUserDetailPage({ params }: Props) {
                       <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: workspace.id } }} className="text-sm font-bold text-[#121212] hover:underline">
                         {workspace.name}
                       </Link>
-                      <p className="mt-1 text-xs text-slate-500">{workspace.websiteUrl || 'No website URL'}</p>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {workspace.websiteUrl ? <bdi>{workspace.websiteUrl}</bdi> : t('common.noWebsiteUrl')}
+                      </p>
                     </div>
                     <StatusBadge status={workspace.status} />
                   </div>
                   <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    <InfoPill label="Competitors" value={workspace._count.competitors.toLocaleString()} />
-                    <InfoPill label="Content" value={workspace._count.contentItems.toLocaleString()} />
-                    <InfoPill label="Updated" value={formatDateTime(workspace.updatedAt)} />
+                    <InfoPill label={t('userDetail.competitors')} value={fmt.number(workspace._count.competitors)} />
+                    <InfoPill label={t('userDetail.content')} value={fmt.number(workspace._count.contentItems)} />
+                    <InfoPill label={t('userDetail.updated')} value={fmt.dateTime(workspace.updatedAt)} />
                   </div>
                 </div>
               ))}
@@ -172,19 +192,24 @@ export default async function AdminUserDetailPage({ params }: Props) {
           )}
         </Panel>
 
-        <Panel title="Recent AI Usage" subtitle="Latest provider activity and cost trail">
+        <Panel title={t('userDetail.aiUsageTitle')} subtitle={t('userDetail.aiUsageSubtitle')}>
           {recentAiUsage.length === 0 ? (
-            <EmptyState text="No AI usage logged yet." />
+            <EmptyState text={t('userDetail.noAiUsage')} />
           ) : (
             <div className="space-y-3">
               {recentAiUsage.map((entry: any) => (
                 <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{entry.feature}</p>
-                    <p className="text-xs font-semibold text-slate-500">{formatUsd(Number(entry.estimatedCostUsd))}</p>
+                    <p className="text-xs font-semibold text-slate-500">{fmt.usd(Number(entry.estimatedCostUsd))}</p>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
-                    {entry.model} • {entry.totalTokens.toLocaleString()} tokens • {formatDateTime(entry.createdAt)}
+                    {/* The model name is a provider identifier and stays Latin. */}
+                    {t('userDetail.aiUsageLine', {
+                      model: entry.model,
+                      tokens: fmt.number(entry.totalTokens),
+                      date: fmt.dateTime(entry.createdAt),
+                    })}
                   </p>
                 </div>
               ))}
@@ -194,9 +219,9 @@ export default async function AdminUserDetailPage({ params }: Props) {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="Recent Content" subtitle="Latest assets generated by this user">
+        <Panel title={t('userDetail.recentContentTitle')} subtitle={t('userDetail.recentContentSubtitle')}>
           {recentContent.length === 0 ? (
-            <EmptyState text="No content items found." />
+            <EmptyState text={t('userDetail.noContent')} />
           ) : (
             <div className="space-y-3">
               {recentContent.map((item: any) => (
@@ -207,7 +232,10 @@ export default async function AdminUserDetailPage({ params }: Props) {
                         {item.topic}
                       </Link>
                       <p className="mt-1 text-xs text-slate-500">
-                        {item.workspace?.name || 'No workspace'} • {item.channel}
+                        {t('userDetail.contentLine', {
+                          workspace: item.workspace?.name || t('common.noWorkspace'),
+                          channel: item.channel,
+                        })}
                       </p>
                     </div>
                     <StatusBadge status={item.status} />
@@ -218,17 +246,17 @@ export default async function AdminUserDetailPage({ params }: Props) {
           )}
         </Panel>
 
-        <Panel title="Recent Jobs" subtitle="Latest content/background jobs for this user">
+        <Panel title={t('userDetail.recentJobsTitle')} subtitle={t('userDetail.recentJobsSubtitle')}>
           {recentJobs.length === 0 ? (
-            <EmptyState text="No jobs found." />
+            <EmptyState text={t('userDetail.noJobs')} />
           ) : (
             <div className="space-y-3">
               {recentJobs.map((job: any) => (
                 <div key={job.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-[#121212]">{job.type}</p>
-                      <p className="mt-1 text-xs text-slate-500">{formatDateTime(job.createdAt)}</p>
+                      <p className="text-sm font-bold text-[#121212]" dir="ltr">{job.type}</p>
+                      <p className="mt-1 text-xs text-slate-500">{fmt.dateTime(job.createdAt)}</p>
                     </div>
                     <StatusBadge status={job.status} />
                   </div>
@@ -240,7 +268,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
         </Panel>
       </div>
 
-      <Panel title="Activity" subtitle="Recent user and workspace actions recorded in activity logs">
+      <Panel title={t('userDetail.activityTitle')} subtitle={t('userDetail.activitySubtitle')}>
         <LogList rows={activityLogs} />
       </Panel>
     </div>

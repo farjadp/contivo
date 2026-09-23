@@ -1,1 +1,17 @@
-{}
+{
+  "onboarding": {
+    "stage": "Onboarding — Setup Workflow",
+    "welcome": {
+      "titleLead": "Begin",
+      "titleAccent": "shaping",
+      "titleTail": "your system.",
+      "body": "Contivo brings clarity to your content. Choose a path to construct your long-term strategy, or skip the setup to generate instantly.",
+      "workspaceIndex": "01 — Recommended",
+      "workspaceTitle": "Build Workspace",
+      "workspaceBody": "Establish your brand identity and set up a comprehensive, data-driven marketing engine.",
+      "instantIndex": "02 — Fast Track",
+      "instantTitle": "Instant Content",
+      "instantBody": "No configuration needed. Give a topic, choose a platform, and get polished posts in seconds."
+    }
+  }
+}

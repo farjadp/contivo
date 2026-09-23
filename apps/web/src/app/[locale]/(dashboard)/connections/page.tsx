@@ -1,5 +1,5 @@
 /**
- * app/(dashboard)/connections/page.tsx
+ * app/[locale]/(dashboard)/connections/page.tsx
  *
  * Connections page — manages social media account connections and publish jobs.
  *
@@ -14,6 +14,9 @@
 
 import { redirect, Link } from '@/i18n/navigation';
 import { Share2, Globe } from 'lucide-react';
+import type { Metadata } from 'next';
+import { getLocale, getTranslations } from 'next-intl/server';
+
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
@@ -24,9 +27,16 @@ import {
   getSocialConnections,
   resolveWorkspaceScope,
 } from '@/lib/social-data';
-import { getLocale } from 'next-intl/server';
 
-export const metadata = { title: 'Connections — Contivo' };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'connections' });
+  return { title: t('metaTitle') };
+}
 
 // ─── Page Props ───────────────────────────────────────────────────────────────
 
@@ -39,6 +49,8 @@ type Props = {
 export default async function ConnectionsPage({ searchParams }: Props) {
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
+
+  const t = await getTranslations('connections');
 
   const params = await searchParams;
   const activeMainTab = params.tab === 'websites' ? 'websites' : 'social';
@@ -65,25 +77,20 @@ export default async function ConnectionsPage({ searchParams }: Props) {
     <div className="max-w-5xl mx-auto space-y-8 pt-8 px-4">
       {/* ─── Header ────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212]">Connections</h1>
-        <p className="text-gray-500 mt-2 text-sm">
-          Connect your brand&apos;s social channels and websites. Publish and schedule content directly from Contivo.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight text-[#121212]">{t('title')}</h1>
+        <p className="text-gray-500 mt-2 text-sm">{t('subtitle')}</p>
       </div>
 
       {/* ─── No workspace yet ───────────────────────────────────────────── */}
       {!workspace && (
         <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
-          <h2 className="text-base font-bold text-[#121212]">Create a workspace first</h2>
-          <p className="text-sm text-amber-800 mt-1">
-            Connections belong to a workspace — it decides which brand&apos;s content gets
-            published. Create one in the Growth Engine, then come back.
-          </p>
+          <h2 className="text-base font-bold text-[#121212]">{t('noWorkspace.title')}</h2>
+          <p className="text-sm text-amber-800 mt-1">{t('noWorkspace.body')}</p>
           <Link
             href="/growth/new"
             className="inline-block mt-4 rounded-xl bg-[#121212] text-white text-sm font-semibold px-4 py-2"
           >
-            Create workspace
+            {t('noWorkspace.cta')}
           </Link>
         </div>
       )}
@@ -92,7 +99,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       {workspaces.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
-            Workspace
+            {t('workspaceLabel')}
           </span>
           {workspaces.map((w) => (
             <Link
@@ -112,14 +119,24 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       )}
 
       {/* ─── Main tabs: Websites | Social Channels ──────────────────────── */}
+      {/*
+        These were plain <a href="/connections?tab=…"> elements, which drop the
+        visitor out of /fa on the first click. The locale-aware Link keeps the
+        prefix and the workspace selection.
+      */}
       <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl w-fit">
-        {[
-          { id: 'social',   label: 'Social Channels', href: '/connections?tab=social',   Icon: Share2 },
-          { id: 'websites', label: 'Websites',         href: '/connections?tab=websites', Icon: Globe },
-        ].map(({ id, label, href, Icon }) => (
-          <a
+        {(
+          [
+            { id: 'social', label: t('tabs.social'), Icon: Share2 },
+            { id: 'websites', label: t('tabs.websites'), Icon: Globe },
+          ] as const
+        ).map(({ id, label, Icon }) => (
+          <Link
             key={id}
-            href={href}
+            href={{
+              pathname: '/connections',
+              query: workspaceId ? { tab: id, workspaceId } : { tab: id },
+            }}
             className={cn(
               'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
               activeMainTab === id
@@ -129,7 +146,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
           >
             <Icon className="w-4 h-4" />
             {label}
-          </a>
+          </Link>
         ))}
       </div>
 

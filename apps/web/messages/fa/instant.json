@@ -1,1 +1,48 @@
-{}
+{
+  "instant": {
+    "meta": { "title": "محتوای فوری؛ Contivo" },
+    "title": "محتوای فوری",
+    "subtitle": "موضوع و کانال را بنویسید. در چند ثانیه محتوای آمادهٔ انتشار بگیرید.",
+    "form": {
+      "channel": "کانال",
+      "topic": "موضوع",
+      "topicPlaceholder": "مثلاً: چرا بنیان‌گذاران کسب‌وکارهای سازمانی باید پیش از استخدام تیم بازاریابی روی رهبری فکری سرمایه‌گذاری کنند",
+      "tone": "لحن",
+      "generating": "در حال تولید…",
+      "generate": "تولید محتوا",
+      "unexpectedError": "مشکلی پیش آمد. دوباره تلاش کنید."
+    },
+    "channels": {
+      "linkedin": "پست",
+      "twitter": "رشته‌توییت",
+      "instagram": "کپشن",
+      "email": "پیش‌نویس",
+      "blog": "طرح کلی"
+    },
+    "channelNames": {
+      "email": "ایمیل",
+      "blog": "بلاگ"
+    },
+    "tones": {
+      "professional": "حرفه‌ای",
+      "friendly": "صمیمی",
+      "bold": "جسورانه",
+      "educational": "آموزشی",
+      "persuasive": "ترغیب‌کننده"
+    },
+    "result": {
+      "linkedin": "پست LinkedIn",
+      "twitter": "رشته‌توییت X",
+      "instagram": "کپشن Instagram",
+      "email": "پیش‌نویس ایمیل",
+      "blog": "طرح کلی بلاگ",
+      "copy": "کپی",
+      "copied": "کپی شد!",
+      "new": "تازه",
+      "regenerate": "تولید دوباره",
+      "topicLabel": "موضوع: ",
+      "creditsUsed": "{count, plural, other {# اعتبار مصرف شد}}",
+      "creditsRemaining": "{count, number} باقی مانده"
+    }
+  }
+}

@@ -8,23 +8,32 @@
  * idea what to do with it. Everything here is checked against the real
  * handlers in app/api/v1/posts — the field list is what `serializePost`
  * returns, not what a plausible blog API would return.
+ *
+ * The wording lives in the `siteApi.guide` namespace, beside the public
+ * reference at /docs/site-api, so the two say the same thing in both
+ * languages. Snippets, field names and status codes are never translated:
+ * they are the literal wire format.
  */
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Check, ChevronDown, Copy } from 'lucide-react';
 
-const FIELDS: Array<[string, string]> = [
-  ['id', 'Stable identifier. Use it as a React key, not in your URLs.'],
-  ['slug', 'URL-safe, assigned at publish and never changed afterwards. Route on this.'],
-  ['title', 'The post topic.'],
-  ['content', 'The full body, as Markdown.'],
-  ['excerpt', 'First ~200 characters, already stripped of Markdown. For cards and meta descriptions.'],
-  ['channel', 'Always "blog" unless you asked for others.'],
-  ['publishedAt', 'ISO 8601, or null if not published.'],
-  ['updatedAt', 'ISO 8601. Useful for cache keys and sitemaps.'],
-];
+import { Link } from '@/i18n/navigation';
+
+const FIELDS = [
+  'id',
+  'slug',
+  'title',
+  'content',
+  'excerpt',
+  'channel',
+  'publishedAt',
+  'updatedAt',
+] as const;
 
 function Snippet({ label, code }: { label: string; code: string }) {
+  const t = useTranslations('siteApi.guide');
   const [copied, setCopied] = useState(false);
   return (
     <div>
@@ -39,10 +48,15 @@ function Snippet({ label, code }: { label: string; code: string }) {
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2B2DFF] hover:opacity-80"
         >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('copied') : t('copy')}
         </button>
       </div>
-      <pre className="mt-1.5 overflow-x-auto rounded-xl bg-[#0B0F14] p-4 text-[12px] leading-relaxed text-gray-200">
+      {/* The snippet is Latin by nature: pinned LTR so an RTL shell cannot
+          reorder its lines or push its punctuation to the wrong end. */}
+      <pre
+        dir="ltr"
+        className="mt-1.5 overflow-x-auto rounded-xl bg-[#0B0F14] p-4 text-left text-[12px] leading-relaxed text-gray-200"
+      >
         <code>{code}</code>
       </pre>
     </div>
@@ -50,6 +64,7 @@ function Snippet({ label, code }: { label: string; code: string }) {
 }
 
 export function SiteApiGuide({ appUrl }: { appUrl: string }) {
+  const t = useTranslations('siteApi.guide');
   const [open, setOpen] = useState(false);
 
   const list = `curl -H "Authorization: Bearer YOUR_SITE_KEY" \\
@@ -104,19 +119,23 @@ do {
   cursor = page.nextCursor;   // null when there are no more pages
 } while (cursor);`;
 
+  /** The literal token a troubleshooting line is about, kept out of the prose. */
+  const c = (chunks: React.ReactNode) => (
+    <bdi className="font-mono text-[#121212]">{chunks}</bdi>
+  );
+  /** Same, for the line whose token was never given the darker ink. */
+  const cp = (chunks: React.ReactNode) => <bdi className="font-mono">{chunks}</bdi>;
+
   return (
     <div className="rounded-2xl border border-gray-200 bg-white">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between gap-4 p-5 text-left"
+        className="flex w-full items-center justify-between gap-4 p-5 text-start"
         aria-expanded={open}
       >
         <div>
-          <p className="text-sm font-bold text-[#121212]">How to use your site key</p>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Your site reads posts from Contivo. Nothing is pushed into your codebase, and there is
-            no plugin to install.
-          </p>
+          <p className="text-sm font-bold text-[#121212]">{t('toggleTitle')}</p>
+          <p className="mt-0.5 text-xs text-gray-500">{t('toggleBody')}</p>
         </div>
         <ChevronDown
           className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
@@ -126,82 +145,73 @@ do {
       {open && (
         <div className="space-y-6 border-t border-gray-100 p-5">
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">1 · Store the key as an env var</h4>
+            <h4 className="text-sm font-bold text-[#121212]">{t('step1Title')}</h4>
             <p className="mt-1 text-xs leading-relaxed text-gray-600">
-              It is shown once, when you create it. Put it in your hosting provider&apos;s
-              environment as <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">CONTIVO_SITE_KEY</code>{' '}
-              and never in client-side code — the key reads everything this workspace has published.
-              Lost it? Create a new site connection; keys cannot be recovered.
+              {t.rich('step1Body', {
+                code: (chunks) => (
+                  <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">{chunks}</code>
+                ),
+              })}
             </p>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">2 · Check it works</h4>
-            <Snippet label="From your terminal" code={list} />
+            <h4 className="text-sm font-bold text-[#121212]">{t('step2Title')}</h4>
+            <Snippet label={t('step2Label')} code={list} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">3 · List posts on your site</h4>
-            <Snippet label="Next.js App Router — server component" code={nextjs} />
-            <p className="mt-2 text-xs leading-relaxed text-gray-600">
-              Any framework works: it is one authenticated GET returning JSON. Call it server-side
-              so the key never reaches the browser.
-            </p>
+            <h4 className="text-sm font-bold text-[#121212]">{t('step3Title')}</h4>
+            <Snippet label={t('step3Label')} code={nextjs} />
+            <p className="mt-2 text-xs leading-relaxed text-gray-600">{t('step3Body')}</p>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">4 · Render one post</h4>
-            <Snippet label="Single post by slug" code={single} />
+            <h4 className="text-sm font-bold text-[#121212]">{t('step4Title')}</h4>
+            <Snippet label={t('step4Label')} code={single} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">What comes back</h4>
+            <h4 className="text-sm font-bold text-[#121212]">{t('fieldsTitle')}</h4>
             <dl className="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-100">
-              {FIELDS.map(([name, meaning]) => (
+              {FIELDS.map((name) => (
                 <div key={name} className="grid grid-cols-[7.5rem_1fr] gap-3 px-3.5 py-2.5">
-                  <dt className="font-mono text-[12px] text-[#121212]">{name}</dt>
-                  <dd className="text-xs leading-relaxed text-gray-600">{meaning}</dd>
+                  <dt className="font-mono text-[12px] text-[#121212]">
+                    <bdi>{name}</bdi>
+                  </dt>
+                  <dd className="text-xs leading-relaxed text-gray-600">{t(`fields.${name}`)}</dd>
                 </div>
               ))}
             </dl>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">More than 100 posts</h4>
-            <Snippet label="Cursor paging" code={paging} />
+            <h4 className="text-sm font-bold text-[#121212]">{t('pagingTitle')}</h4>
+            <Snippet label={t('pagingLabel')} code={paging} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">When something is wrong</h4>
+            <h4 className="text-sm font-bold text-[#121212]">{t('troubleTitle')}</h4>
             <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-gray-600">
-              <li>
-                <span className="font-mono text-[#121212]">401</span> — the key is wrong, revoked,
-                or the site connection is not active. Check the status above.
-              </li>
-              <li>
-                <span className="font-mono text-[#121212]">404</span> on a single post — that slug
-                is not published. Slugs are assigned at publish time, not when a draft is written.
-              </li>
-              <li>
-                <span className="font-mono">posts: []</span> — the key is fine, nothing is published
-                to the blog channel yet. Autopilot has to publish before anything appears here.
-              </li>
+              <li>{t.rich('trouble401', { c })}</li>
+              <li>{t.rich('trouble404', { c })}</li>
+              <li>{t.rich('troubleEmpty', { c: cp })}</li>
             </ul>
           </section>
 
-          <p className="text-xs leading-relaxed text-gray-500">
-            Optional: set a revalidate URL on the site connection and Contivo will ping it after
-            each publish, so your cache refreshes immediately instead of on the next interval.
-          </p>
+          <p className="text-xs leading-relaxed text-gray-500">{t('revalidateNote')}</p>
 
-          <a
+          <Link
             href="/docs/site-api"
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2B2DFF] hover:opacity-80"
           >
-            Full API reference — every parameter, field and error →
-          </a>
+            {t('fullReference')}
+            <span aria-hidden className="rtl:rotate-180">
+              &rarr;
+            </span>
+          </Link>
         </div>
       )}
     </div>
