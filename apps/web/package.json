@@ -6,8 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "typecheck": "next typegen && tsc --noEmit"
+    "lint": "next lint && node scripts/check-i18n.mjs",
+    "typecheck": "next typegen && tsc --noEmit",
+    "check:i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@contivo/api": "workspace:*",
