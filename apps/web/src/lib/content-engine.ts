@@ -35,6 +35,7 @@ import {
 } from '@/lib/framework-metadata-log';
 import { humanizeDraft } from '@/lib/humanize';
 import { generateImageForContentItem } from '@/lib/content-image';
+import { adjustWordCountForLanguage, asContentLanguage } from '@/lib/content-language';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -263,6 +264,13 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
 
     const ideation = await generateContentIdeasWithGemini(brandSummary, {
       ...options,
+      /*
+        The workspace decides, not the caller. Autopilot calls this with no
+        request context at all, and a caller-supplied language would let a
+        Persian workspace quietly produce English ideas the moment someone
+        forgot to pass it.
+      */
+      language: asContentLanguage(ctx.workspace.contentLanguage),
       maxIdeaCount,
       requestedIdeaCount,
       includeImages,
@@ -488,6 +496,8 @@ export async function generateDraftPreviewCore(
           target: targetWordCount,
         },
       },
+      null,
+      asContentLanguage(workspace.contentLanguage),
     );
 
     if (!generatedBody) return { error: 'AI generation failed' };
@@ -619,6 +629,7 @@ export async function generateDraftForItem(
         },
       },
       storyline ? storylinePromptBlock(storyline) : null,
+      asContentLanguage(workspace.contentLanguage),
     );
 
     if (!generatedBody) {
@@ -632,15 +643,26 @@ export async function generateDraftForItem(
     if (options.humanize) {
       const hashtagCount = wordCountPlatform === 'blog' || wordCountPlatform === 'email' ? 0 : 3;
       const countWords = (t: string) => t.split(/\s+/).filter(Boolean).length;
+      const language = asContentLanguage(workspace.contentLanguage);
+      /*
+        The configured floor is an English word count, and the draft was
+        generated against a floor already scaled for this language. Comparing
+        the rewrite against the unscaled number sends the loop below into two
+        extra expansion passes on every Persian post, padding it to hit a
+        target that was never meant for Persian — and padding is what the
+        quality gate rejects.
+      */
+      const minWords = adjustWordCountForLanguage(wordCountRange.min, language);
 
       let humanized = await humanizeDraft({
         text: generatedBody,
         channel: item.channel,
         brandSummary,
+        language,
         // Reuse the same target the generator was given, so the rewrite
         // expands a thin draft instead of preserving its thinness.
         targetWords: targetWordCount,
-        minWords: wordCountRange.min,
+        minWords,
         // Blog posts are rendered as web pages; hashtags only belong on social.
         hashtags: hashtagCount,
       });
@@ -649,14 +671,15 @@ export async function generateDraftForItem(
       // Models reliably undershoot a word target by 20-30%. One rewrite is not
       // enough to lift a thin draft to a real one, so keep asking while the
       // result is still under the floor — bounded, and only while it grows.
-      while (countWords(humanized.text) < wordCountRange.min && passes < 3) {
+      while (countWords(humanized.text) < minWords && passes < 3) {
         const before = countWords(humanized.text);
         const next = await humanizeDraft({
           text: humanized.text,
           channel: item.channel,
           brandSummary,
+          language,
           targetWords: targetWordCount,
-          minWords: wordCountRange.min,
+          minWords,
           hashtags: hashtagCount,
         });
         if (countWords(next.text) <= before) break;

@@ -26,6 +26,11 @@ import {
   resolveWordCountPlatformKey,
   type ContentWordCountLimits,
 } from '@/lib/content-word-count';
+import {
+  adjustWordCountForLanguage,
+  DEFAULT_CONTENT_LANGUAGE,
+  type ContentLanguage,
+} from '@/lib/content-language';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -73,6 +78,24 @@ const LEAKAGE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
   { pattern: /^(sure|certainly|of course)[,!]/i, label: 'Assistant preamble' },
 ];
 
+/**
+ * The same leaks, in Persian.
+ *
+ * The list above is all English, and this gate is the thing that is supposed
+ * to catch a model hedging as an assistant or leaving scaffolding behind. Run
+ * over a Persian draft it matches nothing and reports a clean pass, which is
+ * worse than having no check at all: an unattended Autopilot would publish a
+ * post opening with «به عنوان یک هوش مصنوعی» and the run log would say every
+ * check passed.
+ */
+const FA_LEAKAGE_PATTERNS: Array<{ pattern: RegExp; label: string }> = [
+  { pattern: /به\s?عنوان یک (هوش مصنوعی|مدل زبانی)|من یک هوش مصنوعی/, label: 'AI self-reference' },
+  { pattern: /(این|در ادامه) (پست|متن|محتوا|پیش‌?نویس) (شما|مورد نظر) است/, label: 'Assistant preamble' },
+  { pattern: /^(البته|حتماً|قطعاً)[،!]/m, label: 'Assistant preamble' },
+  { pattern: /\[(نام شرکت|موضوع|لینک|نام|اینجا)[^\]]*\]/, label: 'Unfilled [placeholder]' },
+  { pattern: /(نام برند|نام شرکت) شما اینجا/, label: 'Unfilled placeholder' },
+];
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -114,6 +137,13 @@ export type GateInput = {
   /** Injected in tests; loaded from app settings otherwise. */
   wordCountLimits?: ContentWordCountLimits;
   /**
+   * The workspace's content language. The configured word ranges are English
+   * counts, and Persian says the same thing in fewer words — judged against
+   * the English floor, a perfectly good Persian post is rejected as too short
+   * and Autopilot quietly publishes nothing.
+   */
+  language?: ContentLanguage;
+  /**
    * The storyline this draft is meant to advance. When absent the gate behaves
    * exactly as it did before the narrative layer existed, so content created
    * without one keeps publishing.
@@ -152,20 +182,31 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
   }
   if (charLimit) pass('platform_char_limit', `${content.length}/${charLimit} characters.`);
 
+  const language = input.language ?? DEFAULT_CONTENT_LANGUAGE;
   const limits = input.wordCountLimits ?? (await getContentWordCountLimits());
   const range = limits[platform];
   const words = countWords(content);
-  const minAllowed = Math.floor(range.min * (1 - WORD_COUNT_TOLERANCE));
-  const maxAllowed = Math.ceil(range.max * (1 + WORD_COUNT_TOLERANCE));
+  // Scaled to the language before the tolerance is applied, so the ±25% band
+  // sits around the right centre rather than around the English one.
+  const scaledMin = adjustWordCountForLanguage(range.min, language);
+  const scaledMax = adjustWordCountForLanguage(range.max, language);
+  const minAllowed = Math.floor(scaledMin * (1 - WORD_COUNT_TOLERANCE));
+  const maxAllowed = Math.ceil(scaledMax * (1 + WORD_COUNT_TOLERANCE));
   if (words < minAllowed || words > maxAllowed) {
     return fail(
       'word_count',
       `${words} words is outside the acceptable ${minAllowed}-${maxAllowed} range for ${platform}.`,
     );
   }
-  pass('word_count', `${words} words (target ${range.min}-${range.max}).`);
+  pass('word_count', `${words} words (target ${scaledMin}-${scaledMax}).`);
 
-  for (const { pattern, label } of LEAKAGE_PATTERNS) {
+  /*
+    Both lists run against every draft rather than picking one by the declared
+    language. A Persian workspace whose model answered in English is itself a
+    leak worth catching, and it is exactly the case a language-keyed lookup
+    would wave through.
+  */
+  for (const { pattern, label } of [...LEAKAGE_PATTERNS, ...FA_LEAKAGE_PATTERNS]) {
     if (pattern.test(content)) {
       return fail('leakage', `${label} found in the draft.`);
     }

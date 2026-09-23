@@ -22,6 +22,11 @@
 import type { EvidenceKind } from '@prisma/client';
 
 import { requestJsonFromAi } from '@/lib/gemini';
+import {
+  DEFAULT_CONTENT_LANGUAGE,
+  languageInstructions,
+  type ContentLanguage,
+} from '@/lib/content-language';
 
 // ---------------------------------------------------------------------------
 // Shapes
@@ -53,7 +58,21 @@ export type NarrativeContext = {
   competitiveMatrices: any;
   competitorKeywordsIntel: any;
   competitors: Array<{ name: string; domain: string | null; description: string | null }>;
+  /**
+   * The workspace's content language. The narrative is the thing every draft
+   * afterwards is argued from, so a Persian workspace with an English
+   * storyline produces Persian posts defending an English-phrased claim —
+   * which reads as translated even though every word on screen is Persian.
+   */
+  language?: ContentLanguage;
 };
+
+/** The language block, plus the rule that keeps the JSON parseable. */
+function narrativeLanguageBlock(ctx: NarrativeContext): string {
+  return `${languageInstructions(ctx.language ?? DEFAULT_CONTENT_LANGUAGE)}
+The JSON KEYS stay exactly as specified, in English. Only the VALUES are
+written in the language above. Company names and domains keep their own script.`;
+}
 
 /** Compact the intelligence so the prompt carries signal rather than raw JSON. */
 function summariseIntelligence(ctx: NarrativeContext): string {
@@ -161,6 +180,8 @@ export async function proposeChanges(
 You are a positioning strategist. Below is verified intelligence about a company
 and the market it competes in.
 
+${narrativeLanguageBlock(ctx)}
+
 ${summariseIntelligence(ctx)}
 
 Name 2-3 candidate answers to one question: what is genuinely CHANGING in this
@@ -223,6 +244,8 @@ export async function draftStorylines(
 
   const prompt = `
 You are a positioning strategist writing a company's narrative.
+
+${narrativeLanguageBlock(ctx)}
 
 ${summariseIntelligence(ctx)}
 

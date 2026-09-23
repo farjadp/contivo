@@ -6,23 +6,25 @@ import { revalidatePath } from 'next/cache';
 import { scrapeUrl, analyzeWebsiteWithGemini } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
 import { getBrandMemoryRescrapeLimit } from '@/lib/app-settings';
+import { asContentLanguage } from '@/lib/content-language';
+import { actionError } from '@/lib/action-errors';
 
 export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   const userId = session.userId as string;
 
   const workspaceId = formData.get('workspaceId') as string;
 
   if (!workspaceId) {
-    return { error: 'Missing workspace ID' };
+    return { error: await actionError('missingWorkspaceId') };
   }
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId, userId },
   });
 
-  if (!workspace) return { error: 'Workspace not found' };
+  if (!workspace) return { error: await actionError('workspaceNotFound') };
 
   const maxRuns = await getBrandMemoryRescrapeLimit();
 
@@ -41,7 +43,7 @@ export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
   }
 
   if (!workspace.websiteUrl) {
-    return { error: 'Workspace has no website URL to scrape.' };
+    return { error: await actionError('workspaceNoUrlScrape') };
   }
 
   let newBrandSummary: any = {};
@@ -55,10 +57,14 @@ export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
          action: 'BRAND_MEMORY_RESCRAPE_FAILED',
          detail: { reason: 'SCRAPE_FAILED' },
        });
-       return { error: 'Could not fetch data from the website.' };
+       return { error: await actionError('siteFetchFailed') };
     }
 
-    const aiResult = await analyzeWebsiteWithGemini(workspace.websiteUrl, scrapedText);
+    const aiResult = await analyzeWebsiteWithGemini(
+      workspace.websiteUrl,
+      scrapedText,
+      asContentLanguage(workspace.contentLanguage),
+    );
     if (!aiResult) {
        await writeActivityLog({
          userId,
@@ -66,7 +72,7 @@ export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
          action: 'BRAND_MEMORY_RESCRAPE_FAILED',
          detail: { reason: 'AI_ANALYSIS_FAILED' },
        });
-       return { error: 'AI failed to analyze the website.' };
+       return { error: await actionError('aiSiteAnalysisFailed') };
     }
 
     newBrandSummary = {
@@ -95,7 +101,7 @@ export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
        action: 'BRAND_MEMORY_RESCRAPE_FAILED',
        detail: { reason: 'UNEXPECTED_ERROR' },
      });
-     return { error: 'An unexpected error occurred during rescraping.' };
+     return { error: await actionError('rescrapeUnexpected') };
   }
 
   // Archive old summary

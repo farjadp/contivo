@@ -16,6 +16,8 @@
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { fetchDomainKeywords, fetchSerpResults } from '@/lib/dataforseo';
+import { asContentLanguage } from '@/lib/content-language';
+import { actionError } from '@/lib/action-errors';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -132,7 +134,7 @@ export async function computeKeywordOpportunities(workspaceId: string) {
   if (allCompetitorKeywords.length === 0) {
     return {
       success: false,
-      error: 'No competitor keyword data found. Run "Scan Competitor Keywords" first.',
+      error: await actionError('noKeywordData'),
     };
   }
 
@@ -203,7 +205,7 @@ export async function analyzeSerpForKeyword(
   workspaceId: string,
   keyword: string,
 ) {
-  await resolveWorkspace(workspaceId);
+  const { workspace } = await resolveWorkspace(workspaceId);
 
   const normalizedKeyword = keyword.toLowerCase().trim();
 
@@ -239,12 +241,16 @@ export async function analyzeSerpForKeyword(
 
   // ── Analyze with Gemini ───────────────────────────────────────────────────
   const { analyzeSerpResultsWithGemini } = await import('@/lib/gemini');
-  const analysis = await analyzeSerpResultsWithGemini(normalizedKeyword, serpItems);
+  const analysis = await analyzeSerpResultsWithGemini(
+    normalizedKeyword,
+    serpItems,
+    asContentLanguage(workspace.contentLanguage),
+  );
 
   if (!analysis) {
     return {
       success: false,
-      error: 'AI analysis failed. Try again in a moment.',
+      error: await actionError('aiAnalysisFailed'),
     };
   }
 

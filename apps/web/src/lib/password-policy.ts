@@ -30,30 +30,27 @@ const TOO_COMMON = [
 export const MIN_PASSWORD_LENGTH = 10;
 
 /**
- * Returns an error message to show the person, or null when the password is
+ * Returns a message key describing what is wrong, or null when the password is
  * acceptable. The message says what to change — a bare "invalid password"
  * leaves someone guessing at the rule.
+ *
+ * A key rather than a sentence, because this is the message a person reads at
+ * the moment they are trying to create an account, and it has to arrive in
+ * their language. It stays a pure function so the rules can be unit-tested
+ * without a request context; `auth.ts` turns the key into words.
  */
-export function checkPassword(password: string, email?: string): string | null {
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    return `Use at least ${MIN_PASSWORD_LENGTH} characters. Length matters more than symbols.`;
-  }
+export type PasswordProblem = 'tooShort' | 'tooLong' | 'tooCommon' | 'containsEmail';
 
-  if (password.length > 200) {
-    return 'That password is too long. Keep it under 200 characters.';
-  }
+export function checkPassword(password: string, email?: string): PasswordProblem | null {
+  if (password.length < MIN_PASSWORD_LENGTH) return 'tooShort';
+  if (password.length > 200) return 'tooLong';
 
   const lowered = password.toLowerCase();
-
-  if (TOO_COMMON.some((common) => lowered.includes(common))) {
-    return 'That password shows up in lists attackers try first. Pick something else.';
-  }
+  if (TOO_COMMON.some((common) => lowered.includes(common))) return 'tooCommon';
 
   // The local part of their own email is the other password people reach for.
   const localPart = email?.split('@')[0]?.toLowerCase();
-  if (localPart && localPart.length >= 4 && lowered.includes(localPart)) {
-    return 'Do not use your email address in your password.';
-  }
+  if (localPart && localPart.length >= 4 && lowered.includes(localPart)) return 'containsEmail';
 
   return null;
 }

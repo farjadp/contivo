@@ -37,6 +37,7 @@ import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
 import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
 import { pickStorylineForWorkspace } from '@/lib/narrative/context';
+import { asContentLanguage } from '@/lib/content-language';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -427,6 +428,12 @@ export async function runPolicy(
             avoidTopics: policy.avoidTopics,
             recentContents: recentBodies,
             storyline,
+            /*
+              Without this the gate judges a Persian draft against English word
+              ranges and rejects it as too short — an unattended agent that
+              generates, pays for and then throws away every post it writes.
+            */
+            language: asContentLanguage(ctx.workspace.contentLanguage),
           });
 
           if (!verdict.approved) {

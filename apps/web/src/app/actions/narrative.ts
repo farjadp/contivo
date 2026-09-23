@@ -19,6 +19,8 @@ import {
   type ChangeHypothesis,
   type NarrativeContext,
 } from '@/lib/narrative/engine';
+import { asContentLanguage } from '@/lib/content-language';
+import { actionError } from '@/lib/action-errors';
 
 type Ok<T> = { ok: true } & T;
 type Fail = { ok: false; error: string };
@@ -37,12 +39,12 @@ const EVIDENCE_KINDS: EvidenceKind[] = [
 
 async function authorise(workspaceId: string): Promise<Actor> {
   const session = await getSession();
-  if (!session) return { ok: false, error: 'Not authenticated' };
+  if (!session) return { ok: false, error: await actionError('notAuthenticated') };
   const workspace = await prisma.workspace.findFirst({
     where: { id: workspaceId, userId: session.userId as string },
     select: { id: true },
   });
-  if (!workspace) return { ok: false, error: 'Workspace not found.' };
+  if (!workspace) return { ok: false, error: await actionError('workspaceNotFoundDot') };
   return { ok: true, userId: session.userId as string, workspaceId };
 }
 
@@ -61,10 +63,10 @@ async function loadContext(
 ): Promise<NarrativeContext | { error: string }> {
   const workspace = await prisma.workspace.findUnique({
     where: { id: actor.workspaceId },
-    select: { brandSummary: true, audienceInsights: true },
+    select: { brandSummary: true, audienceInsights: true, contentLanguage: true },
   });
   if (!workspace?.brandSummary) {
-    return { error: 'Build Brand Memory first — the narrative is written from it.' };
+    return { error: await actionError('needBrandMemory') };
   }
 
   const insights =
@@ -74,7 +76,7 @@ async function loadContext(
   const competitiveMatrices = insights.competitiveMatrices;
 
   if (!Array.isArray(competitiveMatrices?.charts) || competitiveMatrices.charts.length === 0) {
-    return { error: 'Generate the positioning charts first — they are the market frame.' };
+    return { error: await actionError('needCharts') };
   }
 
   const competitors = await prisma.competitor.findMany({
@@ -84,7 +86,7 @@ async function loadContext(
   });
 
   if (competitors.length < 2) {
-    return { error: 'Accept at least two competitors — a position needs something to be against.' };
+    return { error: await actionError('needTwoCompetitors') };
   }
 
   return {
@@ -92,6 +94,7 @@ async function loadContext(
     competitiveMatrices,
     competitorKeywordsIntel: insights.competitorKeywordsIntel ?? null,
     competitors,
+    language: asContentLanguage(workspace.contentLanguage),
   };
 }
 
@@ -122,10 +125,10 @@ export async function addEvidence(
   if (!actor.ok) return { ok: false, error: actor.error };
 
   const kind = input.kind as EvidenceKind;
-  if (!EVIDENCE_KINDS.includes(kind)) return { ok: false, error: 'Unknown evidence type.' };
+  if (!EVIDENCE_KINDS.includes(kind)) return { ok: false, error: await actionError('unknownEvidenceType') };
   const value = String(input.value ?? '').trim();
-  if (value.length < 2) return { ok: false, error: 'Say a little more than that.' };
-  if (value.length > 600) return { ok: false, error: 'Keep it under 600 characters.' };
+  if (value.length < 2) return { ok: false, error: await actionError('tooShort') };
+  if (value.length > 600) return { ok: false, error: await actionError('max600') };
 
   const row = await prisma.evidence.create({
     data: { workspaceId, kind, value, detail: input.detail?.trim() || null },
@@ -165,7 +168,7 @@ export async function proposeChange(
   if (!proposed) {
     return {
       ok: false,
-      error: 'Both AI providers are unavailable right now. Nothing was saved — try again shortly.',
+      error: await actionError('providersDownNoSave'),
     };
   }
 
@@ -189,7 +192,7 @@ export async function setChange(
   if (!actor.ok) return { ok: false, error: actor.error };
 
   const value = change.trim();
-  if (value.length < 10) return { ok: false, error: 'The change needs to be a full sentence.' };
+  if (value.length < 10) return { ok: false, error: await actionError('changeNeedsSentence') };
 
   await prisma.narrative.upsert({
     where: { workspaceId },
@@ -211,7 +214,7 @@ export async function generateStorylines(
 
   const narrative = await prisma.narrative.findUnique({ where: { workspaceId } });
   if (!narrative?.change) {
-    return { ok: false, error: 'Agree on the change first — every storyline hangs off it.' };
+    return { ok: false, error: await actionError('agreeChangeFirst') };
   }
 
   const ctx = await loadContext(actor);
@@ -227,7 +230,7 @@ export async function generateStorylines(
   if (!drafted) {
     return {
       ok: false,
-      error: 'Both AI providers are unavailable right now. Nothing was saved — try again shortly.',
+      error: await actionError('providersDownNoSave'),
     };
   }
 
@@ -296,7 +299,7 @@ export async function updateStoryline(
     where: { id: storylineId, narrative: { workspaceId } },
     select: { id: true },
   });
-  if (!storyline) return { ok: false, error: 'Storyline not found.' };
+  if (!storyline) return { ok: false, error: await actionError('storylineNotFound') };
 
   await prisma.storyline.update({
     where: { id: storylineId },

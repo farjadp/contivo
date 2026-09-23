@@ -6,6 +6,8 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import { generateSiteKey } from '@/lib/site-api/keys';
+import { actionError } from '@/lib/action-errors';
+import { getTranslations } from 'next-intl/server';
 
 export type SiteSummary = {
   id: string;
@@ -36,7 +38,7 @@ type UserAuth = { ok: true; userId: string } | { ok: false; error: string };
 
 async function requireUser(): Promise<UserAuth> {
   const session = await getSession();
-  if (!session) return { ok: false, error: 'Not authenticated' };
+  if (!session) return { ok: false, error: await actionError('notAuthenticated') };
   return { ok: true, userId: session.userId as string };
 }
 
@@ -96,14 +98,14 @@ export async function createSite(input: SiteInput) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
 
-  const clean = normalize(input);
+  const clean = await normalize(input);
   if ('error' in clean) return { error: clean.error };
 
   const workspace = await prisma.workspace.findUnique({
     where: { id: clean.data.workspaceId, userId: auth.userId },
     select: { id: true },
   });
-  if (!workspace) return { error: 'Workspace not found.' };
+  if (!workspace) return { error: await actionError('workspaceNotFoundDot') };
 
   const key = generateSiteKey();
   const site = await prisma.siteConnection.create({
@@ -139,7 +141,7 @@ export async function rotateSiteKey(siteId: string) {
     where: { id: siteId, userId: auth.userId },
     select: { id: true, workspaceId: true },
   });
-  if (!site) return { error: 'Site not found.' };
+  if (!site) return { error: await actionError('siteNotFound') };
 
   const key = generateSiteKey();
   await prisma.siteConnection.update({
@@ -166,7 +168,7 @@ export async function setSiteStatus(siteId: string, status: 'ACTIVE' | 'DISABLED
     where: { id: siteId, userId: auth.userId },
     select: { id: true, workspaceId: true },
   });
-  if (!site) return { error: 'Site not found.' };
+  if (!site) return { error: await actionError('siteNotFound') };
 
   await prisma.siteConnection.update({ where: { id: site.id }, data: { status } });
   await writeActivityLog({
@@ -188,7 +190,7 @@ export async function deleteSite(siteId: string) {
     where: { id: siteId, userId: auth.userId },
     select: { id: true, workspaceId: true, name: true },
   });
-  if (!site) return { error: 'Site not found.' };
+  if (!site) return { error: await actionError('siteNotFound') };
 
   await prisma.siteConnection.delete({ where: { id: site.id } });
   await writeActivityLog({
@@ -204,17 +206,18 @@ export async function deleteSite(siteId: string) {
 
 // ---------------------------------------------------------------------------
 
-function normalize(input: SiteInput) {
+/* Async for the same reason as autopilot's normalizeInput: translated messages. */
+async function normalize(input: SiteInput) {
   const name = String(input.name || '').trim().slice(0, 80);
-  if (!name) return { error: 'Give the site a name.' };
+  if (!name) return { error: await actionError('siteNameRequired') };
 
   const siteUrl = String(input.siteUrl || '').trim();
-  const urlError = validateHttpUrl(siteUrl, 'Site URL');
+  const urlError = await validateHttpUrl(siteUrl, 'siteUrl');
   if (urlError) return { error: urlError };
 
   const revalidateUrlRaw = String(input.revalidateUrl || '').trim();
   if (revalidateUrlRaw) {
-    const err = validateHttpUrl(revalidateUrlRaw, 'Revalidate URL');
+    const err = await validateHttpUrl(revalidateUrlRaw, 'revalidateUrl');
     if (err) return { error: err };
   }
 
@@ -229,14 +232,24 @@ function normalize(input: SiteInput) {
   };
 }
 
-function validateHttpUrl(value: string, label: string): string | null {
+/**
+ * `field` is a message key, not a label. It used to be the English string
+ * 'Site URL', spliced into the sentence — which on the Persian side produced a
+ * Persian sentence with an English noun wedged into the middle of it.
+ */
+async function validateHttpUrl(
+  value: string,
+  field: 'siteUrl' | 'revalidateUrl',
+): Promise<string | null> {
+  const t = await getTranslations('errors');
+  const label = t(`fields.${field}`);
   try {
     const parsed = new URL(value);
     if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-      return `${label} must start with http:// or https://`;
+      return t('urlScheme', { label });
     }
     return null;
   } catch {
-    return `${label} is not a valid URL.`;
+    return t('urlInvalid', { label });
   }
 }

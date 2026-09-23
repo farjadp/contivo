@@ -16,6 +16,8 @@ import {
   writeActivityLog,
 } from '@/lib/activity-log';
 import { getLocale } from 'next-intl/server';
+import { asContentLanguage } from '@/lib/content-language';
+import { actionError } from '@/lib/action-errors';
 
 type EditableCompetitor = {
   id?: string;
@@ -659,12 +661,12 @@ async function discoverCompetitorsWithOpenAI(
  */
 export async function saveCompetitors(_prevState: any, formData: FormData) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
 
   const id = formData.get('id') as string;
   const competitorsJson = formData.get('competitorsData') as string;
 
-  if (!id || !competitorsJson) return { error: 'Missing data' };
+  if (!id || !competitorsJson) return { error: await actionError('missingData') };
 
   // Ownership first: nothing below runs unless this workspace is the
   // caller's. Same wording as a genuinely missing workspace so this cannot
@@ -672,7 +674,7 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
   const workspace = await prisma.workspace.findFirst({
     where: { id, userId: session.userId as string },
   });
-  if (!workspace) return { error: 'Workspace not found' };
+  if (!workspace) return { error: await actionError('workspaceNotFound') };
 
   try {
     const competitors = JSON.parse(competitorsJson);
@@ -722,7 +724,11 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
 
     if (activeCompetitors.length > 0) {
        const brandSummary = workspace.brandSummary as any || {};
-       const insights = await generatePositioningInsights(brandSummary, activeCompetitors);
+       const insights = await generatePositioningInsights(
+         brandSummary,
+         activeCompetitors,
+         asContentLanguage(workspace.contentLanguage),
+       );
        
        if (insights) {
           await prisma.workspace.update({
@@ -750,7 +756,7 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
 
   } catch (err) {
     console.error('Failed to save competitors:', err);
-    return { error: 'Failed to save competitors' };
+    return { error: await actionError('competitorsSaveFailed') };
   }
 
   // Advance to the Strategy Review
@@ -759,9 +765,9 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
 
 export async function discoverWorkspaceCompetitors(workspaceId: string) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
 
-  if (!workspaceId) return { error: 'Workspace ID is required' };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
@@ -769,7 +775,7 @@ export async function discoverWorkspaceCompetitors(workspaceId: string) {
       include: { competitors: true },
     });
 
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const brandSummary = (workspace.brandSummary as any) || {};
     const discoveryStats = await getWorkspaceDiscoveryStats(session.userId as string, workspace.id);
@@ -820,7 +826,10 @@ export async function discoverWorkspaceCompetitors(workspaceId: string) {
 
     const geminiFallbackCandidates = openAiDiscovery.candidates.length >= 6
       ? []
-      : ((await discoverCompetitorsWithGemini(brandSummary)) || [])
+      : ((await discoverCompetitorsWithGemini(
+          brandSummary,
+          asContentLanguage(workspace.contentLanguage),
+        )) || [])
           .map((item: any) => ({
             name: trimTo(item?.name || item?.domain || 'Unknown Competitor', 120),
             domain: normalizeDomain(item?.domain),
@@ -890,7 +899,7 @@ export async function discoverWorkspaceCompetitors(workspaceId: string) {
         },
       });
       return {
-        error: 'No high-confidence competitors found. Try refining your positioning and try again.',
+        error: await actionError('noConfidentCompetitors'),
         meta: {
           usedRuns: discoveryStats.usedRuns,
           remainingRuns: discoveryStats.remainingRuns,
@@ -999,15 +1008,15 @@ export async function discoverWorkspaceCompetitors(workspaceId: string) {
     };
   } catch (error) {
     console.error('discoverWorkspaceCompetitors failed:', error);
-    return { error: 'Could not discover competitors right now.' };
+    return { error: await actionError('competitorDiscoveryFailed') };
   }
 }
 
 export async function saveWorkspaceCompetitorEdits(workspaceId: string, competitors: EditableCompetitor[]) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId) return { error: 'Workspace ID is required' };
-  if (!Array.isArray(competitors)) return { error: 'Invalid competitor payload' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
+  if (!Array.isArray(competitors)) return { error: await actionError('competitorPayloadInvalid') };
 
   try {
     const workspace = await prisma.workspace.findUnique({
@@ -1015,7 +1024,7 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
       include: { competitors: true },
     });
 
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
     let enrichedCount = 0;
 
     const existingById = new Map(workspace.competitors.map((item) => [item.id, item]));
@@ -1123,7 +1132,7 @@ export async function saveWorkspaceCompetitorEdits(workspaceId: string, competit
     };
   } catch (error) {
     console.error('saveWorkspaceCompetitorEdits failed:', error);
-    return { error: 'Could not save competitor edits.' };
+    return { error: await actionError('competitorSaveFailed') };
   }
 }
 
@@ -1141,8 +1150,8 @@ export async function setCompetitorDecision(
   decision: string,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
-  if (!workspaceId || !competitorId) return { error: 'Missing identifiers' };
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId || !competitorId) return { error: await actionError('missingIdentifiers') };
 
   const normalized = normalizeDecision(decision);
 
@@ -1153,13 +1162,13 @@ export async function setCompetitorDecision(
       where: { id: workspaceId, userId: session.userId as string },
       select: { id: true },
     });
-    if (!workspace) return { error: 'Workspace not found' };
+    if (!workspace) return { error: await actionError('workspaceNotFound') };
 
     const { count } = await prisma.competitor.updateMany({
       where: { id: competitorId, workspaceId },
       data: { userDecision: normalized },
     });
-    if (count === 0) return { error: 'Competitor not found' };
+    if (count === 0) return { error: await actionError('competitorNotFound') };
 
     const acceptedCount = await prisma.competitor.count({
       where: { workspaceId, userDecision: 'ACCEPTED' },
@@ -1175,6 +1184,6 @@ export async function setCompetitorDecision(
     return { success: true, decision: normalized, acceptedCount };
   } catch (error) {
     console.error('Failed to set competitor decision:', error);
-    return { error: 'Could not save that decision.' };
+    return { error: await actionError('decisionSaveFailed') };
   }
 }

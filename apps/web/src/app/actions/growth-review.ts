@@ -4,10 +4,11 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { redirect } from '@/i18n/navigation';
 import { getLocale } from 'next-intl/server';
+import { actionError } from '@/lib/action-errors';
 
 export async function confirmGrowthStrategy(_prevState: any, formData: FormData) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
 
   const id = formData.get('id') as string;
   const businessSummary = formData.get('businessSummary') as string;
@@ -15,13 +16,13 @@ export async function confirmGrowthStrategy(_prevState: any, formData: FormData)
   const tone = formData.get('tone') as string;
   const industry = formData.get('industry') as string;
 
-  if (!id) return { error: 'Workspace ID missing' };
+  if (!id) return { error: await actionError('workspaceIdMissing') };
 
   const workspace = await prisma.workspace.findUnique({
     where: { id, userId: session.userId as string },
   });
 
-  if (!workspace) return { error: 'Workspace not found' };
+  if (!workspace) return { error: await actionError('workspaceNotFound') };
 
   // Merge the updated fields back into brandSummary
   const currentSummary = workspace.brandSummary as any || {};

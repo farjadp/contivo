@@ -9,6 +9,7 @@ import {
   type ManualSourcePayload,
 } from '@/lib/content-engine';
 import type { IdeationRequestOptions } from '@/lib/gemini';
+import { actionError } from '@/lib/action-errors';
 
 // The content workflow logic lives in `@/lib/content-engine` so that the
 // Autopilot runner can call it without a session. These actions only
@@ -16,13 +17,13 @@ import type { IdeationRequestOptions } from '@/lib/gemini';
 
 export async function generateIdeas(workspaceId: string, options?: IdeationRequestOptions) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   return ideateForWorkspace({ userId: session.userId as string, workspaceId }, options);
 }
 
 export async function saveIdeaToPipeline(workspaceId: string, idea: any) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   return saveIdeaToPipelineCore({ userId: session.userId as string, workspaceId }, idea);
 }
 
@@ -32,7 +33,7 @@ export async function generateDraftPreviewFromIdea(
   manualSource?: ManualSourcePayload,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   return generateDraftPreviewCore(
     { userId: session.userId as string, workspaceId },
     idea,
@@ -46,7 +47,7 @@ export async function generatePostFromPipeline(
   manualSource?: ManualSourcePayload,
 ) {
   const session = await getSession();
-  if (!session) return { error: 'Not authenticated' };
+  if (!session) return { error: await actionError('notAuthenticated') };
   return generateDraftForItem({ userId: session.userId as string, workspaceId }, itemId, {
     manualSource,
   });

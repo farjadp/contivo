@@ -10,10 +10,12 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 
 export function ProductReel() {
   const ref = useRef<HTMLVideoElement>(null);
   const [reduced, setReduced] = useState(false);
+  const t = useTranslations('home.reel');
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export function ProductReel() {
           loop
           playsInline
           preload="metadata"
-          aria-label="Screen recording of Contivo: brand memory, the market map, the setup steps still locked, and a post it wrote."
+          aria-label={t('videoAlt')}
         />
         <button
           type="button"
@@ -65,11 +67,11 @@ export function ProductReel() {
           aria-pressed={playing}
           className="absolute bottom-4 right-4 bg-carbon/90 px-4 py-2.5 text-[13px] font-semibold text-paper-warm backdrop-blur-sm transition-colors duration-200 hover:bg-brick"
         >
-          {playing ? 'Pause' : 'Play'}
+          {playing ? t('pause') : t('play')}
         </button>
       </div>
       <figcaption className="mt-3 text-[12.5px] text-carbon-60">
-        Recorded from a running workspace. No narration, no sound.
+        {t('caption')}
         {reduced ? ' Paused because your system asks for reduced motion.' : ''}
       </figcaption>
     </figure>

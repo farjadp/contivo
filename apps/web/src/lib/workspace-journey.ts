@@ -16,22 +16,39 @@ export type StepId = 'brand' | 'market' | 'keywords' | 'narrative' | 'channel' |
 
 export type StepState = 'done' | 'current' | 'locked' | 'available';
 
+/**
+ * A sentence this module has decided on but cannot write, because it does not
+ * know what language the reader is in.
+ *
+ * This file runs on the server with no request context of its own, and its
+ * output is rendered by two different screens. Returning finished English
+ * sentences is what left the whole setup chain in English on /fa while every
+ * label around it was Persian. It names the message instead, and the component
+ * that has a translator resolves it.
+ */
+export type Msg = {
+  /** Key under the `journey` namespace, e.g. 'steps.brand.title'. */
+  key: string;
+  /** ICU values, when the sentence interpolates counts. */
+  values?: Record<string, string | number>;
+};
+
 export type JourneyStep = {
   id: StepId;
   /** 1-based position in the setup chain. */
   order: number;
-  title: string;
+  title: Msg;
   /** What this step buys the user, in plain language. */
-  why: string;
+  why: Msg;
   /** Where to go to do it. */
   href: string;
   /** The literal thing to click once there. */
-  action: string;
+  action: Msg;
   state: StepState;
-  /** Human sentence describing current progress, e.g. "5 charts". */
-  detail: string;
+  /** Describes current progress, e.g. "5 charts". */
+  detail: Msg;
   /** Only set when locked: which step must happen first. */
-  blockedBy?: string;
+  blockedBy?: Msg;
 };
 
 export type WorkspaceFacts = {
@@ -63,92 +80,109 @@ export type Journey = {
 
 export function buildJourney(f: WorkspaceFacts): Journey {
   const tab = (t: string) => `/growth/${f.workspaceId}?tab=${t}`;
+  const m = (key: string, values?: Record<string, string | number>): Msg => ({
+    key: `steps.${key}`,
+    values,
+  });
+  const blocker = (key: string): Msg => ({ key: `blockers.${key}` });
 
   // Each step declares whether it is done and what blocks it. Order matters:
   // the first not-done, not-locked step becomes "current".
-  const raw: Array<Omit<JourneyStep, 'state' | 'order'> & { done: boolean; blockedBy?: string }> = [
+  const raw: Array<Omit<JourneyStep, 'state' | 'order'> & { done: boolean; blockedBy?: Msg }> = [
     {
       id: 'brand',
-      title: 'Build Brand Memory',
-      why: 'Everything Contivo writes is grounded in this. Without it there is no voice to write in.',
+      title: m('brand.title'),
+      why: m('brand.why'),
       href: tab('strategy'),
-      action: 'Review or rescrape brand memory',
+      action: m('brand.action'),
       done: f.hasBrandSummary,
-      detail: f.hasBrandSummary ? 'Extracted from your site' : 'Not extracted yet',
+      detail: f.hasBrandSummary ? m('brand.detailDone') : m('brand.detailTodo'),
     },
     {
       id: 'market',
-      title: 'Map the market',
-      why: 'Accept the competitors that are really yours, then generate the positioning charts. Ideas are built from the gaps this reveals.',
+      title: m('market.title'),
+      why: m('market.why'),
       href: tab('matrices'),
       action:
-        f.acceptedCompetitors < 2
-          ? 'Discover and accept at least 2 competitors'
-          : 'Generate the positioning matrices',
+        f.acceptedCompetitors < 2 ? m('market.actionDiscover') : m('market.actionCharts'),
       done: f.matrixCharts > 0 && f.acceptedCompetitors >= 2,
       detail:
         f.matrixCharts > 0
-          ? `${f.matrixCharts} charts · ${f.acceptedCompetitors} competitors accepted`
+          ? m('market.detailDone', {
+              charts: f.matrixCharts,
+              competitors: f.acceptedCompetitors,
+            })
           : f.totalCompetitors > 0
-            ? `${f.acceptedCompetitors} of ${f.totalCompetitors} competitors accepted · no charts yet`
-            : 'No competitors discovered yet',
-      blockedBy: f.hasBrandSummary ? undefined : 'Brand Memory',
+            ? m('market.detailPartial', {
+                accepted: f.acceptedCompetitors,
+                total: f.totalCompetitors,
+              })
+            : m('market.detailNone'),
+      blockedBy: f.hasBrandSummary ? undefined : blocker('brandMemory'),
     },
     {
       id: 'keywords',
-      title: 'Analyse competitor keywords',
-      why: 'Shows which topics competitors own and which they leave open. This is where content gets its angle.',
+      title: m('keywords.title'),
+      why: m('keywords.why'),
       href: tab('keywords'),
-      action: 'Run keyword analysis',
+      action: m('keywords.action'),
       done: f.keywordCompetitors > 0,
       detail:
         f.keywordCompetitors > 0
-          ? `${f.keywordCompetitors} competitors analysed`
-          : 'Not analysed yet',
+          ? m('keywords.detailDone', { count: f.keywordCompetitors })
+          : m('keywords.detailTodo'),
       // Needs real competitors to analyse — running it with none produces nothing.
-      blockedBy: f.acceptedCompetitors >= 1 ? undefined : 'accepted competitors',
+      blockedBy: f.acceptedCompetitors >= 1 ? undefined : blocker('acceptedCompetitors'),
     },
     {
       id: 'narrative',
-      title: 'Decide what you stand for',
-      why: 'Three or four arguments every post has to advance, so the content adds up instead of being forty unrelated posts. Drafted from the intelligence above.',
+      title: m('narrative.title'),
+      why: m('narrative.why'),
       href: tab('narrative'),
-      action: 'Draft the narrative',
+      action: m('narrative.action'),
       done: f.storylines > 0,
-      detail: f.storylines > 0 ? `${f.storylines} storylines` : 'No position yet',
+      detail:
+        f.storylines > 0
+          ? m('narrative.detailDone', { count: f.storylines })
+          : m('narrative.detailTodo'),
       // Needs a market frame and something to be positioned against. Keywords
       // sharpen it but are not required, so this is reachable without them.
       blockedBy:
         f.hasBrandSummary && f.matrixCharts > 0 && f.acceptedCompetitors >= 2
           ? undefined
-          : 'the market map',
+          : blocker('marketMap'),
     },
     {
       id: 'channel',
-      title: 'Connect somewhere to publish',
-      why: 'A social account or your own website. Without one, drafts have nowhere to go.',
+      title: m('channel.title'),
+      why: m('channel.why'),
       href: '/connections',
-      action: 'Connect an account or add a site',
+      action: m('channel.action'),
       done: f.hasChannel,
-      detail: f.hasChannel ? (f.channelLabel ?? 'Connected') : 'Nothing connected',
+      detail: f.hasChannel
+        ? f.channelLabel
+          ? /* A provider name from the database — shown as-is, not translated. */
+            { key: 'steps.channel.detailNamed', values: { name: f.channelLabel } }
+          : m('channel.detailDone')
+        : m('channel.detailTodo'),
     },
     {
       id: 'autopilot',
-      title: 'Turn on Autopilot',
-      why: 'Contivo then ideates, drafts, quality-checks and publishes on your schedule without being asked.',
+      title: m('autopilot.title'),
+      why: m('autopilot.why'),
       href: tab('autopilot'),
-      action: f.autopilotEnabled ? 'Review the policy' : 'Enable and save the policy',
+      action: f.autopilotEnabled ? m('autopilot.actionReview') : m('autopilot.actionEnable'),
       done: f.autopilotEnabled,
-      detail: f.autopilotEnabled ? 'Running' : 'Off',
+      detail: f.autopilotEnabled ? m('autopilot.detailOn') : m('autopilot.detailOff'),
       blockedBy: f.autopilotEnabled
         ? undefined
         : f.hasBrandSummary && f.matrixCharts > 0 && f.keywordCompetitors > 0
           ? f.storylines > 0
             ? f.hasChannel
               ? undefined
-              : 'a connected channel'
-            : 'a narrative to advance'
-          : 'the intelligence steps above',
+              : blocker('connectedChannel')
+            : blocker('narrative')
+          : blocker('intelligenceSteps'),
     },
   ];
 
@@ -194,16 +228,13 @@ export function buildJourney(f: WorkspaceFacts): Journey {
  * Which tabs are gated, and why. Used to mark the tab strip so a user never
  * clicks into a screen whose primary button cannot work yet.
  */
-export function tabGate(f: WorkspaceFacts): Record<string, string | undefined> {
+export function tabGate(f: WorkspaceFacts): Record<string, Msg | undefined> {
+  const g = (key: string): Msg => ({ key: `gates.${key}` });
   return {
-    keywords: f.acceptedCompetitors >= 1 ? undefined : 'Accept competitors first',
-    ideation:
-      f.matrixCharts > 0 && f.keywordCompetitors > 0
-        ? undefined
-        : 'Needs matrices + keywords',
-    offerings: f.acceptedCompetitors >= 1 ? undefined : 'Accept competitors first',
-    narrative:
-      f.matrixCharts > 0 && f.acceptedCompetitors >= 2 ? undefined : 'Needs the market map',
+    keywords: f.acceptedCompetitors >= 1 ? undefined : g('acceptCompetitors'),
+    ideation: f.matrixCharts > 0 && f.keywordCompetitors > 0 ? undefined : g('matricesAndKeywords'),
+    offerings: f.acceptedCompetitors >= 1 ? undefined : g('acceptCompetitors'),
+    narrative: f.matrixCharts > 0 && f.acceptedCompetitors >= 2 ? undefined : g('marketMap'),
     // An agent that is already running is not blocked, whatever it is missing —
     // the runner never required a narrative and does not now. Telling someone
     // their working autopilot "will produce nothing useful" is simply false, and
@@ -213,9 +244,9 @@ export function tabGate(f: WorkspaceFacts): Record<string, string | undefined> {
       : f.matrixCharts > 0 && f.keywordCompetitors > 0
         ? f.storylines > 0
           ? undefined
-          : 'Needs a narrative'
-        : 'Needs matrices + keywords',
+          : g('narrative')
+        : g('matricesAndKeywords'),
     reports:
-      f.matrixCharts >= 5 && f.keywordCompetitors > 0 ? undefined : 'Needs full intelligence',
+      f.matrixCharts >= 5 && f.keywordCompetitors > 0 ? undefined : g('fullIntelligence'),
   };
 }
