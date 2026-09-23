@@ -11,7 +11,7 @@ import {
   getContentWordCountLimits,
   getIdeationMaxContentCount,
 } from '@/lib/app-settings';
-import { WORD_COUNT_LIMIT_ABSOLUTE_MAX, WORD_COUNT_LIMIT_ABSOLUTE_MIN, WORD_COUNT_PLATFORM_LABELS, WORD_COUNT_PLATFORMS } from '@/lib/content-word-count';
+import { WORD_COUNT_LIMIT_ABSOLUTE_MAX, WORD_COUNT_LIMIT_ABSOLUTE_MIN, WORD_COUNT_PLATFORMS } from '@/lib/content-word-count';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
@@ -20,6 +20,15 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return { title: t('meta.title') };
 }
 
+/**
+ * The fallback for an audit action this build has no wording for.
+ *
+ * Every known code has a translated label; new codes get added to the
+ * catalogue as they are added to the codebase. Until then this renders the
+ * code as readable English rather than hiding the event or printing the raw
+ * SCREAMING_SNAKE — an audit log that drops entries it does not recognise is
+ * worse than one with an untranslated line in it.
+ */
 function prettyAction(action: string): string {
   return action
     .toLowerCase()
@@ -109,7 +118,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             {WORD_COUNT_PLATFORMS.map((platform) => (
               <div key={platform} className="rounded-lg border border-gray-200 bg-white px-3 py-2">
                 <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-600">
-                  {WORD_COUNT_PLATFORM_LABELS[platform]}
+                  {t(`platforms.${platform}`)}
                 </p>
                 <p className="mt-1 text-sm font-medium text-[#121212]">
                   {t('limits.wordCountRange', {
@@ -174,7 +183,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                   {WORD_COUNT_PLATFORMS.map((platform) => (
                     <div key={platform} className="rounded-md border border-gray-200 bg-white p-3">
                       <p className="text-xs font-semibold uppercase tracking-widest text-gray-600">
-                        {WORD_COUNT_PLATFORM_LABELS[platform]}
+                        {t(`platforms.${platform}`)}
                       </p>
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <label className="space-y-1">
@@ -241,7 +250,11 @@ export default async function SettingsPage({ searchParams }: Props) {
               <div key={log.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                   <div>
-                    <p className="text-sm font-bold text-[#121212]">{prettyAction(log.action)}</p>
+                    <p className="text-sm font-bold text-[#121212]">
+                      {t.has(`actions.${log.action}`)
+                        ? t(`actions.${log.action}`)
+                        : prettyAction(log.action)}
+                    </p>
                     <p className="text-xs text-gray-500">
                       {log.workspaceName
                         ? t('activity.workspace', { name: log.workspaceName })

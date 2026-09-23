@@ -21,17 +21,50 @@
       "analytics": "Analytics"
     },
     "sections": {
-      "overview": { "label": "Overview", "description": "Platform status, cost, health, and risk" },
-      "users": { "label": "Users", "description": "Accounts, plans, roles, and access control" },
-      "workspaces": { "label": "Workspaces", "description": "Workspace state, owner, and intervention tools" },
-      "content": { "label": "Content", "description": "Generated assets, schedule state, and output review" },
-      "ai": { "label": "AI & Models", "description": "Primary/fallback model and provider behavior" },
-      "integrations": { "label": "SEO Intelligence", "description": "DataForSEO readiness, cache footprint, and provider health" },
-      "credits": { "label": "Credits & Billing", "description": "Ledger, adjustments, refunds, and usage" },
-      "jobs": { "label": "Queues & Jobs", "description": "Background execution, failures, and durations" },
-      "settings": { "label": "Platform Settings", "description": "Runtime limits and scheduling rules" },
-      "logs": { "label": "Logs & Security", "description": "Activity stream and admin audit trail" },
-      "analytics": { "label": "Analytics", "description": "Adoption, framework usage, and cost patterns" }
+      "overview": {
+        "label": "Overview",
+        "description": "Platform status, cost, health, and risk"
+      },
+      "users": {
+        "label": "Users",
+        "description": "Accounts, plans, roles, and access control"
+      },
+      "workspaces": {
+        "label": "Workspaces",
+        "description": "Workspace state, owner, and intervention tools"
+      },
+      "content": {
+        "label": "Content",
+        "description": "Generated assets, schedule state, and output review"
+      },
+      "ai": {
+        "label": "AI & Models",
+        "description": "Primary/fallback model and provider behavior"
+      },
+      "integrations": {
+        "label": "SEO Intelligence",
+        "description": "DataForSEO readiness, cache footprint, and provider health"
+      },
+      "credits": {
+        "label": "Credits & Billing",
+        "description": "Ledger, adjustments, refunds, and usage"
+      },
+      "jobs": {
+        "label": "Queues & Jobs",
+        "description": "Background execution, failures, and durations"
+      },
+      "settings": {
+        "label": "Platform Settings",
+        "description": "Runtime limits and scheduling rules"
+      },
+      "logs": {
+        "label": "Logs & Security",
+        "description": "Activity stream and admin audit trail"
+      },
+      "analytics": {
+        "label": "Analytics",
+        "description": "Adoption, framework usage, and cost patterns"
+      }
     },
     "hero": {
       "badge": "Command Center Online",
@@ -454,6 +487,13 @@
       "frameworkLine": "{event} • {platform} • {date}",
       "activityTitle": "Activity Logs",
       "activitySubtitle": "Recent actions recorded against this workspace"
+    },
+    "platforms": {
+      "blog": "Blog / Article",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "Email",
+      "instagram": "Instagram"
     }
   }
 }

@@ -1,6 +1,8 @@
 {
   "settings": {
-    "meta": { "title": "Settings" },
+    "meta": {
+      "title": "Settings"
+    },
     "title": "Settings",
     "subtitle": "Account preferences and activity logs for your workspace operations.",
     "limits": {
@@ -34,6 +36,52 @@
       "empty": "No activity logs yet.",
       "workspace": "Workspace: {name}",
       "workspaceNone": "Workspace: n/a"
+    },
+    "actions": {
+      "AUTOPILOT_AGENT_CREATED": "Autopilot Agent Created",
+      "AUTOPILOT_AGENT_DELETED": "Autopilot Agent Deleted",
+      "AUTOPILOT_POLICY_SAVED": "Autopilot Policy Saved",
+      "AUTOPILOT_RUN": "Autopilot Run",
+      "BRAND_ASSETS_EDITED": "Brand Assets Edited",
+      "BRAND_ASSETS_GENERATED": "Brand Assets Generated",
+      "BRAND_MEMORY_RESCRAPE_BLOCKED": "Brand Memory Rescrape Blocked",
+      "BRAND_MEMORY_RESCRAPE_FAILED": "Brand Memory Rescrape Failed",
+      "BRAND_MEMORY_RESCRAPE_SUCCEEDED": "Brand Memory Rescrape Succeeded",
+      "COMPETITIVE_MATRICES_EDITED": "Competitive Matrices Edited",
+      "COMPETITIVE_MATRICES_GENERATED": "Competitive Matrices Generated",
+      "COMPETITOR_DECISION_SET": "Competitor Decision Set",
+      "COMPETITOR_DISCOVERY_BLOCKED": "Competitor Discovery Blocked",
+      "COMPETITOR_DISCOVERY_FAILED": "Competitor Discovery Failed",
+      "COMPETITOR_DISCOVERY_RUN": "Competitor Discovery Run",
+      "COMPETITOR_KEYWORDS_GENERATED": "Competitor Keywords Generated",
+      "COMPETITOR_MANUAL_EDIT_SAVED": "Competitor Manual Edit Saved",
+      "COMPETITOR_REVIEW_SAVED": "Competitor Review Saved",
+      "CONTENT_CALENDAR_MOCK_INSERTED": "Content Calendar Mock Inserted",
+      "CONTENT_EDITED_AND_SCHEDULED": "Content Edited And Scheduled",
+      "CONTENT_GENERATED_FROM_PIPELINE": "Content Generated From Pipeline",
+      "CONTENT_PIPELINE_ITEM_SAVED": "Content Pipeline Item Saved",
+      "CONTENT_PREVIEW_GENERATED_FROM_IDEA": "Content Preview Generated From Idea",
+      "CONTENT_SCHEDULED": "Content Scheduled",
+      "EVOLUTION_REPORT_VIEWED": "Evolution Report Viewed",
+      "IDEATION_GENERATED": "Ideation Generated",
+      "INSTANT_CONTENT_GENERATED": "Instant Content Generated",
+      "NARRATIVE_GENERATED": "Narrative Generated",
+      "PRODUCTS_SERVICES_INTEL_EDITED": "Products Services Intel Edited",
+      "PRODUCTS_SERVICES_INTEL_GENERATED": "Products Services Intel Generated",
+      "SITE_CONNECTION_CREATED": "Site Connection Created",
+      "SITE_CONNECTION_DELETED": "Site Connection Deleted",
+      "SITE_CONNECTION_KEY_ROTATED": "Site Connection Key Rotated",
+      "SITE_CONNECTION_STATUS_CHANGED": "Site Connection Status Changed",
+      "WEB_CONTENT_PUBLISHED": "Web Content Published",
+      "WORKSPACE_BASELINE_SNAPSHOT_CREATED": "Workspace Baseline Snapshot Created",
+      "WORKSPACE_CREATED": "Workspace Created"
+    },
+    "platforms": {
+      "blog": "Blog / Article",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "Email",
+      "instagram": "Instagram"
     }
   }
 }
