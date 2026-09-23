@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl';
 import { Layers3, Sparkles, UserCircle2 } from 'lucide-react';
 import type { BrandAssetsPayload } from '@/app/actions/growth-brand-assets';
 import { BrandAssetsManager } from './BrandAssetsManager';
@@ -10,6 +11,7 @@ export function BrandMemoryTab({
   workspace: any;
   maxRescrapeRuns: number;
 }) {
+  const t = useTranslations('tabsA.brandMemory');
   const brand = (workspace.brandSummary as any) || {};
   const brandAssets = ((workspace.audienceInsights as any)?.brandAssets as BrandAssetsPayload) || null;
   const toneList: string[] = String(brand.tone || '')
@@ -45,24 +47,21 @@ export function BrandMemoryTab({
             <div className="space-y-3">
               <p className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
                 <Sparkles className="h-3.5 w-3.5" />
-                Brand Memory
+                {t('badge')}
               </p>
-              <h2 className="text-xl font-bold tracking-tight text-[#121212]">Brand Foundation & Knowledge Layer</h2>
-              <p className="max-w-3xl text-sm text-gray-600">
-                This section keeps your brand context stable across strategy, content, and design. AI drafts the first
-                version from your website, then your team confirms and improves it.
-              </p>
+              <h2 className="text-xl font-bold tracking-tight text-[#121212]">{t('title')}</h2>
+              <p className="max-w-3xl text-sm text-gray-600">{t('body')}</p>
 
               <div className="flex flex-wrap gap-2">
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3 py-1 text-[11px] font-semibold text-gray-700">
                   <Layers3 className="h-3.5 w-3.5" />
-                  {brandAssets?.summary.asset_count || 0} assets
+                  {t('assetsCount', { count: brandAssets?.summary.asset_count || 0 })}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
-                  {pendingAssets} pending review
+                  {t('pendingCount', { count: pendingAssets })}
                 </span>
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-800">
-                  {approvedAssets} approved
+                  {t('approvedCount', { count: approvedAssets })}
                 </span>
               </div>
             </div>
@@ -75,41 +74,41 @@ export function BrandMemoryTab({
 
         <div className="p-6 md:p-7">
           <div className="grid gap-3 sm:grid-cols-3">
-            <StatusCard title="Business Summary" ready={summaryReady} />
-            <StatusCard title="Value Proposition" ready={valueReady} />
-            <StatusCard title="Audience Clarity" ready={audienceReady} />
+            <StatusCard title={t('businessSummary')} ready={summaryReady} readyLabel={t('ready')} pendingLabel={t('needsReview')} />
+            <StatusCard title={t('valueProposition')} ready={valueReady} readyLabel={t('ready')} pendingLabel={t('needsReview')} />
+            <StatusCard title={t('audienceClarity')} ready={audienceReady} readyLabel={t('ready')} pendingLabel={t('needsReview')} />
           </div>
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <article className="rounded-2xl border border-gray-200 bg-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">Business Summary</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{t('businessSummary')}</p>
               <p className="mt-2 text-sm leading-relaxed text-gray-700">
-                {brand.businessSummary || 'No summary available.'}
+                {brand.businessSummary || t('noSummary')}
               </p>
             </article>
 
             <article className="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">Value Proposition</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-indigo-700">{t('valueProposition')}</p>
               <p className="mt-2 text-sm leading-relaxed text-indigo-900">
-                {brand.valueProposition || 'No value proposition defined.'}
+                {brand.valueProposition || t('noValueProposition')}
               </p>
             </article>
 
             <article className="rounded-2xl border border-gray-200 bg-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">Target Audience</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{t('targetAudience')}</p>
               <div className="mt-2 space-y-2">
                 <p className="inline-flex items-center gap-2 text-sm font-semibold text-[#121212]">
                   <UserCircle2 className="h-4 w-4 text-gray-500" />
-                  {brand.persona?.title || 'General Audience'}
+                  {brand.persona?.title || t('personaFallback')}
                 </p>
                 <p className="text-sm leading-relaxed text-gray-600">
-                  {brand.persona?.description || brand.audience || 'No audience details provided.'}
+                  {brand.persona?.description || brand.audience || t('noAudience')}
                 </p>
               </div>
             </article>
 
             <article className="rounded-2xl border border-gray-200 bg-white p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">Brand Tone</p>
+              <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{t('brandTone')}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {toneList.length > 0 ? (
                   toneList.map((tone: string, index: number) => (
@@ -121,24 +120,24 @@ export function BrandMemoryTab({
                     </span>
                   ))
                 ) : (
-                  <span className="text-sm text-gray-500">Not specified</span>
+                  <span className="text-sm text-gray-500">{t('toneNotSpecified')}</span>
                 )}
               </div>
             </article>
           </div>
 
           <article className="mt-4 rounded-2xl border border-gray-200 bg-white p-5">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">Core Content Pillars</p>
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{t('pillarsTitle')}</p>
             <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {pillarList.length > 0 ? (
                 pillarList.map((pillar: string, idx: number) => (
                   <div key={`${pillar}-${idx}`} className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
-                    <p className="text-xs font-semibold text-gray-500">Pillar {idx + 1}</p>
+                    <p className="text-xs font-semibold text-gray-500">{t('pillarLabel', { index: idx + 1 })}</p>
                     <p className="mt-1 text-sm font-semibold text-[#121212]">{pillar}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500">No pillars defined.</p>
+                <p className="text-sm text-gray-500">{t('noPillars')}</p>
               )}
             </div>
           </article>
@@ -159,15 +158,19 @@ export function BrandMemoryTab({
 function StatusCard({
   title,
   ready,
+  readyLabel,
+  pendingLabel,
 }: {
   title: string;
   ready: boolean;
+  readyLabel: string;
+  pendingLabel: string;
 }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
       <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{title}</p>
       <p className={`mt-1 text-sm font-semibold ${ready ? 'text-emerald-700' : 'text-amber-700'}`}>
-        {ready ? 'Ready' : 'Needs Review'}
+        {ready ? readyLabel : pendingLabel}
       </p>
     </div>
   );

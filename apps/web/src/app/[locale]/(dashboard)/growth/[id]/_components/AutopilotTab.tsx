@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { AlertCircle, Bot, CheckCircle2, ChevronDown, ChevronUp, Play, Plus, Save, Zap } from 'lucide-react';
 
@@ -27,7 +28,15 @@ type Props = {
   storylines?: Array<{ id: string; claim: string }>;
 };
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+/**
+ * JS day indices, in the order the week is read. Persian weeks open on
+ * Saturday (شنبه) and close on Friday; English keeps Sunday first. The stored
+ * values are untouched — only the order the buttons are laid out changes.
+ */
+const WEEK_ORDER: Record<string, number[]> = {
+  fa: [6, 0, 1, 2, 3, 4, 5],
+  default: [0, 1, 2, 3, 4, 5, 6],
+};
 
 const DEFAULT_FORM: AutopilotPolicyInput = {
   enabled: false,
@@ -70,6 +79,9 @@ export function AutopilotTab({
   ideationReady,
   storylines = [],
 }: Props) {
+  const t = useTranslations('tabsA');
+  const locale = useLocale();
+  const format = useFormatter();
   const router = useRouter();
   const agents = initialAgents ?? (initialPolicy ? [initialPolicy] : []);
   // Which agent the editor below is bound to.
@@ -91,7 +103,10 @@ export function AutopilotTab({
       if ('agent' in result && result.agent) {
         setSelectedId(result.agent.id);
         setShowRecipes(false);
-        setMessage({ kind: 'ok', text: `${result.agent.name} created. Review the settings, then enable it.` });
+        setMessage({
+          kind: 'ok',
+          text: t('autopilot.agents.created', { name: result.agent.name }),
+        });
         router.refresh();
       }
     });
@@ -141,8 +156,8 @@ export function AutopilotTab({
         setMessage({
           kind: 'ok',
           text: result.policy.enabled
-            ? 'Autopilot is ON. The next scheduled tick will fill your queue.'
-            : 'Autopilot settings saved (currently off).',
+            ? t('autopilot.messages.savedOn')
+            : t('autopilot.messages.savedOff'),
         });
         router.refresh();
       }
@@ -159,11 +174,21 @@ export function AutopilotTab({
       }
       if ('result' in result && result.result) {
         const r = result.result;
+        const status = runStatusLabel(t, 'autopilot.runStatusLower', r.status);
         setMessage({
           kind: r.status === 'FAILED' ? 'error' : 'ok',
-          text: `Run ${r.status.toLowerCase()}: ${r.itemsScheduled} scheduled, ${r.itemsSkipped} skipped${
-            r.reason ? ` — ${r.reason}` : ''
-          }.`,
+          text: r.reason
+            ? t('autopilot.messages.runResultWithReason', {
+                status,
+                scheduled: r.itemsScheduled,
+                skipped: r.itemsSkipped,
+                reason: r.reason,
+              })
+            : t('autopilot.messages.runResult', {
+                status,
+                scheduled: r.itemsScheduled,
+                skipped: r.itemsSkipped,
+              }),
         });
         router.refresh();
       }
@@ -192,18 +217,15 @@ export function AutopilotTab({
       <div className="bg-white rounded-lg border p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">Agents</h2>
-            <p className="text-gray-600 text-sm mt-1 max-w-2xl">
-              Each agent is one job with its own cadence, channels and steering. They share the
-              workspace&apos;s intelligence and never book the same slot twice.
-            </p>
+            <h2 className="text-xl font-semibold">{t('autopilot.agents.title')}</h2>
+            <p className="text-gray-600 text-sm mt-1 max-w-2xl">{t('autopilot.agents.body')}</p>
           </div>
           <button
             onClick={() => setShowRecipes((v) => !v)}
             className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-semibold hover:bg-gray-50"
           >
             <Plus className="w-4 h-4" />
-            New agent
+            {t('autopilot.agents.new')}
           </button>
         </div>
 
@@ -215,7 +237,7 @@ export function AutopilotTab({
                 <li key={a.id}>
                   <button
                     onClick={() => setSelectedId(a.id)}
-                    className={`w-full text-left rounded-lg border p-3.5 transition-colors ${
+                    className={`w-full text-start rounded-lg border p-3.5 transition-colors ${
                       isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
@@ -226,12 +248,25 @@ export function AutopilotTab({
                           a.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
-                        {a.enabled ? 'On' : 'Off'}
+                        {a.enabled ? t('autopilot.agents.on') : t('autopilot.agents.off')}
                       </span>
                     </div>
                     <p className="mt-1 text-xs text-gray-500">
-                      {a.postsPerWeek}/week · {a.channels.join(', ') || 'no channel'}
-                      {a.lastRunAt ? ` · last run ${formatDate(a.lastRunAt)}` : ''}
+                      {[
+                        t('autopilot.agents.postsPerWeek', { count: a.postsPerWeek }),
+                        a.channels.map((c) => channelLabel(t, c)).join('، ') ||
+                          t('autopilot.agents.noChannel'),
+                        ...(a.lastRunAt
+                          ? [
+                              t('autopilot.agents.lastRun', {
+                                date: format.dateTime(new Date(a.lastRunAt), {
+                                  dateStyle: 'medium',
+                                  timeStyle: 'short',
+                                }),
+                              }),
+                            ]
+                          : []),
+                      ].join(' · ')}
                     </p>
                   </button>
                 </li>
@@ -243,7 +278,7 @@ export function AutopilotTab({
         {showRecipes && (
           <div className="mt-5 border-t pt-5">
             <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
-              Start from a recipe
+              {t('autopilot.agents.recipesTitle')}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {AGENT_RECIPES.map((r) => (
@@ -251,13 +286,20 @@ export function AutopilotTab({
                   key={r.key}
                   onClick={() => handleCreate(r.key)}
                   disabled={isCreating}
-                  className="text-left rounded-lg border border-gray-200 p-3.5 hover:border-gray-400 disabled:opacity-60"
+                  className="text-start rounded-lg border border-gray-200 p-3.5 hover:border-gray-400 disabled:opacity-60"
                 >
-                  <p className="font-semibold text-[15px]">{r.name}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{r.tagline}</p>
+                  <p className="font-semibold text-[15px]">{t(`autopilot.recipes.${r.key}.name`)}</p>
+                  <p className="mt-0.5 text-xs text-gray-500">{t(`autopilot.recipes.${r.key}.tagline`)}</p>
                   <p className="mt-2 text-[11px] text-gray-400">
-                    {r.defaults.postsPerWeek}/week · {r.defaults.channels.join(', ')} ·{' '}
-                    {r.requires === 'site' ? 'needs a website' : r.requires === 'social' ? 'needs a social account' : 'any channel'}
+                    {[
+                      t('autopilot.agents.postsPerWeek', { count: r.defaults.postsPerWeek }),
+                      r.defaults.channels.map((c) => channelLabel(t, c)).join('، '),
+                      r.requires === 'site'
+                        ? t('autopilot.recipes.requiresSite')
+                        : r.requires === 'social'
+                          ? t('autopilot.recipes.requiresSocial')
+                          : t('autopilot.recipes.requiresEither'),
+                    ].join(' · ')}
                   </p>
                 </button>
               ))}
@@ -274,21 +316,34 @@ export function AutopilotTab({
               <Bot className={`w-6 h-6 ${policy?.enabled ? 'text-green-700' : 'text-gray-500'}`} />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">{selected?.name ?? 'Autopilot'}</h2>
-              <p className="text-gray-600 text-sm mt-1 max-w-2xl">
-                When on, Contivo ideates, drafts and schedules posts for you on a cadence — no
-                clicks. Publishing happens automatically when each slot arrives.
-              </p>
+              <h2 className="text-xl font-semibold">{selected?.name ?? t('autopilot.status.defaultName')}</h2>
+              <p className="text-gray-600 text-sm mt-1 max-w-2xl">{t('autopilot.status.body')}</p>
               <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                 <span>
-                  Status:{' '}
+                  {t('autopilot.status.label')}{' '}
                   <span className={`font-semibold ${policy?.enabled ? 'text-green-700' : 'text-gray-700'}`}>
-                    {policy?.enabled ? 'ON' : 'OFF'}
+                    {policy?.enabled ? t('autopilot.status.on') : t('autopilot.status.off')}
                   </span>
                 </span>
-                {policy?.lastRunAt && <span>Last run: {formatDate(policy.lastRunAt)}</span>}
+                {policy?.lastRunAt && (
+                  <span>
+                    {t('autopilot.status.lastRun', {
+                      date: format.dateTime(new Date(policy.lastRunAt), {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }),
+                    })}
+                  </span>
+                )}
                 {policy?.enabled && policy?.nextRunAt && (
-                  <span>Next run: {formatDate(policy.nextRunAt)}</span>
+                  <span>
+                    {t('autopilot.status.nextRun', {
+                      date: format.dateTime(new Date(policy.nextRunAt), {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      }),
+                    })}
+                  </span>
                 )}
               </div>
             </div>
@@ -302,10 +357,14 @@ export function AutopilotTab({
                   ? 'bg-white text-gray-900 hover:bg-gray-50'
                   : 'bg-gray-100 text-gray-400 cursor-not-allowed'
               }`}
-              title={policy?.enabled ? 'Run one cycle now' : 'Enable and save first'}
+              title={
+                policy?.enabled
+                  ? t('autopilot.actions.runNowTitle')
+                  : t('autopilot.actions.runDisabledTitle')
+              }
             >
-              <Play className="w-4 h-4" />
-              {isRunning ? 'Running…' : 'Run now'}
+              <Play className="w-4 h-4 rtl:rotate-180" />
+              {isRunning ? t('autopilot.actions.running') : t('autopilot.actions.runNow')}
             </button>
             <button
               onClick={handleSave}
@@ -313,7 +372,7 @@ export function AutopilotTab({
               className="px-4 py-2 rounded-lg font-semibold flex items-center gap-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
             >
               <Save className="w-4 h-4" />
-              {isSaving ? 'Saving…' : 'Save'}
+              {isSaving ? t('autopilot.actions.saving') : t('autopilot.actions.save')}
             </button>
           </div>
         </div>
@@ -321,19 +380,17 @@ export function AutopilotTab({
         {/* Readiness warnings */}
         <div className="mt-4 space-y-2">
           {!ideationReady && (
-            <Warning>
-              This workspace can&apos;t ideate yet. Autopilot needs Brand Memory, Market Matrices and
-              Competitor Keywords — run those tabs first. Runs will be skipped until then.
-            </Warning>
+            <Warning>{t('autopilot.warnings.ideation')}</Warning>
           )}
           {!anyChannelConnected && (
             <Warning>
-              None of the selected channels can publish yet. Social channels need a connected
-              default account and Blog needs a website — set one up on the{' '}
-              <a href="/connections" className="underline font-semibold">
-                Connections
-              </a>{' '}
-              page, or Autopilot will skip every run.
+              {t.rich('autopilot.warnings.channels', {
+                link: (chunks) => (
+                  <Link href="/connections" className="underline font-semibold">
+                    {chunks}
+                  </Link>
+                ),
+              })}
             </Warning>
           )}
           {message && (
@@ -364,12 +421,12 @@ export function AutopilotTab({
             checked={form.enabled}
             onChange={(e) => setForm((f) => ({ ...f, enabled: e.target.checked }))}
           />
-          <span className="font-semibold">Enable Autopilot for this workspace</span>
+          <span className="font-semibold">{t('autopilot.form.enable')}</span>
           <Zap className="w-4 h-4 text-amber-500" />
         </label>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Field label="Posts per week">
+          <Field label={t('autopilot.form.postsPerWeek')}>
             <input
               type="number"
               min={1}
@@ -378,21 +435,22 @@ export function AutopilotTab({
               onChange={(e) => setForm((f) => ({ ...f, postsPerWeek: Number(e.target.value) }))}
               className={inputCls}
             />
-            <Hint>Autopilot keeps the coming 7 days topped up to this number.</Hint>
+            <Hint>{t('autopilot.form.postsPerWeekHint')}</Hint>
           </Field>
 
-          <Field label="Timezone">
+          <Field label={t('autopilot.form.timezone')}>
             <input
               type="text"
               value={form.timezone}
               onChange={(e) => setForm((f) => ({ ...f, timezone: e.target.value }))}
               className={inputCls}
+              dir="ltr"
               placeholder="America/Toronto"
             />
-            <Hint>IANA name. Publish window and days are interpreted in this zone.</Hint>
+            <Hint>{t('autopilot.form.timezoneHint')}</Hint>
           </Field>
 
-          <Field label="Channels">
+          <Field label={t('autopilot.form.channels')}>
             <div className="flex flex-wrap gap-2">
               {PUBLISHABLE_CHANNELS.map((channel) => {
                 const on = form.channels.includes(channel);
@@ -406,45 +464,45 @@ export function AutopilotTab({
                       on ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700'
                     }`}
                   >
-                    {CHANNEL_LABELS[channel] ?? channel}
+                    {channelLabel(t, channel)}
                     <span
                       className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
                       title={
                         connected
-                          ? 'Ready to publish'
+                          ? t('autopilot.channelDot.ready')
                           : channel === 'blog'
-                            ? 'No active site connection'
-                            : 'No connected default account'
+                            ? t('autopilot.channelDot.noSite')
+                            : t('autopilot.channelDot.noAccount')
                       }
                     />
                   </button>
                 );
               })}
             </div>
-            <Hint>Green dot = that channel can actually publish (social account or website connected).</Hint>
+            <Hint>{t('autopilot.form.channelsHint')}</Hint>
           </Field>
 
-          <Field label="Publish days">
+          <Field label={t('autopilot.form.publishDays')}>
             <div className="flex flex-wrap gap-2">
-              {DAY_LABELS.map((label, day) => {
+              {(WEEK_ORDER[locale] ?? WEEK_ORDER.default).map((day) => {
                 const on = form.publishDays.includes(day);
                 return (
                   <button
-                    key={label}
+                    key={day}
                     type="button"
                     onClick={() => toggleDay(day)}
                     className={`w-11 py-1.5 rounded-md text-sm border ${
                       on ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700'
                     }`}
                   >
-                    {label}
+                    {t(`autopilot.days.${day}`)}
                   </button>
                 );
               })}
             </div>
           </Field>
 
-          <Field label="Publish window (local hours)">
+          <Field label={t('autopilot.form.window')}>
             <div className="flex items-center gap-3">
               <input
                 type="number"
@@ -454,7 +512,7 @@ export function AutopilotTab({
                 onChange={(e) => setForm((f) => ({ ...f, windowStartHour: Number(e.target.value) }))}
                 className={`${inputCls} w-24`}
               />
-              <span className="text-gray-500">to</span>
+              <span className="text-gray-500">{t('autopilot.form.windowTo')}</span>
               <input
                 type="number"
                 min={1}
@@ -464,20 +522,20 @@ export function AutopilotTab({
                 className={`${inputCls} w-24`}
               />
             </div>
-            <Hint>e.g. 9 to 18 = posts land between 09:00 and 17:59.</Hint>
+            <Hint>{t('autopilot.form.windowHint')}</Hint>
           </Field>
 
-          <Field label="Primary goal">
+          <Field label={t('autopilot.form.goal')}>
             <select
               value={form.goal ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, goal: e.target.value }))}
               className={inputCls}
             >
-              <option value="authority">Authority</option>
-              <option value="awareness">Awareness</option>
-              <option value="engagement">Engagement</option>
-              <option value="leads">Leads</option>
-              <option value="education">Education</option>
+              <option value="authority">{t('goals.authority')}</option>
+              <option value="awareness">{t('goals.awareness')}</option>
+              <option value="engagement">{t('goals.engagement')}</option>
+              <option value="leads">{t('goals.leads')}</option>
+              <option value="education">{t('goals.education')}</option>
             </select>
           </Field>
 
@@ -486,24 +544,19 @@ export function AutopilotTab({
               leave the agent quietly writing without a position. */}
           {storylines.length === 0 && (
             <div className="border border-ink-200 bg-ink-50 px-4 py-3.5">
-              <p className="text-[13px] font-medium text-ink-900">
-                This agent is publishing without a narrative.
-              </p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-600">
-                It still runs, and nothing here is blocked. But its posts are not laddering up
-                to anything, so they will not add up over a month.
-              </p>
+              <p className="text-[13px] font-medium text-ink-900">{t('autopilot.narrative.title')}</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-600">{t('autopilot.narrative.body')}</p>
               <Link
                 href={{ pathname: '/growth/[id]', params: { id: workspaceId }, query: { tab: 'narrative' } }}
                 className="mt-2.5 inline-block text-[12.5px] font-medium text-ink-900 underline underline-offset-4 hover:text-ink-600"
               >
-                Give it a position
+                {t('autopilot.narrative.cta')}
               </Link>
             </div>
           )}
 
           {storylines.length > 0 && (
-            <Field label="Which storylines this agent advances">
+            <Field label={t('autopilot.form.storylines')}>
               <div className="space-y-2">
                 {storylines.map((sl) => {
                   const bound = form.storylineIds ?? [];
@@ -532,33 +585,30 @@ export function AutopilotTab({
                   );
                 })}
               </div>
-              <Hint>
-                All of them unless you narrow it. The runner rotates across whichever are
-                selected, so one claim is not repeated week after week.
-              </Hint>
+              <Hint>{t('autopilot.form.storylinesHint')}</Hint>
             </Field>
           )}
 
-          <Field label="Lean into these themes">
+          <Field label={t('autopilot.form.themes')}>
             <textarea
               rows={3}
               value={hintsText}
               onChange={(e) => setHintsText(e.target.value)}
               className={inputCls}
-              placeholder="e.g. AI adoption for SMEs, founder lessons, product updates"
+              placeholder={t('autopilot.form.themesPlaceholder')}
             />
-            <Hint>Comma or newline separated. Passed to the AI as steering.</Hint>
+            <Hint>{t('autopilot.form.themesHint')}</Hint>
           </Field>
 
-          <Field label="Never write about">
+          <Field label={t('autopilot.form.avoid')}>
             <textarea
               rows={3}
               value={avoidText}
               onChange={(e) => setAvoidText(e.target.value)}
               className={inputCls}
-              placeholder="e.g. pricing, politics, competitor names"
+              placeholder={t('autopilot.form.avoidPlaceholder')}
             />
-            <Hint>Ideas whose topic contains any of these phrases are dropped.</Hint>
+            <Hint>{t('autopilot.form.avoidHint')}</Hint>
           </Field>
         </div>
       </div>
@@ -566,11 +616,11 @@ export function AutopilotTab({
       {/* ── Run history ── */}
       <div className="bg-white rounded-lg border">
         <div className="p-6 border-b flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Run history</h3>
-          <span className="text-xs text-gray-500">{runs.length} most recent</span>
+          <h3 className="text-lg font-semibold">{t('autopilot.runs.title')}</h3>
+          <span className="text-xs text-gray-500">{t('autopilot.runs.count', { count: runs.length })}</span>
         </div>
         {runs.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500">No runs yet. Enable Autopilot and save, or click Run now.</p>
+          <p className="p-6 text-sm text-gray-500">{t('autopilot.runs.empty')}</p>
         ) : (
           <ul className="divide-y">
             {runs.map((run) => (
@@ -590,7 +640,23 @@ export function AutopilotTab({
 const inputCls =
   'block w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black';
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+/** `CHANNEL_LABELS` is data; the human half of it is copy, so it is looked up here. */
+function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
+  return t.has(`channels.${channel}`)
+    ? t(`channels.${channel}`)
+    : (CHANNEL_LABELS[channel] ?? channel);
+}
+
+/** Run statuses arrive as raw enum values; unknown ones fall back to the enum. */
+function runStatusLabel(
+  t: ReturnType<typeof useTranslations>,
+  prefix: string,
+  status: string,
+) {
+  return t.has(`${prefix}.${status}`) ? t(`${prefix}.${status}`) : status;
+}
+
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
       <label className="block text-sm font-medium text-gray-900 mb-1.5">{label}</label>
@@ -628,36 +694,47 @@ function statusStyle(status: string) {
 }
 
 function RunRow({ run }: { run: SerializedRun }) {
+  const t = useTranslations('tabsA');
+  const format = useFormatter();
   const [open, setOpen] = useState(false);
   return (
     <li className="p-4">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-4 text-left"
+        className="w-full flex items-center justify-between gap-4 text-start"
       >
         <div className="flex items-center gap-3 min-w-0">
           <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusStyle(run.status)}`}>
-            {run.status}
+            {runStatusLabel(t, 'autopilot.runStatus', run.status)}
           </span>
-          <span className="text-sm text-gray-900">{formatDate(run.startedAt)}</span>
-          <span className="text-xs text-gray-500">via {run.trigger}</span>
+          <span className="text-sm text-gray-900">
+            {format.dateTime(new Date(run.startedAt), { dateStyle: 'medium', timeStyle: 'short' })}
+          </span>
+          <span className="text-xs text-gray-500">{t('autopilot.runs.via', { trigger: run.trigger })}</span>
         </div>
         <div className="flex items-center gap-4 text-xs text-gray-600 shrink-0">
-          <span>{run.ideasGenerated} ideas</span>
-          <span className="font-semibold text-gray-900">{run.itemsScheduled} scheduled</span>
-          <span>{run.itemsSkipped} skipped</span>
+          <span>{t('autopilot.runs.ideas', { count: run.ideasGenerated })}</span>
+          <span className="font-semibold text-gray-900">
+            {t('autopilot.runs.scheduled', { count: run.itemsScheduled })}
+          </span>
+          <span>{t('autopilot.runs.skipped', { count: run.itemsSkipped })}</span>
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
       {run.error && <p className="mt-2 text-xs text-red-700">{run.error}</p>}
       {open && (
-        <ol className="mt-3 space-y-1 text-xs font-mono text-gray-700 bg-gray-50 rounded-md p-3 overflow-x-auto">
+        <ol
+          dir="ltr"
+          className="mt-3 space-y-1 text-xs font-mono text-gray-700 bg-gray-50 rounded-md p-3 overflow-x-auto text-left"
+        >
           {run.log.map((entry, i) => {
             const { at, step, ...rest } = entry as { at?: string; step?: string } & Record<string, unknown>;
             return (
               <li key={i} className="whitespace-nowrap">
-                <span className="text-gray-400">{at ? new Date(at).toLocaleTimeString() : ''}</span>{' '}
+                <span className="text-gray-400">
+                  {at ? format.dateTime(new Date(at), { timeStyle: 'medium' }) : ''}
+                </span>{' '}
                 <span className="font-semibold">{step}</span>{' '}
                 <span className="text-gray-600">{Object.keys(rest).length ? JSON.stringify(rest) : ''}</span>
               </li>
@@ -669,8 +746,3 @@ function RunRow({ run }: { run: SerializedRun }) {
   );
 }
 
-function formatDate(iso: string) {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
-}

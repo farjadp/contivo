@@ -5,6 +5,7 @@ import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, 
 import { updateContentStatus, scheduleContentItem, updateContentAndSchedule } from '@/app/actions/calendar';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { generatePostFromPipeline } from '@/app/actions/workspace';
 import {
   clampWordCount,
@@ -20,6 +21,23 @@ type SourceFileState = {
   size: number;
   extractedText: string;
 };
+
+/** Falls back to the shipped English label for a platform the map has not got. */
+function wordCountPlatformLabel(t: ReturnType<typeof useTranslations>, platform: string) {
+  return t.has(`wordCountPlatforms.${platform}`)
+    ? t(`wordCountPlatforms.${platform}`)
+    : (WORD_COUNT_PLATFORM_LABELS[platform as keyof typeof WORD_COUNT_PLATFORM_LABELS] ?? platform);
+}
+
+/** Channel ids are Latin data; the human half of the label is copy. */
+function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
+  return t.has(`channels.${channel}`) ? t(`channels.${channel}`) : channel.replace(/_/g, ' ');
+}
+
+/** Content statuses arrive as raw enum values; unknown ones show the enum. */
+function statusLabel(t: ReturnType<typeof useTranslations>, status: string) {
+  return t.has(`contentStatus.${status}`) ? t(`contentStatus.${status}`) : status;
+}
 
 const MAX_MANUAL_SOURCE_FILES = 3;
 const MAX_MANUAL_SOURCE_TEXT_CHARS = 24000;
@@ -115,22 +133,22 @@ export function PipelineTab({
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
 }) {
+  const t = useTranslations('tabsA.pipeline');
+
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center p-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4 text-gray-400">
            <FilePenLine className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-[#121212] mb-1">Your pipeline is empty</h2>
-        <p className="text-sm text-gray-500 max-w-sm mb-6 leading-relaxed">
-          You haven&apos;t generated any content for this brand yet. Head over to the Ideation Station to get started.
-        </p>
+        <h2 className="text-lg font-bold text-[#121212] mb-1">{t('empty.title')}</h2>
+        <p className="text-sm text-gray-500 max-w-sm mb-6 leading-relaxed">{t('empty.body')}</p>
         <Link
           href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
           className="inline-flex items-center gap-2 bg-[#121212] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-black hover:scale-[1.02] transition-all"
         >
           <LightbulbIcon className="w-4 h-4 text-yellow-500" />
-          Go to Ideation
+          {t('empty.cta')}
         </Link>
       </div>
     );
@@ -165,6 +183,8 @@ function PipelineItemCard({
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
 }) {
+  const t = useTranslations('tabsA');
+  const format = useFormatter();
   const router = useRouter();
   const [currentItem, setCurrentItem] = useState(item);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -288,7 +308,7 @@ function PipelineItemCard({
 
     const remaining = Math.max(0, MAX_MANUAL_SOURCE_FILES - manualSourceFiles.length);
     if (remaining === 0) {
-      setManualSourceError(`You can attach up to ${MAX_MANUAL_SOURCE_FILES} files.`);
+      setManualSourceError(t('pipeline.errors.maxFiles', { count: MAX_MANUAL_SOURCE_FILES }));
       return;
     }
 
@@ -307,9 +327,7 @@ function PipelineItemCard({
             extractedText: trimTo(text, 9000),
           });
         } catch (error) {
-          setManualSourceError(
-            `Failed to read "${file.name}". Use PDF/TXT/MD/CSV/JSON files or paste the text manually.`,
-          );
+          setManualSourceError(t('pipeline.errors.readFailed', { name: file.name }));
         }
       }
 
@@ -416,7 +434,7 @@ function PipelineItemCard({
             : currentItem.status === 'SCHEDULED' ? 'bg-indigo-50 text-indigo-600'
             : currentItem.status === 'READY' ? 'bg-blue-50 text-blue-600'
             : 'bg-amber-50 text-amber-600'}`}>
-            {currentItem.status}
+            {statusLabel(t, currentItem.status)}
           </div>
          <button className="text-gray-400 hover:text-[#121212] transition-colors">
            <MoreHorizontal className="w-5 h-5" />
@@ -429,25 +447,27 @@ function PipelineItemCard({
        
        <div className="flex flex-wrap gap-2 mb-4 mt-auto">
          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
-           <FileText className="w-3.5 h-3.5" /> {currentItem.channel.replace(/_/g, ' ')}
+           <FileText className="w-3.5 h-3.5" /> <bdi>{channelLabel(t, currentItem.channel)}</bdi>
          </span>
          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
-           {normalizedTargetWordCount} words target
+           {t('pipeline.wordsTarget', { count: normalizedTargetWordCount })}
          </span>
        </div>
 
        {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
           <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 mb-1">Preview</p>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 mb-1">{t('pipeline.previewLabel')}</p>
             <p className="text-sm leading-relaxed text-gray-700 line-clamp-4 whitespace-pre-wrap">
               {String(currentItem.content || '').slice(0, 280)}
             </p>
             {currentItem.scheduledAtUtc ? (
               <p className="mt-2 text-[11px] font-semibold text-indigo-700">
-                Publish: {new Date(currentItem.scheduledAtUtc).toLocaleDateString()} {' '}
-                {new Date(currentItem.scheduledAtUtc).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
+                {t('pipeline.publishAt', {
+                  date: format.dateTime(new Date(currentItem.scheduledAtUtc), { dateStyle: 'medium' }),
+                  time: format.dateTime(new Date(currentItem.scheduledAtUtc), {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
                 })}
               </p>
             ) : null}
@@ -457,11 +477,11 @@ function PipelineItemCard({
         {['DRAFT', 'GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
           <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-700">
-              Quick Publish Schedule
+              {t('pipeline.quickSchedule.title')}
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <label className="space-y-1">
-                <span className="block text-[11px] font-semibold text-gray-500">Date</span>
+                <span className="block text-[11px] font-semibold text-gray-500">{t('common.date')}</span>
                 <input
                   type="date"
                   value={publishDate}
@@ -473,7 +493,7 @@ function PipelineItemCard({
                 />
               </label>
               <label className="space-y-1">
-                <span className="block text-[11px] font-semibold text-gray-500">Time</span>
+                <span className="block text-[11px] font-semibold text-gray-500">{t('common.time')}</span>
                 <input
                   type="time"
                   value={publishTime}
@@ -494,9 +514,9 @@ function PipelineItemCard({
                 }}
                 className="h-8 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                <option value="America/Toronto">Eastern Time (ET)</option>
-                <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                <option value="Europe/London">London (GMT)</option>
+                <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
+                <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
+                <option value="Europe/London">{t('timezones.Europe/London')}</option>
               </select>
               {currentItem.status !== 'DRAFT' ? (
                 <button
@@ -505,15 +525,15 @@ function PipelineItemCard({
                   disabled={isScheduling || !publishDate || !publishTime}
                   className="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
                 >
-                  {isScheduling ? 'Saving...' : 'Publish'}
+                  {isScheduling ? t('pipeline.quickSchedule.saving') : t('pipeline.quickSchedule.publish')}
                 </button>
               ) : null}
             </div>
             <p className="mt-2 text-[11px] text-gray-500">
-              Default schedule is {defaultScheduleDelayHours} hours after generation.
+              {t('pipeline.quickSchedule.note', { hours: defaultScheduleDelayHours })}{' '}
               {currentItem.status === 'DRAFT'
-                ? ' Generate now to auto-apply this schedule.'
-                : ' You can update it here in one click.'}
+                ? t('pipeline.quickSchedule.noteDraft')
+                : t('pipeline.quickSchedule.noteReady')}
             </p>
           </div>
         ) : null}
@@ -523,14 +543,16 @@ function PipelineItemCard({
            <button
              type="button"
              onClick={() => setShowManualSource((value) => !value)}
-             className="flex w-full items-center justify-between text-left"
+             className="flex w-full items-center justify-between text-start"
            >
              <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-700">
                <Paperclip className="h-3.5 w-3.5" />
-               {currentItem.status === 'GENERATED' ? 'Refine With Your Own Source' : 'Use Your Own Source'}
+               {currentItem.status === 'GENERATED'
+                 ? t('pipeline.source.refineTitle')
+                 : t('pipeline.source.useTitle')}
              </span>
              <span className="text-xs font-semibold text-indigo-600">
-               {showManualSource ? 'Hide' : 'Add Context'}
+               {showManualSource ? t('pipeline.source.hide') : t('pipeline.source.addContext')}
              </span>
            </button>
 
@@ -538,7 +560,11 @@ function PipelineItemCard({
              <div className="mt-3 space-y-3">
                <label className="flex items-center justify-between rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
                  <span>
-                   Word Count ({WORD_COUNT_PLATFORM_LABELS[wordCountPlatform]} {wordCountRange.min}-{wordCountRange.max})
+                   {t('pipeline.source.wordCount', {
+                     platform: wordCountPlatformLabel(t, wordCountPlatform),
+                     min: wordCountRange.min,
+                     max: wordCountRange.max,
+                   })}
                  </span>
                  <input
                    type="number"
@@ -555,18 +581,18 @@ function PipelineItemCard({
                        ),
                      );
                    }}
-                   className="w-20 rounded-md border border-indigo-200 px-2 py-1 text-right text-xs font-bold text-indigo-700 outline-none"
+                   className="w-20 rounded-md border border-indigo-200 px-2 py-1 text-end text-xs font-bold text-indigo-700 outline-none"
                  />
                </label>
                <textarea
                  value={manualSourceNotes}
                  onChange={(event) => setManualSourceNotes(event.target.value)}
-                 placeholder="Paste your notes, raw ideas, transcript, or key points..."
+                 placeholder={t('pipeline.source.placeholder')}
                  className="h-24 w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none ring-indigo-500 focus:ring-2"
                />
                <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
-                 <span>Attach files (PDF/TXT/MD/CSV/JSON)</span>
-                 <span>Max {MAX_MANUAL_SOURCE_FILES}</span>
+                 <span>{t('common.attachFiles')}</span>
+                 <span>{t('common.maxFiles', { count: MAX_MANUAL_SOURCE_FILES })}</span>
                  <input
                    type="file"
                    accept=".pdf,.txt,.md,.csv,.json,text/plain,application/pdf"
@@ -576,7 +602,7 @@ function PipelineItemCard({
                  />
                </label>
                {isExtractingSourceFiles ? (
-                 <p className="text-xs font-medium text-indigo-600">Extracting text from attached files...</p>
+                 <p className="text-xs font-medium text-indigo-600">{t('common.extracting')}</p>
                ) : null}
                {manualSourceError ? (
                  <p className="text-xs font-medium text-red-600">{manualSourceError}</p>
@@ -591,7 +617,9 @@ function PipelineItemCard({
                        <div className="min-w-0">
                          <p className="truncate text-xs font-semibold text-gray-700">{file.name}</p>
                          <p className="text-[11px] text-gray-500">
-                           {Math.max(1, Math.round(file.extractedText.length / 4))} tokens approx extracted
+                           {t('common.tokensApprox', {
+                             count: Math.max(1, Math.round(file.extractedText.length / 4)),
+                           })}
                          </p>
                        </div>
                        <button
@@ -603,15 +631,13 @@ function PipelineItemCard({
                          }
                          className="rounded-md px-2 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50"
                        >
-                         Remove
+                         {t('common.remove')}
                        </button>
                      </div>
                    ))}
                  </div>
                ) : null}
-               <p className="text-[11px] text-gray-500">
-                 Content generation will prioritize your manual notes, attached source text, and target word count.
-               </p>
+               <p className="text-[11px] text-gray-500">{t('pipeline.source.note')}</p>
              </div>
             ) : null}
           </div>
@@ -620,7 +646,7 @@ function PipelineItemCard({
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-medium text-gray-500">
           <span className="flex items-center gap-1.5 object-bottom">
             <Calendar className="w-3.5 h-3.5" />
-            {new Date(currentItem.createdAt).toLocaleDateString()}
+            {format.dateTime(new Date(currentItem.createdAt), { dateStyle: 'medium' })}
           </span>
 
           <div className="flex items-center gap-2">
@@ -631,7 +657,7 @@ function PipelineItemCard({
                 className="text-indigo-600 disabled:opacity-50 hover:text-indigo-700 font-bold items-center inline-flex gap-1"
               >
                 {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
-                Generate, Schedule & Preview
+                {t('pipeline.actions.generate')}
               </button>
             ) : null}
 
@@ -642,14 +668,14 @@ function PipelineItemCard({
                   onClick={openEditorModal}
                   className="text-gray-600 hover:text-gray-900 font-bold items-center inline-flex gap-1"
                 >
-                  Edit
+                  {t('pipeline.actions.edit')}
                 </button>
                 {currentItem.status === 'GENERATED' ? (
                   <button
                     onClick={handleApprove}
                     className="bg-[#121212] flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-black transition-colors"
                   >
-                    Approve Concept
+                    {t('pipeline.actions.approve')}
                   </button>
                 ) : null}
               </>
@@ -660,8 +686,10 @@ function PipelineItemCard({
                 onClick={openScheduleModal}
                 className="bg-indigo-600 flex items-center gap-1 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition"
               >
-                <Send className="w-3.5 h-3.5" /> 
-                {currentItem.status === 'SCHEDULED' ? 'Reschedule' : 'Publish'}
+                <Send className="w-3.5 h-3.5 rtl:-scale-x-100" /> 
+                {currentItem.status === 'SCHEDULED'
+                  ? t('pipeline.actions.reschedule')
+                  : t('pipeline.actions.publish')}
               </button>
             ) : null}
           </div>
@@ -672,13 +700,13 @@ function PipelineItemCard({
         <div className="flex w-full max-w-4xl flex-col rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden h-[90vh]">
           <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/50">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#121212]">Edit & Schedule Post</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-[#121212]">{t('pipeline.editor.eyebrow')}</p>
               <h4 className="text-lg font-bold text-gray-900 line-clamp-1 mt-0.5">{currentItem.topic}</h4>
             </div>
             <button
               onClick={() => setIsPreviewOpen(false)}
               className="rounded-full shrink-0 p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900"
-              aria-label="Close preview"
+              aria-label={t('pipeline.editor.close')}
             >
               <X className="h-5 w-5" />
             </button>
@@ -686,7 +714,7 @@ function PipelineItemCard({
           
           <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 flex flex-col h-full">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">Content Draft</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">{t('pipeline.editor.draftLabel')}</label>
               <textarea
                 value={editContentText}
                 onChange={(e) => setEditContentText(e.target.value)}
@@ -698,12 +726,12 @@ function PipelineItemCard({
               <div className="rounded-2xl bg-indigo-50/50 border border-indigo-100 p-5">
                 <div className="flex items-center gap-2 mb-4 text-indigo-700">
                   <Calendar className="w-5 h-5" />
-                  <h3 className="font-bold">Publishing Schedule</h3>
+                  <h3 className="font-bold">{t('pipeline.editor.scheduleTitle')}</h3>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">Date (Optional)</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('pipeline.editor.dateOptional')}</label>
                     <input 
                       type="date" 
                       value={publishDate}
@@ -712,7 +740,7 @@ function PipelineItemCard({
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">Time (Optional)</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('pipeline.editor.timeOptional')}</label>
                     <input 
                       type="time" 
                       value={publishTime}
@@ -721,20 +749,18 @@ function PipelineItemCard({
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">Timezone</label>
+                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('common.timezone')}</label>
                     <select 
                       value={publishTimezone} 
                       onChange={e => setPublishTimezone(e.target.value)}
                       className="w-full rounded-lg border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
                     >
-                      <option value="America/Toronto">Eastern Time (ET)</option>
-                      <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                      <option value="Europe/London">London (GMT)</option>
+                      <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
+                      <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
+                      <option value="Europe/London">{t('timezones.Europe/London')}</option>
                     </select>
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-tight">
-                    Leave date and time blank to save simply as &quot;Ready&quot;, or fill them out to automatically mark this post as &quot;Scheduled&quot;.
-                  </p>
+                  <p className="text-[11px] text-gray-500 leading-tight">{t('pipeline.editor.blankNote')}</p>
                 </div>
               </div>
             </div>
@@ -742,7 +768,7 @@ function PipelineItemCard({
 
           <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between bg-gray-50/50">
            <div className="inline-flex items-center rounded-full bg-gray-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#121212]">
-             {currentItem.channel.replace(/_/g, ' ')}
+             <bdi>{channelLabel(t, currentItem.channel)}</bdi>
            </div>
            
            <div className="flex gap-2">
@@ -751,7 +777,7 @@ function PipelineItemCard({
                 className="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors"
                 disabled={isSavingEdits}
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleSaveEdits}
@@ -759,7 +785,7 @@ function PipelineItemCard({
                 className="bg-indigo-600 flex items-center gap-1.5 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors disabled:opacity-60"
               >
                 {isSavingEdits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                Save Changes
+                {t('pipeline.editor.save')}
               </button>
            </div>
           </div>
@@ -772,7 +798,7 @@ function PipelineItemCard({
         <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl p-6 relative">
           <button
             onClick={() => setIsScheduleModalOpen(false)}
-            className="absolute top-4 right-4 rounded-full p-2 bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+            className="absolute top-4 end-4 rounded-full p-2 bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
           >
             <X className="h-4 w-4" />
           </button>
@@ -781,14 +807,14 @@ function PipelineItemCard({
             <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4 text-indigo-600">
               <Calendar className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-[#121212]">Schedule Content</h2>
+            <h2 className="text-xl font-bold text-[#121212]">{t('pipeline.scheduleModal.title')}</h2>
             <p className="text-sm text-gray-500 mt-1 line-clamp-1">{currentItem.topic}</p>
           </div>
 
           <form onSubmit={handleScheduleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Date</label>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.date')}</label>
                 <input 
                   type="date" 
                   autoFocus
@@ -799,7 +825,7 @@ function PipelineItemCard({
                 />
               </div>
               <div>
-                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Time</label>
+                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.time')}</label>
                  <input 
                   type="time" 
                   required
@@ -811,15 +837,15 @@ function PipelineItemCard({
             </div>
 
             <div>
-               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Timezone</label>
+               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.timezone')}</label>
                <select 
                  value={publishTimezone} 
                  onChange={e => setPublishTimezone(e.target.value)}
                  className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
                >
-                 <option value="America/Toronto">Eastern Time (ET)</option>
-                 <option value="America/Los_Angeles">Pacific Time (PT)</option>
-                 <option value="Europe/London">London (GMT)</option>
+                 <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
+                 <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
+                 <option value="Europe/London">{t('timezones.Europe/London')}</option>
                </select>
             </div>
 
@@ -829,15 +855,15 @@ function PipelineItemCard({
                  onClick={() => setIsScheduleModalOpen(false)}
                  className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition"
                >
-                 Cancel
+                 {t('common.cancel')}
                </button>
                <button 
                  type="submit" 
                  disabled={isScheduling}
                  className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition disabled:opacity-50"
                >
-                 {isScheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                 Confirm Schedule
+                 {isScheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:-scale-x-100" />}
+                 {t('pipeline.scheduleModal.confirm')}
                </button>
             </div>
           </form>

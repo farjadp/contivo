@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 
 import { Sparkles, Loader2, FileText, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { generateIdeas, saveIdeaToPipeline, generateDraftPreviewFromIdea } from '@/app/actions/workspace';
@@ -26,6 +27,26 @@ type SourceFileState = {
   size: number;
   extractedText: string;
 };
+
+/**
+ * The option lists in `framework-engine` are data with an English label baked
+ * in. Where `tabsA` has a translation for the id we use it; anything the map
+ * does not know about falls back to the shipped label rather than a key.
+ */
+function optionLabel(
+  t: ReturnType<typeof useTranslations>,
+  group: string,
+  id: string,
+  fallback: string,
+) {
+  return t.has(`${group}.${id}`) ? t(`${group}.${id}`) : fallback;
+}
+
+function wordCountPlatformLabel(t: ReturnType<typeof useTranslations>, platform: string) {
+  return t.has(`wordCountPlatforms.${platform}`)
+    ? t(`wordCountPlatforms.${platform}`)
+    : (WORD_COUNT_PLATFORM_LABELS[platform as keyof typeof WORD_COUNT_PLATFORM_LABELS] ?? platform);
+}
 
 const MAX_MANUAL_SOURCE_FILES = 3;
 const MAX_MANUAL_SOURCE_TEXT_CHARS = 24000;
@@ -91,6 +112,8 @@ export function IdeationTab({
   maxImageCount: number;
   wordCountLimits: ContentWordCountLimits;
 }) {
+  const t = useTranslations('tabsA');
+  const format = useFormatter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [ideas, setIdeas] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -144,7 +167,7 @@ export function IdeationTab({
 
     const remaining = Math.max(0, MAX_MANUAL_SOURCE_FILES - manualSourceFiles.length);
     if (remaining === 0) {
-      setManualSourceError(`You can attach up to ${MAX_MANUAL_SOURCE_FILES} files.`);
+      setManualSourceError(t('ideation.errors.maxFiles', { count: MAX_MANUAL_SOURCE_FILES }));
       return;
     }
 
@@ -163,9 +186,7 @@ export function IdeationTab({
             extractedText: trimTo(text, 9000),
           });
         } catch {
-          setManualSourceError(
-            `Failed to read "${file.name}". Use PDF/TXT/MD/CSV/JSON files or paste text manually.`,
-          );
+          setManualSourceError(t('ideation.errors.readFailed', { name: file.name }));
         }
       }
 
@@ -206,7 +227,7 @@ export function IdeationTab({
         setFallbackUsed(Boolean(result.fallbackUsed));
       }
     } catch (err) {
-      setError('An unexpected error occurred while brainstorming.');
+      setError(t('ideation.errors.unexpected'));
     } finally {
       setIsGenerating(false);
     }
@@ -218,15 +239,18 @@ export function IdeationTab({
         <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-md border border-indigo-100 flex items-center justify-center mb-6">
           <Sparkles className="w-8 h-8 text-indigo-600" />
         </div>
-        <h2 className="text-2xl font-bold text-[#121212] mb-3">Ideation Station</h2>
-        <p className="text-gray-500 max-w-lg mx-auto mb-8 leading-relaxed">
-          Generate high-performing content ideas tailored to your audience and brand pillars. We strictly use Brand Memory, Market Metric, and Competitor Keywords as required context.
-        </p>
+        <h2 className="text-2xl font-bold text-[#121212] mb-3">{t('ideation.title')}</h2>
+        <p className="text-gray-500 max-w-lg mx-auto mb-8 leading-relaxed">{t('ideation.lede')}</p>
         <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-2 text-xs font-semibold text-indigo-700">
-          Required inputs for ideation: Brand Memory + Market Metric + Competitor Keywords.
+          {t('ideation.requiredInputs')}
         </p>
         <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
-          Target words: {normalizedTargetWordCount} ({WORD_COUNT_PLATFORM_LABELS[wordCountPlatform]} range {wordCountRange.min}-{wordCountRange.max})
+          {t('ideation.targetWords', {
+            count: normalizedTargetWordCount,
+            platform: wordCountPlatformLabel(t, wordCountPlatform),
+            min: wordCountRange.min,
+            max: wordCountRange.max,
+          })}
         </p>
         <div className="mx-auto mb-6 grid max-w-6xl gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 md:grid-cols-4 lg:grid-cols-8">
           <select
@@ -236,7 +260,7 @@ export function IdeationTab({
           >
             {CONTENT_GOAL_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                Goal: {option.label}
+                {t('ideation.goalOption', { label: optionLabel(t, 'goals', option.value, option.label) })}
               </option>
             ))}
           </select>
@@ -247,7 +271,7 @@ export function IdeationTab({
           >
             {CONTENT_PLATFORM_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                Platform: {option.label}
+                {t('ideation.platformOption', { label: optionLabel(t, 'platforms', option.value, option.label) })}
               </option>
             ))}
           </select>
@@ -258,7 +282,7 @@ export function IdeationTab({
           >
             {FUNNEL_STAGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
-                Funnel: {option.label}
+                {t('ideation.funnelOption', { label: optionLabel(t, 'funnel', option.value, option.label) })}
               </option>
             ))}
           </select>
@@ -267,8 +291,8 @@ export function IdeationTab({
             onChange={(event) => setSelectionMode(event.target.value as 'auto' | 'manual')}
             className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700"
           >
-            <option value="auto">Framework: Auto</option>
-            <option value="manual">Framework: Manual</option>
+            <option value="auto">{t('ideation.frameworkAuto')}</option>
+            <option value="manual">{t('ideation.frameworkManual')}</option>
           </select>
           <select
             value={manualFrameworkId}
@@ -278,12 +302,12 @@ export function IdeationTab({
           >
             {Object.entries(FRAMEWORK_LABELS).map(([id, label]) => (
               <option key={id} value={id}>
-                {label}
+                {optionLabel(t, 'frameworks', id, label)}
               </option>
             ))}
           </select>
           <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
-            <span className="whitespace-nowrap">Ideas</span>
+            <span className="whitespace-nowrap">{t('ideation.ideasLabel')}</span>
             <input
               type="number"
               min={1}
@@ -293,11 +317,11 @@ export function IdeationTab({
                 const next = Number(event.target.value);
                 setRequestedCount(Math.max(1, Math.min(maxIdeaCount, Number.isFinite(next) ? next : 1)));
               }}
-              className="w-full min-w-0 bg-transparent text-right outline-none"
+              className="w-full min-w-0 bg-transparent text-end outline-none"
             />
           </label>
           <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
-            <span className="whitespace-nowrap">Words</span>
+            <span className="whitespace-nowrap">{t('ideation.wordsLabel')}</span>
             <input
               type="number"
               min={wordCountRange.min}
@@ -313,11 +337,11 @@ export function IdeationTab({
                   ),
                 );
               }}
-              className="w-full min-w-0 bg-transparent text-right outline-none"
+              className="w-full min-w-0 bg-transparent text-end outline-none"
             />
           </label>
           <label className="flex h-10 items-center justify-between rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
-            <span className="whitespace-nowrap">Need Images</span>
+            <span className="whitespace-nowrap">{t('ideation.needImagesLabel')}</span>
             <input
               type="checkbox"
               checked={includeImages}
@@ -326,7 +350,7 @@ export function IdeationTab({
             />
           </label>
           <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
-            <span className="whitespace-nowrap">Images</span>
+            <span className="whitespace-nowrap">{t('ideation.imagesLabel')}</span>
             <input
               type="number"
               min={1}
@@ -337,11 +361,11 @@ export function IdeationTab({
                 const next = Number(event.target.value);
                 setImageCount(Math.max(1, Math.min(maxImageCount, Number.isFinite(next) ? next : 1)));
               }}
-              className="w-full min-w-0 bg-transparent text-right outline-none disabled:opacity-50"
+              className="w-full min-w-0 bg-transparent text-end outline-none disabled:opacity-50"
             />
           </label>
           <label className="flex h-10 items-center justify-between rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
-            <span className="whitespace-nowrap">Auto Calendar</span>
+            <span className="whitespace-nowrap">{t('ideation.autoCalendarLabel')}</span>
             <input
               type="checkbox"
               checked={autoInsertToCalendar}
@@ -350,8 +374,8 @@ export function IdeationTab({
             />
           </label>
         </div>
-        <div className="mx-auto mb-6 w-full max-w-6xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 text-left">
-          <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">Generation Path</p>
+        <div className="mx-auto mb-6 w-full max-w-6xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 text-start">
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">{t('ideation.generationPath')}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <button
               type="button"
@@ -362,7 +386,7 @@ export function IdeationTab({
                   : 'border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              Direct Generate
+              {t('ideation.directGenerate')}
             </button>
             <button
               type="button"
@@ -373,7 +397,7 @@ export function IdeationTab({
                   : 'border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50'
               }`}
             >
-              Generate With Source Form
+              {t('ideation.sourceFormGenerate')}
             </button>
           </div>
 
@@ -382,15 +406,15 @@ export function IdeationTab({
               <textarea
                 value={manualSourceNotes}
                 onChange={(event) => setManualSourceNotes(event.target.value)}
-                placeholder="Paste your notes, document summary, script, or key ideas..."
+                placeholder={t('ideation.sourcePlaceholder')}
                 className="h-24 w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none ring-indigo-500 focus:ring-2"
               />
               <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
                 <span className="inline-flex items-center gap-2">
                   <Paperclip className="h-3.5 w-3.5" />
-                  Attach files (PDF/TXT/MD/CSV/JSON)
+                  {t('common.attachFiles')}
                 </span>
-                <span>Max {MAX_MANUAL_SOURCE_FILES}</span>
+                <span>{t('common.maxFiles', { count: MAX_MANUAL_SOURCE_FILES })}</span>
                 <input
                   type="file"
                   accept=".pdf,.txt,.md,.csv,.json,text/plain,application/pdf"
@@ -400,7 +424,7 @@ export function IdeationTab({
                 />
               </label>
               {isExtractingSourceFiles ? (
-                <p className="text-xs font-medium text-indigo-600">Extracting text from attached files...</p>
+                <p className="text-xs font-medium text-indigo-600">{t('common.extracting')}</p>
               ) : null}
               {manualSourceError ? <p className="text-xs font-medium text-red-600">{manualSourceError}</p> : null}
               {manualSourceFiles.length > 0 ? (
@@ -413,7 +437,9 @@ export function IdeationTab({
                       <div className="min-w-0">
                         <p className="truncate text-xs font-semibold text-gray-700">{file.name}</p>
                         <p className="text-[11px] text-gray-500">
-                          {Math.max(1, Math.round(file.extractedText.length / 4))} tokens approx extracted
+                          {t('common.tokensApprox', {
+                            count: Math.max(1, Math.round(file.extractedText.length / 4)),
+                          })}
                         </p>
                       </div>
                       <button
@@ -425,20 +451,16 @@ export function IdeationTab({
                         }
                         className="rounded-md px-2 py-1 text-[11px] font-bold text-red-600 hover:bg-red-50"
                       >
-                        Remove
+                        {t('common.remove')}
                       </button>
                     </div>
                   ))}
                 </div>
               ) : null}
-              <p className="text-[11px] text-gray-500">
-                This source form is global and will be used for all generated previews in this ideation run.
-              </p>
+              <p className="text-[11px] text-gray-500">{t('ideation.sourceNote')}</p>
             </div>
           ) : (
-            <p className="mt-3 text-xs text-gray-600">
-              Direct mode: generate content ideas without manual source context.
-            </p>
+            <p className="mt-3 text-xs text-gray-600">{t('ideation.directNote')}</p>
           )}
         </div>
         <button
@@ -449,12 +471,12 @@ export function IdeationTab({
           {isGenerating ? (
             <>
               <Loader2 className="w-5 h-5 animate-spin" />
-              Brainstorming with AI...
+              {t('ideation.brainstorming')}
             </>
           ) : (
             <>
               <Sparkles className="w-5 h-5" />
-              Generate {requestedCount} Content Idea{requestedCount > 1 ? 's' : ''}
+              {t('ideation.generateCta', { count: requestedCount })}
             </>
           )}
         </button>
@@ -465,27 +487,34 @@ export function IdeationTab({
         <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Selected Framework</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('ideation.selectedFramework')}</p>
               <p className="mt-1 text-base font-bold text-[#121212]">{frameworkMeta.framework_name}</p>
               <p className="mt-1 text-sm text-gray-600">{frameworkMeta.selection_reason}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
-                Overall Score: {Number(qualityScores.overall_score || 0).toFixed(2)}/10
+                {t('ideation.overallScore', {
+                  score: format.number(Number(qualityScores.overall_score || 0), {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  }),
+                })}
               </span>
               {fallbackUsed ? (
                 <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                  Fallback applied
+                  {t('ideation.fallbackApplied')}
                 </span>
               ) : null}
               <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
-                Images: {includeImages ? `${imageCount} (1st = cover)` : 'No'}
+                {includeImages
+                  ? t('ideation.imagesBadge', { count: imageCount })
+                  : t('ideation.imagesBadgeNone')}
               </span>
               <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
-                Calendar: {autoInsertToCalendar ? 'Auto insert (mock)' : 'Manual'}
+                {autoInsertToCalendar ? t('ideation.calendarAuto') : t('ideation.calendarManual')}
               </span>
               <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
-                Words: {normalizedTargetWordCount}
+                {t('ideation.wordsBadge', { count: normalizedTargetWordCount })}
               </span>
             </div>
           </div>
@@ -494,7 +523,12 @@ export function IdeationTab({
 
       {ideas.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-[#121212] px-1">Fresh Ideas Generated <span className="text-sm text-gray-400 font-normal ml-2">({ideas.length})</span></h3>
+          <h3 className="text-lg font-bold text-[#121212] px-1">
+            {t('ideation.freshIdeas')}{' '}
+            <span className="text-sm text-gray-400 font-normal ms-2">
+              {t('ideation.freshIdeasCount', { count: ideas.length })}
+            </span>
+          </h3>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {ideas.map((idea, idx) => (
               <IdeaCard
@@ -544,6 +578,7 @@ function IdeaCard({
   } | null;
   targetWordCount: number;
 }) {
+  const t = useTranslations('tabsA');
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -576,7 +611,7 @@ function IdeaCard({
         setIsPreviewOpen(true);
       }
     } catch {
-      setPreviewError('Failed to generate preview.');
+      setPreviewError(t('ideation.errors.previewFailed'));
     } finally {
       setIsPreviewing(false);
     }
@@ -601,10 +636,10 @@ function IdeaCard({
     <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
       <div className="flex items-center gap-2 mb-3">
         <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-indigo-700 uppercase">
-          {idea.format || 'Article'}
+          {idea.format || t('ideation.formatFallback')}
         </span>
         <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold tracking-widest text-gray-600 uppercase">
-          {idea.pillar || 'General'}
+          {idea.pillar || t('ideation.pillarFallback')}
         </span>
         {idea.framework_name ? (
           <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-emerald-700 uppercase">
@@ -613,12 +648,12 @@ function IdeaCard({
         ) : null}
         {idea.include_images ? (
           <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-indigo-700 uppercase">
-            {idea.image_count || 1} images
+            {t('ideation.imagesCount', { count: idea.image_count || 1 })}
           </span>
         ) : null}
         {Number(idea?.target_word_count) > 0 ? (
           <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold tracking-widest text-slate-700 uppercase">
-            {Math.floor(Number(idea.target_word_count))} words
+            {t('ideation.wordsCount', { count: Math.floor(Number(idea.target_word_count)) })}
           </span>
         ) : null}
       </div>
@@ -639,7 +674,7 @@ function IdeaCard({
           className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white transition-all hover:bg-indigo-700 disabled:opacity-50"
         >
           {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-          {isPreviewing ? 'Generating Preview...' : 'Generate Preview'}
+          {isPreviewing ? t('ideation.generatingPreview') : t('ideation.generatePreview')}
         </button>
         <button
           onClick={handleSaveToPipeline}
@@ -648,8 +683,8 @@ function IdeaCard({
             ${saved ? 'bg-emerald-50 text-emerald-700' : 'bg-[#121212] text-white hover:bg-black'}`}
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
-           saved ? <><CheckCircle2 className="w-4 h-4" /> Added to Pipeline</> : 
-           <><FileText className="w-4 h-4" /> Add to Pipeline</>}
+           saved ? <><CheckCircle2 className="w-4 h-4" /> {t('ideation.addedToPipeline')}</> : 
+           <><FileText className="w-4 h-4" /> {t('ideation.addToPipeline')}</>}
         </button>
       </div>
 
@@ -658,23 +693,23 @@ function IdeaCard({
           <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">Content Preview</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('ideation.contentPreview')}</p>
                 <h4 className="text-base font-bold text-[#121212]">{idea.topic}</h4>
               </div>
               <button
                 onClick={() => setIsPreviewOpen(false)}
                 className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                aria-label="Close preview"
+                aria-label={t('ideation.closePreview')}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="max-h-[65vh] overflow-y-auto px-5 py-4">
               <div className="mb-3 inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-gray-600">
-                {String(previewChannel || idea.format || 'Content')}
+                {String(previewChannel || idea.format || t('ideation.channelFallback'))}
               </div>
               <p className="whitespace-pre-wrap text-sm leading-7 text-gray-800">
-                {previewText || 'No preview content available yet.'}
+                {previewText || t('ideation.noPreview')}
               </p>
             </div>
           </div>

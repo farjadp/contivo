@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Check, Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
@@ -178,6 +179,8 @@ export function CompetitorMapManager({
   initialArchive?: DiscoveryArchiveItem[];
   onMatricesUpdated?: (matrices: CompetitiveMatrixPayload | null) => void;
 }) {
+  const t = useTranslations('tabsB.competitorMap');
+  const format = useFormatter();
   const router = useRouter();
   const [competitors, setCompetitors] = useState<CompetitorItem[]>(
     initialCompetitors
@@ -244,7 +247,7 @@ export function CompetitorMapManager({
     } catch (err) {
       console.error(err);
       updateCompetitor(competitorId, { userDecision: previous });
-      setError('Could not save that decision.');
+      setError(t('decisionFailed'));
     } finally {
       setSavingDecisionIds((ids) => ids.filter((id) => id !== competitorId));
       router.refresh();
@@ -309,7 +312,8 @@ export function CompetitorMapManager({
     const domain = manualDomain.trim();
     if (!name && !domain) return;
 
-    const inferredName = name || domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] || 'Manual Competitor';
+    const inferredName =
+      name || domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] || t('manualFallbackName');
     const id = `temp-${Date.now()}`;
 
     setCompetitors((prev) => [
@@ -318,7 +322,7 @@ export function CompetitorMapManager({
         id,
         name: inferredName,
         domain: domain || null,
-        description: 'Manually added competitor',
+        description: t('manualDescription'),
         category: null,
         audienceGuess: null,
         type: 'DIRECT',
@@ -363,14 +367,13 @@ export function CompetitorMapManager({
             })),
         );
         setSuccess(
-          result.message ||
-            'We found potential competitors for your business. Please review and confirm them.',
+          result.message || t('discovered'),
         );
         router.refresh();
       }
     } catch (discoverError) {
       console.error(discoverError);
-      setError('Unexpected error while discovering competitors.');
+      setError(t('discoverFailed'));
     } finally {
       setIsDiscovering(false);
     }
@@ -418,12 +421,12 @@ export function CompetitorMapManager({
             })),
           ),
         );
-        setSuccess(result?.message || 'Competitor decisions saved.');
+        setSuccess(result?.message || t('savedMessage'));
         router.refresh();
       }
     } catch (saveError) {
       console.error(saveError);
-      setError('Unexpected error while saving edits.');
+      setError(t('saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -434,9 +437,7 @@ export function CompetitorMapManager({
       {hasUnsavedChanges && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3">
           <p className="text-sm text-emerald-900">
-            <span className="font-bold">You have unsaved text edits.</span>{' '}
-            Accept and Reject save on click, but changes to a competitor&apos;s name, domain or type
-            need this save.
+            <span className="font-bold">{t('unsavedTitle')}</span> {t('unsavedBody')}
           </p>
           <button
             type="button"
@@ -445,7 +446,7 @@ export function CompetitorMapManager({
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            Save now
+            {t('saveNow')}
           </button>
         </div>
       )}
@@ -458,7 +459,7 @@ export function CompetitorMapManager({
           className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:opacity-60"
         >
           {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-emerald-400" />}
-          Discover Competitors with AI
+          {t('discover')}
         </button>
 
         <button
@@ -472,14 +473,20 @@ export function CompetitorMapManager({
           }`}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {hasUnsavedChanges ? 'Save text edits' : 'Saved'}
+          {hasUnsavedChanges ? t('saveTextEdits') : t('savedLabel')}
         </button>
 
         <span className="text-xs font-semibold text-gray-500">
-          {visibleCompetitors.length} active / {acceptedCount} accepted
+          {t('counts', {
+            active: format.number(visibleCompetitors.length),
+            accepted: format.number(acceptedCount),
+          })}
         </span>
         <span className="text-xs font-semibold text-indigo-600">
-          Discovery runs: {discoveryMeta.usedRuns}/{discoveryMeta.maxRuns}
+          {t('runs', {
+            used: format.number(discoveryMeta.usedRuns),
+            max: format.number(discoveryMeta.maxRuns),
+          })}
         </span>
       </div>
 
@@ -490,12 +497,22 @@ export function CompetitorMapManager({
         <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">{success}</div>
       ) : null}
 
-      <div className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-gray-200 bg-gray-50/50 rounded-tr-lg rounded-bl-lg overflow-visible">
+      {/*
+        Same decision as the admin console's charts and the positioning
+        matrix above: the plot area is pinned to `ltr` so the axes keep
+        their low-to-high reading and every point stays where its score
+        puts it. The axis captions and the brand pin inside are translated;
+        only the frame is physical.
+      */}
+      <div
+        dir="ltr"
+        className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-gray-200 bg-gray-50/50 rounded-tr-lg rounded-bl-lg overflow-visible"
+      >
         <span className="absolute -left-14 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-          Product Sophistication
+          {t('axisSophistication')}
         </span>
         <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
-          Audience Size
+          {t('axisAudience')}
         </span>
 
         <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
@@ -503,7 +520,7 @@ export function CompetitorMapManager({
             <Target className="w-4 h-4 text-white" />
           </div>
           <span className="mt-2 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded shadow-sm">
-            Your Brand
+            {t('yourBrand')}
           </span>
         </div>
 
@@ -520,7 +537,8 @@ export function CompetitorMapManager({
             >
               <div className={`h-4 w-4 rounded-full border-2 shadow-sm z-10 transition-transform group-hover:scale-150 ${getTypeStyles(competitor.type)}`} />
               <span className="mt-1.5 text-[10px] font-bold text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
-                {competitor.name}
+                {/* Competitor names are data, never translated. */}
+                <bdi>{competitor.name}</bdi>
               </span>
             </div>
           );
@@ -528,17 +546,17 @@ export function CompetitorMapManager({
       </div>
 
       <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-gray-500">
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500 border border-rose-200" /> Direct</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400 border border-amber-200" /> Indirect</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400 border border-emerald-200" /> Aspirational</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500 border border-rose-200" /> {t('legend.direct')}</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400 border border-amber-200" /> {t('legend.indirect')}</div>
+        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400 border border-emerald-200" /> {t('legend.aspirational')}</div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
         <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">
-          Top Competitors by Brand Position
+          {t('topTitle')}
         </h4>
         {topCompetitors.length === 0 ? (
-          <p className="text-sm text-gray-500">No accepted competitors yet.</p>
+          <p className="text-sm text-gray-500">{t('topEmpty')}</p>
         ) : (
           <div className="space-y-2">
             {topCompetitors.map((competitor, index) => (
@@ -548,15 +566,20 @@ export function CompetitorMapManager({
               >
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#121212] truncate">
-                    {index + 1}. {competitor.name}
+                    {format.number(index + 1)}. <bdi>{competitor.name}</bdi>
                   </p>
                   <p className="text-xs text-gray-500 truncate">
-                    {competitor.domain || 'No domain'}{competitor.type ? ` · ${competitor.type}` : ''}
+                    <bdi>{competitor.domain || t('noDomain')}</bdi>
+                    {competitor.type
+                      ? ` · ${t(`types.${competitor.type as 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL'}`)}`
+                      : ''}
                   </p>
                 </div>
                 <span className="shrink-0 text-xs text-gray-500">
-                  Audience {Math.round(competitor.point.x)} / Sophistication{' '}
-                  {Math.round(100 - competitor.point.y)}
+                  {t('scorePair', {
+                    audience: format.number(Math.round(competitor.point.x)),
+                    sophistication: format.number(Math.round(100 - competitor.point.y)),
+                  })}
                 </span>
               </div>
             ))}
@@ -565,21 +588,22 @@ export function CompetitorMapManager({
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">Add Competitor Manually</h4>
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">{t('addTitle')}</h4>
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
           <input
             type="text"
             value={manualName}
             onChange={(event) => setManualName(event.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#121212] focus:border-indigo-500 focus:outline-none"
-            placeholder="Competitor name"
+            placeholder={t('manualNamePlaceholder')}
           />
           <input
             type="text"
             value={manualDomain}
             onChange={(event) => setManualDomain(event.target.value)}
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#121212] focus:border-indigo-500 focus:outline-none"
-            placeholder="competitor.com"
+            placeholder={t('manualDomainPlaceholder')}
+            dir="ltr"
           />
           <button
             type="button"
@@ -587,7 +611,7 @@ export function CompetitorMapManager({
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[#121212] border border-gray-300 hover:bg-gray-100"
           >
             <Plus className="h-4 w-4" />
-            Add
+            {t('add')}
           </button>
         </div>
       </div>
@@ -601,14 +625,15 @@ export function CompetitorMapManager({
                 value={competitor.name}
                 onChange={(event) => updateCompetitor(competitor.id, { name: event.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Name"
+                placeholder={t('namePlaceholder')}
               />
               <input
                 type="text"
                 value={competitor.domain || ''}
                 onChange={(event) => updateCompetitor(competitor.id, { domain: event.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
-                placeholder="Domain"
+                placeholder={t('domainPlaceholder')}
+                dir="ltr"
               />
             </div>
 
@@ -618,9 +643,9 @@ export function CompetitorMapManager({
                 onChange={(event) => updateCompetitor(competitor.id, { type: event.target.value })}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
               >
-                <option value="DIRECT">Direct</option>
-                <option value="INDIRECT">Indirect</option>
-                <option value="ASPIRATIONAL">Aspirational</option>
+                <option value="DIRECT">{t('types.DIRECT')}</option>
+                <option value="INDIRECT">{t('types.INDIRECT')}</option>
+                <option value="ASPIRATIONAL">{t('types.ASPIRATIONAL')}</option>
               </select>
 
               <DecisionButtons
@@ -654,18 +679,24 @@ export function CompetitorMapManager({
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">Discovery Archive</h4>
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">{t('archiveTitle')}</h4>
         {discoveryArchive.length === 0 ? (
-          <p className="text-sm text-gray-500">No discovery runs yet.</p>
+          <p className="text-sm text-gray-500">{t('archiveEmpty')}</p>
         ) : (
           <div className="space-y-2">
             {discoveryArchive.map((run) => (
               <div key={run.id} className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
                 <div className="text-sm font-medium text-[#121212]">
-                  Run #{run.runNumber} ({run.discoveredCount} competitors)
+                  {t('archiveRun', {
+                    number: format.number(run.runNumber),
+                    count: format.number(run.discoveredCount),
+                  })}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {new Date(run.createdAt).toLocaleString()}
+                  {format.dateTime(new Date(run.createdAt), {
+                    dateStyle: 'medium',
+                    timeStyle: 'short',
+                  })}
                 </div>
               </div>
             ))}
@@ -685,9 +716,10 @@ function DecisionButtons({
   saving: boolean;
   onChange: (decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => void;
 }) {
+  const t = useTranslations('tabsB.competitorMap');
   const options: Array<{ key: 'ACCEPTED' | 'REJECTED'; label: string; on: string }> = [
-    { key: 'ACCEPTED', label: 'Accept', on: 'bg-emerald-600 text-white border-emerald-600' },
-    { key: 'REJECTED', label: 'Reject', on: 'bg-red-600 text-white border-red-600' },
+    { key: 'ACCEPTED', label: t('accept'), on: 'bg-emerald-600 text-white border-emerald-600' },
+    { key: 'REJECTED', label: t('reject'), on: 'bg-red-600 text-white border-red-600' },
   ];
 
   return (
@@ -713,9 +745,9 @@ function DecisionButtons({
       {saving ? (
         <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
       ) : value === 'PENDING' ? (
-        <span className="text-xs text-gray-400">Undecided</span>
+        <span className="text-xs text-gray-400">{t('undecided')}</span>
       ) : (
-        <span className="text-xs text-emerald-600">Saved</span>
+        <span className="text-xs text-emerald-600">{t('decisionSaved')}</span>
       )}
     </div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Loader2, Save, Sparkles } from 'lucide-react';
 
 import {
@@ -96,11 +97,11 @@ function textColorForType(type: MatrixCompanyPoint['type']): string {
   return 'text-rose-700';
 }
 
-function labelForType(type: MatrixCompanyPoint['type']): string {
-  if (type === 'TARGET') return 'Target';
-  if (type === 'INDIRECT') return 'Indirect';
-  if (type === 'ASPIRATIONAL') return 'Aspirational';
-  return 'Direct';
+function legendKeyForType(type: MatrixCompanyPoint['type']): string {
+  if (type === 'TARGET') return 'target';
+  if (type === 'INDIRECT') return 'indirect';
+  if (type === 'ASPIRATIONAL') return 'aspirational';
+  return 'direct';
 }
 
 function compactDomain(website: string): string {
@@ -135,6 +136,8 @@ export function CompetitiveMatricesTab({
   discoveryMeta: DiscoveryMeta;
   discoveryArchive: DiscoveryArchiveItem[];
 }) {
+  const t = useTranslations('tabsB.matrices');
+  const format = useFormatter();
   const [matrices, setMatrices] = useState<CompetitiveMatrixPayload | null>(initialMatrices);
   const [selectedKey, setSelectedKey] = useState<string>(
     initialMatrices?.charts?.[0]?.chart_key || 'price_value_depth',
@@ -167,11 +170,11 @@ export function CompetitiveMatricesTab({
         const next = result.matrices as CompetitiveMatrixPayload;
         setMatrices(next);
         setSelectedKey(next.charts?.[0]?.chart_key || 'price_value_depth');
-        setSuccess('Competitive matrices generated from public signals. Please review and adjust as needed.');
+        setSuccess(t('generated'));
       }
     } catch (generateError) {
       console.error(generateError);
-      setError('Unexpected error while generating matrices.');
+      setError(t('generateFailed'));
     } finally {
       setIsGenerating(false);
     }
@@ -190,11 +193,11 @@ export function CompetitiveMatricesTab({
       }
       if (result?.matrices) {
         setMatrices(result.matrices as CompetitiveMatrixPayload);
-        setSuccess('Matrix edits saved.');
+        setSuccess(t('saved'));
       }
     } catch (saveError) {
       console.error(saveError);
-      setError('Unexpected error while saving matrix edits.');
+      setError(t('saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -231,10 +234,8 @@ export function CompetitiveMatricesTab({
       <section className="relative overflow-hidden rounded-[2rem] border border-gray-200 bg-white shadow-sm">
         <div className="bg-gradient-to-r from-gray-50/50 to-white px-6 py-5 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-lg font-bold text-[#121212] tracking-tight">Competitive Landscape</h2>
-            <p className="text-[13px] text-gray-500 mt-1 max-w-2xl">
-              Verify and manage your market players. Their profiles power the AI positioning charts below.
-            </p>
+            <h2 className="text-lg font-bold text-[#121212] tracking-tight">{t('landscapeTitle')}</h2>
+            <p className="text-[13px] text-gray-500 mt-1 max-w-2xl">{t('landscapeSubtitle')}</p>
           </div>
         </div>
         <div className="p-6 bg-white">
@@ -254,13 +255,13 @@ export function CompetitiveMatricesTab({
         <div className="bg-white px-6 py-5 border-b border-gray-100 flex flex-col xl:flex-row xl:items-center justify-between gap-4">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-lg font-bold text-[#121212] tracking-tight">Positioning Matrices</h2>
+              <h2 className="text-lg font-bold text-[#121212] tracking-tight">{t('title')}</h2>
               <span className="rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-bold text-indigo-700 uppercase tracking-widest ring-1 ring-indigo-100">
-                AI Generated
+                {t('aiBadge')}
               </span>
             </div>
             <p className="max-w-xl text-[13px] text-gray-500 mt-1">
-              Visualize your market position across 5 critical dimensions to find your strongest differentiation hook.
+              {t('subtitle', { count: format.number(matrices?.charts.length || 5) })}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2 xl:justify-end">
@@ -270,7 +271,7 @@ export function CompetitiveMatricesTab({
                 onClick={() => setShowTokens(!showTokens)}
                 className="inline-flex min-h-10 items-center rounded-lg bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
               >
-                {showTokens ? 'Hide Diagnostics' : 'View Diagnostics'}
+                {showTokens ? t('hideDiagnostics') : t('viewDiagnostics')}
               </button>
             )}
             <button
@@ -280,7 +281,7 @@ export function CompetitiveMatricesTab({
               className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-white border border-gray-200 px-4 py-2 text-[13px] font-bold text-[#121212] transition hover:bg-gray-50 hover:border-gray-300 disabled:opacity-50"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-gray-500" />}
-              Save Overrides
+              {t('saveOverrides')}
             </button>
             <button
               type="button"
@@ -289,7 +290,7 @@ export function CompetitiveMatricesTab({
               className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#121212] px-5 py-2 text-[13px] font-bold text-white transition hover:bg-black disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-emerald-400" />}
-              Generate AI Matrices
+              {t('generate')}
             </button>
           </div>
         </div>
@@ -304,51 +305,58 @@ export function CompetitiveMatricesTab({
               <div className="grid gap-4 pt-2 md:grid-cols-2">
                 <div className="rounded-2xl bg-white p-5 border border-gray-200 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-4 flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-indigo-400"></span>Last Run Data
+                    <span className="h-2 w-2 rounded-full bg-indigo-400"></span>{t('lastRunData')}
                   </p>
                   {matrices.token_usage.last_run ? (
                     <div className="space-y-3 text-[13px] text-gray-700">
                       <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span className="text-gray-500">Prompt Tokens:</span>
-                        <span className="font-bold text-[#121212] text-[14px]">{matrices.token_usage.last_run.prompt_tokens.toLocaleString()}</span>
+                        <span className="text-gray-500">{t('promptTokens')}</span>
+                        <span className="font-bold text-[#121212] text-[14px]">{format.number(matrices.token_usage.last_run.prompt_tokens)}</span>
                       </div>
                       <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                        <span className="text-gray-500">Completion Tokens:</span>
-                        <span className="font-bold text-[#121212] text-[14px]">{matrices.token_usage.last_run.completion_tokens.toLocaleString()}</span>
+                        <span className="text-gray-500">{t('completionTokens')}</span>
+                        <span className="font-bold text-[#121212] text-[14px]">{format.number(matrices.token_usage.last_run.completion_tokens)}</span>
                       </div>
                       <div className="flex justify-between items-center pt-1">
-                        <span className="text-gray-900 font-bold">Total Tokens:</span>
-                        <span className="font-black text-indigo-700 text-[15px]">{matrices.token_usage.last_run.total_tokens.toLocaleString()}</span>
+                        <span className="text-gray-900 font-bold">{t('totalTokens')}</span>
+                        <span className="font-black text-indigo-700 text-[15px]">{format.number(matrices.token_usage.last_run.total_tokens)}</span>
                       </div>
-                      <div className="text-[11px] text-gray-400 pt-3 mt-1 text-right">
-                        Model: {matrices.token_usage.last_run.model} &bull; {new Date(matrices.token_usage.last_run.created_at).toLocaleString()}
+                      <div className="text-[11px] text-gray-400 pt-3 mt-1 text-end">
+                        {t.rich('modelLine', {
+                          model: matrices.token_usage.last_run.model,
+                          date: format.dateTime(new Date(matrices.token_usage.last_run.created_at), {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          }),
+                          m: (chunks) => <bdi>{chunks}</bdi>,
+                        })}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-[13px] text-gray-500">No token data available yet.</p>
+                    <p className="text-[13px] text-gray-500">{t('noTokenData')}</p>
                   )}
                 </div>
 
                 <div className="rounded-2xl bg-white p-5 border border-gray-200 shadow-sm">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-4 flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full bg-emerald-400"></span>Lifetime Usage
+                    <span className="h-2 w-2 rounded-full bg-emerald-400"></span>{t('lifetimeUsage')}
                   </p>
                   <div className="space-y-3 text-[13px] text-gray-700">
                     <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Total Generation Runs:</span>
-                      <span className="font-bold text-[#121212] text-[14px]">{matrices.token_usage.runs.toLocaleString()}</span>
+                      <span className="text-gray-500">{t('totalRuns')}</span>
+                      <span className="font-bold text-[#121212] text-[14px]">{format.number(matrices.token_usage.runs)}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Accumulated Prompts:</span>
-                      <span className="font-bold text-[#121212] text-[14px]">{matrices.token_usage.lifetime_prompt_tokens.toLocaleString()}</span>
+                      <span className="text-gray-500">{t('accumulatedPrompts')}</span>
+                      <span className="font-bold text-[#121212] text-[14px]">{format.number(matrices.token_usage.lifetime_prompt_tokens)}</span>
                     </div>
                     <div className="flex justify-between items-center border-b border-gray-100 pb-2">
-                      <span className="text-gray-500">Accumulated Completions:</span>
-                      <span className="font-bold text-[#121212] text-[14px]">{matrices.token_usage.lifetime_completion_tokens.toLocaleString()}</span>
+                      <span className="text-gray-500">{t('accumulatedCompletions')}</span>
+                      <span className="font-bold text-[#121212] text-[14px]">{format.number(matrices.token_usage.lifetime_completion_tokens)}</span>
                     </div>
                     <div className="flex justify-between items-center pt-1">
-                      <span className="text-gray-900 font-bold">Lifetime Total:</span>
-                      <span className="font-black text-emerald-700 text-[15px]">{matrices.token_usage.lifetime_total_tokens.toLocaleString()}</span>
+                      <span className="text-gray-900 font-bold">{t('lifetimeTotal')}</span>
+                      <span className="font-black text-emerald-700 text-[15px]">{format.number(matrices.token_usage.lifetime_total_tokens)}</span>
                     </div>
                   </div>
                 </div>
@@ -364,25 +372,23 @@ export function CompetitiveMatricesTab({
               <div className="w-20 h-20 rounded-full bg-white flex items-center justify-center mb-5 border border-gray-200 shadow-sm">
                 <Sparkles className="h-8 w-8 text-gray-300" />
               </div>
-              <p className="text-lg font-bold text-[#121212] mb-2 tracking-tight">No Matrices Generated</p>
-              <p className="text-[14px] max-w-sm leading-relaxed">
-                Generate market matrices to automatically analyze and plot your competitive positioning across dimensions.
-              </p>
+              <p className="text-lg font-bold text-[#121212] mb-2 tracking-tight">{t('emptyTitle')}</p>
+              <p className="text-[14px] max-w-sm leading-relaxed">{t('emptyBody')}</p>
             </div>
           ) : (
             <>
               {/* Sidebar: Navigation & Macro Summary */}
-              <div className="w-full lg:w-[280px] xl:w-[310px] shrink-0 border-r border-gray-100 bg-gray-50/60 flex flex-col">
+              <div className="w-full lg:w-[280px] xl:w-[310px] shrink-0 border-e border-gray-100 bg-gray-50/60 flex flex-col">
                 <div className="p-5 space-y-2">
                   <h4 className="px-2 pb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Strategic Dimensions
+                    {t('dimensions')}
                   </h4>
                   {matrices.charts.map((chart: any) => (
                     <button
                       key={chart.chart_key}
                       type="button"
                       onClick={() => setSelectedKey(chart.chart_key)}
-                      className={`w-full text-left rounded-lg px-4 py-3 text-[13px] font-bold transition-all duration-200 ${
+                      className={`w-full text-start rounded-lg px-4 py-3 text-[13px] font-bold transition-all duration-200 ${
                         selectedKey === chart.chart_key
                           ? 'bg-white text-[#121212] shadow-sm ring-1 ring-gray-200'
                           : 'text-gray-500 hover:bg-white hover:text-gray-900'
@@ -397,7 +403,7 @@ export function CompetitiveMatricesTab({
                   <div className="space-y-3">
                     <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-500">
                       <div className="h-2 w-2 rounded-full bg-indigo-500"></div>
-                      Macro Opportunity
+                      {t('macroOpportunity')}
                     </h4>
                     <p className="text-[13px] font-semibold tracking-tight text-indigo-950 bg-indigo-50/80 rounded-xl p-4 leading-relaxed border border-indigo-100">
                       {matrices.strongest_differentiation_opportunity}
@@ -407,9 +413,9 @@ export function CompetitiveMatricesTab({
                   <div className="space-y-3">
                     <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500">
                       <div className="h-2 w-2 rounded-full border-2 border-gray-300 bg-white"></div>
-                      Cross-Chart Synthesis
+                      {t('crossChart')}
                     </h4>
-                    <p className="text-[13px] text-gray-700 leading-relaxed pl-4 border-l-[3px] border-gray-200 max-h-64 overflow-y-auto pr-2">
+                    <p className="text-[13px] text-gray-700 leading-relaxed ps-4 border-s-[3px] border-gray-200 max-h-64 overflow-y-auto pe-2">
                       {matrices.cross_chart_summary}
                     </p>
                   </div>
@@ -426,22 +432,31 @@ export function CompetitiveMatricesTab({
                           {selectedChart.chart_name}
                         </h3>
                         <p className="text-[13px] text-gray-500 mt-2 font-medium">
-                          <span className="font-bold text-[#121212]">{selectedChart.axes.y}</span> vs{' '}
-                          <span className="font-bold text-[#121212]">{selectedChart.axes.x}</span>
+                          {t.rich('axesVs', {
+                            x: selectedChart.axes.x,
+                            y: selectedChart.axes.y,
+                            /* Axis names come back from the model in English
+                               and are data, not copy: isolated, not flipped. */
+                            b: (chunks) => (
+                              <span className="font-bold text-[#121212]">
+                                <bdi>{chunks}</bdi>
+                              </span>
+                            ),
+                          })}
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2 text-[11px] font-bold text-gray-500">
                         <span className="inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-indigo-700">
-                          <span className="h-2 w-2 rounded-full bg-indigo-600" /> Target
+                          <span className="h-2 w-2 rounded-full bg-indigo-600" /> {t('legend.target')}
                         </span>
                         <span className="inline-flex items-center gap-2 rounded-full border border-rose-100 bg-rose-50 px-3 py-1 text-rose-700">
-                          <span className="h-2 w-2 rounded-full bg-rose-500" /> Direct
+                          <span className="h-2 w-2 rounded-full bg-rose-500" /> {t('legend.direct')}
                         </span>
                         <span className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-amber-700">
-                          <span className="h-2 w-2 rounded-full bg-amber-400" /> Indirect
+                          <span className="h-2 w-2 rounded-full bg-amber-400" /> {t('legend.indirect')}
                         </span>
                         <span className="inline-flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-emerald-700">
-                          <span className="h-2 w-2 rounded-full bg-emerald-400" /> Aspirational
+                          <span className="h-2 w-2 rounded-full bg-emerald-400" /> {t('legend.aspirational')}
                         </span>
                       </div>
                     </div>
@@ -449,7 +464,20 @@ export function CompetitiveMatricesTab({
                     <div className="space-y-6">
                       <div className="space-y-5">
                         {/* The Chart Container */}
-                        <div className="relative h-[520px] w-full rounded-2xl border border-gray-200 bg-white shadow-inner">
+                        {/*
+                          The plot is laid out in percentages off the physical
+                          left and top edges, the way a scatter chart is: the
+                          x axis runs low-to-high left-to-right in either
+                          language, so mirroring it would move every point
+                          without moving its meaning. Same call the admin
+                          console's Recharts wrappers make. Only the frame is
+                          pinned; the labels inside are translated and the
+                          tooltip text under them is set back to inherit.
+                        */}
+                        <div
+                          dir="ltr"
+                          className="relative h-[520px] w-full rounded-2xl border border-gray-200 bg-white shadow-inner"
+                        >
                           <div className="absolute inset-8 rounded-xl bg-gradient-to-tr from-gray-50 to-white">
                             <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200/80 -translate-y-1/2"></div>
                             <div className="absolute inset-y-0 left-1/2 w-px bg-gray-200/80 -translate-x-1/2"></div>
@@ -457,16 +485,16 @@ export function CompetitiveMatricesTab({
                           </div>
 
                           <span className="absolute left-5 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
-                            {selectedChart.axes.y}
+                            <bdi>{selectedChart.axes.y}</bdi>
                           </span>
                           <span className="absolute bottom-4 left-1/2 -translate-x-1/2 text-[10px] font-bold uppercase tracking-widest text-gray-400 whitespace-nowrap">
-                            {selectedChart.axes.x}
+                            <bdi>{selectedChart.axes.x}</bdi>
                           </span>
                           <span className="absolute left-10 top-8 text-[10px] font-bold uppercase tracking-widest text-gray-300">
-                            High
+                            {t('high')}
                           </span>
                           <span className="absolute bottom-8 right-10 text-[10px] font-bold uppercase tracking-widest text-gray-300">
-                            High
+                            {t('high')}
                           </span>
 
                           {selectedChart.companies.map((company, index) => {
@@ -482,29 +510,34 @@ export function CompetitiveMatricesTab({
                                 <div
                                   className={`flex h-8 w-8 cursor-pointer items-center justify-center rounded-full border-2 text-[10px] font-black text-white shadow-sm ring-4 ring-white transition-transform duration-200 group-hover:scale-110 group-hover:shadow-lg ${colorForType(company.type)}`}
                                 >
-                                  {isTarget ? 'T' : index + 1}
+                                  {isTarget ? 'T' : format.number(index + 1)}
                                 </div>
 
                                 {isTarget ? (
                                   <span className="absolute left-1/2 top-9 -translate-x-1/2 rounded-md border border-indigo-100 bg-white px-2 py-1 text-[11px] font-bold text-indigo-700 shadow-sm whitespace-nowrap">
-                                    Your Brand
+                                    {t('yourBrand')}
                                   </span>
                                 ) : null}
 
                                 {/* Tooltip Popup */}
                                 <div className="pointer-events-none absolute left-1/2 top-12 z-50 hidden w-80 -translate-x-1/2 group-hover:block">
-                                  <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-2xl">
+                                  {/* Reasons are sentences, so the tooltip
+                                      goes back to the page's own direction. */}
+                                  <div dir="auto" className="rounded-2xl border border-gray-200 bg-white p-4 text-start shadow-2xl">
                                     <div className="mb-3 flex items-start gap-3">
                                       <div
                                         className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${colorForType(company.type)}`}
                                       >
-                                        {isTarget ? 'T' : index + 1}
+                                        {isTarget ? 'T' : format.number(index + 1)}
                                       </div>
                                       <div className="min-w-0">
+                                        {/* Company name and domain are raw
+                                            data: never translated, and kept
+                                            LTR inside Persian prose. */}
                                         <p className="font-bold text-[14px] text-[#121212] tracking-tight">
-                                          {company.name}
+                                          <bdi>{company.name}</bdi>
                                         </p>
-                                        <p className="mt-0.5 truncate text-[11px] text-gray-500 font-medium">
+                                        <p className="mt-0.5 truncate text-[11px] text-gray-500 font-medium" dir="ltr">
                                           {compactDomain(company.website)}
                                         </p>
                                       </div>
@@ -513,8 +546,10 @@ export function CompetitiveMatricesTab({
                                     <div className="grid gap-3">
                                       <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
                                         <p className="mb-1.5 flex justify-between text-[10px] uppercase font-bold text-gray-400">
-                                          <span>{selectedChart.axes.x}</span>
-                                          <span className="text-gray-800">{company.x_score}/10</span>
+                                          <span><bdi>{selectedChart.axes.x}</bdi></span>
+                                          <span className="text-gray-800">
+                                            {t('scoreOutOfTen', { score: format.number(company.x_score) })}
+                                          </span>
                                         </p>
                                         <p className="text-[12px] text-gray-700 leading-relaxed font-medium">
                                           {company.x_reason}
@@ -522,8 +557,10 @@ export function CompetitiveMatricesTab({
                                       </div>
                                       <div className="rounded-lg bg-gray-50 p-3 border border-gray-100">
                                         <p className="mb-1.5 flex justify-between text-[10px] uppercase font-bold text-gray-400">
-                                          <span>{selectedChart.axes.y}</span>
-                                          <span className="text-gray-800">{company.y_score}/10</span>
+                                          <span><bdi>{selectedChart.axes.y}</bdi></span>
+                                          <span className="text-gray-800">
+                                            {t('scoreOutOfTen', { score: format.number(company.y_score) })}
+                                          </span>
                                         </p>
                                         <p className="text-[12px] text-gray-700 leading-relaxed font-medium">
                                           {company.y_reason}
@@ -533,10 +570,10 @@ export function CompetitiveMatricesTab({
 
                                     <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-3">
                                       <span className="text-[10px] font-bold tracking-widest text-gray-500 uppercase">
-                                        Confidence
+                                        {t('confidence')}
                                       </span>
                                       <span className="text-[12px] font-black text-[#121212]">
-                                        {Math.round(company.confidence_score * 100)}%
+                                        {format.number(company.confidence_score, { style: 'percent' })}
                                       </span>
                                     </div>
                                   </div>
@@ -553,7 +590,7 @@ export function CompetitiveMatricesTab({
                         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                           <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-500 mb-3">
                             <span className="h-2 w-2 rounded-full bg-amber-400"></span>
-                            Market Pattern
+                            {t('marketPattern')}
                           </h4>
                           <p className="text-[14px] text-[#121212] leading-7 font-medium">
                             {selectedChart.summary.market_pattern}
@@ -563,7 +600,7 @@ export function CompetitiveMatricesTab({
                         <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
                           <h4 className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-emerald-600 mb-3">
                             <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-                            Actionable Gap
+                            {t('actionableGap')}
                           </h4>
                           <p className="text-[14px] text-emerald-950 leading-7 font-bold">
                             {selectedChart.summary.positioning_opportunity}
@@ -574,10 +611,10 @@ export function CompetitiveMatricesTab({
                       <div className="rounded-2xl border border-gray-200 bg-white p-4">
                         <div className="mb-3 flex items-center justify-between gap-3">
                           <h4 className="text-[11px] font-black uppercase tracking-widest text-gray-500">
-                            Plotted Companies
+                            {t('plottedCompanies')}
                           </h4>
                           <span className="text-[11px] font-bold text-gray-400">
-                            {selectedChart.companies.length} total
+                            {t('companyTotal', { count: format.number(selectedChart.companies.length) })}
                           </span>
                         </div>
                         <div className="grid gap-2 md:grid-cols-2 2xl:grid-cols-3">
@@ -589,18 +626,23 @@ export function CompetitiveMatricesTab({
                               <span
                                 className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-black text-white ${colorForType(company.type)}`}
                               >
-                                {company.type === 'TARGET' ? 'T' : index + 1}
+                                {company.type === 'TARGET' ? 'T' : format.number(index + 1)}
                               </span>
                               <div className="min-w-0 flex-1">
-                                <p className="truncate text-[12px] font-bold text-[#121212]">{company.name}</p>
-                                <p className="truncate text-[11px] text-gray-500">{compactDomain(company.website)}</p>
-                              </div>
-                              <div className="shrink-0 text-right">
-                                <p className={`text-[10px] font-bold uppercase ${textColorForType(company.type)}`}>
-                                  {labelForType(company.type)}
+                                {/* Names and domains are raw data. */}
+                                <p className="truncate text-[12px] font-bold text-[#121212]">
+                                  <bdi>{company.name}</bdi>
                                 </p>
-                                <p className="text-[11px] font-semibold text-gray-500">
-                                  {company.x_score}/{company.y_score}
+                                <p className="truncate text-[11px] text-gray-500" dir="ltr">
+                                  {compactDomain(company.website)}
+                                </p>
+                              </div>
+                              <div className="shrink-0 text-end">
+                                <p className={`text-[10px] font-bold uppercase ${textColorForType(company.type)}`}>
+                                  {t(`legend.${legendKeyForType(company.type)}`)}
+                                </p>
+                                <p className="text-[11px] font-semibold text-gray-500" dir="ltr">
+                                  {format.number(company.x_score)}/{format.number(company.y_score)}
                                 </p>
                               </div>
                             </div>
@@ -613,8 +655,8 @@ export function CompetitiveMatricesTab({
                     <div className="mt-12 border border-gray-200 rounded-[2rem] bg-white overflow-hidden shadow-sm transition-all duration-300">
                       <div className="px-7 py-5 flex flex-col sm:flex-row sm:items-center justify-between bg-gray-50/50 border-b border-gray-200 gap-4">
                         <div>
-                          <h4 className="text-[14px] font-black text-[#121212] tracking-tight">Fine-tune Plotting Coordinates</h4>
-                          <p className="text-[12px] text-gray-500 mt-1 font-medium max-w-lg">Override AI estimated scores below to manually correct the plotted outcomes natively for this chart.</p>
+                          <h4 className="text-[14px] font-black text-[#121212] tracking-tight">{t('fineTuneTitle')}</h4>
+                          <p className="text-[12px] text-gray-500 mt-1 font-medium max-w-lg">{t('fineTuneBody')}</p>
                         </div>
                         <button
                           type="button"
@@ -625,17 +667,17 @@ export function CompetitiveMatricesTab({
                             : 'bg-white border-gray-200 text-[#121212] hover:bg-gray-50 hover:border-gray-300'
                           }`}
                         >
-                          {showEditScores ? 'Close Coordinate Settings' : 'Reveal Score Editor'}
+                          {showEditScores ? t('closeEditor') : t('openEditor')}
                         </button>
                       </div>
 
                       {showEditScores && (
                         <div className="p-7 space-y-3 bg-white">
                           <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_1fr_1fr] px-4 hidden md:grid mb-2">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Competitor Identity</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{selectedChart.axes.x}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{selectedChart.axes.y}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">AI Trust Score</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{t('competitorIdentity')}</div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400"><bdi>{selectedChart.axes.x}</bdi></div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400"><bdi>{selectedChart.axes.y}</bdi></div>
+                            <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{t('aiTrustScore')}</div>
                           </div>
                           
                           <div className="space-y-3">
@@ -644,16 +686,16 @@ export function CompetitiveMatricesTab({
                                 key={`${selectedChart.chart_key}:edit:${company.name}:${company.website}`}
                                 className="grid gap-5 rounded-2xl border border-gray-100 bg-gray-50/60 p-5 md:grid-cols-[1.5fr_1fr_1fr_1fr] items-center transition hover:bg-white hover:border-gray-200 hover:shadow-sm"
                               >
-                                <div className="min-w-0 pr-4 md:border-r md:border-gray-200">
+                                <div className="min-w-0 pe-4 md:border-e md:border-gray-200">
                                   <p className="truncate text-[15px] font-bold text-[#121212] flex items-center gap-2 mb-1">
                                     <span className={`h-3 w-3 rounded-full ${colorForType(company.type).replace('border-', 'bg-')}`}></span>
-                                    {company.name}
+                                    <bdi>{company.name}</bdi>
                                   </p>
-                                  <p className="truncate text-[12px] font-medium text-gray-400 ml-5">{company.website.replace(/^https?:\/\//, '')}</p>
+                                  <p className="truncate text-[12px] font-medium text-gray-400 ms-5" dir="ltr">{company.website.replace(/^https?:\/\//, '')}</p>
                                 </div>
                                 
                                 <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest">{selectedChart.axes.x}</span>
+                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest"><bdi>{selectedChart.axes.x}</bdi></span>
                                   <input
                                     type="number"
                                     min={1}
@@ -672,7 +714,7 @@ export function CompetitiveMatricesTab({
                                 </label>
                                 
                                 <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest">{selectedChart.axes.y}</span>
+                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest"><bdi>{selectedChart.axes.y}</bdi></span>
                                   <input
                                     type="number"
                                     min={1}
@@ -691,7 +733,7 @@ export function CompetitiveMatricesTab({
                                 </label>
                                 
                                 <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest">Confidence Score</span>
+                                  <span className="text-[10px] font-bold uppercase text-gray-400 mb-1.5 md:hidden tracking-widest">{t('confidenceScore')}</span>
                                   <input
                                     type="number"
                                     min={0.3}
