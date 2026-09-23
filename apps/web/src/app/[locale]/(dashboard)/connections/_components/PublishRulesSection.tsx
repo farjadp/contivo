@@ -14,6 +14,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Settings, Hash, Repeat2, AlignLeft } from 'lucide-react';
 
 // ─── Toggle Component ─────────────────────────────────────────────────────────
@@ -51,8 +52,11 @@ function Toggle({
             } ${disabled ? 'cursor-not-allowed' : ''}`}
           >
             <span
-              className={`absolute top-0.5 left-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
-                checked ? 'translate-x-4' : 'translate-x-0'
+              /* Pinned to the logical start so the knob rests on the correct
+                 side in both directions; the travel is mirrored explicitly
+                 because Tailwind does not flip translate-x under `rtl`. */
+              className={`absolute top-0.5 start-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+                checked ? 'translate-x-4 rtl:-translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
@@ -66,38 +70,37 @@ function Toggle({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function PublishRulesSection() {
+  const t = useTranslations('connections.rules');
   const [autoHashtags, setAutoHashtags]           = useState(false);
   const [usePlatformFormatter, setPlatformFormatter] = useState(true);
 
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-base font-bold text-[#121212]">Publish Rules</h3>
-        <p className="text-xs text-gray-500 mt-0.5">
-          Default behaviors applied to every publishing action in this workspace.
-        </p>
+        <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
       </div>
 
       <div className="space-y-3">
         <Toggle
-          label="Auto-add hashtags"
-          description="Automatically append relevant hashtags based on content topic."
+          label={t('hashtagsLabel')}
+          description={t('hashtagsDescription')}
           checked={autoHashtags}
           onChange={setAutoHashtags}
           Icon={Hash}
         />
 
         <Toggle
-          label="Use platform formatter"
-          description="Adjust formatting and character limits per platform before publishing."
+          label={t('formatterLabel')}
+          description={t('formatterDescription')}
           checked={usePlatformFormatter}
           onChange={setPlatformFormatter}
           Icon={AlignLeft}
         />
 
         <Toggle
-          label="Cross-posting"
-          description="Automatically post to multiple platforms at once. Available in Phase 2."
+          label={t('crossPostingLabel')}
+          description={t('crossPostingDescription')}
           checked={false}
           disabled
           onChange={() => {}}
@@ -107,8 +110,8 @@ export function PublishRulesSection() {
 
       <div className="mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3">
         <p className="text-xs font-semibold text-blue-700 flex items-center gap-1.5">
-          <Settings className="w-3.5 h-3.5" />
-          Settings are saved per workspace. Individual post settings override these defaults.
+          <Settings className="w-3.5 h-3.5 shrink-0" />
+          {t('note')}
         </p>
       </div>
     </div>

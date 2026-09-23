@@ -1,6 +1,7 @@
-import { Link } from '@/i18n/navigation';
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 import { notFound } from 'next/navigation';
 
+import { Link, getPathname } from '@/i18n/navigation';
 import { listContentActivityLogs } from '@/lib/activity-log';
 import { prisma } from '@/lib/db';
 import {
@@ -15,9 +16,7 @@ import {
   PageHeader,
   Panel,
   StatusBadge,
-  formatDateTime,
-  formatDuration,
-  formatUsd,
+  createAdminFormat,
 } from '../../_components/AdminUi';
 
 type Props = {
@@ -33,6 +32,9 @@ function countWords(value: string | null | undefined): number {
 
 export default async function AdminContentDetailPage({ params }: Props) {
   const { contentId } = await params;
+  const t = await getTranslations('admin');
+  const locale = await getLocale();
+  const fmt = createAdminFormat(await getFormatter(), t);
 
   const contentItem = await prisma.contentItem.findUnique({
     where: { id: contentId },
@@ -74,16 +76,19 @@ export default async function AdminContentDetailPage({ params }: Props) {
   ]);
 
   const scheduledSummary = contentItem.scheduledAtUtc
-    ? `${formatDateTime(contentItem.scheduledAtUtc)} (${contentItem.scheduledTimezone || 'UTC'})`
-    : 'Not scheduled';
+    ? t('contentDetail.scheduledWithZone', {
+        date: fmt.dateTime(contentItem.scheduledAtUtc),
+        timezone: contentItem.scheduledTimezone || 'UTC',
+      })
+    : t('contentDetail.notScheduled');
 
   return (
     <div className="space-y-6">
       <PageHeader
-        backHref="/admin?section=content"
-        backLabel="← Back to Content"
+        backHref={`${getPathname({ href: '/admin', locale })}?section=content`}
+        backLabel={t('contentDetail.back')}
         title={contentItem.topic}
-        subtitle="Content detail view for output inspection, schedule state, framework metadata, and related logs."
+        subtitle={t('contentDetail.subtitle')}
         actions={
           <>
             {contentItem.workspace ? (
@@ -91,52 +96,56 @@ export default async function AdminContentDetailPage({ params }: Props) {
                 href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }}
                 className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
               >
-                Open Workspace
+                {t('contentDetail.openWorkspace')}
               </Link>
             ) : null}
             <Link
               href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }}
               className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
             >
-              Open User
+              {t('contentDetail.openUser')}
             </Link>
           </>
         }
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Status" value={contentItem.status} />
-        <MetricCard label="Word Count" value={countWords(contentItem.content).toLocaleString()} />
-        <MetricCard label="Credits Cost" value={contentItem.creditsCost.toLocaleString()} />
-        <MetricCard label="AI Cost" value={formatUsd(Number(aiUsage?.estimatedCostUsd ?? 0))} helper={aiUsage ? `${aiUsage.totalTokens.toLocaleString()} tokens` : 'No AI usage log linked'} />
+        <MetricCard label={t('contentDetail.status')} value={contentItem.status} />
+        <MetricCard label={t('contentDetail.wordCount')} value={fmt.number(countWords(contentItem.content))} />
+        <MetricCard label={t('contentDetail.creditsCost')} value={fmt.number(contentItem.creditsCost)} />
+        <MetricCard
+          label={t('contentDetail.aiCost')}
+          value={fmt.usd(Number(aiUsage?.estimatedCostUsd ?? 0))}
+          helper={aiUsage ? t('units.tokens', { value: fmt.number(aiUsage.totalTokens) }) : t('contentDetail.noAiUsageLog')}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
-        <Panel title="Metadata" subtitle="Workspace, platform, content type, and generation references">
+        <Panel title={t('contentDetail.metadataTitle')} subtitle={t('contentDetail.metadataSubtitle')}>
           <KeyValueGrid
             items={[
-              { label: 'Content ID', value: contentItem.id },
-              { label: 'Workspace', value: contentItem.workspace ? <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }} className="font-semibold text-slate-700 hover:underline">{contentItem.workspace.name}</Link> : 'No workspace' },
-              { label: 'User', value: <Link href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }} className="font-semibold text-slate-700 hover:underline">{contentItem.user.email}</Link> },
-              { label: 'Platform', value: contentItem.channel },
-              { label: 'Type', value: contentItem.type },
-              { label: 'Status', value: <StatusBadge status={contentItem.status} /> },
-              { label: 'Created At', value: formatDateTime(contentItem.createdAt) },
-              { label: 'Updated At', value: formatDateTime(contentItem.updatedAt) },
+              { label: t('contentDetail.contentId'), value: <span dir="ltr">{contentItem.id}</span> },
+              { label: t('contentDetail.workspace'), value: contentItem.workspace ? <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }} className="font-semibold text-slate-700 hover:underline">{contentItem.workspace.name}</Link> : t('common.noWorkspace') },
+              { label: t('contentDetail.user'), value: <Link href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }} className="font-semibold text-slate-700 hover:underline"><bdi>{contentItem.user.email}</bdi></Link> },
+              { label: t('contentDetail.platform'), value: contentItem.channel },
+              { label: t('contentDetail.type'), value: contentItem.type },
+              { label: t('contentDetail.status'), value: <StatusBadge status={contentItem.status} /> },
+              { label: t('contentDetail.createdAt'), value: fmt.dateTime(contentItem.createdAt) },
+              { label: t('contentDetail.updatedAt'), value: fmt.dateTime(contentItem.updatedAt) },
             ]}
             columns={2}
           />
         </Panel>
 
-        <Panel title="Schedule & Publish State" subtitle="Current scheduling and publication timestamps">
+        <Panel title={t('contentDetail.scheduleTitle')} subtitle={t('contentDetail.scheduleSubtitle')}>
           <KeyValueGrid
             items={[
-              { label: 'Scheduled', value: scheduledSummary },
-              { label: 'Published At', value: formatDateTime(contentItem.publishedAtUtc) },
-              { label: 'Job ID', value: contentItem.jobId || '-' },
-              { label: 'Failure Reason', value: contentItem.failedReason || '-' },
-              { label: 'Campaign', value: contentItem.campaign || '-' },
-              { label: 'Notes', value: contentItem.notes || '-' },
+              { label: t('contentDetail.scheduled'), value: scheduledSummary },
+              { label: t('contentDetail.publishedAt'), value: fmt.dateTime(contentItem.publishedAtUtc) },
+              { label: t('contentDetail.jobId'), value: <span dir="ltr">{contentItem.jobId || '-'}</span> },
+              { label: t('contentDetail.failureReason'), value: contentItem.failedReason || '-' },
+              { label: t('contentDetail.campaign'), value: contentItem.campaign || '-' },
+              { label: t('contentDetail.notes'), value: contentItem.notes || '-' },
             ]}
             columns={2}
           />
@@ -144,70 +153,74 @@ export default async function AdminContentDetailPage({ params }: Props) {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Panel title="Generated Output" subtitle="Current stored content body">
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-4 text-[12px] leading-6 text-slate-700">
+        <Panel title={t('contentDetail.outputTitle')} subtitle={t('contentDetail.outputSubtitle')}>
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-4 text-start text-[12px] leading-6 text-slate-700">
             {contentItem.content}
           </pre>
         </Panel>
 
-        <Panel title="Framework Metadata" subtitle="Latest framework selection and quality state">
+        <Panel title={t('contentDetail.frameworkTitle')} subtitle={t('contentDetail.frameworkSubtitle')}>
           {frameworkMeta ? (
             <div className="space-y-4">
               <KeyValueGrid
                 items={[
-                  { label: 'Framework', value: frameworkMeta.frameworkName },
-                  { label: 'Framework ID', value: frameworkMeta.frameworkId },
-                  { label: 'Category', value: frameworkMeta.frameworkCategory },
-                  { label: 'Selection Mode', value: frameworkMeta.selectionMode },
-                  { label: 'Goal', value: frameworkMeta.goal || '-' },
-                  { label: 'Platform', value: frameworkMeta.platform || '-' },
-                  { label: 'Funnel Stage', value: frameworkMeta.funnelStage || '-' },
-                  { label: 'Fallback', value: frameworkMeta.fallbackUsed ? 'Yes' : 'No' },
+                  { label: t('contentDetail.framework'), value: frameworkMeta.frameworkName },
+                  { label: t('contentDetail.frameworkId'), value: <span dir="ltr">{frameworkMeta.frameworkId}</span> },
+                  { label: t('contentDetail.category'), value: frameworkMeta.frameworkCategory },
+                  { label: t('contentDetail.selectionMode'), value: frameworkMeta.selectionMode },
+                  { label: t('contentDetail.goal'), value: frameworkMeta.goal || '-' },
+                  { label: t('contentDetail.platform'), value: frameworkMeta.platform || '-' },
+                  { label: t('contentDetail.funnelStage'), value: frameworkMeta.funnelStage || '-' },
+                  { label: t('contentDetail.fallback'), value: frameworkMeta.fallbackUsed ? t('common.yes') : t('common.no') },
                 ]}
                 columns={2}
               />
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-3 text-[11px] text-slate-600">
+              <pre dir="ltr" className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-3 text-start text-[11px] text-slate-600">
                 {JSON.stringify(frameworkMeta.qualityScores, null, 2)}
               </pre>
             </div>
           ) : (
-            <EmptyState text="No framework metadata recorded for this content item." />
+            <EmptyState text={t('contentDetail.noFrameworkMetadata')} />
           )}
         </Panel>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
-        <Panel title="Related Job" subtitle="Background job linked directly by jobId">
+        <Panel title={t('contentDetail.relatedJobTitle')} subtitle={t('contentDetail.relatedJobSubtitle')}>
           {relatedJob ? (
             <KeyValueGrid
               items={[
-                { label: 'Job Type', value: relatedJob.type },
-                { label: 'Status', value: <StatusBadge status={relatedJob.status} /> },
-                { label: 'Created At', value: formatDateTime(relatedJob.createdAt) },
-                { label: 'Completed At', value: formatDateTime(relatedJob.completedAt) },
-                { label: 'Duration', value: formatDuration(relatedJob.completedAt ? new Date(relatedJob.completedAt).getTime() - new Date(relatedJob.createdAt).getTime() : null) },
-                { label: 'Credits Cost', value: relatedJob.creditsCost.toLocaleString() },
+                { label: t('contentDetail.jobType'), value: relatedJob.type },
+                { label: t('contentDetail.status'), value: <StatusBadge status={relatedJob.status} /> },
+                { label: t('contentDetail.createdAt'), value: fmt.dateTime(relatedJob.createdAt) },
+                { label: t('contentDetail.completedAt'), value: fmt.dateTime(relatedJob.completedAt) },
+                { label: t('contentDetail.duration'), value: fmt.duration(relatedJob.completedAt ? new Date(relatedJob.completedAt).getTime() - new Date(relatedJob.createdAt).getTime() : null) },
+                { label: t('contentDetail.creditsCost'), value: fmt.number(relatedJob.creditsCost) },
               ]}
               columns={2}
             />
           ) : (
-            <EmptyState text="No direct content job is linked to this item." />
+            <EmptyState text={t('contentDetail.noRelatedJob')} />
           )}
         </Panel>
 
-        <Panel title="Framework Event History" subtitle="Chronological framework-related events for this content item">
+        <Panel title={t('contentDetail.historyTitle')} subtitle={t('contentDetail.historySubtitle')}>
           {frameworkHistory.length === 0 ? (
-            <EmptyState text="No framework history found." />
+            <EmptyState text={t('contentDetail.noHistory')} />
           ) : (
             <div className="space-y-3">
               {frameworkHistory.map((entry: any) => (
                 <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-[#121212]">{entry.frameworkName}</p>
-                    <p className="text-[11px] text-slate-400">{formatDateTime(entry.createdAt)}</p>
+                    <p className="text-[11px] text-slate-400">{fmt.dateTime(entry.createdAt)}</p>
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
-                    {entry.eventName} • {entry.selectionMode} • {entry.platform || '-'}
+                    {t('contentDetail.historyLine', {
+                      event: entry.eventName,
+                      mode: entry.selectionMode,
+                      platform: entry.platform || '-',
+                    })}
                   </p>
                 </div>
               ))}
@@ -216,7 +229,7 @@ export default async function AdminContentDetailPage({ params }: Props) {
         </Panel>
       </div>
 
-      <Panel title="Activity Logs" subtitle="Recent activity log entries that reference this content item">
+      <Panel title={t('contentDetail.activityTitle')} subtitle={t('contentDetail.activitySubtitle')}>
         <LogList rows={contentLogs} />
       </Panel>
     </div>

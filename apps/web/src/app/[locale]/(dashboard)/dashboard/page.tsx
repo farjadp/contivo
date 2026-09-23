@@ -15,7 +15,7 @@ import { listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { buildWorkspaceProgressReport } from '@/lib/workspace-progress';
 import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
-import { getLocale } from 'next-intl/server';
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,20 +46,35 @@ function kiqScore(opts: { ops: number; high: number; serp: number }) {
   return clampPercent(Math.min(40, opts.ops * 2) + Math.min(35, opts.high * 4) + Math.min(25, opts.serp * 3));
 }
 
+/*
+  The actions carry message keys and the numbers that go into them, never
+  rendered English. A function that returns finished sentences cannot be
+  translated without translating the function.
+*/
+type NextAction = {
+  key: 'brand' | 'market' | 'keywords' | 'schedule' | 'momentum';
+  count?: number;
+  href: string;
+};
+
 function buildActions(w: {
   id: string; brandScore: number; accepted: number; ops: number;
   drafts: number; ready: number; scheduled: number; upcoming: number;
-}) {
-  const a: Array<{ title: string; desc: string; href: string; icon: 'sparkles' | 'target' | 'trending' | 'calendar' | 'zap' }> = [];
-  if (w.brandScore < 70) a.push({ title: 'Fortify Brand Assets', desc: 'Clarity is low. Add missing brand info.', href: `/growth/${w.id}?tab=strategy`, icon: 'sparkles' });
-  if (w.accepted < 3) a.push({ title: 'Map the Market', desc: 'Select more rivals to analyze.', href: `/growth/${w.id}?tab=matrices`, icon: 'target' });
-  if (w.ops > 0) a.push({ title: 'Capture Search Volume', desc: `${w.ops} keywords ready to target.`, href: `/growth/${w.id}?tab=ideation`, icon: 'trending' });
-  if (w.drafts + w.ready > 0) a.push({ title: 'Schedule Inbox', desc: `${w.drafts + w.ready} pending drafts. Queue them up.`, href: `/growth/${w.id}/calendar`, icon: 'calendar' });
-  if (w.scheduled === 0 && w.upcoming === 0) a.push({ title: 'Maintain Momentum', desc: 'No posts scheduled. Break the silence.', href: `/growth/${w.id}?tab=pipeline`, icon: 'zap' });
+}): NextAction[] {
+  const a: NextAction[] = [];
+  if (w.brandScore < 70) a.push({ key: 'brand', href: `/growth/${w.id}?tab=strategy` });
+  if (w.accepted < 3) a.push({ key: 'market', href: `/growth/${w.id}?tab=matrices` });
+  if (w.ops > 0) a.push({ key: 'keywords', count: w.ops, href: `/growth/${w.id}?tab=ideation` });
+  if (w.drafts + w.ready > 0) a.push({ key: 'schedule', count: w.drafts + w.ready, href: `/growth/${w.id}/calendar` });
+  if (w.scheduled === 0 && w.upcoming === 0) a.push({ key: 'momentum', href: `/growth/${w.id}?tab=pipeline` });
   return a.slice(0, 3);
 }
 
 export default async function DashboardPage() {
+  const t = await getTranslations('dashboard');
+  // The setup chain's own copy, shared with the workspace page's JourneyGuide.
+  const tj = await getTranslations('journey');
+  const format = await getFormatter();
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
 
@@ -80,16 +95,14 @@ export default async function DashboardPage() {
       return (
         <div className="flex min-h-[70vh] items-center justify-center">
           <div className="max-w-sm border border-ink-200 bg-white p-8">
-            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Overview</p>
-            <h1 className="mt-2 font-display text-[24px] font-bold text-ink-900">All workspaces are archived</h1>
-            <p className="mt-2 text-[14px] text-ink-600">
-              Create a new workspace, or ask an administrator to restore one.
-            </p>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{t('eyebrow')}</p>
+            <h1 className="mt-2 font-display text-[24px] font-bold text-ink-900">{t('archived.title')}</h1>
+            <p className="mt-2 text-[14px] text-ink-600">{t('archived.body')}</p>
             <Link
               href="/growth/new"
               className="mt-6 inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800"
             >
-              <Plus className="h-4 w-4" /> New workspace
+              <Plus className="h-4 w-4" /> {t('archived.cta')}
             </Link>
           </div>
         </div>
@@ -171,7 +184,13 @@ export default async function DashboardPage() {
     ready: counts.READY, scheduled: counts.SCHEDULED, upcoming: upcoming.length,
   });
 
-  const firstName = session.email?.split('@')[0] || 'there';
+  /*
+    Capitalised here rather than with `capitalize`, because the greeting is now
+    one interpolated sentence and a CSS class on the whole line would also
+    capitalise the words around the name.
+  */
+  const rawName = session.email?.split('@')[0] || 'there';
+  const firstName = rawName.charAt(0).toUpperCase() + rawName.slice(1);
   const publishedThisWeek = workspace.contentItems.filter(
     (i: any) => i.publishedAtUtc && new Date(i.publishedAtUtc) >= startOfThisWeek,
   ).length;
@@ -212,10 +231,10 @@ export default async function DashboardPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">
-            Overview · {workspace.name}
+            {t('eyebrowWorkspace', { name: workspace.name })}
           </p>
           <h1 className="mt-1 font-display text-[28px] font-bold tracking-tight text-ink-900 sm:text-[32px]">
-            Good to see you, <span className="capitalize">{firstName}</span>.
+            {t('greeting', { name: firstName })}
           </h1>
         </div>
         <div className="flex gap-2">
@@ -223,13 +242,13 @@ export default async function DashboardPage() {
             href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
             className="inline-flex items-center gap-2 border border-ink-200 bg-white px-4 py-2 text-[13px] font-medium text-ink-900 hover:border-ink-400"
           >
-            Ideate now
+            {t('ideateNow')}
           </Link>
           <Link
             href={{ pathname: '/growth/[id]', params: { id: workspace.id } }}
             className="inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800"
           >
-            Open workspace <ArrowRight className="h-4 w-4" />
+            {t('openWorkspace')} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
           </Link>
         </div>
       </div>
@@ -239,16 +258,27 @@ export default async function DashboardPage() {
         <div className="flex flex-wrap items-center justify-between gap-4 border border-ink-900 bg-ink-900 px-5 py-4 text-white">
           <div className="min-w-0">
             <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">
-              Step {journey.next.order} of {journey.total} · setup {journey.percent}% done
+              {t('journey.step', {
+                order: journey.next.order,
+                total: journey.total,
+                percent: journey.percent,
+              })}
             </p>
-            <p className="mt-1 font-display text-[18px] font-semibold">{journey.next.title}</p>
-            <p className="mt-1 max-w-2xl text-[13px] text-ink-300">{journey.next.why}</p>
+            {/* `buildJourney` names its sentences rather than writing them —
+                it has no request context and no translator. */}
+            <p className="mt-1 font-display text-[18px] font-semibold">
+              {tj(journey.next.title.key, journey.next.title.values)}
+            </p>
+            <p className="mt-1 max-w-2xl text-[13px] text-ink-300">
+              {tj(journey.next.why.key, journey.next.why.values)}
+            </p>
           </div>
           <Link
             href={journey.next.href as never}
             className="inline-flex shrink-0 items-center gap-2 bg-signal px-4 py-2.5 text-[13px] font-semibold text-signal-ink hover:bg-white"
           >
-            {journey.next.action} <ArrowRight className="h-4 w-4" />
+            {tj(journey.next.action.key, journey.next.action.values)}{' '}
+            <ArrowRight className="h-4 w-4 rtl:rotate-180" />
           </Link>
         </div>
       )}
@@ -259,7 +289,7 @@ export default async function DashboardPage() {
         <div className="bg-ink-950 p-7 text-white">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-widest text-ink-300">
-              <Bot className="h-4 w-4" /> Autopilot
+              <Bot className="h-4 w-4" /> {t('autopilot.label')}
             </div>
             <span
               className={`inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] uppercase tracking-widest ${
@@ -267,31 +297,39 @@ export default async function DashboardPage() {
               }`}
             >
               {autopilotOn && <span className="h-1.5 w-1.5 animate-pulse bg-signal-ink" />}
-              {autopilotOn ? 'On' : 'Off'}
+              {autopilotOn ? t('autopilot.on') : t('autopilot.off')}
             </span>
           </div>
 
           <h2 className="mt-5 font-display text-[24px] font-semibold leading-tight">
             {autopilotOn
-              ? `${autopilot!.postsPerWeek} posts a week, on ${autopilot!.channels.join(' + ') || 'no channel'}.`
-              : 'Not running yet.'}
+              ? t('autopilot.running', {
+                  posts: autopilot!.postsPerWeek,
+                  channels: autopilot!.channels.join(' + ') || t('autopilot.noChannel'),
+                })
+              : t('autopilot.notRunning')}
           </h2>
           <p className="mt-2 max-w-md text-[14px] leading-relaxed text-ink-300">
             {autopilotOn
               ? lastRun
-                ? `Last run ${relative(lastRun.startedAt)}: ${lastRun.status.toLowerCase()} — ${lastRun.itemsScheduled} scheduled, ${lastRun.itemsSkipped} skipped.`
-                : 'Enabled — the first run happens on the next tick.'
+                ? t('autopilot.lastRun', {
+                    when: format.relativeTime(lastRun.startedAt),
+                    status: lastRun.status.toLowerCase(),
+                    scheduled: lastRun.itemsScheduled,
+                    skipped: lastRun.itemsSkipped,
+                  })
+                : t('autopilot.firstRunPending')
               : !ideationReady
-                ? 'Build the intelligence layer first (brand memory, matrices, keywords) — Autopilot refuses to write without it.'
+                ? t('autopilot.needsIntelligence')
                 : !canPublish
-                  ? 'Connect a social account or a website so it has somewhere to publish.'
-                  : 'Everything is ready. Turn it on and it keeps your week filled.'}
+                  ? t('autopilot.needsChannel')
+                  : t('autopilot.ready')}
           </p>
 
           <div className="mt-6 grid grid-cols-3 gap-px bg-ink-700/60">
-            <Metric dark label="Queued" value={queued} />
-            <Metric dark label="Published · 7d" value={publishedThisWeek} />
-            <Metric dark label="In pipeline" value={inPipeline} />
+            <Metric dark label={t('autopilot.queued')} value={format.number(queued)} />
+            <Metric dark label={t('autopilot.published7d')} value={format.number(publishedThisWeek)} />
+            <Metric dark label={t('autopilot.inPipeline')} value={format.number(inPipeline)} />
           </div>
 
           <div className="mt-6 flex flex-wrap gap-2">
@@ -299,14 +337,15 @@ export default async function DashboardPage() {
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }}
               className="inline-flex items-center gap-2 bg-signal px-4 py-2 text-[13px] font-semibold text-signal-ink hover:bg-white"
             >
-              {autopilotOn ? 'Open Autopilot' : 'Set up Autopilot'} <ArrowRight className="h-4 w-4" />
+              {autopilotOn ? t('autopilot.open') : t('autopilot.setUp')}{' '}
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" />
             </Link>
             {!canPublish && (
               <Link
                 href="/connections"
                 className="inline-flex items-center gap-2 border border-ink-600 px-4 py-2 text-[13px] text-ink-100 hover:border-ink-400"
               >
-                Connect a channel
+                {t('autopilot.connectChannel')}
               </Link>
             )}
           </div>
@@ -314,22 +353,24 @@ export default async function DashboardPage() {
 
         {/* Readiness */}
         <div className="bg-white p-7">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Readiness</p>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{t('readiness.label')}</p>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="font-display text-[44px] font-bold leading-none text-ink-900">{overallScore}</span>
-            <span className="text-[13px] text-ink-400">/ 100 overall</span>
+            <span className="font-display text-[44px] font-bold leading-none text-ink-900">
+              {format.number(overallScore)}
+            </span>
+            <span className="text-[13px] text-ink-400">{t('readiness.outOf')}</span>
           </div>
           <dl className="mt-6 space-y-3">
-            {[
-              ['Brand memory', brandScore],
-              ['Market intelligence', marketScore],
-              ['Keywords & SEO', seoScore],
-              ['Publishing', publishScore],
-            ].map(([k, v]) => (
-              <div key={String(k)}>
+            {([
+              ['readiness.brand', brandScore],
+              ['readiness.market', marketScore],
+              ['readiness.seo', seoScore],
+              ['readiness.publishing', publishScore],
+            ] as const).map(([k, v]) => (
+              <div key={k}>
                 <div className="flex justify-between text-[12.5px]">
-                  <dt className="text-ink-600">{k}</dt>
-                  <dd className="font-mono text-ink-900">{v}%</dd>
+                  <dt className="text-ink-600">{t(k)}</dt>
+                  <dd className="font-mono text-ink-900">{format.number(v / 100, { style: 'percent' })}</dd>
                 </div>
                 <div className="mt-1 h-1 bg-ink-100">
                   <div className="h-1 bg-ink-900" style={{ width: `${v}%` }} />
@@ -338,9 +379,12 @@ export default async function DashboardPage() {
             ))}
           </dl>
           <div className="mt-6 grid grid-cols-3 gap-px bg-ink-100 text-ink-900">
-            <Metric label="Competitors" value={accepted.length} />
-            <Metric label="Keywords" value={workspace._count.keywordOpportunities} />
-            <Metric label="Credits" value={creditsLeft} />
+            <Metric label={t('readiness.competitors')} value={format.number(accepted.length)} />
+            <Metric
+              label={t('readiness.keywords')}
+              value={format.number(workspace._count.keywordOpportunities)}
+            />
+            <Metric label={t('readiness.credits')} value={format.number(creditsLeft)} />
           </div>
         </div>
       </div>
@@ -348,24 +392,26 @@ export default async function DashboardPage() {
       {/* ── Next moves + Queue ──────────────────────────────────────── */}
       <div className="grid gap-px bg-ink-200 lg:grid-cols-[1fr_1fr]">
         <div className="bg-white p-7">
-          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Next moves</p>
+          <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{t('moves.label')}</p>
           <h2 className="mt-1 font-display text-[18px] font-semibold text-ink-900">
-            {actions.length === 0 ? 'Nothing urgent' : 'What moves the needle'}
+            {actions.length === 0 ? t('moves.none') : t('moves.some')}
           </h2>
           <ul className="mt-5 divide-y divide-ink-100">
             {actions.length === 0 ? (
-              <li className="py-3 text-[14px] text-ink-600">
-                Intelligence and pipeline are healthy. Let Autopilot run, or ideate by hand.
-              </li>
+              <li className="py-3 text-[14px] text-ink-600">{t('moves.healthy')}</li>
             ) : (
-              actions.map((act: any) => (
-                <li key={act.title}>
-                  <Link href={act.href} className="group flex items-center justify-between gap-4 py-3.5">
+              actions.map((act) => (
+                <li key={act.key}>
+                  <Link href={act.href as never} className="group flex items-center justify-between gap-4 py-3.5">
                     <div>
-                      <p className="text-[14px] font-medium text-ink-900">{act.title}</p>
-                      <p className="mt-0.5 text-[13px] text-ink-600">{act.desc}</p>
+                      <p className="text-[14px] font-medium text-ink-900">{t(`actions.${act.key}Title`)}</p>
+                      <p className="mt-0.5 text-[13px] text-ink-600">
+                        {t(`actions.${act.key}Desc`, { count: act.count ?? 0 })}
+                      </p>
                     </div>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-ink-900" />
+                    {/* Flipped, and nudged the other way on hover: a chevron
+                        that slides left in Persian is pointing at the link. */}
+                    <ArrowRight className="h-4 w-4 shrink-0 text-ink-300 transition-transform group-hover:translate-x-0.5 group-hover:text-ink-900 rtl:rotate-180 rtl:group-hover:-translate-x-0.5" />
                   </Link>
                 </li>
               ))
@@ -376,20 +422,21 @@ export default async function DashboardPage() {
         <div className="bg-white p-7">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Queue</p>
-              <h2 className="mt-1 font-display text-[18px] font-semibold text-ink-900">Coming up</h2>
+              <p className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{t('queue.label')}</p>
+              <h2 className="mt-1 font-display text-[18px] font-semibold text-ink-900">{t('queue.title')}</h2>
             </div>
             <Link
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'calendar' } }}
-              className="text-[13px] font-medium text-ink-600 hover:text-ink-900"
+              className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-600 hover:text-ink-900"
             >
-              Calendar →
+              {t('queue.calendar')}
+              <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
             </Link>
           </div>
           {upcoming.length === 0 ? (
             <div className="mt-5 flex items-center gap-3 border border-dashed border-ink-200 p-5 text-[13px] text-ink-600">
               <CalendarDays className="h-5 w-5 text-ink-300" />
-              Nothing scheduled. {autopilotOn ? 'Autopilot will fill this on its next run.' : 'Turn on Autopilot or schedule from the pipeline.'}
+              {autopilotOn ? t('queue.emptyAutopilotOn') : t('queue.emptyAutopilotOff')}
             </div>
           ) : (
             <ul className="mt-5 divide-y divide-ink-100">
@@ -399,8 +446,10 @@ export default async function DashboardPage() {
                     <p className="truncate text-[14px] font-medium text-ink-900">{item.topic}</p>
                     <p className="mt-0.5 font-mono text-[11px] uppercase tracking-widest text-ink-400">{item.channel}</p>
                   </div>
+                  {/* The formatter carries the locale's calendar, so a Persian
+                      schedule reads back in Jalali dates and Tehran time. */}
                   <span className="shrink-0 font-mono text-[12px] text-ink-600">
-                    {new Date(item.scheduledAtUtc || item.createdAt).toLocaleString(undefined, {
+                    {format.dateTime(new Date(item.scheduledAtUtc || item.createdAt), {
                       month: 'short',
                       day: 'numeric',
                       hour: '2-digit',
@@ -419,23 +468,14 @@ export default async function DashboardPage() {
 
 // ─── Bits ──────────────────────────────────────────────────────────────────────
 
-function Metric({ label, value, dark }: { label: string; value: number | string; dark?: boolean }) {
+function Metric({ label, value, dark }: { label: string; value: string; dark?: boolean }) {
   return (
     <div className={dark ? 'bg-ink-950 px-4 py-3' : 'bg-white px-4 py-3'}>
       <p className={`font-mono text-[10.5px] uppercase tracking-widest ${dark ? 'text-ink-400' : 'text-ink-400'}`}>{label}</p>
       <p className={`mt-1 font-display text-[22px] font-semibold ${dark ? 'text-white' : 'text-ink-900'}`}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
+        {value}
       </p>
     </div>
   );
 }
 
-function relative(date: Date) {
-  const diff = Date.now() - date.getTime();
-  const m = Math.round(diff / 60000);
-  if (m < 1) return 'just now';
-  if (m < 60) return `${m} min ago`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h} h ago`;
-  return `${Math.round(h / 24)} d ago`;
-}

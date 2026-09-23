@@ -1,1 +1,39 @@
-{}
+{
+  "settings": {
+    "meta": { "title": "تنظیمات" },
+    "title": "تنظیمات",
+    "subtitle": "ترجیحات حساب و گزارش فعالیت‌های فضای کاری شما.",
+    "limits": {
+      "title": "محدودیت‌های فضای کاری",
+      "saved": "محدودیت‌ها به‌روزرسانی شد.",
+      "invalid": "مقدار محدودیت نامعتبر است. عددی صحیح بین {min, number} و {max, number} بنویسید.",
+      "failed": "محدودیت‌ها ذخیره نشد. اتصال پایگاه داده را بررسی کنید و دوباره تلاش کنید.",
+      "competitiveLabel": "چشم‌انداز رقابتی",
+      "competitiveValue": "{count, number} اجرای کشف هوش مصنوعی برای هر فضای کاری",
+      "brandLabel": "حافظهٔ برند",
+      "brandValue": "{count, number} بار خواندن دوبارهٔ سایت در هر فضای کاری",
+      "ideationLabel": "ایده‌پردازی",
+      "ideationValue": "حداکثر {count, number} ایده در هر تولید",
+      "wordCountTitle": "محدودیت تعداد کلمات محتوا (به تفکیک پلتفرم)",
+      "wordCountRange": "{min, number} تا {max, number} کلمه",
+      "competitiveField": "محدودیت چشم‌انداز رقابتی",
+      "brandField": "محدودیت حافظهٔ برند",
+      "ideationField": "حداکثر تعداد ایده در ایده‌پردازی",
+      "wordCountField": "محدودیت تعداد کلمات",
+      "min": "کمینه",
+      "max": "بیشینه",
+      "save": "ذخیرهٔ محدودیت‌ها"
+    },
+    "account": {
+      "title": "حساب",
+      "email": "ایمیل",
+      "role": "نقش"
+    },
+    "activity": {
+      "title": "گزارش فعالیت",
+      "empty": "هنوز فعالیتی ثبت نشده است.",
+      "workspace": "فضای کاری: {name}",
+      "workspaceNone": "فضای کاری: ندارد"
+    }
+  }
+}

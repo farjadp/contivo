@@ -9,51 +9,52 @@
  * journey and should not look like a different application.
  */
 
+import { useTranslations } from 'next-intl';
+
 import { Link } from '@/i18n/navigation';
 
 export function AuthShell({
   eyebrow,
   title,
-  accent,
-  titleTail,
   blurb,
   children,
   footer,
 }: {
   /** Small line above the headline; the only place a label is allowed here. */
   eyebrow: string;
-  title: string;
-  /** The one italic word, carried over from onboarding. */
-  accent: string;
-  titleTail?: string;
+  /*
+    The whole headline, already rendered by the caller through `t.rich` with
+    its one italic word marked up inside the sentence. It used to arrive as
+    three props (lead / accent / tail) concatenated here, which pinned the
+    emphasis to English word order — Persian puts it somewhere else entirely.
+  */
+  title: React.ReactNode;
   blurb: string;
   children: React.ReactNode;
   footer: React.ReactNode;
 }) {
+  const t = useTranslations('auth');
+
   return (
     <div className="theme-editorial flex min-h-screen w-full flex-col bg-paper-warm font-sans text-carbon lg:flex-row">
       {/* Left: who you are about to be */}
-      <div className="flex w-full flex-col justify-between border-b border-carbon/10 bg-paper-warm p-8 md:p-12 lg:w-[45%] lg:border-b-0 lg:border-r xl:p-20">
+      <div className="flex w-full flex-col justify-between border-b border-carbon/10 bg-paper-warm p-8 md:p-12 lg:w-[45%] lg:border-b-0 lg:border-e xl:p-20">
         <Link href="/" className="flex items-center gap-3">
           <span aria-hidden className="inline-block h-4 w-4 bg-brick" />
-          <span className="font-display text-2xl font-semibold tracking-[-0.035em]">Contivo</span>
+          {/* The wordmark stays Latin in both languages; `bdi` keeps the
+              surrounding Persian from reordering it. */}
+          <bdi className="font-display text-2xl font-semibold tracking-[-0.035em]">Contivo</bdi>
         </Link>
 
         <div className="mt-16 lg:mt-0">
           <p className="text-[13px] font-medium text-carbon-60">{eyebrow}</p>
           <h1 className="mt-4 max-w-[14ch] font-display text-[clamp(2.6rem,5.2vw,4.4rem)] font-semibold leading-[0.96] tracking-[-0.045em]">
-            {title}{' '}
-            <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
-              {accent}
-            </span>
-            {titleTail ? ` ${titleTail}` : '.'}
+            {title}
           </h1>
           <p className="mt-7 max-w-sm text-[16.5px] leading-[1.65] text-carbon-80">{blurb}</p>
         </div>
 
-        <p className="mt-16 hidden text-[13px] text-carbon-60 lg:block">
-          Nothing publishes until the quality gate has read it.
-        </p>
+        <p className="mt-16 hidden text-[13px] text-carbon-60 lg:block">{t('note')}</p>
       </div>
 
       {/* Right: the form */}
@@ -66,6 +67,15 @@ export function AuthShell({
         </div>
       </div>
     </div>
+  );
+}
+
+/** The italic word inside an auth headline, passed to `t.rich`. */
+export function authAccent(chunks: React.ReactNode) {
+  return (
+    <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
+      {chunks}
+    </span>
   );
 }
 

@@ -9,6 +9,7 @@
 
 'use client';
 
+import { useFormatter, useTranslations } from 'next-intl';
 import { ExternalLink, CheckCircle, XCircle, X } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -38,6 +39,9 @@ const PLATFORM_LABELS: Record<string, string> = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
+  const t = useTranslations('connections.history');
+  const format = useFormatter();
+
   // Show only terminal-state jobs
   const historyJobs = jobs
     .filter((j) => ['PUBLISHED', 'FAILED', 'CANCELLED'].includes(j.status))
@@ -46,10 +50,8 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-base font-bold text-[#121212]">Publish History</h3>
-        <p className="text-xs text-gray-500 mt-0.5">
-          All completed publish attempts — published, failed, or cancelled.
-        </p>
+        <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
+        <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
       </div>
 
       {historyJobs.length === 0 ? (
@@ -57,8 +59,8 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
           <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-5 h-5 text-green-500" />
           </div>
-          <p className="text-sm font-semibold text-gray-700">No history yet</p>
-          <p className="text-xs text-gray-400 mt-1">Published and failed posts will appear here.</p>
+          <p className="text-sm font-semibold text-gray-700">{t('emptyTitle')}</p>
+          <p className="text-xs text-gray-400 mt-1">{t('emptyBody')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -89,9 +91,21 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                       {PLATFORM_LABELS[job.platform] ?? job.platform}
                     </p>
                     <p className="text-xs text-gray-400">
+                      {/* Formatted through next-intl so the Persian side gets the
+                          Persian calendar, Persian digits and Tehran time. */}
                       {isPublished && job.publishedAtUtc
-                        ? `Published ${new Date(job.publishedAtUtc).toLocaleString()}`
-                        : `Created ${new Date(job.createdAt).toLocaleString()}`}
+                        ? t('publishedAt', {
+                            date: format.dateTime(new Date(job.publishedAtUtc), {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }),
+                          })
+                        : t('createdAt', {
+                            date: format.dateTime(new Date(job.createdAt), {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            }),
+                          })}
                     </p>
                   </div>
                 </div>
@@ -105,12 +119,16 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                       ? 'text-gray-400 bg-gray-100'
                       : 'text-red-600 bg-red-50'
                   }`}>
-                    {isPublished ? 'Published' : isCancelled ? 'Cancelled' : 'Failed'}
+                    {isPublished
+                      ? t('status.published')
+                      : isCancelled
+                        ? t('status.cancelled')
+                        : t('status.failed')}
                   </span>
 
                   {job.retryCount > 0 && (
                     <span className="text-xs text-orange-500 font-semibold bg-orange-50 rounded-full px-2 py-0.5">
-                      {job.retryCount} retries
+                      {t('retries', { count: job.retryCount })}
                     </span>
                   )}
 
@@ -121,8 +139,10 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs font-semibold text-[#2B2DFF] hover:underline"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      View post
+                      {/* The glyph's arrow leaves the box toward the reading
+                          edge, so it mirrors with the layout. */}
+                      <ExternalLink className="w-3.5 h-3.5 rtl:-scale-x-100" />
+                      {t('viewPost')}
                     </a>
                   )}
 

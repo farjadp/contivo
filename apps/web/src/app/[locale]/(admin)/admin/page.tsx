@@ -1,6 +1,10 @@
-import { Link } from '@/i18n/navigation';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
+
+import { Link, getPathname } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth';
 import { AdminBarChart, AdminPieChart } from './charts';
+import { createAdminFormat } from './_components/AdminUi';
 import {
   adjustCredits,
   manageBilling,
@@ -45,20 +49,11 @@ type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-const SECTION_META: Array<{ key: AdminSection; label: string; description: string }> = [
-  { key: 'overview', label: 'Overview', description: 'Platform status, cost, health, and risk' },
-  { key: 'users', label: 'Users', description: 'Accounts, plans, roles, and access control' },
-  { key: 'workspaces', label: 'Workspaces', description: 'Workspace state, owner, and intervention tools' },
-  { key: 'content', label: 'Content', description: 'Generated assets, schedule state, and output review' },
-  { key: 'ai', label: 'AI & Models', description: 'Primary/fallback model and provider behavior' },
-  { key: 'integrations', label: 'SEO Intelligence', description: 'DataForSEO readiness, cache footprint, and provider health' },
-  { key: 'credits', label: 'Credits & Billing', description: 'Ledger, adjustments, refunds, and usage' },
-  { key: 'jobs', label: 'Queues & Jobs', description: 'Background execution, failures, and durations' },
-  { key: 'settings', label: 'Platform Settings', description: 'Runtime limits and scheduling rules' },
-  { key: 'logs', label: 'Logs & Security', description: 'Activity stream and admin audit trail' },
-  { key: 'analytics', label: 'Analytics', description: 'Adoption, framework usage, and cost patterns' },
-];
-
+/*
+  Plan names, roles, lifecycle states and job types are values the database
+  stores and the server actions compare against. They stay Latin in both
+  languages — a translated enum is a bug report waiting to happen.
+*/
 const USER_PLAN_OPTIONS = ['FREE', 'STARTER', 'PRO', 'AGENCY'];
 const USER_ROLE_OPTIONS = ['USER', 'ADMIN'];
 const USER_ACCOUNT_STATUS_OPTIONS = ['ACTIVE', 'SUSPENDED'];
@@ -72,24 +67,21 @@ function readParam(value: string | string[] | undefined, fallback = ''): string 
   return Array.isArray(value) ? value[0] || fallback : value || fallback;
 }
 
-function formatUsd(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(value);
+/**
+ * The filter forms submit with GET to this page. Written as a bare `/admin`
+ * the submission leaves the locale behind, so it is built through the routing
+ * map instead and keeps the visitor inside /fa.
+ */
+function useAdminFormAction(): string {
+  const locale = useLocale();
+  return getPathname({ href: '/admin', locale });
 }
 
-function formatDateTime(value: Date | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
-}
-
-function formatDuration(value: number | null | undefined): string {
-  if (!value || value <= 0) return '-';
-  if (value < 1000) return `${value} ms`;
-  return `${(value / 1000).toFixed(1)} s`;
+/** One formatter + translator pair for a section. */
+function useAdminScreen() {
+  const t = useTranslations('admin');
+  const format = useFormatter();
+  return { t, fmt: createAdminFormat(format, t) };
 }
 
 function getStatusTone(status: string): string {
@@ -106,6 +98,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   const user = await getSession();
   const resolvedParams = await searchParams;
   const section = resolveAdminSection(resolvedParams.section);
+  const t = await getTranslations('admin');
 
   const [
     overview,
@@ -139,61 +132,13 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
   return (
     <div className="mx-auto flex max-w-[1440px] flex-col gap-8">
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] p-8 shadow-2xl ring-1 ring-white/10 sm:p-12">
-        <div className="absolute -left-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-20 -right-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
-        
-        <div className="relative flex flex-col gap-10 xl:flex-row xl:items-end xl:justify-between">
-          <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-md">
-               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
-               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">Command Center Online</p>
-            </div>
-            <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl lg:text-6xl">Admin Console</h1>
-            <p className="mt-6 text-lg leading-relaxed text-slate-400">
-              Platform administration, AI orchestration, billing dynamics, and operational telemetry.
-            </p>
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-indigo-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-indigo-500" /></div>
-                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-emerald-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-emerald-500" /></div>
-                <div className="h-8 w-8 flex items-center justify-center rounded-full border-2 border-[#0a0a0a] bg-white/10 text-[10px] font-bold text-white">+2</div>
-              </div>
-              <p className="text-sm font-medium text-slate-400">
-                Session active for <span className="font-bold text-white">{user?.email || 'unknown'}</span>
-              </p>
-            </div>
-          </div>
-          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 xl:w-auto">
-            <DarkMetricCard label="Users" value={overview.metrics.totalUsers.toLocaleString()} />
-            <DarkMetricCard label="Workspaces" value={overview.metrics.totalWorkspaces.toLocaleString()} />
-            <DarkMetricCard label="AI Jobs Today" value={overview.metrics.aiJobsToday.toLocaleString()} />
-            <DarkMetricCard label="AI Cost Today" value={formatUsd(overview.metrics.estimatedAiCostToday)} emphasis />
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Active Users Today" value={overview.metrics.activeUsersToday.toLocaleString()} helper={`${overview.metrics.activeUsers} active in 30d`} />
-        <MetricCard label="Active Workspaces" value={overview.metrics.activeWorkspaces.toLocaleString()} helper={`${overview.metrics.payingUsers} paying users`} />
-        <MetricCard label="Content Generated Today" value={overview.metrics.contentGeneratedToday.toLocaleString()} helper={`${overview.metrics.scheduledContentCount} scheduled`} />
-        <MetricCard label="Queue Backlog" value={`${overview.metrics.pendingJobs + overview.metrics.runningJobs}`} helper={`${overview.metrics.failedJobs} failed total`} />
-      </div>
-
-      <div className="grid gap-3 lg:grid-cols-5">
-        <HealthCard title="API" status="healthy" description="Admin app route is responding normally." />
-        <HealthCard title="Database" status={overview.health.database} description={`Prisma reachable. Latency ${overview.metrics.databaseLatencyMs} ms.`} />
-        <HealthCard title="Redis" status={integrations.providers.redisConfigured ? 'healthy' : 'FAILED'} description={integrations.providers.redisConfigured ? 'Queue/cache URL configured.' : 'Missing REDIS_URL.'} />
-        <HealthCard title="Jobs" status={overview.health.jobs} description={`${overview.metrics.pendingJobs} pending, ${overview.metrics.runningJobs} running, ${overview.metrics.failedJobs} failed.`} />
-        <HealthCard title="Providers" status={overview.health.provider} description={`${integrations.providers.geminiConfigured ? 'Gemini' : 'Gemini missing'}, ${integrations.providers.openAiConfigured ? 'OpenAI' : 'OpenAI missing'}.`} />
-      </div>
+      <AdminHero user={user} overview={overview} integrations={integrations} />
 
       <div className="rounded-[2rem] border border-slate-200/60 bg-white p-6 shadow-sm sm:p-8">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-[#121212]">{SECTION_META.find((item) => item.key === section)?.label}</h2>
-            <p className="mt-2 text-sm font-medium text-slate-500">{SECTION_META.find((item) => item.key === section)?.description}</p>
+            <h2 className="text-2xl font-black tracking-tight text-[#121212]">{t(`sections.${section}.label`)}</h2>
+            <p className="mt-2 text-sm font-medium text-slate-500">{t(`sections.${section}.description`)}</p>
           </div>
         </div>
 
@@ -286,6 +231,118 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   );
 }
 
+/**
+ * The masthead: identity, live counters and the five health lamps.
+ *
+ * Split out of the page so it can format its own numbers through the hook
+ * rather than being handed a dozen pre-rendered strings.
+ */
+function AdminHero({
+  user,
+  overview,
+  integrations,
+}: {
+  user: { email: string } | null;
+  overview: Awaited<ReturnType<typeof getAdminOverview>>;
+  integrations: Awaited<ReturnType<typeof getAdminIntegrations>>;
+}) {
+  const { t, fmt } = useAdminScreen();
+
+  return (
+    <>
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] p-8 shadow-2xl ring-1 ring-white/10 sm:p-12">
+        <div className="absolute -start-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px] pointer-events-none" />
+        <div className="absolute -bottom-20 -end-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
+
+        <div className="relative flex flex-col gap-10 xl:flex-row xl:items-end xl:justify-between">
+          <div className="max-w-3xl">
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-md">
+               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
+               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">{t('hero.badge')}</p>
+            </div>
+            <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl lg:text-6xl">{t('hero.title')}</h1>
+            <p className="mt-6 text-lg leading-relaxed text-slate-400">{t('hero.body')}</p>
+            <div className="mt-8 flex items-center gap-4">
+              <div className="flex -space-x-2">
+                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-indigo-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-indigo-500" /></div>
+                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-emerald-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-emerald-500" /></div>
+                <div className="h-8 w-8 flex items-center justify-center rounded-full border-2 border-[#0a0a0a] bg-white/10 text-[10px] font-bold text-white">+2</div>
+              </div>
+              <p className="text-sm font-medium text-slate-400">
+                {t.rich('hero.session', {
+                  email: user?.email || t('hero.unknownUser'),
+                  b: (chunks) => <bdi className="font-bold text-white">{chunks}</bdi>,
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 xl:w-auto">
+            <DarkMetricCard label={t('hero.users')} value={fmt.number(overview.metrics.totalUsers)} />
+            <DarkMetricCard label={t('hero.workspaces')} value={fmt.number(overview.metrics.totalWorkspaces)} />
+            <DarkMetricCard label={t('hero.aiJobsToday')} value={fmt.number(overview.metrics.aiJobsToday)} />
+            <DarkMetricCard label={t('hero.aiCostToday')} value={fmt.usd(overview.metrics.estimatedAiCostToday)} emphasis />
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <MetricCard
+          label={t('metrics.activeUsersToday')}
+          value={fmt.number(overview.metrics.activeUsersToday)}
+          helper={t('metrics.activeUsersHelper', { count: fmt.number(overview.metrics.activeUsers) })}
+        />
+        <MetricCard
+          label={t('metrics.activeWorkspaces')}
+          value={fmt.number(overview.metrics.activeWorkspaces)}
+          helper={t('metrics.activeWorkspacesHelper', { count: fmt.number(overview.metrics.payingUsers) })}
+        />
+        <MetricCard
+          label={t('metrics.contentGeneratedToday')}
+          value={fmt.number(overview.metrics.contentGeneratedToday)}
+          helper={t('metrics.contentGeneratedHelper', { count: fmt.number(overview.metrics.scheduledContentCount) })}
+        />
+        <MetricCard
+          label={t('metrics.queueBacklog')}
+          value={fmt.number(overview.metrics.pendingJobs + overview.metrics.runningJobs)}
+          helper={t('metrics.queueBacklogHelper', { count: fmt.number(overview.metrics.failedJobs) })}
+        />
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-5">
+        <HealthCard title={t('health.api')} status="healthy" description={t('health.apiDescription')} />
+        <HealthCard
+          title={t('health.database')}
+          status={overview.health.database}
+          description={t('health.databaseDescription', { latency: fmt.number(overview.metrics.databaseLatencyMs) })}
+        />
+        <HealthCard
+          title={t('health.redis')}
+          status={integrations.providers.redisConfigured ? 'healthy' : 'FAILED'}
+          description={integrations.providers.redisConfigured ? t('health.redisQueueUrlConfigured') : t('health.redisMissing')}
+        />
+        <HealthCard
+          title={t('health.jobs')}
+          status={overview.health.jobs}
+          description={t('health.jobsDescription', {
+            pending: fmt.number(overview.metrics.pendingJobs),
+            running: fmt.number(overview.metrics.runningJobs),
+            failed: fmt.number(overview.metrics.failedJobs),
+          })}
+        />
+        <HealthCard
+          title={t('health.providers')}
+          status={overview.health.provider}
+          description={t('health.providersDescription', {
+            gemini: integrations.providers.geminiConfigured ? t('health.geminiReady') : t('health.geminiMissing'),
+            openAi: integrations.providers.openAiConfigured ? t('health.openAiReady') : t('health.openAiMissing'),
+          })}
+        />
+      </div>
+    </>
+  );
+}
+
 async function getSectionData(
   section: AdminSection,
   params: { [key: string]: string | string[] | undefined },
@@ -354,18 +411,20 @@ function OverviewSection({
   overview: Awaited<ReturnType<typeof getAdminOverview>>;
   analytics: Awaited<ReturnType<typeof getAdminAnalytics>>;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 auto-rows-max">
       {/* Feature 1: Top Frameworks (Spans 8 cols) */}
       <div className="lg:col-span-8">
-        <Panel title="Top Frameworks (30d)" subtitle="Most adopted generation frameworks">
+        <Panel title={t('overview.topFrameworks')} subtitle={t('overview.topFrameworksSubtitle')}>
           <SimpleTable
-            headers={['Framework', 'Events', 'Fallback', 'Score']}
+            headers={[t('overview.framework'), t('overview.events'), t('overview.fallback'), t('overview.score')]}
             rows={overview.topFrameworks.slice(0, 5).map((item) => [
               item.frameworkName,
-              item.events.toLocaleString(),
-              item.fallbackEvents.toLocaleString(),
-              item.avgOverallScore?.toFixed(2) || '-',
+              fmt.number(item.events),
+              fmt.number(item.fallbackEvents),
+              item.avgOverallScore != null ? fmt.decimal(item.avgOverallScore) : '-',
             ])}
           />
         </Panel>
@@ -374,47 +433,47 @@ function OverviewSection({
       {/* Feature 2: High-density metric stack (Spans 4 cols) */}
       <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">
         <MetricCard
-          label="Credits Used Today"
-          value={overview.metrics.creditsUsedToday.toLocaleString()}
-          helper={`${overview.metrics.publishedContentToday} published today`}
+          label={t('metrics.creditsUsedToday')}
+          value={fmt.number(overview.metrics.creditsUsedToday)}
+          helper={t('metrics.creditsUsedHelper', { count: fmt.number(overview.metrics.publishedContentToday) })}
           emphasis
         />
         <MetricCard
-          label="Average Generation Time"
-          value={formatDuration(overview.metrics.averageGenerationTimeMs)}
-          helper="completed AI jobs today"
+          label={t('metrics.averageGenerationTime')}
+          value={fmt.duration(overview.metrics.averageGenerationTimeMs)}
+          helper={t('metrics.averageGenerationHelper')}
         />
         <MetricCard
-          label="Scheduled Posts"
-          value={overview.metrics.scheduledContentCount.toLocaleString()}
-          helper={`${overview.metrics.contentGeneratedToday} generated today`}
+          label={t('metrics.scheduledPosts')}
+          value={fmt.number(overview.metrics.scheduledContentCount)}
+          helper={t('metrics.scheduledPostsHelper', { count: fmt.number(overview.metrics.contentGeneratedToday) })}
         />
         <MetricCard
-          label="Published Posts"
-          value={overview.metrics.publishedContentToday.toLocaleString()}
-          helper={`${overview.metrics.failedAiJobsToday} AI failures today`}
+          label={t('metrics.publishedPosts')}
+          value={fmt.number(overview.metrics.publishedContentToday)}
+          helper={t('metrics.publishedPostsHelper', { count: fmt.number(overview.metrics.failedAiJobsToday) })}
         />
       </div>
 
       {/* Feature 3: Recent Failures (Spans 8 cols) */}
       <div className="lg:col-span-8">
-        <Panel title="Recent Critical Failures" subtitle="Latest failed background jobs">
+        <Panel title={t('overview.recentFailures')} subtitle={t('overview.recentFailuresSubtitle')}>
           <div className="space-y-3">
             {overview.recentFailedJobs.length === 0 ? (
-              <EmptyState text="No failed jobs recorded." />
+              <EmptyState text={t('overview.noFailedJobs')} />
             ) : (
               overview.recentFailedJobs.slice(0, 4).map((job: any) => (
                 <div key={job.id} className="rounded-3xl border border-red-100 bg-red-50/70 p-5 transition-colors hover:bg-red-50">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-[#121212]">{job.type}</p>
+                    <p className="text-sm font-bold text-[#121212]" dir="ltr">{job.type}</p>
                     <span className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700 shadow-sm">
                       {job.status}
                     </span>
                   </div>
                   <p className="mt-2 text-xs font-semibold text-slate-500">
-                    {job.user.email} {job.workspace?.name ? `• ${job.workspace.name}` : ''} • {formatDateTime(job.updatedAt)}
+                    <bdi>{job.user.email}</bdi> {job.workspace?.name ? <>• <bdi>{job.workspace.name}</bdi></> : null} • {fmt.dateTime(job.updatedAt)}
                   </p>
-                  <p className="mt-3 text-xs font-medium text-red-700">{job.errorMessage || 'Unknown error'}</p>
+                  <p className="mt-3 text-xs font-medium text-red-700">{job.errorMessage || t('overview.unknownError')}</p>
                 </div>
               ))
             )}
@@ -424,36 +483,39 @@ function OverviewSection({
 
       {/* Bottom row graphs/tables (Span 4 cols each) */}
       <div className="lg:col-span-4">
-        <Panel title="Top Platforms" subtitle="Content destinations (30d)">
+        <Panel title={t('overview.topPlatforms')} subtitle={t('overview.topPlatformsSubtitle')}>
           <div className="pt-4">
-            <AdminBarChart 
-              data={analytics.platforms} 
-              dataKey="count" 
-              nameKey="channel" 
-              color="#3b82f6" 
+            <AdminBarChart
+              data={analytics.platforms}
+              dataKey="count"
+              nameKey="channel"
+              color="#3b82f6"
+              valueName={t('charts.count')}
             />
           </div>
         </Panel>
       </div>
       <div className="lg:col-span-4">
-        <Panel title="AI Cost Context" subtitle="Provider spend vs volume">
+        <Panel title={t('overview.aiCostContext')} subtitle={t('overview.aiCostContextSubtitle')}>
           <div className="pt-4">
-            <AdminBarChart 
-              data={analytics.aiCostByFeature} 
-              dataKey="costUsd" 
-              nameKey="feature" 
-              color="#10b981" 
+            <AdminBarChart
+              data={analytics.aiCostByFeature}
+              dataKey="costUsd"
+              nameKey="feature"
+              color="#10b981"
+              valueName={t('charts.costUsd')}
             />
           </div>
         </Panel>
       </div>
       <div className="lg:col-span-4">
-        <Panel title="Asset Pipeline" subtitle="Content state mapping">
+        <Panel title={t('overview.assetPipeline')} subtitle={t('overview.assetPipelineSubtitle')}>
           <div className="pt-4">
-            <AdminPieChart 
-              data={analytics.contentStatusBreakdown.map(item => ({ ...item, count: Number(item.count) }))} 
-              dataKey="count" 
-              nameKey="status" 
+            <AdminPieChart
+              data={analytics.contentStatusBreakdown.map(item => ({ ...item, count: Number(item.count) }))}
+              dataKey="count"
+              nameKey="status"
+              valueName={t('charts.count')}
             />
           </div>
         </Panel>
@@ -476,38 +538,41 @@ function UsersSection({
     status: string;
   };
 }) {
+  const { t, fmt } = useAdminScreen();
+  const formAction = useAdminFormAction();
+
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action="/admin" className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-5">
+      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-5">
         <input type="hidden" name="section" value="users" />
-        <input name="q" defaultValue={filters.q} placeholder="Search email, name, user id" className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
+        <input name="q" defaultValue={filters.q} placeholder={t('users.searchPlaceholder')} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
         <select name="plan" defaultValue={filters.plan} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All plans</option>
+          <option value="ALL">{t('common.allPlans')}</option>
           {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="role" defaultValue={filters.role} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All roles</option>
+          <option value="ALL">{t('common.allRoles')}</option>
           {USER_ROLE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All statuses</option>
+          <option value="ALL">{t('common.allStatuses')}</option>
           {USER_ACCOUNT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
       </form>
 
-      <Panel title="User Management" subtitle="Search, inspect, and update access controls">
+      <Panel title={t('users.panelTitle')} subtitle={t('users.panelSubtitle')}>
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
+          <table className="w-full text-start text-sm">
             <thead>
               <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
-                <th className="px-4 py-4 text-[10px] font-bold">User</th>
-                <th className="px-4 py-4 text-[10px] font-bold">Plan / Role</th>
-                <th className="px-4 py-4 text-[10px] font-bold">Status</th>
-                <th className="px-4 py-4 text-[10px] font-bold">Usage</th>
-                <th className="px-4 py-4 text-[10px] font-bold">Last Active</th>
-                <th className="px-4 py-4 text-[10px] font-bold w-[340px]">Actions</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colUser')}</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colPlanRole')}</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colStatus')}</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colUsage')}</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colLastActive')}</th>
+                <th className="px-4 py-4 text-start text-[10px] font-bold w-[340px]">{t('users.colActions')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100/80">
@@ -515,20 +580,25 @@ function UsersSection({
                 <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
                   <td className="px-4 py-4">
                     <Link href={{ pathname: '/admin/users/[userId]', params: { userId: row.id } }} className="font-bold text-[#121212] hover:underline">
-                      {row.name || 'Unnamed user'}
+                      {row.name || t('users.unnamedUser')}
                     </Link>
-                    <p className="text-xs text-gray-500">{row.email}</p>
-                    <p className="mt-1 text-[11px] text-gray-400">{row.id}</p>
+                    <p className="text-xs text-gray-500"><bdi>{row.email}</bdi></p>
+                    <p className="mt-1 text-[11px] text-gray-400" dir="ltr">{row.id}</p>
                   </td>
                   <td className="px-4 py-4">
                     <div className="space-y-2">
                       <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.subscription?.status || row.plan)}`}>
                         {row.plan}
                       </span>
-                      <span className={`ml-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.role)}`}>
+                      <span className={`ms-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.role)}`}>
                         {row.role}
                       </span>
-                      <p className="text-xs font-medium text-slate-500">Subscription: <span className="text-[#121212]">{row.subscription?.status || 'none'}</span></p>
+                      <p className="text-xs font-medium text-slate-500">
+                        {t.rich('users.subscription', {
+                          status: row.subscription?.status || t('users.noSubscription'),
+                          b: (chunks) => <span className="text-[#121212]">{chunks}</span>,
+                        })}
+                      </p>
                     </div>
                   </td>
                   <td className="px-4 py-4">
@@ -542,12 +612,12 @@ function UsersSection({
                     </div>
                   </td>
                   <td className="px-4 py-4 text-xs font-medium text-slate-600 space-y-1">
-                    <p><span className="font-bold text-[#121212]">{row._count.workspaces}</span> workspaces</p>
-                    <p><span className="font-bold text-[#121212]">{row._count.contentItems}</span> content items</p>
-                    <p><span className="font-bold text-[#121212]">{String(row.creditBalance || 0)}</span> credits</p>
-                    <p><span className="font-bold text-[#121212]">{formatUsd(Number(row.totalAiCost || 0))}</span> AI cost</p>
+                    <p>{t.rich('users.usageWorkspaces', { count: fmt.number(row._count.workspaces), b: boldValue })}</p>
+                    <p>{t.rich('users.usageContentItems', { count: fmt.number(row._count.contentItems), b: boldValue })}</p>
+                    <p>{t.rich('users.usageCredits', { count: fmt.number(Number(row.creditBalance || 0)), b: boldValue })}</p>
+                    <p>{t.rich('users.usageAiCost', { value: fmt.usd(Number(row.totalAiCost || 0)), b: boldValue })}</p>
                   </td>
-                  <td className="px-4 py-4 text-xs font-medium text-slate-600">{formatDateTime(row.lastActiveAt)}</td>
+                  <td className="px-4 py-4 text-xs font-medium text-slate-600">{fmt.dateTime(row.lastActiveAt)}</td>
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-3">
                       <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
@@ -555,14 +625,14 @@ function UsersSection({
                         <select name="plan" defaultValue={row.plan} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
                           {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">Set Plan</button>
+                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">{t('users.setPlan')}</button>
                       </form>
                       <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
                         <select name="role" defaultValue={row.role} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
                           {USER_ROLE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">Set Role</button>
+                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">{t('users.setRole')}</button>
                       </form>
                       <form action={manageUserLifecycle} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
@@ -571,20 +641,20 @@ function UsersSection({
                           <div className="flex gap-2">
                             <input
                               name="reason"
-                              placeholder="Suspension reason"
+                              placeholder={t('users.suspensionReason')}
                               className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-red-500 focus:bg-white"
                             />
                             <button className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-red-700">
-                              Suspend
+                              {t('users.suspend')}
                             </button>
                           </div>
                         ) : (
                           <div className="flex gap-2 items-center justify-between">
                             <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 w-full text-center">
-                              Account suspended.
+                              {t('users.accountSuspended')}
                             </p>
                             <button className="shrink-0 rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-emerald-700">
-                              Reactivate
+                              {t('users.reactivate')}
                             </button>
                           </div>
                         )}
@@ -616,24 +686,27 @@ function WorkspacesSection({
     ownerId: string;
   };
 }) {
+  const { t, fmt } = useAdminScreen();
+  const formAction = useAdminFormAction();
+
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action="/admin" className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
+      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="workspaces" />
-        <input name="q" defaultValue={filters.q} placeholder="Search workspace, url, owner" className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
+        <input name="q" defaultValue={filters.q} placeholder={t('workspaces.searchPlaceholder')} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All statuses</option>
+          <option value="ALL">{t('common.allStatuses')}</option>
           {WORKSPACE_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="ownerId" defaultValue={filters.ownerId} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All owners</option>
+          <option value="ALL">{t('common.allOwners')}</option>
           {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
       </form>
 
-      <Panel title="Workspace Management" subtitle="Inspect health, reassign ownership, or force intervention">
+      <Panel title={t('workspaces.panelTitle')} subtitle={t('workspaces.panelSubtitle')}>
         <div className="space-y-4">
           {rows.map((row: any) => (
             <div key={row.id} className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
@@ -648,19 +721,21 @@ function WorkspacesSection({
                     </span>
                     {row.archiveState?.isArchived ? (
                       <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone('ARCHIVED')}`}>
-                        Archived
+                        {t('workspaces.archived')}
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-slate-500">{row.websiteUrl || 'No website URL'}</p>
+                  <p className="mt-2 text-sm font-medium text-slate-500">
+                    {row.websiteUrl ? <bdi>{row.websiteUrl}</bdi> : t('common.noWebsiteUrl')}
+                  </p>
                   <p className="mt-2 text-xs font-semibold text-slate-400">
-                    Owner: {row.user.email} • Created {formatDateTime(row.createdAt)}
+                    {t('workspaces.ownerLine', { email: row.user.email, date: fmt.dateTime(row.createdAt) })}
                   </p>
                 </div>
                 <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
-                  <InfoPill label="Competitors" value={row._count.competitors.toLocaleString()} />
-                  <InfoPill label="Content Items" value={row._count.contentItems.toLocaleString()} />
-                  <InfoPill label="Strategy Runs" value={row._count.strategyRuns.toLocaleString()} />
+                  <InfoPill label={t('workspaces.competitors')} value={fmt.number(row._count.competitors)} />
+                  <InfoPill label={t('workspaces.contentItems')} value={fmt.number(row._count.contentItems)} />
+                  <InfoPill label={t('workspaces.strategyRuns')} value={fmt.number(row._count.strategyRuns)} />
                 </div>
               </div>
 
@@ -668,7 +743,7 @@ function WorkspacesSection({
                 <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="REANALYZE" />
-                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Force Re-analysis</button>
+                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">{t('workspaces.forceReanalysis')}</button>
                 </form>
 
                 <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
@@ -677,16 +752,16 @@ function WorkspacesSection({
                   {!row.archiveState?.isArchived ? (
                     <input
                       name="reason"
-                      placeholder="Archive reason"
+                      placeholder={t('workspaces.archiveReason')}
                       className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]"
                     />
                   ) : (
                     <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-2 text-[11px] font-bold text-emerald-700">
-                      Workspace is archived.
+                      {t('workspaces.workspaceArchived')}
                     </p>
                   )}
                   <button className={`mt-auto w-full rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 ${row.archiveState?.isArchived ? 'bg-emerald-600' : 'bg-amber-600'}`}>
-                    {row.archiveState?.isArchived ? 'Restore Workspace' : 'Archive Workspace'}
+                    {row.archiveState?.isArchived ? t('workspaces.restoreWorkspace') : t('workspaces.archiveWorkspace')}
                   </button>
                 </form>
 
@@ -694,16 +769,16 @@ function WorkspacesSection({
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="TRANSFER" />
                   <select name="targetUserId" defaultValue="" className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]">
-                    <option value="">Transfer owner to...</option>
+                    <option value="">{t('workspaces.transferOwnerTo')}</option>
                     {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
                   </select>
-                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">Transfer Owner</button>
+                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">{t('workspaces.transferOwner')}</button>
                 </form>
 
                 <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-red-200/60 bg-red-50 p-4 transition-colors hover:border-red-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="DELETE" />
-                  <button className="mt-auto w-full rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-red-700">Delete Workspace</button>
+                  <button className="mt-auto w-full rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-red-700">{t('workspaces.deleteWorkspace')}</button>
                 </form>
               </div>
             </div>
@@ -723,38 +798,46 @@ function AiSection({
   analytics: Awaited<ReturnType<typeof getAdminAnalytics>>;
   status: string;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
       <div className="grid gap-4 lg:grid-cols-3">
-        <MetricCard label="Primary Model" value={settingsState.geminiModel} />
-        <MetricCard label="Fallback Model" value={settingsState.openAiFallbackModel} />
-        <MetricCard label="Cooldown" value={`${settingsState.geminiCooldownSeconds}s`} helper="after Gemini 429/503" />
+        <MetricCard label={t('ai.primaryModel')} value={settingsState.geminiModel} />
+        <MetricCard label={t('ai.fallbackModel')} value={settingsState.openAiFallbackModel} />
+        <MetricCard
+          label={t('ai.cooldown')}
+          value={t('units.seconds', { value: fmt.number(settingsState.geminiCooldownSeconds) })}
+          helper={t('ai.cooldownHelper')}
+        />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-        <Panel title="AI Provider Control" subtitle="Primary, fallback, and retry guardrails">
+        <Panel title={t('ai.controlTitle')} subtitle={t('ai.controlSubtitle')}>
           <form action={updateAiControls} className="grid gap-4">
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">Gemini Primary Model</span>
+              <span className="block text-sm font-medium text-[#121212]">{t('ai.geminiPrimaryModel')}</span>
               <input
                 name="geminiModel"
+                dir="ltr"
                 defaultValue={settingsState.geminiModel}
                 className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">OpenAI Fallback Model</span>
+              <span className="block text-sm font-medium text-[#121212]">{t('ai.openAiFallbackModel')}</span>
               <input
                 name="openAiFallbackModel"
+                dir="ltr"
                 defaultValue={settingsState.openAiFallbackModel}
                 className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">Gemini Cooldown Seconds</span>
+              <span className="block text-sm font-medium text-[#121212]">{t('ai.geminiCooldownSeconds')}</span>
               <input
                 type="number"
                 name="geminiCooldownSeconds"
@@ -765,17 +848,17 @@ function AiSection({
                 required
               />
             </label>
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Save AI Controls</button>
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('ai.saveControls')}</button>
           </form>
         </Panel>
 
-        <Panel title="Framework Cost Signals" subtitle="Recent usage and quality">
+        <Panel title={t('ai.costSignalsTitle')} subtitle={t('ai.costSignalsSubtitle')}>
           <SimpleTable
-            headers={['Feature', 'Cost', 'Tokens']}
+            headers={[t('ai.colFeature'), t('ai.colCost'), t('ai.colTokens')]}
             rows={analytics.aiCostByFeature.slice(0, 8).map((item: any) => [
               item.feature,
-              formatUsd(item.costUsd),
-              item.totalTokens.toLocaleString(),
+              fmt.usd(item.costUsd),
+              fmt.number(item.totalTokens),
             ])}
           />
         </Panel>
@@ -791,33 +874,41 @@ function SettingsSection({
   settingsState: Awaited<ReturnType<typeof getAdminSettingsState>>;
   status: string;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <Panel title="Runtime Platform Settings" subtitle="No-redeploy controls for core generation behavior">
+      <Panel title={t('settings.panelTitle')} subtitle={t('settings.panelSubtitle')}>
         <form action={updatePlatformLimits} className="grid gap-5">
           <input type="hidden" name="redirectTo" value="/admin" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <Field label="Competitive Landscape Limit">
+            <Field label={t('settings.competitiveLandscapeLimit')}>
               <input type="number" name="competitiveLandscapeLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.competitiveLandscapeLimit} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             </Field>
-            <Field label="Brand Memory Rescrape Limit">
+            <Field label={t('settings.brandMemoryLimit')}>
               <input type="number" name="brandMemoryLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.brandMemoryLimit} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             </Field>
-            <Field label="Ideation Max Content Count">
+            <Field label={t('settings.ideationMaxContentCount')}>
               <input type="number" name="ideationMaxContentCount" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.ideationMaxContentCount} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             </Field>
-            <Field label="Default Schedule Delay (Hours)">
+            <Field label={t('settings.defaultScheduleDelayHours')}>
               <input type="number" name="defaultScheduleDelayHours" min={SCHEDULE_DELAY_HOURS_MIN} max={SCHEDULE_DELAY_HOURS_MAX} defaultValue={settingsState.defaultScheduleDelayHours} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
             </Field>
           </div>
 
           <div className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
-            <p className="text-sm font-bold text-[#121212]">Word Count Rules</p>
-            <p className="mt-1 text-xs text-slate-500">Current enforced range: {WORD_COUNT_LIMIT_ABSOLUTE_MIN} to {WORD_COUNT_LIMIT_ABSOLUTE_MAX} words.</p>
+            <p className="text-sm font-bold text-[#121212]">{t('settings.wordCountRules')}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              {t('settings.wordCountRange', {
+                min: fmt.number(WORD_COUNT_LIMIT_ABSOLUTE_MIN),
+                max: fmt.number(WORD_COUNT_LIMIT_ABSOLUTE_MAX),
+              })}
+            </p>
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
               {WORD_COUNT_PLATFORMS.map((platform) => (
                 <div key={platform} className="rounded-xl border border-gray-200 bg-white p-3">
+                  {/* Platform names are brands; they stay Latin in both languages. */}
                   <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{WORD_COUNT_PLATFORM_LABELS[platform]}</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <input type="number" name={`wordMin_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].min} className="rounded-lg border border-gray-300 px-2 py-2 text-sm outline-none focus:border-black" />
@@ -828,7 +919,7 @@ function SettingsSection({
             </div>
           </div>
 
-          <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Save Platform Settings</button>
+          <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('settings.save')}</button>
         </form>
       </Panel>
     </div>
@@ -862,62 +953,65 @@ function CreditsSection({
   billingStatus: string;
   filterUserId: string;
 }) {
+  const { t, fmt } = useAdminScreen();
+  const formAction = useAdminFormAction();
+
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
       <StatusBanner status={billingStatus} />
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel title="Manual Credit Control" subtitle="Add, refund, top up, or deduct ledger balances">
+        <Panel title={t('credits.manualTitle')} subtitle={t('credits.manualSubtitle')}>
           <form action={adjustCredits} className="grid gap-3">
             <select name="userId" defaultValue="" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required>
-              <option value="">Select user</option>
+              <option value="">{t('common.selectUser')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
             <select name="adjustmentType" defaultValue="TOP_UP" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
-              <option value="TOP_UP">Top Up</option>
-              <option value="REFUND">Refund</option>
-              <option value="ALLOCATE">Allocate</option>
-              <option value="DEDUCT">Deduct</option>
+              <option value="TOP_UP">{t('credits.topUp')}</option>
+              <option value="REFUND">{t('credits.refund')}</option>
+              <option value="ALLOCATE">{t('credits.allocate')}</option>
+              <option value="DEDUCT">{t('credits.deduct')}</option>
             </select>
-            <input type="number" name="amount" min={1} placeholder="Amount" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required />
-            <textarea name="note" placeholder="Reason / internal note" className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Credit Adjustment</button>
+            <input type="number" name="amount" min={1} placeholder={t('credits.amount')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required />
+            <textarea name="note" placeholder={t('credits.note')} className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.applyAdjustment')}</button>
           </form>
         </Panel>
 
-        <Panel title="Credit Ledger" subtitle="Append-only history of balance movement">
-          <form action="/admin" className="mb-4 grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-3 md:grid-cols-[1fr_auto]">
+        <Panel title={t('credits.ledgerTitle')} subtitle={t('credits.ledgerSubtitle')}>
+          <form action={formAction} className="mb-4 grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-3 md:grid-cols-[1fr_auto]">
             <input type="hidden" name="section" value="credits" />
             <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
-              <option value="">All users</option>
+              <option value="">{t('common.allUsers')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
-            <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Filter Ledger</button>
+            <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.filterLedger')}</button>
           </form>
           <div className="max-h-[520px] overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-                  <th className="px-3 py-3">User</th>
-                  <th className="px-3 py-3">Type</th>
-                  <th className="px-3 py-3">Feature</th>
-                  <th className="px-3 py-3">Delta</th>
-                  <th className="px-3 py-3">Balance</th>
-                  <th className="px-3 py-3">At</th>
+                <tr className="border-b border-gray-200 text-start text-xs uppercase tracking-wider text-gray-500">
+                  <th className="px-3 py-3 text-start">{t('credits.colUser')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colType')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colFeature')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colDelta')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colBalance')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colAt')}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row: any) => (
                   <tr key={row.id} className="border-b border-gray-100">
                     <td className="px-3 py-3">
-                      <p className="font-medium text-[#121212]">{row.user.email}</p>
-                      <p className="text-xs text-gray-400">{row.userId}</p>
+                      <p className="font-medium text-[#121212]"><bdi>{row.user.email}</bdi></p>
+                      <p className="text-xs text-gray-400" dir="ltr">{row.userId}</p>
                     </td>
                     <td className="px-3 py-3 text-xs">{row.type}</td>
                     <td className="px-3 py-3 text-xs">{row.feature}</td>
-                    <td className={`px-3 py-3 font-bold ${row.amount < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{row.amount}</td>
-                    <td className="px-3 py-3 text-xs">{row.balanceAfter}</td>
-                    <td className="px-3 py-3 text-xs">{formatDateTime(row.createdAt)}</td>
+                    <td className={`px-3 py-3 font-bold ${row.amount < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmt.number(row.amount)}</td>
+                    <td className="px-3 py-3 text-xs">{fmt.number(row.balanceAfter)}</td>
+                    <td className="px-3 py-3 text-xs">{fmt.dateTime(row.createdAt)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -927,48 +1021,48 @@ function CreditsSection({
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
-        <Panel title="Billing Operations" subtitle="Sync Stripe state, grant trials, and apply promo credits">
+        <Panel title={t('credits.billingTitle')} subtitle={t('credits.billingSubtitle')}>
           <form action={manageBilling} className="grid gap-3">
             <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required>
-              <option value="">Select user</option>
+              <option value="">{t('common.selectUser')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
             <select name="actionType" defaultValue="SYNC_STRIPE" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
-              <option value="SYNC_STRIPE">Sync Stripe</option>
-              <option value="GRANT_TRIAL">Grant Trial</option>
-              <option value="APPLY_PROMO">Apply Promo Credits</option>
+              <option value="SYNC_STRIPE">{t('credits.syncStripe')}</option>
+              <option value="GRANT_TRIAL">{t('credits.grantTrial')}</option>
+              <option value="APPLY_PROMO">{t('credits.applyPromo')}</option>
             </select>
             <select name="plan" defaultValue="STARTER" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
               {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
-            <input type="number" name="trialDays" min={1} max={90} defaultValue={14} placeholder="Trial days" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <input type="number" name="promoCredits" min={1} placeholder="Promo credits" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <textarea name="note" placeholder="Billing note / promo reason" className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Run Billing Action</button>
+            <input type="number" name="trialDays" min={1} max={90} defaultValue={14} placeholder={t('credits.trialDays')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+            <input type="number" name="promoCredits" min={1} placeholder={t('credits.promoCredits')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+            <textarea name="note" placeholder={t('credits.billingNote')} className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.runBillingAction')}</button>
           </form>
         </Panel>
 
-        <Panel title="Subscriptions" subtitle="Current local subscription records">
+        <Panel title={t('credits.subscriptionsTitle')} subtitle={t('credits.subscriptionsSubtitle')}>
           <div className="max-h-[520px] overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-left text-xs uppercase tracking-wider text-gray-500">
-                  <th className="px-3 py-3">User</th>
-                  <th className="px-3 py-3">Plan</th>
-                  <th className="px-3 py-3">Status</th>
-                  <th className="px-3 py-3">Renewal</th>
+                <tr className="border-b border-gray-200 text-start text-xs uppercase tracking-wider text-gray-500">
+                  <th className="px-3 py-3 text-start">{t('credits.colUser')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colPlan')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colStatus')}</th>
+                  <th className="px-3 py-3 text-start">{t('credits.colRenewal')}</th>
                 </tr>
               </thead>
               <tbody>
                 {subscriptions.map((row) => (
                   <tr key={row.id} className="border-b border-gray-100">
                     <td className="px-3 py-3">
-                      <p className="font-medium text-[#121212]">{row.user.email}</p>
-                      <p className="text-xs text-gray-400">{row.stripeSubscriptionId || row.stripeCustomerId}</p>
+                      <p className="font-medium text-[#121212]"><bdi>{row.user.email}</bdi></p>
+                      <p className="text-xs text-gray-400" dir="ltr">{row.stripeSubscriptionId || row.stripeCustomerId}</p>
                     </td>
                     <td className="px-3 py-3 text-xs">{row.plan}</td>
                     <td className="px-3 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>{row.status}</span></td>
-                    <td className="px-3 py-3 text-xs">{formatDateTime(row.currentPeriodEnd)}</td>
+                    <td className="px-3 py-3 text-xs">{fmt.dateTime(row.currentPeriodEnd)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -994,42 +1088,45 @@ function ContentSection({
     workspaceId: string;
   };
 }) {
+  const { t, fmt } = useAdminScreen();
+  const formAction = useAdminFormAction();
+
   return (
-    <Panel title="Content Operations" subtitle="Inspect generated output, schedule state, and operational metadata">
-      <form action="/admin" className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
+    <Panel title={t('content.panelTitle')} subtitle={t('content.panelSubtitle')}>
+      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="content" />
         <input
           name="q"
           defaultValue={filters.q}
-          placeholder="Search topic or content id"
+          placeholder={t('content.searchPlaceholder')}
           className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black"
         />
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All statuses</option>
+          <option value="ALL">{t('common.allStatuses')}</option>
           {CONTENT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="channel" defaultValue={filters.channel} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All channels</option>
+          <option value="ALL">{t('common.allChannels')}</option>
           {CONTENT_CHANNEL_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="workspaceId" defaultValue={filters.workspaceId} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All workspaces</option>
+          <option value="ALL">{t('common.allWorkspaces')}</option>
           {workspaceOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800 lg:col-span-4">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800 lg:col-span-4">{t('common.applyFilters')}</button>
       </form>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
-              <th className="px-4 py-4 text-[10px] font-bold">Topic</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Workspace</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Platform</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Status</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Words</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Schedule</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Generated</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colTopic')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colWorkspace')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colPlatform')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colStatus')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colWords')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colSchedule')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colGenerated')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100/80">
@@ -1048,9 +1145,9 @@ function ContentSection({
                     {row.status}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.wordCount.toLocaleString()}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDateTime(row.scheduledAtUtc)}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDateTime(row.createdAt)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.number(row.wordCount)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.dateTime(row.scheduledAtUtc)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.dateTime(row.createdAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -1072,44 +1169,47 @@ function JobsSection({
     type: string;
   };
 }) {
+  const { t, fmt } = useAdminScreen();
+  const formAction = useAdminFormAction();
+
   return (
-    <Panel title="Jobs & Queue Monitoring" subtitle="Current job records, duration, and failure visibility">
+    <Panel title={t('jobs.panelTitle')} subtitle={t('jobs.panelSubtitle')}>
       <StatusBanner status={status} />
-      <form action="/admin" className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-3">
+      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-3">
         <input type="hidden" name="section" value="jobs" />
         <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All statuses</option>
+          <option value="ALL">{t('common.allStatuses')}</option>
           {JOB_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
         <select name="type" defaultValue={filters.type} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
-          <option value="ALL">All job types</option>
+          <option value="ALL">{t('common.allJobTypes')}</option>
           {JOB_TYPE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">Apply Filters</button>
+        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
       </form>
 
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-start text-sm">
           <thead>
             <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
-              <th className="px-4 py-4 text-[10px] font-bold">Job</th>
-              <th className="px-4 py-4 text-[10px] font-bold">User / Workspace</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Status</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Credits</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Duration</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Error</th>
-              <th className="px-4 py-4 text-[10px] font-bold">Actions</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colJob')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colUserWorkspace')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colStatus')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colCredits')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colDuration')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colError')}</th>
+              <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colActions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100/80">
             {rows.map((row: any) => (
               <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
                 <td className="px-4 py-4">
-                  <p className="font-bold text-[#121212]">{row.type}</p>
-                  <p className="text-[10px] font-mono font-medium text-slate-400">{row.id}</p>
+                  <p className="font-bold text-[#121212]" dir="ltr">{row.type}</p>
+                  <p className="text-[10px] font-mono font-medium text-slate-400" dir="ltr">{row.id}</p>
                 </td>
                 <td className="px-4 py-4 text-xs font-semibold text-slate-600">
-                  <p className="text-[#121212]">{row.user.email}</p>
+                  <p className="text-[#121212]"><bdi>{row.user.email}</bdi></p>
                   <p className="text-slate-500">{row.workspace?.name || '-'}</p>
                 </td>
                 <td className="px-4 py-4">
@@ -1117,8 +1217,8 @@ function JobsSection({
                     {row.status}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.creditsCost}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{formatDuration(row.durationMs)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.number(row.creditsCost)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.duration(row.durationMs)}</td>
                 <td className="px-4 py-4 text-xs font-medium text-red-600 max-w-xs truncate">{row.errorMessage || '-'}</td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-2">
@@ -1126,7 +1226,7 @@ function JobsSection({
                       <input type="hidden" name="jobId" value={row.id} />
                       <input type="hidden" name="actionType" value="RETRY" />
                       <button className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-[#121212] shadow-sm transition-colors hover:bg-slate-50">
-                        Retry
+                        {t('jobs.retry')}
                       </button>
                     </form>
                     {row.status === 'PENDING' || row.status === 'RUNNING' ? (
@@ -1134,7 +1234,7 @@ function JobsSection({
                         <input type="hidden" name="jobId" value={row.id} />
                         <input type="hidden" name="actionType" value="CANCEL" />
                         <button className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-opacity hover:opacity-90">
-                          Cancel
+                          {t('jobs.cancel')}
                         </button>
                       </form>
                     ) : null}
@@ -1154,12 +1254,14 @@ function LogsSection({
 }: {
   logs: Awaited<ReturnType<typeof getAdminLogs>> | undefined;
 }) {
+  const t = useTranslations('admin');
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Panel title="Admin Audit Trail" subtitle="All admin-originated changes are recorded here">
+      <Panel title={t('logs.auditTitle')} subtitle={t('logs.auditSubtitle')}>
         <LogList rows={logs?.adminAuditLogs || []} />
       </Panel>
-      <Panel title="Platform Activity Logs" subtitle="Cross-feature user and workspace activity">
+      <Panel title={t('logs.activityTitle')} subtitle={t('logs.activitySubtitle')}>
         <LogList rows={logs?.activityLogs || []} />
       </Panel>
     </div>
@@ -1171,16 +1273,31 @@ function AnalyticsSection({
 }: {
   analytics: Awaited<ReturnType<typeof getAdminAnalytics>>;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   return (
     <div className="grid gap-4 lg:grid-cols-3">
-      <Panel title="Top Frameworks" subtitle="Framework adoption over the last 30 days">
-        <SimpleTable headers={['Framework', 'Events', 'Avg Score']} rows={analytics.frameworks.map((item: any) => [item.frameworkName, item.events.toLocaleString(), item.avgOverallScore?.toFixed(2) || '-'])} />
+      <Panel title={t('analytics.frameworksTitle')} subtitle={t('analytics.frameworksSubtitle')}>
+        <SimpleTable
+          headers={[t('analytics.colFramework'), t('analytics.colEvents'), t('analytics.colAvgScore')]}
+          rows={analytics.frameworks.map((item: any) => [
+            item.frameworkName,
+            fmt.number(item.events),
+            item.avgOverallScore != null ? fmt.decimal(item.avgOverallScore) : '-',
+          ])}
+        />
       </Panel>
-      <Panel title="Top Platforms" subtitle="Distribution by content channel">
-        <SimpleTable headers={['Platform', 'Count']} rows={analytics.platforms.map((item: any) => [item.channel, item.count.toLocaleString()])} />
+      <Panel title={t('analytics.platformsTitle')} subtitle={t('analytics.platformsSubtitle')}>
+        <SimpleTable
+          headers={[t('analytics.colPlatform'), t('analytics.colCount')]}
+          rows={analytics.platforms.map((item: any) => [item.channel, fmt.number(item.count)])}
+        />
       </Panel>
-      <Panel title="Highest Cost Features" subtitle="AI cost concentration by feature">
-        <SimpleTable headers={['Feature', 'Cost']} rows={analytics.aiCostByFeature.map((item: any) => [item.feature, formatUsd(item.costUsd)])} />
+      <Panel title={t('analytics.costTitle')} subtitle={t('analytics.costSubtitle')}>
+        <SimpleTable
+          headers={[t('analytics.colFeature'), t('analytics.colCost')]}
+          rows={analytics.aiCostByFeature.map((item: any) => [item.feature, fmt.usd(item.costUsd)])}
+        />
       </Panel>
     </div>
   );
@@ -1191,26 +1308,44 @@ function IntegrationsSection({
 }: {
   integrations: Awaited<ReturnType<typeof getAdminIntegrations>>;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <HealthCard title="Gemini" status={integrations.providers.geminiConfigured ? 'healthy' : 'FAILED'} description={integrations.providers.geminiConfigured ? 'API key configured.' : 'Missing GEMINI_API_KEY.'} />
-        <HealthCard title="OpenAI" status={integrations.providers.openAiConfigured ? 'healthy' : 'FAILED'} description={integrations.providers.openAiConfigured ? 'API key configured.' : 'Missing OPENAI_API_KEY.'} />
-        <HealthCard title="Redis" status={integrations.providers.redisConfigured ? 'healthy' : 'FAILED'} description={integrations.providers.redisConfigured ? 'Queue/cache provider configured.' : 'Missing REDIS_URL.'} />
-        <HealthCard title="DataForSEO" status={integrations.providers.dataForSeoConfigured ? 'healthy' : 'FAILED'} description={integrations.providers.dataForSeoConfigured ? 'Credentials configured.' : 'Credentials not configured.'} />
+        <HealthCard
+          title={t('health.gemini')}
+          status={integrations.providers.geminiConfigured ? 'healthy' : 'FAILED'}
+          description={integrations.providers.geminiConfigured ? t('health.apiKeyConfigured') : t('health.geminiKeyMissing')}
+        />
+        <HealthCard
+          title={t('health.openAi')}
+          status={integrations.providers.openAiConfigured ? 'healthy' : 'FAILED'}
+          description={integrations.providers.openAiConfigured ? t('health.apiKeyConfigured') : t('health.openAiKeyMissing')}
+        />
+        <HealthCard
+          title={t('health.redis')}
+          status={integrations.providers.redisConfigured ? 'healthy' : 'FAILED'}
+          description={integrations.providers.redisConfigured ? t('health.redisQueueProviderConfigured') : t('health.redisMissing')}
+        />
+        <HealthCard
+          title={t('health.dataForSeo')}
+          status={integrations.providers.dataForSeoConfigured ? 'healthy' : 'FAILED'}
+          description={integrations.providers.dataForSeoConfigured ? t('health.credentialsConfigured') : t('health.credentialsMissing')}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <Panel title="SEO Data Footprint" subtitle="Current stored external intelligence">
+        <Panel title={t('integrations.footprintTitle')} subtitle={t('integrations.footprintSubtitle')}>
           <div className="grid gap-3 sm:grid-cols-2">
-            <InfoPill label="Keyword Rows" value={integrations.seoData.keywordRows.toLocaleString()} />
-            <InfoPill label="SERP Analyses" value={integrations.seoData.serpRows.toLocaleString()} />
+            <InfoPill label={t('integrations.keywordRows')} value={fmt.number(integrations.seoData.keywordRows)} />
+            <InfoPill label={t('integrations.serpAnalyses')} value={fmt.number(integrations.seoData.serpRows)} />
           </div>
         </Panel>
-        <Panel title="AI Requests (24h)" subtitle="Recent provider load by model">
+        <Panel title={t('integrations.requestsTitle')} subtitle={t('integrations.requestsSubtitle')}>
           <SimpleTable
-            headers={['Model', 'Requests', 'Cost']}
-            rows={integrations.aiUsageLastDay.map((item: any) => [item.model, item.requests.toLocaleString(), formatUsd(item.costUsd)])}
+            headers={[t('integrations.colModel'), t('integrations.colRequests'), t('integrations.colCost')]}
+            rows={integrations.aiUsageLastDay.map((item: any) => [item.model, fmt.number(item.requests), fmt.usd(item.costUsd)])}
           />
         </Panel>
       </div>
@@ -1218,7 +1353,11 @@ function IntegrationsSection({
   );
 }
 
+/** Shared bold-value wrapper for the rich usage strings. */
+const boldValue = (chunks: React.ReactNode) => <span className="font-bold text-[#121212]">{chunks}</span>;
+
 function StatusBanner({ status }: { status: string }) {
+  const t = useTranslations('admin');
   if (!status) return null;
   const tone =
     status === 'saved'
@@ -1228,10 +1367,10 @@ function StatusBanner({ status }: { status: string }) {
         : 'border-amber-200/60 bg-amber-50 text-amber-700';
   const message =
     status === 'saved'
-      ? 'Change saved successfully.'
+      ? t('banner.saved')
       : status === 'failed'
-        ? 'Action failed. Check logs and retry.'
-        : 'Invalid input. Review the submitted values.';
+        ? t('banner.failed')
+        : t('banner.invalid');
 
   return <div className={`mb-6 flex items-center gap-3 rounded-2xl border px-5 py-4 text-sm font-semibold shadow-sm ${tone}`}>{message}</div>;
 }
@@ -1257,7 +1396,7 @@ function MetricCard({
     >
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
       {emphasis && (
-        <div className="absolute -right-6 -top-6 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-700 group-hover:scale-125 pointer-events-none" />
+        <div className="absolute -end-6 -top-6 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-700 group-hover:scale-125 pointer-events-none" />
       )}
       <div className="relative z-10">
         <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${emphasis ? 'text-emerald-700' : 'text-slate-400'}`}>{label}</p>
@@ -1338,7 +1477,7 @@ function DarkMetricCard({ label, value, emphasis }: { label: string; value: stri
       emphasis ? 'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'border-white/10 bg-white/5 backdrop-blur-md'
     }`}>
       {emphasis && (
-        <div className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-500 group-hover:scale-110 pointer-events-none" />
+        <div className="absolute -end-6 -top-6 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-500 group-hover:scale-110 pointer-events-none" />
       )}
       <div className="relative z-10">
         <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{label}</p>
@@ -1364,15 +1503,17 @@ function SimpleTable({
   headers: string[];
   rows: string[][];
 }) {
+  const t = useTranslations('admin');
+
   return rows.length === 0 ? (
-    <EmptyState text="No data available." />
+    <EmptyState text={t('common.noData')} />
   ) : (
     <div className="overflow-x-auto">
-      <table className="w-full text-left text-sm">
+      <table className="w-full text-start text-sm">
         <thead>
           <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
             {headers.map((header) => (
-              <th key={header} className="px-4 py-4 text-[10px] font-bold">{header}</th>
+              <th key={header} className="px-4 py-4 text-start text-[10px] font-bold">{header}</th>
             ))}
           </tr>
         </thead>
@@ -1395,20 +1536,23 @@ function LogList({
 }: {
   rows: Array<{ id: string; action: string; workspaceName: string | null; detail: unknown; createdAt: Date }>;
 }) {
+  const { t, fmt } = useAdminScreen();
+
   if (!rows.length) {
-    return <EmptyState text="No log entries recorded." />;
+    return <EmptyState text={t('common.noLogEntries')} />;
   }
 
   return (
-    <div className="max-h-[560px] space-y-4 overflow-auto pr-2">
+    <div className="max-h-[560px] space-y-4 overflow-auto pe-2">
       {rows.map((row) => (
         <div key={row.id} className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-slate-50 p-5 transition-colors hover:border-slate-300">
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm font-black tracking-tight text-[#121212]">{row.action}</p>
-            <p className="shrink-0 text-[11px] font-medium text-slate-400">{formatDateTime(row.createdAt)}</p>
+            {/* Event codes are stored values; they stay Latin and read LTR. */}
+            <p className="text-sm font-black tracking-tight text-[#121212]" dir="ltr">{row.action}</p>
+            <p className="shrink-0 text-[11px] font-medium text-slate-400">{fmt.dateTime(row.createdAt)}</p>
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-500">{row.workspaceName || 'Platform Level / No workspace'}</p>
-          <pre className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-slate-200/40 bg-white p-4 text-[11px] leading-relaxed text-slate-600 shadow-sm">
+          <p className="mt-1 text-xs font-semibold text-slate-500">{row.workspaceName || t('common.platformLevel')}</p>
+          <pre dir="ltr" className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-slate-200/40 bg-white p-4 text-start text-[11px] leading-relaxed text-slate-600 shadow-sm">
             {JSON.stringify(row.detail, null, 2)}
           </pre>
         </div>

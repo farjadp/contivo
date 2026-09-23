@@ -11,6 +11,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import {
   Linkedin,
   Twitter,
@@ -55,13 +56,17 @@ const PLATFORM_META: Record<string, { label: string; color: string; bg: string; 
   INSTAGRAM: { label: 'Instagram', color: '#E1306C', bg: '#FFF0F4', Icon: Instagram },
 };
 
-const STATUS_META: Record<string, { label: string; color: string; Icon: React.ElementType }> = {
-  CONNECTED:      { label: 'Connected',    color: 'text-green-600',  Icon: CheckCircle },
-  EXPIRED:        { label: 'Expired',      color: 'text-yellow-600', Icon: Clock },
-  FAILED:         { label: 'Failed',       color: 'text-red-600',    Icon: XCircle },
-  REVOKED:        { label: 'Revoked',      color: 'text-gray-500',   Icon: XCircle },
-  PENDING_REAUTH: { label: 'Needs re-auth',color: 'text-orange-500', Icon: AlertCircle },
+/** `key` indexes into `connections.accounts.status.*` — the label itself is copy. */
+const STATUS_META: Record<string, { key: string; color: string; Icon: React.ElementType }> = {
+  CONNECTED:      { key: 'connected',     color: 'text-green-600',  Icon: CheckCircle },
+  EXPIRED:        { key: 'expired',       color: 'text-yellow-600', Icon: Clock },
+  FAILED:         { key: 'failed',        color: 'text-red-600',    Icon: XCircle },
+  REVOKED:        { key: 'revoked',       color: 'text-gray-500',   Icon: XCircle },
+  PENDING_REAUTH: { key: 'pendingReauth', color: 'text-orange-500', Icon: AlertCircle },
 };
+
+/** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
+const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -70,10 +75,12 @@ export function ConnectedAccountsSection({
   workspaceId,
   onConnectNew,
 }: ConnectedAccountsSectionProps) {
+  const t = useTranslations('connections.accounts');
+  const format = useFormatter();
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleDisconnect = async (id: string) => {
-    if (!confirm('Disconnect this account? Published content will remain on the platform.')) return;
+    if (!confirm(t('disconnectConfirm'))) return;
     setLoading(`disconnect-${id}`);
     await disconnectSocialConnection(id, workspaceId);
     setLoading(null);
@@ -95,15 +102,15 @@ export function ConnectedAccountsSection({
     <div>
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-base font-bold text-[#121212]">Connected Accounts</h3>
-          <p className="text-xs text-gray-500 mt-0.5">Manage your linked social media accounts.</p>
+          <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
+          <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
         </div>
         <button
           onClick={onConnectNew}
           className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B2DFF] text-white px-4 py-2 text-sm font-semibold hover:bg-[#2325d4] transition-colors shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
-          Connect Account
+          {t('connect')}
         </button>
       </div>
 
@@ -119,14 +126,14 @@ export function ConnectedAccountsSection({
               );
             })}
           </div>
-          <p className="text-sm font-semibold text-gray-700">No accounts connected yet</p>
-          <p className="text-xs text-gray-400 mt-1 mb-4">Connect LinkedIn, X, or Facebook to start publishing directly from Contivo.</p>
+          <p className="text-sm font-semibold text-gray-700">{t('emptyTitle')}</p>
+          <p className="text-xs text-gray-400 mt-1 mb-4">{t.rich('emptyBody', { bdi })}</p>
           <button
             onClick={onConnectNew}
             className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B2DFF] text-white px-4 py-2 text-sm font-semibold hover:bg-[#2325d4] transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
-            Connect your first account
+            {t('emptyCta')}
           </button>
         </div>
       ) : (
@@ -159,7 +166,7 @@ export function ConnectedAccountsSection({
                       {account.isDefault && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
                           <Star className="w-2.5 h-2.5" />
-                          Default
+                          {t('defaultBadge')}
                         </span>
                       )}
                     </div>
@@ -171,13 +178,19 @@ export function ConnectedAccountsSection({
                   {/* Status */}
                   <span className={`inline-flex items-center gap-1 text-xs font-semibold ${status.color}`}>
                     <StatusIcon className="w-3.5 h-3.5" />
-                    {status.label}
+                    {t(`status.${status.key}`)}
                   </span>
 
                   {/* Last sync */}
                   {account.lastSyncAt && (
                     <span className="text-xs text-gray-400 hidden md:block">
-                      Synced {new Date(account.lastSyncAt).toLocaleDateString()}
+                      {/* Formatted through next-intl so the Persian side gets the
+                          Persian calendar, Persian digits and Tehran time. */}
+                      {t('synced', {
+                        date: format.dateTime(new Date(account.lastSyncAt), {
+                          dateStyle: 'medium',
+                        }),
+                      })}
                     </span>
                   )}
 
@@ -187,7 +200,7 @@ export function ConnectedAccountsSection({
                       <button
                         onClick={() => handleSetDefault(account.id)}
                         disabled={isLoading}
-                        title="Set as default"
+                        title={t('setDefault')}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 transition-colors disabled:opacity-50"
                       >
                         <Star className="w-4 h-4" />
@@ -197,17 +210,17 @@ export function ConnectedAccountsSection({
                       <button
                         onClick={() => handleReconnect(account.id)}
                         disabled={isLoading}
-                        title="Reconnect account"
+                        title={t('reconnectTitle')}
                         className="inline-flex items-center gap-1 text-xs font-semibold text-[#2B2DFF] hover:underline disabled:opacity-50"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
-                        Reconnect
+                        {t('reconnect')}
                       </button>
                     )}
                     <button
                       onClick={() => handleDisconnect(account.id)}
                       disabled={isLoading}
-                      title="Disconnect"
+                      title={t('disconnectTitle')}
                       className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />

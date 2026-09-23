@@ -1,23 +1,70 @@
 import type { ReactNode } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 
-export function formatUsd(value: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(value);
-}
+/**
+ * next-intl's formatter, as the hook hands it back. `Formatter` is not exported
+ * under that name, and inferring it here keeps these helpers honest if the
+ * library's shape ever changes.
+ */
+type Formatter = ReturnType<typeof useFormatter>;
 
-export function formatDateTime(value: Date | string | null | undefined): string {
-  if (!value) return '-';
-  return new Date(value).toLocaleString();
-}
+/** The subset of a namespace translator these helpers need. */
+type UnitTranslator = (key: string, values?: Record<string, string | number | Date>) => string;
 
-export function formatDuration(value: number | null | undefined): string {
-  if (!value || value <= 0) return '-';
-  if (value < 1000) return `${value} ms`;
-  return `${(value / 1000).toFixed(1)} s`;
+/**
+ * Number, money, date and duration formatting for the admin console.
+ *
+ * Every number on these screens is data — a cost, a token count, a balance —
+ * so none of it is written into a message string. It goes through the
+ * request's formatter instead, which is what makes `1,204` come back as
+ * `۱٬۲۰۴` and a timestamp come back on the Persian calendar in Tehran time
+ * without a single per-locale branch in a component.
+ *
+ * Pages build one of these with `getFormatter()` + `getTranslations('admin')`
+ * and pass it down; the plain functions cannot call hooks themselves.
+ */
+export type AdminFormat = {
+  number: (value: number | bigint | null | undefined) => string;
+  decimal: (value: number | null | undefined, fractionDigits?: number) => string;
+  usd: (value: number) => string;
+  dateTime: (value: Date | string | null | undefined) => string;
+  duration: (value: number | null | undefined) => string;
+};
+
+export function createAdminFormat(format: Formatter, t: UnitTranslator): AdminFormat {
+  const number: AdminFormat['number'] = (value) => {
+    if (value == null) return '-';
+    return format.number(value);
+  };
+
+  return {
+    number,
+    decimal: (value, fractionDigits = 2) => {
+      if (value == null || Number.isNaN(value)) return '-';
+      return format.number(value, {
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      });
+    },
+    usd: (value) =>
+      format.number(value, {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 4,
+      }),
+    dateTime: (value) => {
+      if (!value) return '-';
+      return format.dateTime(new Date(value), { dateStyle: 'medium', timeStyle: 'short' });
+    },
+    duration: (value) => {
+      if (!value || value <= 0) return '-';
+      if (value < 1000) return t('units.milliseconds', { value: format.number(value) });
+      return t('units.seconds', {
+        value: format.number(value / 1000, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
+      });
+    },
+  };
 }
 
 export function getStatusTone(status: string): string {
@@ -50,7 +97,9 @@ export function PageHeader({
     <div className="rounded-3xl border border-gray-200 bg-gradient-to-br from-white via-white to-slate-50 p-6 shadow-sm">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <a href={backHref} className="text-sm font-medium text-slate-500 transition hover:text-black">
+          <a href={backHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-black">
+            {/* The arrow points back the way the reader came, so it flips with the page. */}
+            <span aria-hidden className="inline-block rtl:rotate-180">←</span>
             {backLabel}
           </a>
           <h1 className="mt-3 text-3xl font-bold tracking-tight text-[#121212]">{title}</h1>
@@ -152,8 +201,11 @@ export function LogList({
 }: {
   rows: Array<{ id: string; action: string; workspaceName: string | null; detail: unknown; createdAt: Date }>;
 }) {
+  const t = useTranslations('admin');
+  const format = useFormatter();
+
   if (!rows.length) {
-    return <EmptyState text="No log entries recorded." />;
+    return <EmptyState text={t('common.noLogEntries')} />;
   }
 
   return (
@@ -161,11 +213,14 @@ export function LogList({
       {rows.map((row) => (
         <div key={row.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
           <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-bold text-[#121212]">{row.action}</p>
-            <p className="text-[11px] text-slate-400">{formatDateTime(row.createdAt)}</p>
+            {/* Audit action codes are stored values, so they stay Latin and LTR. */}
+            <p className="text-sm font-bold text-[#121212]" dir="ltr">{row.action}</p>
+            <p className="text-[11px] text-slate-400">
+              {format.dateTime(new Date(row.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}
+            </p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">{row.workspaceName || 'No workspace'}</p>
-          <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-white p-2 text-[11px] text-slate-600">
+          <p className="mt-1 text-xs text-slate-500">{row.workspaceName || t('common.noWorkspace')}</p>
+          <pre dir="ltr" className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-white p-2 text-start text-[11px] text-slate-600">
             {JSON.stringify(row.detail, null, 2)}
           </pre>
         </div>

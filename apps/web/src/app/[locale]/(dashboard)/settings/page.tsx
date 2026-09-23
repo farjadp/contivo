@@ -12,9 +12,13 @@ import {
   getIdeationMaxContentCount,
 } from '@/lib/app-settings';
 import { WORD_COUNT_LIMIT_ABSOLUTE_MAX, WORD_COUNT_LIMIT_ABSOLUTE_MIN, WORD_COUNT_PLATFORM_LABELS, WORD_COUNT_PLATFORMS } from '@/lib/content-word-count';
-import { getLocale } from 'next-intl/server';
+import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 
-export const metadata = { title: 'Settings' };
+export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'settings' });
+  return { title: t('meta.title') };
+}
 
 function prettyAction(action: string): string {
   return action
@@ -25,10 +29,13 @@ function prettyAction(action: string): string {
 }
 
 type Props = {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
 export default async function SettingsPage({ searchParams }: Props) {
+  const t = await getTranslations('settings');
+  const format = await getFormatter();
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
   const resolvedSearchParams = await searchParams;
@@ -45,60 +52,58 @@ export default async function SettingsPage({ searchParams }: Props) {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212]">Settings</h1>
-        <p className="text-gray-500 mt-2 text-sm">
-          Account preferences and activity logs for your workspace operations.
-        </p>
+        <h1 className="text-3xl font-bold tracking-tight text-[#121212]">{t('title')}</h1>
+        <p className="text-gray-500 mt-2 text-sm">{t('subtitle')}</p>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#121212] mb-4">Workspace Limits</h2>
+        <h2 className="text-lg font-bold text-[#121212] mb-4">{t('limits.title')}</h2>
         {limitsStatus === 'saved' ? (
           <div className="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
-            Limits updated successfully.
+            {t('limits.saved')}
           </div>
         ) : null}
         {limitsStatus === 'invalid' ? (
           <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Invalid limit value. Use an integer between {PLATFORM_LIMIT_MIN} and {PLATFORM_LIMIT_MAX}.
+            {t('limits.invalid', { min: PLATFORM_LIMIT_MIN, max: PLATFORM_LIMIT_MAX })}
           </div>
         ) : null}
         {limitsStatus === 'failed' ? (
           <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            Could not save limits. Check database connection and retry.
+            {t('limits.failed')}
           </div>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">
-              Competitive Landscape
+              {t('limits.competitiveLabel')}
             </p>
             <p className="text-sm font-medium text-[#121212]">
-              {competitiveLimit} AI discovery runs per workspace
+              {t('limits.competitiveValue', { count: competitiveLimit })}
             </p>
           </div>
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">
-              Brand Memory
+              {t('limits.brandLabel')}
             </p>
             <p className="text-sm font-medium text-[#121212]">
-              {brandMemoryLimit} rescrape attempts per workspace
+              {t('limits.brandValue', { count: brandMemoryLimit })}
             </p>
           </div>
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">
-              Ideation
+              {t('limits.ideationLabel')}
             </p>
             <p className="text-sm font-medium text-[#121212]">
-              {ideationMaxContentCount} max ideas per generation
+              {t('limits.ideationValue', { count: ideationMaxContentCount })}
             </p>
           </div>
         </div>
 
         <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
           <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-2">
-            Content Word Count Limits (Per Platform)
+            {t('limits.wordCountTitle')}
           </p>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {WORD_COUNT_PLATFORMS.map((platform) => (
@@ -107,7 +112,10 @@ export default async function SettingsPage({ searchParams }: Props) {
                   {WORD_COUNT_PLATFORM_LABELS[platform]}
                 </p>
                 <p className="mt-1 text-sm font-medium text-[#121212]">
-                  {wordCountLimits[platform].min} - {wordCountLimits[platform].max} words
+                  {t('limits.wordCountRange', {
+                    min: wordCountLimits[platform].min,
+                    max: wordCountLimits[platform].max,
+                  })}
                 </p>
               </div>
             ))}
@@ -119,7 +127,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             <input type="hidden" name="redirectTo" value="/settings" />
             <label className="space-y-2">
               <span className="block text-xs uppercase tracking-widest text-gray-500 font-semibold">
-                Competitive Landscape Limit
+                {t('limits.competitiveField')}
               </span>
               <input
                 type="number"
@@ -133,7 +141,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             </label>
             <label className="space-y-2">
               <span className="block text-xs uppercase tracking-widest text-gray-500 font-semibold">
-                Brand Memory Limit
+                {t('limits.brandField')}
               </span>
               <input
                 type="number"
@@ -147,7 +155,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             </label>
             <label className="space-y-2">
               <span className="block text-xs uppercase tracking-widest text-gray-500 font-semibold">
-                Ideation Max Content Count
+                {t('limits.ideationField')}
               </span>
               <input
                 type="number"
@@ -161,7 +169,7 @@ export default async function SettingsPage({ searchParams }: Props) {
             </label>
             <div className="md:col-span-3">
               <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-[#121212]">Word Count Limits</p>
+                <p className="text-sm font-semibold text-[#121212]">{t('limits.wordCountField')}</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   {WORD_COUNT_PLATFORMS.map((platform) => (
                     <div key={platform} className="rounded-md border border-gray-200 bg-white p-3">
@@ -170,7 +178,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                       </p>
                       <div className="mt-2 grid grid-cols-2 gap-2">
                         <label className="space-y-1">
-                          <span className="block text-[11px] font-medium text-gray-500">Min</span>
+                          <span className="block text-[11px] font-medium text-gray-500">{t('limits.min')}</span>
                           <input
                             type="number"
                             name={`wordMin_${platform}`}
@@ -182,7 +190,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                           />
                         </label>
                         <label className="space-y-1">
-                          <span className="block text-[11px] font-medium text-gray-500">Max</span>
+                          <span className="block text-[11px] font-medium text-gray-500">{t('limits.max')}</span>
                           <input
                             type="number"
                             name={`wordMax_${platform}`}
@@ -202,7 +210,7 @@ export default async function SettingsPage({ searchParams }: Props) {
                 type="submit"
                 className="inline-flex items-center rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-[#1f1f1f]"
               >
-                Save Limits
+                {t('limits.save')}
               </button>
             </div>
           </form>
@@ -210,23 +218,23 @@ export default async function SettingsPage({ searchParams }: Props) {
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#121212] mb-4">Account</h2>
+        <h2 className="text-lg font-bold text-[#121212] mb-4">{t('account.title')}</h2>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">Email</p>
+            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">{t('account.email')}</p>
             <p className="text-sm font-medium text-[#121212]">{session.email}</p>
           </div>
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">Role</p>
+            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold mb-1">{t('account.role')}</p>
             <p className="text-sm font-medium text-[#121212]">{session.role}</p>
           </div>
         </div>
       </div>
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-[#121212] mb-4">Activity Logs</h2>
+        <h2 className="text-lg font-bold text-[#121212] mb-4">{t('activity.title')}</h2>
         {logs.length === 0 ? (
-          <p className="text-sm text-gray-500">No activity logs yet.</p>
+          <p className="text-sm text-gray-500">{t('activity.empty')}</p>
         ) : (
           <div className="space-y-3">
             {logs.map((log) => (
@@ -235,11 +243,16 @@ export default async function SettingsPage({ searchParams }: Props) {
                   <div>
                     <p className="text-sm font-bold text-[#121212]">{prettyAction(log.action)}</p>
                     <p className="text-xs text-gray-500">
-                      {log.workspaceName ? `Workspace: ${log.workspaceName}` : 'Workspace: n/a'}
+                      {log.workspaceName
+                        ? t('activity.workspace', { name: log.workspaceName })
+                        : t('activity.workspaceNone')}
                     </p>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {new Date(log.createdAt).toLocaleString()}
+                    {format.dateTime(new Date(log.createdAt), {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    })}
                   </p>
                 </div>
                 {log.detail ? (

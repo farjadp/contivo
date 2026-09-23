@@ -11,6 +11,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Users, Settings, Clock, History } from 'lucide-react';
 import { ConnectedAccountsSection } from './ConnectedAccountsSection';
 import { PublishRulesSection } from './PublishRulesSection';
@@ -54,11 +55,17 @@ interface SocialChannelsTabProps {
 
 // ─── Tab config ───────────────────────────────────────────────────────────────
 
-const TABS: { id: TabId; label: string; Icon: React.ElementType }[] = [
-  { id: 'accounts', label: 'Connected Accounts', Icon: Users },
-  { id: 'rules',    label: 'Publish Rules',      Icon: Settings },
-  { id: 'queue',    label: 'Publish Queue',       Icon: Clock },
-  { id: 'history',  label: 'Publish History',     Icon: History },
+/*
+  The narrow-screen label used to be `label.split(' ')[0]`, which is a rule
+  about English word order: in English it produced three identical
+  "Publish" tabs, and in Persian it would cut a phrase in half. Each tab now
+  carries its own short label instead.
+*/
+const TABS: { id: TabId; key: string; Icon: React.ElementType }[] = [
+  { id: 'accounts', key: 'accounts', Icon: Users },
+  { id: 'rules',    key: 'rules',    Icon: Settings },
+  { id: 'queue',    key: 'queue',    Icon: Clock },
+  { id: 'history',  key: 'history',  Icon: History },
 ];
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -68,6 +75,7 @@ export function SocialChannelsTab({
   jobs,
   workspaceId,
 }: SocialChannelsTabProps) {
+  const t = useTranslations('connections.socialTabs');
   const [activeTab, setActiveTab] = useState<TabId>('accounts');
   const [showConnectModal, setShowConnectModal] = useState(false);
 
@@ -75,7 +83,7 @@ export function SocialChannelsTab({
     <div>
       {/* Sub-tabs */}
       <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-6 overflow-x-auto">
-        {TABS.map(({ id, label, Icon }) => (
+        {TABS.map(({ id, key, Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
@@ -87,8 +95,8 @@ export function SocialChannelsTab({
             )}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">{label}</span>
-            <span className="sm:hidden">{label.split(' ')[0]}</span>
+            <span className="hidden sm:inline">{t(key)}</span>
+            <span className="sm:hidden">{t(`${key}Short`)}</span>
           </button>
         ))}
       </div>

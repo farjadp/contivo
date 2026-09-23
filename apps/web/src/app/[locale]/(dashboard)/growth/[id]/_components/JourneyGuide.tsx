@@ -1,11 +1,13 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
+
 import { Link } from '@/i18n/navigation';
 import { ArrowRight, Check, Lock, Sparkles, X } from 'lucide-react';
 
 import { explainNextStep, type GuideAnswer } from '@/app/actions/guide';
-import type { Journey } from '@/lib/workspace-journey';
+import type { Journey, Msg } from '@/lib/workspace-journey';
 
 /**
  * The setup rail: shows the dependency chain as a chain, marks where the user
@@ -13,6 +15,14 @@ import type { Journey } from '@/lib/workspace-journey';
  * Collapses to a thin bar once setup is complete so it stops taking space.
  */
 export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; journey: Journey }) {
+  const t = useTranslations('journey');
+  const tg = useTranslations('journeyGuide');
+  /*
+    `buildJourney` runs on the server with no request context, so it names its
+    sentences instead of writing them. This is where they become words.
+  */
+  const msg = (m: Msg) => t(m.key, m.values);
+
   const [answer, setAnswer] = useState<GuideAnswer | null>(null);
   const [error, setError] = useState('');
   const [isAsking, ask] = useTransition();
@@ -34,9 +44,9 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
       <div className="flex flex-wrap items-center justify-between gap-3 border border-ink-200 bg-white px-5 py-3">
         <p className="flex items-center gap-2 text-[13px] text-ink-700">
           <Check className="h-4 w-4 text-signal-dim" />
-          Setup complete — brand, market, keywords, channel and Autopilot are all in place.
+          {tg('complete')}
         </p>
-        <GuideButton onClick={handleAsk} pending={isAsking} label="What now?" />
+        <GuideButton onClick={handleAsk} pending={isAsking} label={tg('whatNow')} />
         {answer && <GuideBubble answer={answer} onClose={() => setAnswer(null)} />}
       </div>
     );
@@ -85,15 +95,17 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
                 <span
                   className={`text-[13px] ${isCurrent ? 'font-semibold text-ink-900' : isDone ? 'text-ink-700' : 'text-ink-400'}`}
                 >
-                  {s.title}
+                  {msg(s.title)}
                 </span>
               </div>
-              <p className={`mt-1.5 pl-7 text-[12px] ${isLocked ? 'text-ink-400' : 'text-ink-600'}`}>
-                {isLocked ? `Needs ${s.blockedBy}` : s.detail}
+              <p className={`mt-1.5 ps-7 text-[12px] ${isLocked ? 'text-ink-400' : 'text-ink-600'}`}>
+                {isLocked && s.blockedBy
+                  ? tg('needs', { what: msg(s.blockedBy) })
+                  : msg(s.detail)}
               </p>
               {isCurrent && (
-                <p className="mt-2 inline-flex items-center gap-1.5 pl-7 text-[12px] font-medium text-ink-900">
-                  {s.action} <ArrowRight className="h-3 w-3" />
+                <p className="mt-2 inline-flex items-center gap-1.5 ps-7 text-[12px] font-medium text-ink-900">
+                  {msg(s.action)} <ArrowRight className="h-3 w-3 rtl:rotate-180" />
                 </p>
               )}
             </>
@@ -102,7 +114,10 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
           return (
             <li key={s.id} className={`bg-white p-4 ${isCurrent ? 'ring-1 ring-inset ring-ink-900' : ''}`}>
               {isLocked ? (
-                <div className="cursor-not-allowed opacity-70" title={`Needs ${s.blockedBy}`}>
+                <div
+                  className="cursor-not-allowed opacity-70"
+                  title={s.blockedBy ? tg('needs', { what: msg(s.blockedBy) }) : undefined}
+                >
                   {content}
                 </div>
               ) : (
@@ -119,13 +134,13 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
       {next && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-ink-100 bg-paper px-5 py-3">
           <p className="text-[13px] text-ink-700">
-            <span className="font-semibold text-ink-900">You are here:</span> {next.why}
+            <span className="font-semibold text-ink-900">{tg('youAreHere')}</span> {msg(next.why)}
           </p>
           <Link
             href={next.href as never}
             className="inline-flex shrink-0 items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800"
           >
-            {next.action} <ArrowRight className="h-4 w-4" />
+            {msg(next.action)} <ArrowRight className="h-4 w-4 rtl:rotate-180" />
           </Link>
         </div>
       )}

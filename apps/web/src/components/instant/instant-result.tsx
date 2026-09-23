@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Check, Copy, RefreshCw, Linkedin, Twitter, Mail, BookOpen, Camera } from 'lucide-react';
 import type { ContentItem } from '@contivo/types';
 
@@ -8,15 +9,12 @@ import { cn } from '@/lib/utils';
 
 // ─── Channel → icon + label ───────────────────────────────────────────────────
 
-const CHANNEL_META: Record<
-  string,
-  { label: string; Icon: React.ElementType; color: string }
-> = {
-  linkedin: { label: 'LinkedIn Post', Icon: Linkedin, color: 'text-blue-400' },
-  twitter: { label: 'X Thread', Icon: Twitter, color: 'text-sky-400' },
-  instagram: { label: 'Instagram Caption', Icon: Camera, color: 'text-pink-400' },
-  email: { label: 'Email Draft', Icon: Mail, color: 'text-violet-400' },
-  blog: { label: 'Blog Outline', Icon: BookOpen, color: 'text-emerald-400' },
+const CHANNEL_META: Record<string, { Icon: React.ElementType; color: string }> = {
+  linkedin: { Icon: Linkedin, color: 'text-blue-400' },
+  twitter: { Icon: Twitter, color: 'text-sky-400' },
+  instagram: { Icon: Camera, color: 'text-pink-400' },
+  email: { Icon: Mail, color: 'text-violet-400' },
+  blog: { Icon: BookOpen, color: 'text-emerald-400' },
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -32,14 +30,17 @@ interface InstantResultProps {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function InstantResult({ item, creditsRemaining, onReset }: InstantResultProps) {
+  const t = useTranslations('instant.result');
+  const format = useFormatter();
   const [copied, setCopied] = useState(false);
 
-  const meta = CHANNEL_META[item.channel] ?? {
-    label: item.channel,
-    Icon: BookOpen,
-    color: 'text-muted-foreground',
-  };
-  const { label, Icon, color } = meta;
+  const meta = CHANNEL_META[item.channel] ?? { Icon: BookOpen, color: 'text-muted-foreground' };
+  const { Icon, color } = meta;
+  /*
+    An unknown channel falls back to the raw value from the API rather than to
+    a translated label that would be a lie about what was generated.
+  */
+  const label = item.channel in CHANNEL_META ? t(item.channel as never) : item.channel;
 
   async function handleCopy() {
     await navigator.clipboard.writeText(item.content);
@@ -50,7 +51,7 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
   return (
     <div className="relative rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
       {/* Top accent gradient bar */}
-      <div className="absolute top-0 left-0 right-0 h-1 bg-brand-gradient" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -76,22 +77,22 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
             {copied ? (
               <>
                 <Check className="h-3 w-3" />
-                Copied!
+                {t('copied')}
               </>
             ) : (
               <>
                 <Copy className="h-3 w-3" />
-                Copy
+                {t('copy')}
               </>
             )}
           </button>
           <button
             onClick={onReset}
-            title="Generate again"
+            title={t('regenerate')}
             className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-all hover:border-muted-foreground hover:text-foreground"
           >
             <RefreshCw className="h-3 w-3" />
-            New
+            {t('new')}
           </button>
         </div>
       </div>
@@ -99,14 +100,19 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
       {/* ── Topic label ─────────────────────────────────────────────────── */}
       <div className="border-b border-border/50 px-5 py-2">
         <p className="text-xs text-muted-foreground">
-          <span className="font-medium text-foreground/60">Topic: </span>
-          {item.topic}
+          <span className="font-medium text-foreground/60">{t('topicLabel')}</span>
+          <bdi>{item.topic}</bdi>
         </p>
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       <div className="px-5 py-5">
-        <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
+        {/*
+          `dir="auto"` because the generated post is not necessarily in the
+          locale's language: an English draft inside a Persian page has to keep
+          its own direction, or its punctuation ends up on the wrong end.
+        */}
+        <pre dir="auto" className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-foreground">
           {item.content}
         </pre>
       </div>
@@ -115,19 +121,18 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
       <div className="flex items-center justify-between border-t border-border/50 px-5 py-2.5">
         <div className="flex items-center gap-3">
           <span className="text-[11px] text-muted-foreground">
-            {item.creditsCost} credit{item.creditsCost !== 1 ? 's' : ''} used
+            {t('creditsUsed', { count: item.creditsCost ?? 0 })}
           </span>
           {creditsRemaining !== undefined && (
             <span className="text-[11px] font-medium text-brand-cyan">
-              {creditsRemaining} remaining
+              {t('creditsRemaining', { count: creditsRemaining })}
             </span>
           )}
         </div>
+        {/* Through the formatter, so a Persian reader gets Persian digits and
+            Tehran time rather than the browser's idea of both. */}
         <span className="text-[11px] text-muted-foreground">
-          {new Date(item.createdAt).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          {format.dateTime(new Date(item.createdAt), { hour: '2-digit', minute: '2-digit' })}
         </span>
       </div>
     </div>
