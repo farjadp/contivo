@@ -26,6 +26,7 @@ import { convertHtmlToPdf } from '@/lib/html-to-pdf';
 import path from 'path';
 import fs from 'fs/promises';
 import { asContentLanguage } from '@/lib/content-language';
+import { missingReportRequirements } from '@/lib/report-readiness';
 
 // How many reports a user may generate per calendar month
 const MONTHLY_LIMIT = 5;
@@ -78,22 +79,7 @@ export async function checkReportEligibility(workspaceId: string) {
   if (!workspace) throw new Error(NOT_FOUND);
 
   const insights = workspace.audienceInsights as any;
-  const missingData: string[] = [];
-
-  if (!workspace.brandSummary) missingData.push('Brand Memory');
-
-  // DB key: competitiveMatrices.charts (array)
-  if (!insights?.competitiveMatrices?.charts || insights.competitiveMatrices.charts.length < 5)
-    missingData.push('Market Matrices (5 charts required)');
-
-  // DB key: competitorKeywordsIntel.competitors (array)
-  if (!insights?.competitorKeywordsIntel?.competitors?.length)
-    missingData.push('Competitor Keywords');
-
-  // DB key: productsServicesIntel.client_offerings.offerings (array)
-  // Note: snake_case field names — the AI uses client_offerings not clientOfferings
-  if (!insights?.productsServicesIntel?.client_offerings?.offerings?.length)
-    missingData.push('Products & Services');
+  const missingData = missingReportRequirements(workspace.brandSummary, insights);
 
   return {
     canGenerate: reportsThisMonth < MONTHLY_LIMIT && missingData.length === 0,

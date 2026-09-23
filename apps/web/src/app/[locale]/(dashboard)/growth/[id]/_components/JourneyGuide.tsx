@@ -1,6 +1,6 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useState, useTransition } from 'react';
 
 import { Link } from '@/i18n/navigation';
@@ -17,6 +17,7 @@ import type { Journey, Msg } from '@/lib/workspace-journey';
 export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; journey: Journey }) {
   const t = useTranslations('journey');
   const tg = useTranslations('journeyGuide');
+  const format = useFormatter();
   /*
     `buildJourney` runs on the server with no request context, so it names its
     sentences instead of writing them. This is where they become words.
@@ -59,15 +60,19 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
       {/* Progress header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink-100 px-5 py-3">
         <div className="flex items-center gap-3">
-          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-400">Setup</span>
+          <span className="font-mono text-[11px] uppercase tracking-widest text-ink-400">
+            {tg('setup')}
+          </span>
+          {/* Through the formatter so the counter reads ۳ / ۶ in Persian
+              rather than Persian words around Latin digits. */}
           <span className="font-mono text-[12px] text-ink-900">
-            {journey.completed} / {journey.total}
+            {format.number(journey.completed)} / {format.number(journey.total)}
           </span>
           <span className="h-1 w-28 bg-ink-100">
             <span className="block h-1 bg-ink-900" style={{ width: `${journey.percent}%` }} />
           </span>
         </div>
-        <GuideButton onClick={handleAsk} pending={isAsking} label="Explain this step" />
+        <GuideButton onClick={handleAsk} pending={isAsking} label={tg('explainStep')} />
       </div>
 
       {/* The chain */}
@@ -177,6 +182,8 @@ function GuideBubble({
   onClose: () => void;
   inline?: boolean;
 }) {
+  const tg = useTranslations('journeyGuide');
+
   return (
     <div className={inline ? '' : 'w-full'}>
       <div className="flex items-start justify-between gap-3">
@@ -188,14 +195,14 @@ function GuideBubble({
               href={answer.href as never}
               className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-900 underline underline-offset-4"
             >
-              {answer.action} <ArrowRight className="h-3.5 w-3.5" />
+              {answer.action} <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
             </Link>
           )}
           <p className="mt-2 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
-            {answer.source === 'ai' ? 'written for this brand' : 'guide'}
+            {tg(answer.source === 'ai' ? 'writtenForBrand' : 'guideLabel')}
           </p>
         </div>
-        <button onClick={onClose} className="shrink-0 text-ink-400 hover:text-ink-900" aria-label="Dismiss">
+        <button onClick={onClose} className="shrink-0 text-ink-400 hover:text-ink-900" aria-label={tg('dismiss')}>
           <X className="h-4 w-4" />
         </button>
       </div>

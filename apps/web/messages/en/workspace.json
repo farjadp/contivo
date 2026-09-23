@@ -75,6 +75,11 @@
     "nextHeadline": "Next: {step}",
     "nextBody": "{why} Right now: {detail}.",
     "gateBlocked": "This step is not ready yet — {reason}.",
-    "gateConsequence": "Running it now will produce nothing useful."
+    "gateConsequence": "Running it now will produce nothing useful.",
+    "setup": "Setup",
+    "explainStep": "Explain this step",
+    "dismiss": "Dismiss",
+    "writtenForBrand": "written for this brand",
+    "guideLabel": "guide"
   }
 }

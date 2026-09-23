@@ -75,6 +75,11 @@
     "nextHeadline": "مرحلهٔ بعد: {step}",
     "nextBody": "{why} وضعیت فعلی: {detail}.",
     "gateBlocked": "این مرحله هنوز آماده نیست؛ {reason}.",
-    "gateConsequence": "اجرای الانش نتیجهٔ به‌دردبخوری ندارد."
+    "gateConsequence": "اجرای الانش نتیجهٔ به‌دردبخوری ندارد.",
+    "setup": "راه‌اندازی",
+    "explainStep": "این مرحله را توضیح بده",
+    "dismiss": "بستن",
+    "writtenForBrand": "برای همین برند نوشته شده",
+    "guideLabel": "راهنما"
   }
 }

@@ -1,0 +1,346 @@
+{
+  "tabsA": {
+    "common": {
+      "attachFiles": "Attach files (PDF/TXT/MD/CSV/JSON)",
+      "maxFiles": "Max {count, number}",
+      "extracting": "Extracting text from attached files...",
+      "tokensApprox": "{count, number} tokens approx extracted",
+      "remove": "Remove",
+      "cancel": "Cancel",
+      "date": "Date",
+      "time": "Time",
+      "timezone": "Timezone"
+    },
+    "channels": {
+      "linkedin": "LinkedIn",
+      "twitter": "X (Twitter)",
+      "instagram": "Instagram",
+      "blog": "Blog",
+      "email": "Email"
+    },
+    "goals": {
+      "authority": "Authority",
+      "awareness": "Awareness",
+      "engagement": "Engagement",
+      "leads": "Leads",
+      "education": "Education",
+      "conversion": "Conversion",
+      "strategic_education": "Strategic Education",
+      "decision_support": "Decision Support"
+    },
+    "platforms": {
+      "linkedin": "LinkedIn",
+      "x": "X / Twitter",
+      "blog": "Blog",
+      "email": "Email",
+      "landing_page": "Landing Page",
+      "ad": "Ad Copy",
+      "strategy_note": "Strategy Note"
+    },
+    "funnel": {
+      "AUTO": "Auto",
+      "TOFU": "TOFU",
+      "MOFU": "MOFU",
+      "BOFU": "BOFU"
+    },
+    "frameworks": {
+      "hook_value_cta": "Hook → Value → CTA",
+      "problem_cause_solution": "Problem → Cause → Solution",
+      "what_why_how": "What → Why → How",
+      "opinion_reason_example": "Strong Opinion → Reason → Example",
+      "aida": "AIDA",
+      "insight_implication_action": "Insight → Implication → Action"
+    },
+    "wordCountPlatforms": {
+      "blog": "Blog / Article",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "Email",
+      "instagram": "Instagram"
+    },
+    "timezones": {
+      "America/Toronto": "Eastern Time (ET)",
+      "America/Los_Angeles": "Pacific Time (PT)",
+      "Europe/London": "London (GMT)"
+    },
+    "contentStatus": {
+      "DRAFT": "DRAFT",
+      "GENERATED": "GENERATED",
+      "READY": "READY",
+      "SCHEDULED": "SCHEDULED",
+      "PUBLISHED": "PUBLISHED",
+      "FAILED": "FAILED"
+    },
+    "autopilot": {
+      "agents": {
+        "title": "Agents",
+        "body": "Each agent is one job with its own cadence, channels and steering. They share the workspace's intelligence and never book the same slot twice.",
+        "new": "New agent",
+        "on": "On",
+        "off": "Off",
+        "postsPerWeek": "{count, number}/week",
+        "noChannel": "no channel",
+        "lastRun": "last run {date}",
+        "created": "{name} created. Review the settings, then enable it.",
+        "recipesTitle": "Start from a recipe"
+      },
+      "recipes": {
+        "requiresSite": "needs a website",
+        "requiresSocial": "needs a social account",
+        "requiresEither": "any channel",
+        "linkedin_voice": {
+          "name": "LinkedIn voice",
+          "tagline": "Short, opinionated posts in your voice, a few times a week."
+        },
+        "blog_writer": {
+          "name": "Blog writer",
+          "tagline": "Long-form articles published straight to your website."
+        },
+        "thought_leader": {
+          "name": "Thought leader",
+          "tagline": "Fewer posts, bigger arguments, aimed at your buyer."
+        },
+        "product_updates": {
+          "name": "Product & offers",
+          "tagline": "Turns what you sell into a steady drumbeat."
+        },
+        "custom": {
+          "name": "Custom agent",
+          "tagline": "Start blank and set every dial yourself."
+        }
+      },
+      "status": {
+        "defaultName": "Autopilot",
+        "body": "When on, Contivo ideates, drafts and schedules posts for you on a cadence — no clicks. Publishing happens automatically when each slot arrives.",
+        "label": "Status:",
+        "on": "ON",
+        "off": "OFF",
+        "lastRun": "Last run: {date}",
+        "nextRun": "Next run: {date}"
+      },
+      "actions": {
+        "runNow": "Run now",
+        "running": "Running…",
+        "runNowTitle": "Run one cycle now",
+        "runDisabledTitle": "Enable and save first",
+        "save": "Save",
+        "saving": "Saving…"
+      },
+      "messages": {
+        "savedOn": "Autopilot is ON. The next scheduled tick will fill your queue.",
+        "savedOff": "Autopilot settings saved (currently off).",
+        "runResult": "Run {status}: {scheduled, number} scheduled, {skipped, number} skipped.",
+        "runResultWithReason": "Run {status}: {scheduled, number} scheduled, {skipped, number} skipped — {reason}."
+      },
+      "warnings": {
+        "ideation": "This workspace can't ideate yet. Autopilot needs Brand Memory, Market Matrices and Competitor Keywords — run those tabs first. Runs will be skipped until then.",
+        "channels": "None of the selected channels can publish yet. Social channels need a connected default account and Blog needs a website — set one up on the <link>Connections</link> page, or Autopilot will skip every run."
+      },
+      "form": {
+        "enable": "Enable Autopilot for this workspace",
+        "postsPerWeek": "Posts per week",
+        "postsPerWeekHint": "Autopilot keeps the coming 7 days topped up to this number.",
+        "timezone": "Timezone",
+        "timezoneHint": "IANA name. Publish window and days are interpreted in this zone.",
+        "channels": "Channels",
+        "channelsHint": "Green dot = that channel can actually publish (social account or website connected).",
+        "publishDays": "Publish days",
+        "window": "Publish window (local hours)",
+        "windowTo": "to",
+        "windowHint": "e.g. 9 to 18 = posts land between 09:00 and 17:59.",
+        "goal": "Primary goal",
+        "storylines": "Which storylines this agent advances",
+        "storylinesHint": "All of them unless you narrow it. The runner rotates across whichever are selected, so one claim is not repeated week after week.",
+        "themes": "Lean into these themes",
+        "themesPlaceholder": "e.g. AI adoption for SMEs, founder lessons, product updates",
+        "themesHint": "Comma or newline separated. Passed to the AI as steering.",
+        "avoid": "Never write about",
+        "avoidPlaceholder": "e.g. pricing, politics, competitor names",
+        "avoidHint": "Ideas whose topic contains any of these phrases are dropped."
+      },
+      "channelDot": {
+        "ready": "Ready to publish",
+        "noSite": "No active site connection",
+        "noAccount": "No connected default account"
+      },
+      "days": {
+        "0": "Sun",
+        "1": "Mon",
+        "2": "Tue",
+        "3": "Wed",
+        "4": "Thu",
+        "5": "Fri",
+        "6": "Sat"
+      },
+      "narrative": {
+        "title": "This agent is publishing without a narrative.",
+        "body": "It still runs, and nothing here is blocked. But its posts are not laddering up to anything, so they will not add up over a month.",
+        "cta": "Give it a position"
+      },
+      "runs": {
+        "title": "Run history",
+        "count": "{count, number} most recent",
+        "empty": "No runs yet. Enable Autopilot and save, or click Run now.",
+        "via": "via {trigger}",
+        "ideas": "{count, number} ideas",
+        "scheduled": "{count, number} scheduled",
+        "skipped": "{count, number} skipped"
+      },
+      "runStatus": {
+        "SUCCEEDED": "SUCCEEDED",
+        "PARTIAL": "PARTIAL",
+        "FAILED": "FAILED",
+        "RUNNING": "RUNNING",
+        "QUEUED": "QUEUED",
+        "SKIPPED": "SKIPPED"
+      },
+      "runStatusLower": {
+        "SUCCEEDED": "succeeded",
+        "PARTIAL": "partial",
+        "FAILED": "failed",
+        "RUNNING": "running",
+        "QUEUED": "queued",
+        "SKIPPED": "skipped"
+      }
+    },
+    "ideation": {
+      "title": "Ideation Station",
+      "lede": "Generate high-performing content ideas tailored to your audience and brand pillars. We strictly use Brand Memory, Market Metric, and Competitor Keywords as required context.",
+      "requiredInputs": "Required inputs for ideation: Brand Memory + Market Metric + Competitor Keywords.",
+      "targetWords": "Target words: {count, number} ({platform} range {min, number}-{max, number})",
+      "goalOption": "Goal: {label}",
+      "platformOption": "Platform: {label}",
+      "funnelOption": "Funnel: {label}",
+      "frameworkAuto": "Framework: Auto",
+      "frameworkManual": "Framework: Manual",
+      "ideasLabel": "Ideas",
+      "wordsLabel": "Words",
+      "needImagesLabel": "Need Images",
+      "imagesLabel": "Images",
+      "autoCalendarLabel": "Auto Calendar",
+      "generationPath": "Generation Path",
+      "directGenerate": "Direct Generate",
+      "sourceFormGenerate": "Generate With Source Form",
+      "sourcePlaceholder": "Paste your notes, document summary, script, or key ideas...",
+      "sourceNote": "This source form is global and will be used for all generated previews in this ideation run.",
+      "directNote": "Direct mode: generate content ideas without manual source context.",
+      "generateCta": "{count, plural, one {Generate # Content Idea} other {Generate # Content Ideas}}",
+      "brainstorming": "Brainstorming with AI...",
+      "selectedFramework": "Selected Framework",
+      "overallScore": "Overall Score: {score}/10",
+      "fallbackApplied": "Fallback applied",
+      "imagesBadge": "Images: {count, number} (1st = cover)",
+      "imagesBadgeNone": "Images: No",
+      "calendarAuto": "Calendar: Auto insert (mock)",
+      "calendarManual": "Calendar: Manual",
+      "wordsBadge": "Words: {count, number}",
+      "freshIdeas": "Fresh Ideas Generated",
+      "freshIdeasCount": "({count, number})",
+      "formatFallback": "Article",
+      "pillarFallback": "General",
+      "imagesCount": "{count, number} images",
+      "wordsCount": "{count, number} words",
+      "generatePreview": "Generate Preview",
+      "generatingPreview": "Generating Preview...",
+      "addToPipeline": "Add to Pipeline",
+      "addedToPipeline": "Added to Pipeline",
+      "contentPreview": "Content Preview",
+      "closePreview": "Close preview",
+      "channelFallback": "Content",
+      "noPreview": "No preview content available yet.",
+      "errors": {
+        "unexpected": "An unexpected error occurred while brainstorming.",
+        "previewFailed": "Failed to generate preview.",
+        "maxFiles": "You can attach up to {count, number} files.",
+        "readFailed": "Failed to read \"{name}\". Use PDF/TXT/MD/CSV/JSON files or paste text manually."
+      }
+    },
+    "pipeline": {
+      "empty": {
+        "title": "Your pipeline is empty",
+        "body": "You haven't generated any content for this brand yet. Head over to the Ideation Station to get started.",
+        "cta": "Go to Ideation"
+      },
+      "wordsTarget": "{count, number} words target",
+      "previewLabel": "Preview",
+      "publishAt": "Publish: {date} {time}",
+      "quickSchedule": {
+        "title": "Quick Publish Schedule",
+        "saving": "Saving...",
+        "publish": "Publish",
+        "note": "Default schedule is {hours, number} hours after generation.",
+        "noteDraft": "Generate now to auto-apply this schedule.",
+        "noteReady": "You can update it here in one click."
+      },
+      "source": {
+        "refineTitle": "Refine With Your Own Source",
+        "useTitle": "Use Your Own Source",
+        "hide": "Hide",
+        "addContext": "Add Context",
+        "wordCount": "Word Count ({platform} {min, number}-{max, number})",
+        "placeholder": "Paste your notes, raw ideas, transcript, or key points...",
+        "note": "Content generation will prioritize your manual notes, attached source text, and target word count."
+      },
+      "actions": {
+        "generate": "Generate, Schedule & Preview",
+        "edit": "Edit",
+        "approve": "Approve Concept",
+        "reschedule": "Reschedule",
+        "publish": "Publish"
+      },
+      "editor": {
+        "eyebrow": "Edit & Schedule Post",
+        "close": "Close preview",
+        "draftLabel": "Content Draft",
+        "scheduleTitle": "Publishing Schedule",
+        "dateOptional": "Date (Optional)",
+        "timeOptional": "Time (Optional)",
+        "blankNote": "Leave date and time blank to save simply as \"Ready\", or fill them out to automatically mark this post as \"Scheduled\".",
+        "save": "Save Changes"
+      },
+      "scheduleModal": {
+        "title": "Schedule Content",
+        "confirm": "Confirm Schedule"
+      },
+      "errors": {
+        "maxFiles": "You can attach up to {count, number} files.",
+        "readFailed": "Failed to read \"{name}\". Use PDF/TXT/MD/CSV/JSON files or paste the text manually."
+      }
+    },
+    "calendar": {
+      "title": "Content Calendar",
+      "subtitle": "Schedule & Timeline",
+      "weekView": "Week View",
+      "listView": "List View",
+      "loadError": "Failed to load calendar items",
+      "emptyTitle": "Your Calendar is Empty",
+      "emptyBody": "Generate new content from the Ideation Station and schedule it to populate your timeline.",
+      "unscheduled": "Unscheduled",
+      "noTime": "No Time",
+      "dayEmpty": "Empty"
+    },
+    "brandMemory": {
+      "badge": "Brand Memory",
+      "title": "Brand Foundation & Knowledge Layer",
+      "body": "This section keeps your brand context stable across strategy, content, and design. AI drafts the first version from your website, then your team confirms and improves it.",
+      "assetsCount": "{count, number} assets",
+      "pendingCount": "{count, number} pending review",
+      "approvedCount": "{count, number} approved",
+      "businessSummary": "Business Summary",
+      "valueProposition": "Value Proposition",
+      "audienceClarity": "Audience Clarity",
+      "ready": "Ready",
+      "needsReview": "Needs Review",
+      "noSummary": "No summary available.",
+      "noValueProposition": "No value proposition defined.",
+      "targetAudience": "Target Audience",
+      "personaFallback": "General Audience",
+      "noAudience": "No audience details provided.",
+      "brandTone": "Brand Tone",
+      "toneNotSpecified": "Not specified",
+      "pillarsTitle": "Core Content Pillars",
+      "pillarLabel": "Pillar {index, number}",
+      "noPillars": "No pillars defined."
+    }
+  }
+}

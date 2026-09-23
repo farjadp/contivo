@@ -19,43 +19,33 @@
  */
 
 import { useEffect, useRef, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { CheckCircle, FileText, Loader2 } from 'lucide-react';
 
-// One step in the progress pipeline shown to the user
+/*
+  One step in the progress pipeline shown to the user. The label and the
+  detail line are user-facing, so they live in the catalogue and only their
+  keys are pinned here; the timings are not translatable.
+*/
 interface Stage {
-  label: string;       // Short label shown in the step list
-  detail: string;      // Longer description shown below the progress bar
+  /** Catalogue key for the short label shown in the step list. */
+  labelKey: string;
+  /** Catalogue key for the longer line shown below the progress bar. */
+  detailKey: string;
   targetPct: number;   // Progress bar target when this stage is "current"
   // How long (ms) to spend linearly advancing from previous target to this one
   durationMs: number;
 }
 
 const STAGES: Stage[] = [
-  {
-    label: 'Preparing data',
-    detail: 'Loading workspace intelligence, competitors, and brand data…',
-    targetPct: 8,
-    durationMs: 2_000,
-  },
-  {
-    label: 'AI designing report',
-    detail: 'Gemini is analysing your data and building a professional layout…',
-    targetPct: 60,
-    durationMs: 28_000,
-  },
-  {
-    label: 'Rendering PDF',
-    detail: 'Puppeteer is converting the HTML to a print-ready PDF…',
-    targetPct: 88,
-    durationMs: 16_000,
-  },
-  {
-    label: 'Saving report',
-    detail: 'Storing the report and updating your history…',
-    targetPct: 96,
-    durationMs: 2_500,
-  },
+  { labelKey: 'prepareLabel', detailKey: 'prepareDetail', targetPct: 8, durationMs: 2_000 },
+  { labelKey: 'designLabel', detailKey: 'designDetail', targetPct: 60, durationMs: 28_000 },
+  { labelKey: 'renderLabel', detailKey: 'renderDetail', targetPct: 88, durationMs: 16_000 },
+  { labelKey: 'saveLabel', detailKey: 'saveDetail', targetPct: 96, durationMs: 2_500 },
 ];
+
+/** Brand names stay Latin; isolating them keeps Persian punctuation in place. */
+const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
 interface ReportGeneratingModalProps {
   /** Set to true to show the modal; false hides it */
@@ -67,6 +57,8 @@ interface ReportGeneratingModalProps {
 }
 
 export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratingModalProps) {
+  const t = useTranslations('tabsB.reportModal');
+  const format = useFormatter();
   const [progress, setProgress] = useState(0);
   const [stageIndex, setStageIndex] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -144,11 +136,11 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
           <div className="flex items-center gap-3 mb-1">
             <FileText className="w-6 h-6 opacity-80" />
             <span className="text-sm font-semibold uppercase tracking-widest opacity-80">
-              Generating Report
+              {t('eyebrow')}
             </span>
           </div>
-          <p className="text-2xl font-bold">Strategic Intelligence</p>
-          <p className="text-sm opacity-70 mt-1">This takes 30–60 seconds — please don&apos;t close the tab</p>
+          <p className="text-2xl font-bold">{t('title')}</p>
+          <p className="text-sm opacity-70 mt-1">{t('warning')}</p>
         </div>
 
         {/* ── Body ── */}
@@ -157,8 +149,12 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
           {/* Progress bar */}
           <div>
             <div className="flex justify-between text-sm font-semibold mb-2">
-              <span className="text-slate-700">{isDone ? 'Complete!' : currentStage.label}</span>
-              <span className="text-[#1e3a8a]">{progress}%</span>
+              <span className="text-slate-700">
+                {isDone ? t('complete') : t(`stages.${currentStage.labelKey}`)}
+              </span>
+              <span className="text-[#1e3a8a]">
+                {t('percent', { value: format.number(progress) })}
+              </span>
             </div>
             <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
               <div
@@ -174,7 +170,9 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
             </div>
             {/* Detail label under the bar */}
             {!isDone && !error && (
-              <p className="text-xs text-slate-500 mt-2">{currentStage.detail}</p>
+              <p className="text-xs text-slate-500 mt-2">
+                {t.rich(`stages.${currentStage.detailKey}`, { bdi })}
+              </p>
             )}
           </div>
 
@@ -185,7 +183,7 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
               const active = !isDone && i === stageIndex;
 
               return (
-                <li key={stage.label} className="flex items-center gap-3">
+                <li key={stage.labelKey} className="flex items-center gap-3">
                   {done ? (
                     <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
                   ) : active ? (
@@ -203,7 +201,7 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
                           : 'text-slate-400'
                     }`}
                   >
-                    {stage.label}
+                    {t(`stages.${stage.labelKey}`)}
                   </span>
                 </li>
               );
@@ -213,14 +211,14 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
           {/* Error state */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">
-              <strong>Generation failed:</strong> {error}
+              <strong>{t('errorPrefix')}</strong> {error}
             </div>
           )}
 
           {/* Done state */}
           {isDone && (
             <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800 font-medium text-center">
-              ✅ Report ready — your download will open automatically
+              ✅ {t('done')}
             </div>
           )}
         </div>
