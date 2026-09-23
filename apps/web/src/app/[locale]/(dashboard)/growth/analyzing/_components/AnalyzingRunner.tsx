@@ -11,18 +11,23 @@
  */
 
 import { Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useSearchParams } from 'next/navigation';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 import { enrichWorkspace, type EnrichmentResult } from '@/app/actions/growth';
 
+/*
+  The steps carry message keys, not sentences: a module-level array of English
+  strings would be the one part of this screen no translator could reach.
+*/
 const STEPS = [
-  { id: 1, text: 'Connecting to your website' },
-  { id: 2, text: 'Reading your key pages' },
-  { id: 3, text: 'Understanding your brand and audience' },
-  { id: 4, text: 'Building your Brand Memory' },
-];
+  { id: 1, key: 'connect' },
+  { id: 2, key: 'read' },
+  { id: 3, key: 'understand' },
+  { id: 4, key: 'build' },
+] as const;
 
 /**
  * The action is one round trip, so the steps cannot be driven by real
@@ -41,6 +46,7 @@ export function AnalyzingRunner() {
 }
 
 function AnalyzingContent() {
+  const t = useTranslations('growth.analyzing');
   const router = useRouter();
   const searchParams = useSearchParams();
   const workspaceId = searchParams.get('id');
@@ -60,12 +66,12 @@ function AnalyzingContent() {
       result = await enrichWorkspace(workspaceId);
     } catch (err) {
       console.error('Workspace enrichment threw:', err);
-      setError('Something went wrong while analysing your site. Please try again.');
+      setError(t('error.threw'));
       return;
     }
 
     if (!result.ok) {
-      setError(result.error ?? 'We could not analyse your site. Please try again.');
+      setError(result.error ?? t('error.failed'));
       return;
     }
 
@@ -74,7 +80,7 @@ function AnalyzingContent() {
     const query = new URLSearchParams({ tab: 'strategy' });
     if (result.warnings.length > 0) query.set('setup', 'partial');
     router.replace(`/growth/${workspaceId}?${query.toString()}` as never);
-  }, [router, workspaceId]);
+  }, [router, workspaceId, t]);
 
   useEffect(() => {
     if (!workspaceId) {
@@ -107,16 +113,17 @@ function AnalyzingContent() {
 }
 
 function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => void }) {
+  const t = useTranslations('growth.analyzing');
   return (
     <div className="w-full h-full min-h-[80vh] flex items-center justify-center bg-[#FDFCF8] text-[#121212] rounded-[32px] border border-[#121212]/10 p-8">
       <div className="max-w-lg">
         <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-[#C04C36] mb-8">
-          <AlertTriangle className="h-4 w-4" /> Analysis stopped
+          <AlertTriangle className="h-4 w-4" /> {t('error.eyebrow')}
         </div>
         <h1 className="text-4xl md:text-5xl font-medium tracking-tighter leading-[1] mb-6">
-          We could not read
+          {t('error.titleTop')}
           <br />
-          <span className="italic text-[#121212]/50 font-serif font-light">your website</span>
+          <span className="italic text-[#121212]/50 font-serif font-light">{t('error.titleAccent')}</span>
         </h1>
         <p className="text-lg text-[#121212]/70 leading-relaxed font-medium mb-10">{message}</p>
         <div className="flex flex-wrap gap-3">
@@ -125,13 +132,13 @@ function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => 
             className="group inline-flex items-center gap-3 bg-[#121212] text-[#FDFCF8] py-4 px-6 hover:bg-[#C04C36] transition-colors duration-500"
           >
             <RefreshCw className="w-4 h-4" />
-            <span className="text-sm font-bold tracking-widest uppercase">Try again</span>
+            <span className="text-sm font-bold tracking-widest uppercase">{t('error.retry')}</span>
           </button>
           <Link
             href="/growth"
             className="inline-flex items-center py-4 px-6 border border-[#121212]/20 text-sm font-bold tracking-widest uppercase hover:border-[#121212] transition-colors"
           >
-            Back to workspaces
+            {t('error.back')}
           </Link>
         </div>
       </div>
@@ -140,39 +147,42 @@ function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => 
 }
 
 function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
+  const t = useTranslations('growth.analyzing');
   return (
     <div className="w-full h-full min-h-[80vh] flex flex-col lg:flex-row bg-[#FDFCF8] text-[#121212] overflow-hidden rounded-[32px] border border-[#121212]/10">
 
       {/* Left Column: Intro */}
-      <div className="w-full lg:w-[45%] p-8 lg:p-12 xl:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-[#121212]/10 bg-[#EFECE5]">
+      <div className="w-full lg:w-[45%] p-8 lg:p-12 xl:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-e border-[#121212]/10 bg-[#EFECE5]">
         <div>
            <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase opacity-50 mb-16">
-              Processing &mdash; System Active
+              {t('processing')}
            </div>
 
            <h1 className="text-5xl md:text-6xl font-medium tracking-tighter leading-[1] text-[#121212] mb-8">
-             <div className="animate-in slide-in-from-bottom duration-700 delay-100 fill-mode-both">Analyzing</div>
+             <div className="animate-in slide-in-from-bottom duration-700 delay-100 fill-mode-both">{t('titleTop')}</div>
              <div className="animate-in slide-in-from-bottom duration-700 delay-200 fill-mode-both">
-                 <span className="italic text-[#121212]/50 font-serif font-light">website</span>
+                 <span className="italic text-[#121212]/50 font-serif font-light">{t('titleAccent')}</span>
              </div>
            </h1>
 
            <p className="text-lg text-[#121212]/70 leading-relaxed font-medium max-w-sm animate-in fade-in duration-1000 delay-300 fill-mode-both">
-             Contivo intelligence engine is actively reading your pages. This usually takes 10&ndash;30 seconds.
+             {/* The brand name is a Latin island in Persian prose; without the
+                 isolate the punctuation around it jumps sides. */}
+             {t.rich('lead', { brand: (chunks) => <bdi>{chunks}</bdi> })}
            </p>
         </div>
 
         <div className="hidden lg:flex items-center gap-3 mt-12 animate-pulse">
             <div className="w-3 h-3 bg-[#C04C36]" />
-            <span className="text-xs font-bold tracking-widest uppercase opacity-40">Do not close window</span>
+            <span className="text-xs font-bold tracking-widest uppercase opacity-40">{t('doNotClose')}</span>
         </div>
       </div>
 
       {/* Right Column: Steps Progress array */}
       <div className="w-full lg:w-[55%] p-8 lg:p-12 xl:p-24 flex flex-col justify-center bg-[#FDFCF8] animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
-         <div className="w-full max-w-md mx-auto relative pl-4">
+         <div className="w-full max-w-md mx-auto relative ps-4">
              {/* Timeline line */}
-             <div className="absolute left-0 top-6 bottom-6 w-[2px] bg-[#121212]/10 rounded-full" />
+             <div className="absolute start-0 top-6 bottom-6 w-[2px] bg-[#121212]/10 rounded-full" />
 
              {STEPS.map((step, index) => {
                 const isActive = index === currentStepIndex;
@@ -181,12 +191,12 @@ function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
                 return (
                   <div
                     key={step.id}
-                    className={`relative py-6 pl-8 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                      isPast ? 'opacity-40 translate-x-0' : isActive ? 'opacity-100 translate-x-2' : 'opacity-20 translate-x-0'
+                    className={`relative py-6 ps-8 transition-all duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                      isPast ? 'opacity-40 translate-x-0' : isActive ? 'opacity-100 translate-x-2 rtl:-translate-x-2' : 'opacity-20 translate-x-0'
                     }`}
                   >
                      {/* Timeline Node */}
-                     <div className={`absolute left-[-5px] top-[calc(50%-5px)] w-[12px] h-[12px] rounded-sm transition-all duration-700 ${
+                     <div className={`absolute start-[-5px] top-[calc(50%-5px)] w-[12px] h-[12px] rounded-sm transition-all duration-700 ${
                          isPast ? 'bg-[#121212]/40' : isActive ? 'bg-[#C04C36]' : 'bg-[#121212]/20'
                      }`}
                      style={{
@@ -197,14 +207,14 @@ function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
                         <span className={`text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-1 transition-colors duration-500 ${
                             isActive ? 'text-[#C04C36]' : 'text-[#121212]/40'
                         }`}>
-                           Phase 0{step.id}
-                           {isActive && <span className="ml-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/60 animate-pulse">Running...</span>}
-                           {isPast && <span className="ml-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/40">Complete</span>}
+                           {t('phase', { n: step.id })}
+                           {isActive && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/60 animate-pulse">{t('running')}</span>}
+                           {isPast && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/40">{t('complete')}</span>}
                         </span>
                         <span className={`text-xl md:text-2xl font-medium tracking-tighter transition-colors duration-500 ${
                           isPast ? 'text-[#121212] line-through decoration-[#121212]/30' : isActive ? 'text-[#121212]' : 'text-[#121212]/60'
                         }`}>
-                          {step.text}
+                          {t(`steps.${step.key}`)}
                         </span>
                      </div>
                   </div>

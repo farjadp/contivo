@@ -11,6 +11,7 @@
  */
 
 import { useState, useTransition } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { AlertTriangle, Check, Loader2, Pencil, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 
 import {
@@ -44,13 +45,15 @@ type Narrative = {
   storylines: Storyline[];
 } | null;
 
-const EVIDENCE_LABELS: Record<string, string> = {
-  CUSTOMER_COUNT: 'Customers',
-  PUBLIC_NUMBER: 'A number you can state',
-  NAMED_CUSTOMER: 'A customer you may name',
-  FIRSTHAND_EXPERIENCE: 'Your own experience',
-  FORBIDDEN_CLAIM: 'Never claim this',
-};
+/* The stored enum values; their labels come from the catalogue so the
+   dropdown and the list read in the visitor's language. */
+const EVIDENCE_KINDS = [
+  'CUSTOMER_COUNT',
+  'PUBLIC_NUMBER',
+  'NAMED_CUSTOMER',
+  'FIRSTHAND_EXPERIENCE',
+  'FORBIDDEN_CLAIM',
+] as const;
 
 function asArray(v: unknown): string[] {
   return Array.isArray(v) ? v.map(String) : [];
@@ -65,6 +68,8 @@ export function NarrativeTab({
   narrative: Narrative;
   evidence: Evidence[];
 }) {
+  const t = useTranslations('tabsB.narrative');
+  const format = useFormatter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   /**
@@ -87,7 +92,7 @@ export function NarrativeTab({
     startTransition(async () => {
       try {
         const res = await fn();
-        if (!res.ok) setError(res.error ?? 'Something went wrong.');
+        if (!res.ok) setError(res.error ?? t('genericError'));
       } finally {
         setBusy(null);
       }
@@ -97,12 +102,8 @@ export function NarrativeTab({
   return (
     <div className="space-y-10">
       <header className="max-w-3xl">
-        <h2 className="font-display text-[22px] font-bold text-ink-900">Narrative</h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-ink-600">
-          Three or four arguments this company makes for months, so its content adds up
-          instead of being forty unrelated posts. Drafted from your competitors, charts and
-          brand memory — then corrected by you.
-        </p>
+        <h2 className="font-display text-[22px] font-bold text-ink-900">{t('title')}</h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{t('subtitle')}</p>
       </header>
 
       {error && (
@@ -116,21 +117,20 @@ export function NarrativeTab({
       <section className="border border-ink-200 bg-white p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 className="font-display text-[17px] font-semibold text-ink-900">
-            1 · What is changing in your customers&apos; world?
+            {t('change.heading')}
           </h3>
           {narrative?.change && (
             <span className="text-[12px] text-ink-500">
               {narrative.changeSource === 'HUMAN'
-                ? 'you wrote this'
+                ? t('change.sourceHuman')
                 : narrative.changeSource === 'EDITED'
-                  ? 'you edited our proposal'
-                  : 'accepted from a proposal'}
+                  ? t('change.sourceEdited')
+                  : t('change.sourceProposed')}
             </span>
           )}
         </div>
         <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-600">
-          Every storyline hangs off this one sentence, so it is worth disagreeing with us.
-          It is about your customers&apos; world, not about your product.
+          {t('change.help')}
         </p>
 
         {options.length > 0 && (
@@ -145,7 +145,7 @@ export function NarrativeTab({
                   <ul className="mt-2 space-y-1">
                     {o.evidence.map((e, j) => (
                       <li key={j} className="text-[12px] leading-relaxed text-ink-500">
-                        — {e}
+                        · {e}
                       </li>
                     ))}
                   </ul>
@@ -169,13 +169,13 @@ export function NarrativeTab({
                     disabled={pending}
                     className="inline-flex items-center gap-1.5 bg-ink-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-ink-800 disabled:opacity-50"
                   >
-                    <Check className="h-3.5 w-3.5" /> Use this
+                    <Check className="h-3.5 w-3.5" /> {t('change.useThis')}
                   </button>
                   <button
                     onClick={() => setDraftChange(o.change)}
                     className="inline-flex items-center gap-1.5 border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
                   >
-                    <Pencil className="h-3.5 w-3.5" /> Edit it
+                    <Pencil className="h-3.5 w-3.5" /> {t('change.editIt')}
                   </button>
                 </div>
               </li>
@@ -185,14 +185,14 @@ export function NarrativeTab({
 
         <div className="mt-5">
           <label htmlFor="change" className="text-[12.5px] font-medium text-ink-700">
-            {options.length > 0 ? 'None of these — write your own' : 'The change'}
+            {options.length > 0 ? t('change.labelOwn') : t('change.label')}
           </label>
           <textarea
             id="change"
             rows={2}
             value={draftChange}
             onChange={(e) => setDraftChange(e.target.value)}
-            placeholder="Buyers in our market have stopped…"
+            placeholder={t('change.placeholder')}
             className="mt-2 w-full resize-y border border-ink-300 bg-white px-3 py-2.5 text-[14px] text-ink-900 outline-none focus:border-ink-900"
           />
           <div className="mt-3 flex flex-wrap gap-2">
@@ -215,7 +215,7 @@ export function NarrativeTab({
               className="inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
             >
               {busy === 'save-change' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-              Save the change
+              {t('change.save')}
             </button>
             <button
               onClick={() =>
@@ -233,7 +233,7 @@ export function NarrativeTab({
               ) : (
                 <Sparkles className="h-4 w-4" />
               )}
-              {options.length ? 'Propose again' : 'Propose from my data'}
+              {options.length ? t('change.proposeAgain') : t('change.propose')}
             </button>
           </div>
         </div>
@@ -245,22 +245,36 @@ export function NarrativeTab({
       {/* ── Step 3 · Storylines ─────────────────────────────────── */}
       <section className="border border-ink-200 bg-white p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h3 className="font-display text-[17px] font-semibold text-ink-900">3 · Your storylines</h3>
+          <h3 className="font-display text-[17px] font-semibold text-ink-900">
+            {t('storylines.heading')}
+          </h3>
           {narrative?.generatedBy && (
-            <span className="text-[12px] text-ink-500">drafted by {narrative.generatedBy}</span>
+            <span className="text-[12px] text-ink-500">
+              {/* The model name is a product name: it stays Latin and is
+                  isolated so the Persian around it keeps its own direction. */}
+              {t.rich('storylines.draftedBy', {
+                model: narrative.generatedBy,
+                m: (chunks) => <bdi>{chunks}</bdi>,
+              })}
+            </span>
           )}
         </div>
 
         {storylines.length === 0 ? (
           <p className="mt-2 text-[13.5px] text-ink-600">
-            {narrative?.change
-              ? 'Nothing drafted yet.'
-              : 'Agree on the change first — every storyline hangs off it.'}
+            {narrative?.change ? t('storylines.emptyDrafted') : t('storylines.emptyNoChange')}
           </p>
         ) : (
           <ul className="mt-5 space-y-5">
             {storylines.map((s, i) => (
-              <StorylineCard key={s.id} workspaceId={workspaceId} storyline={s} index={i} run={run} pending={pending} />
+              <StorylineCard
+                key={s.id}
+                workspaceId={workspaceId}
+                storyline={s}
+                order={format.number(i + 1, { minimumIntegerDigits: 2 })}
+                run={run}
+                pending={pending}
+              />
             ))}
           </ul>
         )}
@@ -275,10 +289,10 @@ export function NarrativeTab({
           ) : (
             <RefreshCw className="h-4 w-4" />
           )}
-          {storylines.length ? 'Draft them again' : 'Draft my storylines'}
+          {storylines.length ? t('storylines.draftAgain') : t('storylines.draft')}
         </button>
         {storylines.length > 0 && (
-          <p className="mt-2 text-[12px] text-ink-500">Redrafting replaces all of them.</p>
+          <p className="mt-2 text-[12px] text-ink-500">{t('storylines.redraftWarning')}</p>
         )}
       </section>
     </div>
@@ -307,19 +321,19 @@ function EvidenceSection({
   run: (l: string, fn: () => Promise<{ ok: boolean; error?: string }>) => void;
   pending: boolean;
 }) {
+  const t = useTranslations('tabsB.narrative.evidence');
   const [kind, setKind] = useState('FIRSTHAND_EXPERIENCE');
   const [value, setValue] = useState('');
 
+  const kindLabel = (k: string) =>
+    (EVIDENCE_KINDS as readonly string[]).includes(k)
+      ? t(`kinds.${k as (typeof EVIDENCE_KINDS)[number]}`)
+      : k;
+
   return (
     <section className="border border-ink-200 bg-white p-6">
-      <h3 className="font-display text-[17px] font-semibold text-ink-900">
-        2 · What can you actually prove?
-      </h3>
-      <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-600">
-        A storyline may only promise what you can back. Leave this empty and your storylines
-        stay at the level of argument — which is honest, and still publishes. Claim something
-        you cannot support and the quality gate will reject every draft that leans on it.
-      </p>
+      <h3 className="font-display text-[17px] font-semibold text-ink-900">{t('heading')}</h3>
+      <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-600">{t('help')}</p>
 
       {evidence.length > 0 && (
         <ul className="mt-5 divide-y divide-ink-200 border-y border-ink-200">
@@ -327,14 +341,14 @@ function EvidenceSection({
             <li key={e.id} className="flex items-start justify-between gap-4 py-3">
               <div className="min-w-0">
                 <p className="text-[11.5px] uppercase tracking-wide text-ink-500">
-                  {EVIDENCE_LABELS[e.kind] ?? e.kind}
+                  {kindLabel(e.kind)}
                 </p>
                 <p className="mt-0.5 text-[14px] text-ink-900">{e.value}</p>
               </div>
               <button
                 onClick={() => run('del', () => deleteEvidence(workspaceId, e.id))}
                 disabled={pending}
-                aria-label="Remove"
+                aria-label={t('remove')}
                 className="shrink-0 p-1.5 text-ink-400 hover:text-ink-900 disabled:opacity-40"
               >
                 <Trash2 className="h-4 w-4" />
@@ -347,7 +361,7 @@ function EvidenceSection({
       <div className="mt-5 flex flex-wrap items-end gap-3">
         <div>
           <label htmlFor="ekind" className="text-[12.5px] font-medium text-ink-700">
-            Type
+            {t('typeLabel')}
           </label>
           <select
             id="ekind"
@@ -355,22 +369,22 @@ function EvidenceSection({
             onChange={(e) => setKind(e.target.value)}
             className="mt-1.5 block border border-ink-300 bg-white px-3 py-2 text-[13.5px] text-ink-900 outline-none focus:border-ink-900"
           >
-            {Object.entries(EVIDENCE_LABELS).map(([k, label]) => (
+            {EVIDENCE_KINDS.map((k) => (
               <option key={k} value={k}>
-                {label}
+                {t(`kinds.${k}`)}
               </option>
             ))}
           </select>
         </div>
         <div className="min-w-[16rem] flex-1">
           <label htmlFor="evalue" className="text-[12.5px] font-medium text-ink-700">
-            What is it?
+            {t('valueLabel')}
           </label>
           <input
             id="evalue"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            placeholder="I ran support at a 40-person SaaS for three years"
+            placeholder={t('valuePlaceholder')}
             className="mt-1.5 w-full border border-ink-300 bg-white px-3 py-2 text-[13.5px] text-ink-900 outline-none focus:border-ink-900"
           />
         </div>
@@ -385,7 +399,7 @@ function EvidenceSection({
           disabled={pending || value.trim().length < 2}
           className="border border-ink-300 px-4 py-2 text-[13px] text-ink-700 hover:border-ink-500 disabled:opacity-40"
         >
-          Add
+          {t('add')}
         </button>
       </div>
     </section>
@@ -395,16 +409,18 @@ function EvidenceSection({
 function StorylineCard({
   workspaceId,
   storyline,
-  index,
+  order,
   run,
   pending,
 }: {
   workspaceId: string;
   storyline: Storyline;
-  index: number;
+  /** Already formatted, so Persian shows «۰۱» rather than «01». */
+  order: string;
   run: (l: string, fn: () => Promise<{ ok: boolean; error?: string }>) => void;
   pending: boolean;
 }) {
+  const t = useTranslations('tabsB.narrative.storylines');
   const [editing, setEditing] = useState(false);
   const [claim, setClaim] = useState(storyline.claim);
   const gifts = asArray(storyline.gifts);
@@ -413,7 +429,7 @@ function StorylineCard({
   return (
     <li className="border border-ink-200 p-5">
       <div className="flex items-start justify-between gap-4">
-        <span className="mt-1 shrink-0 text-[12px] text-ink-400">{String(index + 1).padStart(2, '0')}</span>
+        <span className="mt-1 shrink-0 text-[12px] text-ink-400">{order}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <textarea
@@ -428,20 +444,22 @@ function StorylineCard({
 
           {storyline.audience && (
             <p className="mt-2 text-[13px] text-ink-600">
-              <span className="text-ink-400">For</span> {storyline.audience}
+              <span className="text-ink-400">{t('for')}</span> {storyline.audience}
             </p>
           )}
 
           <dl className="mt-4 grid gap-x-8 gap-y-3 sm:grid-cols-2">
-            <Field label="Promised land" value={storyline.promisedLand} />
-            {storyline.winners && <Field label="Wins" value={storyline.winners} />}
-            {storyline.losers && <Field label="Loses" value={storyline.losers} />}
-            {gifts.length > 0 && <Field label="How" value={gifts.join(' · ')} />}
+            <Field label={t('promisedLand')} value={storyline.promisedLand} />
+            {storyline.winners && <Field label={t('wins')} value={storyline.winners} />}
+            {storyline.losers && <Field label={t('loses')} value={storyline.losers} />}
+            {gifts.length > 0 && <Field label={t('how')} value={gifts.join(' · ')} />}
           </dl>
 
           {refs.length > 0 && (
             <p className="mt-4 border-t border-ink-200 pt-3 text-[12px] leading-relaxed text-ink-500">
-              <span className="text-ink-400">Built from</span> {refs.join(' · ')}
+              <span className="text-ink-400">{t('builtFrom')}</span>{' '}
+              {/* Source references are stored identifiers, not prose. */}
+              <bdi>{refs.join(' · ')}</bdi>
             </p>
           )}
 
@@ -459,7 +477,7 @@ function StorylineCard({
                   disabled={pending}
                   className="bg-ink-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
                 >
-                  Save
+                  {t('save')}
                 </button>
                 <button
                   onClick={() => {
@@ -468,7 +486,7 @@ function StorylineCard({
                   }}
                   className="border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
               </>
             ) : (
@@ -476,7 +494,7 @@ function StorylineCard({
                 onClick={() => setEditing(true)}
                 className="inline-flex items-center gap-1.5 border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
               >
-                <Pencil className="h-3.5 w-3.5" /> Edit the claim
+                <Pencil className="h-3.5 w-3.5" /> {t('editClaim')}
               </button>
             )}
           </div>

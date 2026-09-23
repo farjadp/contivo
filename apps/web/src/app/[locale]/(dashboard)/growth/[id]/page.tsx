@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server';
+
 import { getSession } from '@/lib/auth';
 import { getWorkspaceArchiveState } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
@@ -51,12 +53,15 @@ import { AutopilotTab } from './_components/AutopilotTab';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
-import { activeSetupWarnings } from '@/lib/workspace-setup-warnings';
+import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
 import { getNarrative } from '@/app/actions/narrative';
-import { getLocale } from 'next-intl/server';
+import { getFormatter, getLocale } from 'next-intl/server';
 
-export const metadata = { title: 'Workspace Dashboard' };
+export async function generateMetadata() {
+  const t = await getTranslations('growth.workspace');
+  return { title: t('metaTitle') };
+}
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -103,15 +108,6 @@ function estimateUsageCostUsd(tokenUsage: TokenUsageLike): number {
   return promptCost + completionCost;
 }
 
-function formatUsd(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(amount);
-}
-
 function resolveTab(rawTab: string | string[] | undefined): string {
   const value = Array.isArray(rawTab) ? rawTab[0] : rawTab;
   const allowed = new Set([
@@ -134,6 +130,8 @@ function resolveTab(rawTab: string | string[] | undefined): string {
 
 
 export default async function WorkspacePage({ params, searchParams }: Props) {
+  const t = await getTranslations('growth.workspace');
+  const format = await getFormatter();
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
 
@@ -284,6 +282,10 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     publishedCount: workspace.contentItems.filter((i: any) => i.status === 'PUBLISHED').length,
     scheduledCount: workspace.contentItems.filter((i: any) => i.status === 'SCHEDULED').length,
   };
+  // The setup chain names its sentences; this is where they become words.
+  const tj = await getTranslations('journey');
+  const tg = await getTranslations('journeyGuide');
+
   const journey = buildJourney(journeyFacts);
   const gates = tabGate(journeyFacts);
 
@@ -357,97 +359,107 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const tabItems = [
     {
       key: 'strategy',
-      group: 'Intelligence',
-      label: 'Brand Memory',
-      helper: `${initialBrandAssetsPayload?.summary?.asset_count || 0} assets`,
+      group: 'intelligence',
+      label: t('tabs.strategyLabel'),
+      helper: t('tabs.strategyHelper', { count: initialBrandAssetsPayload?.summary?.asset_count || 0 }),
       icon: <Sparkles className="h-4 w-4" />,
     },
     {
       key: 'matrices',
-      group: 'Intelligence',
-      label: 'Market Matrices',
-      helper: `${initialMatrices?.charts?.length || 0} charts`,
+      group: 'intelligence',
+      label: t('tabs.matricesLabel'),
+      helper: t('tabs.matricesHelper', { count: initialMatrices?.charts?.length || 0 }),
       icon: <LineChart className="h-4 w-4" />,
     },
     {
       key: 'keywords',
-      group: 'Intelligence',
-      label: 'Competitor Keywords',
-      helper: `${initialKeywordPayload?.competitors?.length || 0} analyzed`,
+      group: 'intelligence',
+      label: t('tabs.keywordsLabel'),
+      helper: t('tabs.keywordsHelper', { count: initialKeywordPayload?.competitors?.length || 0 }),
       icon: <Tags className="h-4 w-4" />,
     },
     {
       key: 'narrative',
-      group: 'Intelligence',
-      label: 'Narrative',
-      helper: `${narrativeData?.narrative?.storylines?.length || 0} storylines`,
+      group: 'intelligence',
+      label: t('tabs.narrativeLabel'),
+      helper: t('tabs.narrativeHelper', { count: narrativeData?.narrative?.storylines?.length || 0 }),
       icon: <BookOpen className="h-4 w-4" />,
     },
     {
       key: 'offerings',
-      group: 'Intelligence',
-      label: 'Products & Services',
-      helper: `${initialOfferingsPayload?.client_offerings?.offerings?.length || 0} client offers`,
+      group: 'intelligence',
+      label: t('tabs.offeringsLabel'),
+      helper: t('tabs.offeringsHelper', {
+        count: initialOfferingsPayload?.client_offerings?.offerings?.length || 0,
+      }),
       icon: <Package className="h-4 w-4" />,
     },
     {
       key: 'seo',
-      group: 'Intelligence',
-      label: 'SEO Intelligence',
-      helper: `${seoIntelligence.keywordOpportunities.length} opportunities`,
+      group: 'intelligence',
+      label: t('tabs.seoLabel'),
+      helper: t('tabs.seoHelper', { count: seoIntelligence.keywordOpportunities.length }),
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
       key: 'ideation',
-      group: 'Create',
-      label: 'Ideation Station',
-      helper: 'AI ideas + drafts',
+      group: 'create',
+      label: t('tabs.ideationLabel'),
+      helper: t('tabs.ideationHelper'),
       icon: <Lightbulb className="h-4 w-4" />,
     },
     {
       key: 'pipeline',
-      group: 'Create',
-      label: 'Content Pipeline',
-      helper: `${workspace.contentItems.length} items`,
+      group: 'create',
+      label: t('tabs.pipelineLabel'),
+      helper: t('tabs.pipelineHelper', { count: workspace.contentItems.length }),
       icon: <ListTodo className="h-4 w-4" />,
     },
     {
       key: 'calendar',
-      group: 'Create',
-      label: 'Publishing Calendar',
-      helper: 'Scheduled content',
+      group: 'create',
+      label: t('tabs.calendarLabel'),
+      helper: t('tabs.calendarHelper'),
       icon: <CalendarDays className="h-4 w-4" />,
     },
     {
       key: 'autopilot',
-      group: 'Automate',
-      label: 'Autopilot',
+      group: 'automate',
+      label: t('tabs.autopilotLabel'),
       helper: autopilotPolicy?.enabled
-        ? `ON · ${autopilotPolicy.postsPerWeek}/week`
-        : 'Hands-off publishing',
+        ? t('tabs.autopilotHelperOn', { posts: autopilotPolicy.postsPerWeek })
+        : t('tabs.autopilotHelperOff'),
       icon: <Bot className="h-4 w-4" />,
     },
     {
       key: 'reports',
-      group: 'Review',
-      label: 'Reports',
-      helper: `${reportEligibility.remainingReports} remaining this month`,
+      group: 'review',
+      label: t('tabs.reportsLabel'),
+      helper: t('tabs.reportsHelper', { count: reportEligibility.remainingReports }),
       icon: <FileText className="h-4 w-4" />,
     },
     ...(progressReport
       ? [
           {
             key: 'progress',
-            group: 'Review',
-            label: 'Evolution Report',
-            helper: `${progressReport.maturity.before_stage} → ${progressReport.maturity.now_stage}`,
+            group: 'review',
+            label: t('tabs.progressLabel'),
+            helper: t('tabs.progressHelper', {
+              before: progressReport.maturity.before_stage,
+              now: progressReport.maturity.now_stage,
+            }),
             icon: <BarChart3 className="h-4 w-4" />,
           },
         ]
       : []),
   ];
 
-  const tabGroups = ['Intelligence', 'Create', 'Automate', 'Review'] as const;
+  const tabGroups = [
+    { key: 'intelligence', label: t('groupIntelligence') },
+    { key: 'create', label: t('groupCreate') },
+    { key: 'automate', label: t('groupAutomate') },
+    { key: 'review', label: t('groupReview') },
+  ] as const;
 
   // Setup problems that used to be invisible: a Gemini outage during
   // extraction left the workspace looking like a site with no competitors,
@@ -466,11 +478,14 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
           <div className="min-w-0">
             <p className="font-mono text-[10.5px] uppercase tracking-widest text-amber-800">
-              Setup finished with problems
+              {t('warningsTitle')}
             </p>
             <ul className="mt-1.5 space-y-1 text-[13px] text-ink-800">
+              {/* A known code becomes a sentence here, at the moment it is
+                  read. Anything else is text stored by an older build and is
+                  shown as it was written. */}
               {extractionWarnings.map((w) => (
-                <li key={w}>{w}</li>
+                <li key={w}>{isSetupWarningCode(w) ? t(`warnings.${w}`) : w}</li>
               ))}
             </ul>
           </div>
@@ -485,7 +500,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
               href="/growth"
               className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-ink-400 hover:text-ink-900"
             >
-              <ArrowLeft className="h-3.5 w-3.5" /> Workspaces
+              <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" /> {t('back')}
             </Link>
             <div className="mt-4 flex items-center gap-4">
               <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-ink-950 font-display text-[16px] font-bold uppercase text-signal">
@@ -504,7 +519,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
                       className="inline-flex items-center gap-1.5 hover:text-ink-900"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
-                      {workspace.websiteUrl.replace(/^https?:\/\//, '')}
+                      <bdi>{workspace.websiteUrl.replace(/^https?:\/\//, '')}</bdi>
                     </a>
                   )}
                   {brand.industry && (
@@ -525,28 +540,43 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
               }`}
             >
               <Bot className="h-4 w-4" />
-              {autopilotPolicy?.enabled ? `Autopilot on · ${autopilotPolicy.postsPerWeek}/wk` : 'Turn on Autopilot'}
+              {autopilotPolicy?.enabled
+                ? t('autopilotOn', { posts: autopilotPolicy.postsPerWeek })
+                : t('autopilotOff')}
             </Link>
             <Link
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
               className="inline-flex items-center justify-center gap-2 border border-ink-200 px-4 py-2.5 text-[13px] font-medium text-ink-900 hover:border-ink-400"
             >
               <Sparkles className="h-4 w-4" />
-              Ideate by hand
+              {t('ideateByHand')}
             </Link>
           </div>
         </div>
 
         <div className="grid grid-cols-2 gap-px border-t border-ink-200 bg-ink-200 sm:grid-cols-3 lg:grid-cols-7">
-          <StatChip label="Competitors" value={acceptedCompetitors.toLocaleString()} />
-          <StatChip label="Content" value={workspace.contentItems.length.toLocaleString()} />
-          <StatChip label="Discovery runs" value={`${discoveryStats.usedRuns} / ${discoveryStats.usedRuns + discoveryStats.remainingRuns}`} />
-          <StatChip label="AI calls" value={trackedAiRuns.toLocaleString()} />
-          <StatChip label="AI tokens" value={totalTrackedTokens.toLocaleString()} />
-          <StatChip label="Est. cost" value={formatUsd(estimatedCostUsd)} />
+          <StatChip label={t('statCompetitors')} value={format.number(acceptedCompetitors)} />
+          <StatChip label={t('statContent')} value={format.number(workspace.contentItems.length)} />
+          <StatChip
+            label={t('statDiscoveryRuns')}
+            value={t('statDiscoveryValue', {
+              used: discoveryStats.usedRuns,
+              total: discoveryStats.usedRuns + discoveryStats.remainingRuns,
+            })}
+          />
+          <StatChip label={t('statAiCalls')} value={format.number(trackedAiRuns)} />
+          <StatChip label={t('statAiTokens')} value={format.number(totalTrackedTokens)} />
+          <StatChip label={t('statEstCost')} value={format.number(estimatedCostUsd, {
+              /* Quoted in USD in both languages; only the digits and the
+                 grouping follow the locale. */
+              style: 'currency',
+              currency: 'USD',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 4,
+            })} />
           <div className="flex items-center gap-2 bg-white px-4 py-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
             <Coins className="h-3.5 w-3.5 shrink-0" />
-            tracked modules only
+            {t('trackedNote')}
           </div>
         </div>
       </div>
@@ -557,12 +587,12 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       {/* ── TABS ────────────────────────────────────────────────── */}
       <div className="border-b border-ink-200">
         {tabGroups.map((group) => {
-          const items = tabItems.filter((t) => t.group === group);
+          const items = tabItems.filter((item) => item.group === group.key);
           if (items.length === 0) return null;
           return (
-            <div key={group} className="flex flex-wrap items-center gap-x-1 gap-y-0.5 py-1">
+            <div key={group.key} className="flex flex-wrap items-center gap-x-1 gap-y-0.5 py-1">
               <span className="w-24 shrink-0 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
-                {group}
+                {group.label}
               </span>
               {items.map((item) => {
                 const isActive = activeTab === item.key;
@@ -571,7 +601,11 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
                   <Link
                     key={item.key}
                     href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: item.key } }}
-                    title={gate ? `${item.helper} — ${gate}` : item.helper}
+                    title={
+                      gate
+                        ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) })
+                        : item.helper
+                    }
                     className={`group relative flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
                       isActive
                         ? 'font-semibold text-ink-900'
@@ -604,15 +638,18 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       {gates[activeTab] && (
         <div className="flex flex-wrap items-center justify-between gap-3 border border-amber-300 bg-amber-50 px-5 py-3">
           <p className="text-[13px] text-amber-900">
-            <span className="font-semibold">This step is not ready yet — {gates[activeTab]}.</span>{' '}
-            Running it now will produce nothing useful.
+            <span className="font-semibold">
+              {tg('gateBlocked', { reason: tj(gates[activeTab]!.key, gates[activeTab]!.values) })}
+            </span>{' '}
+            {tg('gateConsequence')}
           </p>
           {journey.next && (
             <Link
               href={journey.next.href as never}
               className="inline-flex shrink-0 items-center gap-2 bg-amber-900 px-3.5 py-2 text-[12.5px] font-medium text-white hover:bg-amber-800"
             >
-              {journey.next.action} <ArrowRight className="h-3.5 w-3.5" />
+              {tj(journey.next.action.key, journey.next.action.values)}{' '}
+              <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
             </Link>
           )}
         </div>

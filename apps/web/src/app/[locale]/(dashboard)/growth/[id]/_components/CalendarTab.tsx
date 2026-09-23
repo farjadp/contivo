@@ -1,12 +1,35 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Calendar as CalendarIcon, List, Loader2, AlertCircle } from 'lucide-react';
 import { getCalendarItems } from '@/app/actions/calendar';
 
 type ViewMode = 'week' | 'list';
 
+/**
+ * `channel` and `status` come off the row as raw enum values. The ids stay
+ * Latin; only the label a person reads is translated, and anything the
+ * catalogue does not know about falls through to the enum itself.
+ */
+function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
+  return t.has(`channels.${channel}`) ? t(`channels.${channel}`) : channel;
+}
+
+function statusLabel(t: ReturnType<typeof useTranslations>, status: string) {
+  return t.has(`contentStatus.${status}`) ? t(`contentStatus.${status}`) : status;
+}
+
 export function CalendarTab({ workspaceId }: { workspaceId: string }) {
+  const t = useTranslations('tabsA.calendar');
+  const tRoot = useTranslations('tabsA');
+  /*
+    Every date on this tab goes through next-intl's formatter rather than
+    toLocaleDateString: the request config pins `fa` to Asia/Tehran, and the
+    `fa` locale carries the Jalali calendar, so month and weekday names come
+    back Shamsi with Persian digits without a converter anywhere in here.
+  */
+  const format = useFormatter();
   const [view, setView] = useState<ViewMode>('list');
   const [items, setItems] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -19,13 +42,13 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
         const data = await getCalendarItems(workspaceId);
         setItems(data);
       } catch (err: any) {
-        setError(err.message || 'Failed to load calendar items');
+        setError(err.message || t('loadError'));
       } finally {
         setIsLoading(false);
       }
     }
     fetchItems();
-  }, [workspaceId]);
+  }, [workspaceId, t]);
 
   // Generate next 7 days for the Week view
   const today = new Date();
@@ -49,8 +72,8 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">Content Calendar</h2>
-          <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">Schedule & Timeline</p>
+          <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('title')}</h2>
+          <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">{t('subtitle')}</p>
         </div>
 
         <div className="flex items-center gap-1 bg-gray-50/80 p-1 rounded-[16px] border border-gray-100 shadow-inner">
@@ -63,7 +86,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
             }`}
           >
             <CalendarIcon className="w-4 h-4" />
-            Week View
+            {t('weekView')}
           </button>
           <button
             onClick={() => setView('list')}
@@ -74,7 +97,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
             }`}
           >
             <List className="w-4 h-4" />
-            List View
+            {t('listView')}
           </button>
         </div>
       </div>
@@ -95,10 +118,8 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
           <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-gray-200/50">
             <CalendarIcon className="w-8 h-8 text-gray-400" />
           </div>
-          <h3 className="text-xl font-black text-gray-900 tracking-tight">Your Calendar is Empty</h3>
-          <p className="text-gray-500 text-sm font-medium max-w-sm mt-3">
-            Generate new content from the Ideation Station and schedule it to populate your timeline.
-          </p>
+          <h3 className="text-xl font-black text-gray-900 tracking-tight">{t('emptyTitle')}</h3>
+          <p className="text-gray-500 text-sm font-medium max-w-sm mt-3">{t('emptyBody')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-[32px] border border-gray-100 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)] pb-2">
@@ -109,21 +130,32 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
                       <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
-                        {item.channel}
+                        <bdi>{channelLabel(tRoot, item.channel)}</bdi>
                       </span>
                       <span className="text-[9px] font-black uppercase tracking-widest text-[#00E5FF] bg-[#00E5FF]/10 px-2.5 py-1 rounded-lg">
-                        {item.status}
+                        {statusLabel(tRoot, item.status)}
                       </span>
                     </div>
                     <h4 className="font-bold text-gray-900 text-base lg:text-lg group-hover:text-[#2B2DFF] transition-colors">{item.topic}</h4>
                     <p className="text-sm font-medium text-gray-500 mt-1.5 line-clamp-1">{item.content}</p>
                   </div>
-                  <div className="sm:text-right shrink-0 bg-white border border-gray-100 px-5 py-3 rounded-[20px] shadow-sm">
+                  <div className="sm:text-end shrink-0 bg-white border border-gray-100 px-5 py-3 rounded-[20px] shadow-sm">
                     <p className="text-sm font-black text-gray-900">
-                      {item.scheduledAtUtc ? new Date(item.scheduledAtUtc).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Unscheduled'}
+                      {item.scheduledAtUtc
+                        ? format.dateTime(new Date(item.scheduledAtUtc), {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })
+                        : t('unscheduled')}
                     </p>
                     <p className="text-[11px] font-bold tracking-widest uppercase text-gray-400 mt-0.5">
-                      {item.scheduledAtUtc ? new Date(item.scheduledAtUtc).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'No Time'}
+                      {item.scheduledAtUtc
+                        ? format.dateTime(new Date(item.scheduledAtUtc), {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : t('noTime')}
                     </p>
                   </div>
                 </div>
@@ -140,34 +172,37 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
 
                 return (
                   <div key={dateString} className={`flex flex-col bg-white min-h-[350px] p-4 ${isToday ? 'bg-indigo-50/10 relative' : ''}`}>
-                    {isToday && <div className="absolute top-0 left-0 right-0 h-1 bg-[#2B2DFF]" />}
+                    {isToday && <div className="absolute inset-x-0 top-0 h-1 bg-[#2B2DFF]" />}
                     
                     <div className="mb-4">
                       <p className={`text-[10px] uppercase tracking-widest font-black ${isToday ? 'text-[#2B2DFF]' : 'text-gray-400'}`}>
-                        {day.toLocaleDateString(undefined, { weekday: 'short' })}
+                        {format.dateTime(day, { weekday: 'short' })}
                       </p>
                       <p className={`text-2xl font-black tracking-tighter mt-0.5 ${isToday ? 'text-gray-900' : 'text-gray-700'}`}>
-                        {day.getDate()}
+                        {format.dateTime(day, { day: 'numeric' })}
                       </p>
                     </div>
 
                     <div className="flex flex-col gap-2 flex-1">
                       {dayItems.length === 0 ? (
                         <div className="flex-1 flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-300">Empty</span>
+                          <span className="text-xs font-bold text-gray-300">{t('dayEmpty')}</span>
                         </div>
                       ) : (
                         dayItems.map((item: any) => (
                           <div key={item.id} className="bg-gray-50 border border-gray-100 p-3 rounded-[16px] hover:border-[#2B2DFF]/30 hover:shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer group">
                             <div className="text-[9px] font-black uppercase tracking-widest text-[#2B2DFF] mb-1.5 line-clamp-1">
-                              {item.channel}
+                              <bdi>{channelLabel(tRoot, item.channel)}</bdi>
                             </div>
                             <h5 className="text-[13px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#2B2DFF] transition-colors">
                               {item.topic}
                             </h5>
                             <p className="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1">
                               <CalendarIcon className="w-3 h-3" />
-                              {new Date(item.scheduledAtUtc!).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {format.dateTime(new Date(item.scheduledAtUtc!), {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
                             </p>
                           </div>
                         ))

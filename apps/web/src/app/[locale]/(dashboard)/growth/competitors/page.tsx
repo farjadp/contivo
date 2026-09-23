@@ -2,7 +2,7 @@ import { redirect } from '@/i18n/navigation';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import CompetitorsClient from './CompetitorsClient';
-import { getLocale } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 
 type Props = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -26,13 +26,14 @@ export default async function CompetitorsPage({ searchParams }: Props) {
 
   if (!workspace) redirect({ href: '/growth', locale: await getLocale() });
 
+  const t = await getTranslations('growth.competitors');
+
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 lg:px-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212] mb-2">Competitor Analysis</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-[#121212] mb-2">{t('title')}</h1>
         <p className="text-gray-500 text-sm max-w-2xl">
-          We found {workspace.competitors.length} potential competitors based on your website data. 
-          Review the landscape below and validate them so our AI can design a differentiated strategy.
+          {t('subtitle', { count: workspace.competitors.length })}
         </p>
       </div>
 
