@@ -206,10 +206,12 @@
   }
 }
 
-@layer utilities {
-  /* Directional glyphs — arrows, chevrons, back buttons — point the wrong way
-     once the layout mirrors. Symmetric icons must NOT carry this class. */
-  [dir='rtl'] .icon-directional {
-    transform: scaleX(-1);
-  }
-}
+/*
+  Directional glyphs — arrows, chevrons, back buttons — point the wrong way once
+  the layout mirrors, and they are mirrored at the call site with Tailwind's
+  `rtl:rotate-180`. There is deliberately no `.icon-directional` helper here: a
+  bare `transform: scaleX(-1)` in CSS overwrites the whole transform property,
+  which silently kills the `translate-x` on any arrow that also animates on
+  hover. Tailwind's variant composes into the same transform instead of
+  replacing it. Symmetric icons get neither.
+*/
