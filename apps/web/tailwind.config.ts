@@ -104,6 +104,10 @@ const config: Config = {
         heading: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         accent: ['var(--font-accent)', 'Georgia', 'serif'],
+        /* The Persian face. Named so a component can ask for it explicitly;
+           the [lang='fa'] rules in globals.css already redirect display and
+           accent to it, so most code never needs to. */
+        vazir: ['var(--font-vazir)', 'Segoe UI', 'Tahoma', 'sans-serif'],
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',

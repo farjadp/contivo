@@ -2,11 +2,12 @@
 
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import { scrapeUrl, analyzeWebsiteWithGemini, discoverCompetitorsWithGemini } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
 import { createWorkspaceProgressBaseline } from '@/lib/workspace-progress';
 import { COMPETITOR_DISCOVERY_WARNING } from '@/lib/workspace-setup-warnings';
+import { getLocale } from 'next-intl/server';
 
 /**
  * Step 1 of workspace creation: record the workspace and get out of the way.
@@ -62,7 +63,7 @@ export async function createNewWorkspace(_prevState: any, formData: FormData) {
     detail: { name, websiteUrl: normalizedUrl },
   });
 
-  redirect(`/growth/analyzing?id=${workspace.id}`);
+  redirect({ href: { pathname: '/growth/analyzing', query: { id: workspace.id } }, locale: await getLocale() });
 }
 
 /** What `enrichWorkspace` reports back to the analysing screen. */

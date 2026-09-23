@@ -9,8 +9,7 @@
  * machine is running.
  */
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { Link, usePathname } from '@/i18n/navigation';
 import type { ElementType, ReactNode } from 'react';
 import { Zap, TrendingUp, Settings, LayoutDashboard, LogOut, Share2, Bot } from 'lucide-react';
 

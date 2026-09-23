@@ -4,7 +4,7 @@ import { promises as dns } from 'node:dns';
 
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
 import { generatePositioningInsights } from '@/lib/gemini';
 import { discoverCompetitorsWithGemini } from '@/lib/gemini';
 import { generateWorkspaceCompetitiveMatrices } from '@/app/actions/growth-matrices';
@@ -15,6 +15,7 @@ import {
   listWorkspaceDiscoveryArchive,
   writeActivityLog,
 } from '@/lib/activity-log';
+import { getLocale } from 'next-intl/server';
 
 type EditableCompetitor = {
   id?: string;
@@ -753,7 +754,7 @@ export async function saveCompetitors(_prevState: any, formData: FormData) {
   }
 
   // Advance to the Strategy Review
-  redirect(`/growth/review?id=${id}`);
+  redirect({ href: { pathname: '/growth/review', query: { id: id } }, locale: await getLocale() });
 }
 
 export async function discoverWorkspaceCompetitors(workspaceId: string) {

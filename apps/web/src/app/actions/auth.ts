@@ -17,7 +17,8 @@ import { isUserSuspended } from '@/lib/admin-state';
 import { ensureWelcomeCredits } from '@/lib/credits';
 import { checkPassword } from '@/lib/password-policy';
 import { callerIp, consumeRateLimit, retryAfterLabel } from '@/lib/rate-limit';
-import { redirect } from 'next/navigation';
+import { redirect } from '@/i18n/navigation';
+import { getLocale } from 'next-intl/server';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -90,9 +91,9 @@ export async function login(_prevState: any, formData: FormData) {
   });
 
   if (user.role === 'ADMIN') {
-    redirect('/admin');
+    redirect({ href: '/admin', locale: await getLocale() });
   } else {
-    redirect('/dashboard');
+    redirect({ href: '/dashboard', locale: await getLocale() });
   }
 }
 
@@ -153,13 +154,13 @@ export async function register(_prevState: any, formData: FormData) {
   });
 
   if (user.role === 'ADMIN') {
-    redirect('/admin');
+    redirect({ href: '/admin', locale: await getLocale() });
   } else {
-    redirect('/dashboard');
+    redirect({ href: '/dashboard', locale: await getLocale() });
   }
 }
 
 export async function logout() {
   await deleteSessionCookie();
-  redirect('/sign-in');
+  redirect({ href: '/sign-in', locale: await getLocale() });
 }

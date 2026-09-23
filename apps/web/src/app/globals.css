@@ -138,3 +138,78 @@
     break-inside: avoid;
   }
 }
+
+/* ── Persian surface ────────────────────────────────────────────────────────
+   Everything here is scoped to [lang='fa'], so the English surface renders
+   byte-identically to how it did before Persian existed. What changes is only
+   what language forces — never the palette, the spacing scale or the forms. */
+@layer base {
+  [lang='fa'] {
+    /* Vazirmatn carries body AND display. Bricolage and Bodoni have no Persian
+       glyphs at all, so leaving them in the stack means a silent fallback to
+       whatever the OS has — Geeza Pro on macOS, DejaVu tofu on Linux. */
+    --font-display: var(--font-vazir);
+    --font-accent: var(--font-vazir);
+  }
+
+  [lang='fa'] body {
+    font-family: var(--font-vazir), 'Segoe UI', Tahoma, sans-serif;
+    /* Persian reads smaller than Latin at the same px, and clips below 1.6
+       leading because the descenders and dots need the room. */
+    font-size: 17px;
+    line-height: 1.8;
+  }
+
+  [lang='fa'] h1,
+  [lang='fa'] h2,
+  [lang='fa'] h3,
+  [lang='fa'] h4,
+  [lang='fa'] h5,
+  [lang='fa'] h6 {
+    font-family: var(--font-vazir), 'Segoe UI', Tahoma, sans-serif;
+    line-height: 1.5;
+  }
+
+  /* Tracking is a Latin-only device. Applied to Persian it breaks the letter
+     joining that makes the script readable at all, and the marketing headings
+     carry tracking values as tight as -0.045em. */
+  [lang='fa'] * {
+    letter-spacing: 0 !important;
+  }
+
+  /* Faux italics slant the glyphs and destroy the joins the same way. Persian
+     marks emphasis with weight and colour, never slope. */
+  [lang='fa'] i,
+  [lang='fa'] em,
+  [lang='fa'] .font-accent {
+    font-style: normal;
+  }
+
+  /* Latin fragments inside Persian prose — brand names, URLs, model ids,
+     version numbers — scramble the surrounding punctuation unless isolated. */
+  [lang='fa'] bdi,
+  [lang='fa'] code,
+  [lang='fa'] kbd,
+  [lang='fa'] samp {
+    unicode-bidi: isolate;
+  }
+
+  /* Fields whose content is Latin by nature stay LTR even on the Persian side:
+     a URL typed into an RTL input renders with its scheme on the wrong end. */
+  [dir='rtl'] input[type='url'],
+  [dir='rtl'] input[type='email'],
+  [dir='rtl'] input[type='password'],
+  [dir='rtl'] input[type='tel'],
+  [dir='rtl'] input[inputmode='numeric'] {
+    direction: ltr;
+    text-align: start;
+  }
+}
+
+@layer utilities {
+  /* Directional glyphs — arrows, chevrons, back buttons — point the wrong way
+     once the layout mirrors. Symmetric icons must NOT carry this class. */
+  [dir='rtl'] .icon-directional {
+    transform: scaleX(-1);
+  }
+}

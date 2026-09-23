@@ -9,7 +9,7 @@
  * journey and should not look like a different application.
  */
 
-import Link from 'next/link';
+import { Link } from '@/i18n/navigation';
 
 export function AuthShell({
   eyebrow,
