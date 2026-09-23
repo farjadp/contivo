@@ -355,14 +355,15 @@ function PipelineItemCard({
         publishDate: hasCustomSchedule ? publishDate : undefined,
         publishTime: hasCustomSchedule ? publishTime : undefined,
       });
-      if (res?.success) {
+      // The action returns a union; `in` narrows it to the success member.
+      if (res && 'success' in res && res.success) {
         if (res.item) {
           setCurrentItem(res.item);
           setEditContentText(res.item.content || '');
           setIsPreviewOpen(true);
         }
       } else {
-        console.error(res?.error);
+        console.error(res && 'error' in res ? res.error : null);
       }
     } catch (e) {
       console.error(e);

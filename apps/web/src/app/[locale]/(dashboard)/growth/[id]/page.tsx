@@ -57,6 +57,7 @@ import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-w
 import { getAutopilotState } from '@/app/actions/autopilot';
 import { getNarrative } from '@/app/actions/narrative';
 import { getFormatter, getLocale } from 'next-intl/server';
+import { missingReportRequirements } from '@/lib/report-readiness';
 
 export async function generateMetadata() {
   const t = await getTranslations('growth.workspace');
@@ -226,14 +227,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   ]);
 
   const insights = (workspace.audienceInsights as any) || {};
-  const reportMissingData: string[] = [];
-  if (!workspace.brandSummary) reportMissingData.push('Brand Memory');
-  if (!insights?.competitiveMatrices?.charts || insights.competitiveMatrices.charts.length < 5)
-    reportMissingData.push('Market Matrices (5 charts required)');
-  if (!insights?.competitorKeywordsIntel?.competitors?.length)
-    reportMissingData.push('Competitor Keywords');
-  if (!insights?.productsServicesIntel?.client_offerings?.offerings?.length)
-    reportMissingData.push('Products & Services');
+  const reportMissingData = missingReportRequirements(workspace.brandSummary, insights);
 
   const reportEligibility = {
     canGenerate: reportsThisMonth < MONTHLY_LIMIT && reportMissingData.length === 0,

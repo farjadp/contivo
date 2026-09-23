@@ -5,6 +5,7 @@ import type { Metadata } from 'next';
 import { Bodoni_Moda, Bricolage_Grotesque, Inter, JetBrains_Mono, Vazirmatn } from 'next/font/google';
 
 import { GlobalHeader } from '@/components/layout/global-header';
+import { TimezoneProbe } from '@/components/layout/timezone-probe';
 import { dirFor, routing } from '@/i18n/routing';
 import '../globals.css';
 
@@ -104,7 +105,6 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!hasLocale(routing.locales, locale)) notFound();
 
-  // Lets the static shell render without opting the whole tree into dynamic rendering.
   setRequestLocale(locale);
 
   const messages = await getMessages();
@@ -117,6 +117,7 @@ export default async function LocaleLayout({
       >
         <div hidden dangerouslySetInnerHTML={{ __html: `<!--${DIRECTION_CONTRACT}-->` }} />
         <NextIntlClientProvider messages={messages}>
+          <TimezoneProbe />
           <GlobalHeader />
 
           {children}

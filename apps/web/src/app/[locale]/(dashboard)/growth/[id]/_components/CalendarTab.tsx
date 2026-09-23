@@ -52,20 +52,30 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
 
   // Generate next 7 days for the Week view
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Midday, not midnight: the column is labelled in the locale's own zone, and
+  // an anchor at noon lands on the intended calendar day whichever zone that is.
+  today.setHours(12, 0, 0, 0);
   const next7Days = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date(today);
     d.setDate(d.getDate() + i);
     return d;
   });
 
+  /*
+    The bucket key is the formatted date itself rather than a Gregorian
+    year-month-day built by hand. That keeps a post in the column its own label
+    names: both sides go through the same calendar and the same time zone, so
+    the Persian side buckets by Tehran days and never by the reader's.
+  */
+  const dayKey = (value: Date) =>
+    format.dateTime(value, { year: 'numeric', month: 'numeric', day: 'numeric' });
+
   const itemsByDate: Record<string, any[]> = {};
   items.forEach((item) => {
     if (!item.scheduledAtUtc) return;
-    const d = new Date(item.scheduledAtUtc);
-    const dateKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    if (!itemsByDate[dateKey]) itemsByDate[dateKey] = [];
-    itemsByDate[dateKey].push(item);
+    const key = dayKey(new Date(item.scheduledAtUtc));
+    if (!itemsByDate[key]) itemsByDate[key] = [];
+    itemsByDate[key].push(item);
   });
 
   return (
@@ -166,7 +176,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
           {view === 'week' && (
             <div className="grid grid-cols-1 lg:grid-cols-7 gap-px bg-gray-100">
               {next7Days.map((day, idx) => {
-                const dateString = `${day.getFullYear()}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+                const dateString = dayKey(day);
                 const dayItems = itemsByDate[dateString] || [];
                 const isToday = idx === 0;
 

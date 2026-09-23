@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useFormatter, useTranslations } from 'next-intl';
 import {
   AlertTriangle,
   Building2,
@@ -96,14 +97,15 @@ type ProductsServicesPayload = {
   };
 };
 
-const TABS = [
-  { key: 'client', label: 'Client Offerings' },
-  { key: 'competitors', label: 'Competitor Offerings' },
-  { key: 'comparison', label: 'Offer Comparison' },
-  { key: 'gaps', label: 'Offer Gaps' },
-] as const;
+/* Keys only; the labels come from the catalogue. */
+const TABS = ['client', 'competitors', 'comparison', 'gaps'] as const;
 
-type TabKey = (typeof TABS)[number]['key'];
+type TabKey = (typeof TABS)[number];
+
+const OFFERING_TYPES = ['product', 'service', 'solution', 'platform_module', 'package'] as const;
+
+/** Brand names stay Latin; isolating them keeps Persian punctuation in place. */
+const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
 function clampConfidence(value: number): number {
   if (!Number.isFinite(value)) return 0.55;
@@ -156,6 +158,8 @@ export function ProductsServicesTab({
   workspaceId: string;
   initialPayload: ProductsServicesPayload | null;
 }) {
+  const t = useTranslations('tabsB.offerings');
+  const format = useFormatter();
   const [payload, setPayload] = useState<ProductsServicesPayload | null>(initialPayload);
   const [tab, setTab] = useState<TabKey>('client');
   const [selectedCompetitor, setSelectedCompetitor] = useState<string>(
@@ -203,11 +207,11 @@ export function ProductsServicesTab({
         setSelectedCompetitor(next.competitor_offerings?.[0]?.website || '');
         setClientQuery('');
         setCompetitorQuery('');
-        setSuccess('Products & Services intelligence generated and saved.');
+        setSuccess(t('generated'));
       }
     } catch (generateError) {
       console.error(generateError);
-      setError('Unexpected error while generating offerings intelligence.');
+      setError(t('generateFailed'));
     } finally {
       setIsGenerating(false);
     }
@@ -226,11 +230,11 @@ export function ProductsServicesTab({
       }
       if (result?.payload) {
         setPayload(result.payload as ProductsServicesPayload);
-        setSuccess('Products & Services edits saved.');
+        setSuccess(t('saved'));
       }
     } catch (saveError) {
       console.error(saveError);
-      setError('Unexpected error while saving offerings intelligence edits.');
+      setError(t('saveFailed'));
     } finally {
       setIsSaving(false);
     }
@@ -402,13 +406,10 @@ export function ProductsServicesTab({
           <div className="space-y-2">
             <p className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
               <Layers3 className="h-3.5 w-3.5" />
-              Products & Services Intelligence
+              {t('badge')}
             </p>
-            <h3 className="text-lg font-bold text-[#121212]">Structured Offer Mapping</h3>
-            <p className="max-w-2xl text-sm text-gray-600">
-              Discover offerings from client and competitors, then review and edit them in a cleaner,
-              comparison-ready workspace.
-            </p>
+            <h3 className="text-lg font-bold text-[#121212]">{t('title')}</h3>
+            <p className="max-w-2xl text-sm text-gray-600">{t('subtitle')}</p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -423,7 +424,7 @@ export function ProductsServicesTab({
               ) : (
                 <Sparkles className="h-4 w-4 text-emerald-400" />
               )}
-              Analyze
+              {t('analyze')}
             </button>
             <button
               type="button"
@@ -432,7 +433,7 @@ export function ProductsServicesTab({
               className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold text-[#121212] transition hover:bg-gray-50 disabled:opacity-60"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-              Save Edits
+              {t('saveEdits')}
             </button>
           </div>
         </div>
@@ -440,55 +441,60 @@ export function ProductsServicesTab({
         <div className="mt-4 grid gap-3 md:grid-cols-4">
           <MetricTile
             icon={<Building2 className="h-4 w-4" />}
-            label="Client Offerings"
-            value={String(payload?.client_offerings.offerings.length || 0)}
+            label={t('metricClient')}
+            value={format.number(payload?.client_offerings.offerings.length || 0)}
           />
           <MetricTile
             icon={<Layers3 className="h-4 w-4" />}
-            label="Competitors"
-            value={String(payload?.competitor_offerings.length || 0)}
+            label={t('metricCompetitors')}
+            value={format.number(payload?.competitor_offerings.length || 0)}
           />
           <MetricTile
             icon={<Info className="h-4 w-4" />}
-            label="Last Run Tokens"
-            value={String(payload?.token_usage.last_run?.total_tokens?.toLocaleString() || 0)}
+            label={t('metricLastRunTokens')}
+            value={format.number(payload?.token_usage.last_run?.total_tokens || 0)}
           />
           <MetricTile
             icon={<CheckCircle2 className="h-4 w-4" />}
-            label="Lifetime Tokens"
-            value={String(payload?.token_usage.lifetime_total_tokens?.toLocaleString() || 0)}
+            label={t('metricLifetimeTokens')}
+            value={format.number(payload?.token_usage.lifetime_total_tokens || 0)}
           />
         </div>
       </section>
 
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">
-        AI-estimated based on public signals. Review and confirm before strategic decisions.
+        {t('disclaimer')}
       </div>
 
       {payload?.token_usage ? (
         <div className="grid gap-3 md:grid-cols-2">
           <TokenCard
-            title="Last Run Usage"
+            title={t('lastRunUsage')}
             rows={[
-              ['Prompt', payload.token_usage.last_run?.prompt_tokens || 0],
-              ['Completion', payload.token_usage.last_run?.completion_tokens || 0],
-              ['Total', payload.token_usage.last_run?.total_tokens || 0],
+              [t('tokenPrompt'), format.number(payload.token_usage.last_run?.prompt_tokens || 0)],
+              [t('tokenCompletion'), format.number(payload.token_usage.last_run?.completion_tokens || 0)],
+              [t('tokenTotal'), format.number(payload.token_usage.last_run?.total_tokens || 0)],
             ]}
             footer={
               payload.token_usage.last_run
-                ? `Model: ${payload.token_usage.last_run.model} | ${new Date(
-                    payload.token_usage.last_run.created_at,
-                  ).toLocaleString()}`
-                : 'No token data yet.'
+                ? t.rich('modelLine', {
+                    model: payload.token_usage.last_run.model,
+                    date: format.dateTime(new Date(payload.token_usage.last_run.created_at), {
+                      dateStyle: 'medium',
+                      timeStyle: 'short',
+                    }),
+                    m: bdi,
+                  })
+                : t('noTokenData')
             }
           />
           <TokenCard
-            title="Lifetime Usage"
+            title={t('lifetimeUsage')}
             rows={[
-              ['Runs', payload.token_usage.runs],
-              ['Prompt', payload.token_usage.lifetime_prompt_tokens],
-              ['Completion', payload.token_usage.lifetime_completion_tokens],
-              ['Total', payload.token_usage.lifetime_total_tokens],
+              [t('tokenRuns'), format.number(payload.token_usage.runs)],
+              [t('tokenPrompt'), format.number(payload.token_usage.lifetime_prompt_tokens)],
+              [t('tokenCompletion'), format.number(payload.token_usage.lifetime_completion_tokens)],
+              [t('tokenTotal'), format.number(payload.token_usage.lifetime_total_tokens)],
             ]}
           />
         </div>
@@ -513,33 +519,31 @@ export function ProductsServicesTab({
 
       {!payload ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
-          <p className="text-sm font-semibold text-[#121212]">No intelligence generated yet.</p>
-          <p className="mt-1 text-sm text-gray-500">
-            Run analysis to build the client and competitor offerings dataset.
-          </p>
+          <p className="text-sm font-semibold text-[#121212]">{t('emptyTitle')}</p>
+          <p className="mt-1 text-sm text-gray-500">{t('emptyBody')}</p>
         </div>
       ) : (
         <>
           <div className="rounded-xl border border-gray-200 bg-white p-1.5">
             <div className="flex flex-wrap gap-1">
-              {TABS.map((item) => (
+              {TABS.map((key) => (
                 <button
-                  key={item.key}
+                  key={key}
                   type="button"
-                  onClick={() => setTab(item.key)}
+                  onClick={() => setTab(key)}
                   className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition ${
-                    tab === item.key
+                    tab === key
                       ? 'bg-[#121212] text-white'
                       : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  {item.label}
+                  {t(`tabs.${key}`)}
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] ${
-                      tab === item.key ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-600'
+                      tab === key ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-600'
                     }`}
                   >
-                    {tabCountMap[item.key]}
+                    {format.number(tabCountMap[key])}
                   </span>
                 </button>
               ))}
@@ -549,18 +553,18 @@ export function ProductsServicesTab({
           {tab === 'client' ? (
             <div className="space-y-4">
               <SummaryCard
-                title={`${payload.client_offerings.company_name} Summary`}
+                title={t('summaryTitle', { name: payload.client_offerings.company_name })}
                 summary={payload.client_offerings.summary}
               />
               <ListToolbar
                 searchValue={clientQuery}
                 onSearchChange={setClientQuery}
-                searchPlaceholder="Search client offerings"
-                addLabel="Add Client Offering"
+                searchPlaceholder={t('searchClient')}
+                addLabel={t('addClient')}
                 onAdd={addClientOffering}
               />
               {filteredClientOfferings.length === 0 ? (
-                <EmptyListMessage message="No client offerings match your search." />
+                <EmptyListMessage message={t('noClientMatch')} />
               ) : (
                 <div className="space-y-3">
                   {filteredClientOfferings.map(({ offering, index }, visualIndex) => (
@@ -581,12 +585,13 @@ export function ProductsServicesTab({
             <div className="space-y-4">
               <div className="rounded-xl border border-gray-200 bg-white p-4">
                 <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-gray-500">
-                  Select Competitor
+                  {t('selectCompetitor')}
                 </label>
                 <select
                   value={selectedCompetitor}
                   onChange={(event) => setSelectedCompetitor(event.target.value)}
                   className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+                  dir="ltr"
                 >
                   {payload.competitor_offerings.map((competitor) => (
                     <option key={competitor.website} value={competitor.website}>
@@ -599,18 +604,18 @@ export function ProductsServicesTab({
               {selectedCompetitorData ? (
                 <>
                   <SummaryCard
-                    title={`${selectedCompetitorData.competitor_name} Summary`}
+                    title={t('summaryTitle', { name: selectedCompetitorData.competitor_name })}
                     summary={selectedCompetitorData.summary}
                   />
                   <ListToolbar
                     searchValue={competitorQuery}
                     onSearchChange={setCompetitorQuery}
-                    searchPlaceholder="Search competitor offerings"
-                    addLabel="Add Competitor Offering"
+                    searchPlaceholder={t('searchCompetitor')}
+                    addLabel={t('addCompetitor')}
                     onAdd={() => addCompetitorOffering(selectedCompetitorData.website)}
                   />
                   {filteredCompetitorOfferings.length === 0 ? (
-                    <EmptyListMessage message="No competitor offerings match your search." />
+                    <EmptyListMessage message={t('noCompetitorMatch')} />
                   ) : (
                     <div className="space-y-3">
                       {filteredCompetitorOfferings.map(({ offering, index }, visualIndex) => (
@@ -630,7 +635,7 @@ export function ProductsServicesTab({
                   )}
                 </>
               ) : (
-                <EmptyListMessage message="No competitor offering data." />
+                <EmptyListMessage message={t('noCompetitorData')} />
               )}
             </div>
           ) : null}
@@ -639,24 +644,25 @@ export function ProductsServicesTab({
             <div className="space-y-4">
               <div className="rounded-2xl border border-gray-200 bg-white p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">
-                  Offer Comparison Matrix
+                  {t('matrixTitle')}
                 </h3>
                 <div className="mt-3 overflow-x-auto">
                   <table className="min-w-full border-collapse text-xs">
                     <thead>
                       <tr>
-                        <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-left font-bold text-gray-600">
-                          Offering
+                        <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-start font-bold text-gray-600">
+                          {t('colOffering')}
                         </th>
                         <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-center font-bold text-gray-600">
-                          Client
+                          {t('colClient')}
                         </th>
+                        {/* Competitor names are data, never translated. */}
                         {payload.competitor_offerings.map((competitor) => (
                           <th
                             key={competitor.website}
                             className="border border-gray-200 bg-gray-50 px-3 py-2 text-center font-bold text-gray-600"
                           >
-                            {competitor.competitor_name}
+                            <bdi>{competitor.competitor_name}</bdi>
                           </th>
                         ))}
                       </tr>
@@ -665,17 +671,24 @@ export function ProductsServicesTab({
                       {comparisonRows.map((row) => (
                         <tr key={row.name} className="odd:bg-white even:bg-gray-50/40">
                           <td className="border border-gray-200 px-3 py-2 font-medium text-gray-800">
-                            {row.name}
+                            <bdi>{row.name}</bdi>
                           </td>
+                          {/* The tick and cross carry meaning, so they get a
+                              label a screen reader and a Persian reader can
+                              both resolve. */}
                           <td className="border border-gray-200 px-3 py-2 text-center">
-                            {row.client ? '✔' : '✖'}
+                            <span title={row.client ? t('hasOffering') : t('lacksOffering')}>
+                              {row.client ? '✔' : '✖'}
+                            </span>
                           </td>
                           {row.competitors.map((competitor) => (
                             <td
                               key={`${row.name}:${competitor.website}`}
                               className="border border-gray-200 px-3 py-2 text-center"
                             >
-                              {competitor.has ? '✔' : '✖'}
+                              <span title={competitor.has ? t('hasOffering') : t('lacksOffering')}>
+                                {competitor.has ? '✔' : '✖'}
+                              </span>
                             </td>
                           ))}
                         </tr>
@@ -687,30 +700,36 @@ export function ProductsServicesTab({
 
               <div className="grid gap-3 md:grid-cols-2">
                 <ListCard
-                  title="Common Market Offerings"
+                  title={t('commonMarket')}
+                  emptyLabel={t('noData')}
                   items={payload.comparison_analysis.common_market_offerings}
                 />
                 <ListCard
-                  title="Client Unique Offerings"
+                  title={t('clientUnique')}
+                  emptyLabel={t('noData')}
                   items={payload.comparison_analysis.client_unique_offerings}
                 />
                 <ListCard
-                  title="Competitor Common Offerings"
+                  title={t('competitorCommon')}
+                  emptyLabel={t('noData')}
                   items={payload.comparison_analysis.competitor_common_offerings}
                 />
                 <ListCard
-                  title="Client Missing Offerings"
+                  title={t('clientMissing')}
+                  emptyLabel={t('noData')}
                   items={payload.comparison_analysis.client_missing_offerings}
                 />
               </div>
 
               <div className="grid gap-3 md:grid-cols-2">
                 <InsightCard
-                  title="Positioning Insight"
+                  title={t('positioningInsight')}
+                  emptyLabel={t('na')}
                   value={payload.comparison_analysis.positioning_insight}
                 />
                 <InsightCard
-                  title="Offer Gap Opportunity"
+                  title={t('offerGap')}
+                  emptyLabel={t('na')}
                   value={payload.comparison_analysis.offer_gap_opportunity}
                   highlight
                 />
@@ -720,13 +739,14 @@ export function ProductsServicesTab({
 
           {tab === 'gaps' ? (
             <div className="grid gap-3 md:grid-cols-2">
-              <InsightCard title="Offer Clarity Insight" value={payload.comparison_summary.offer_clarity_insight} />
-              <InsightCard title="Market Offer Pattern" value={payload.comparison_summary.market_offer_pattern} />
-              <InsightCard title="Client Focus" value={payload.comparison_summary.client_focus} />
-              <InsightCard title="Offer Gap Opportunity" value={payload.comparison_summary.offer_gap_opportunity} highlight />
-              <ListCard title="Competitor Patterns" items={payload.comparison_summary.competitor_patterns} />
+              <InsightCard title={t('offerClarity')} emptyLabel={t('na')} value={payload.comparison_summary.offer_clarity_insight} />
+              <InsightCard title={t('marketPattern')} emptyLabel={t('na')} value={payload.comparison_summary.market_offer_pattern} />
+              <InsightCard title={t('clientFocus')} emptyLabel={t('na')} value={payload.comparison_summary.client_focus} />
+              <InsightCard title={t('offerGap')} emptyLabel={t('na')} value={payload.comparison_summary.offer_gap_opportunity} highlight />
+              <ListCard title={t('competitorPatterns')} emptyLabel={t('noData')} items={payload.comparison_summary.competitor_patterns} />
               <ListCard
-                title="White Space Opportunities"
+                title={t('whiteSpace')}
+                emptyLabel={t('noData')}
                 items={payload.comparison_summary.white_space_opportunities}
               />
             </div>
@@ -744,6 +764,7 @@ function MetricTile({
 }: {
   icon: React.ReactNode;
   label: string;
+  /** Already run through the request formatter. */
   value: string;
 }) {
   return (
@@ -763,8 +784,9 @@ function TokenCard({
   footer,
 }: {
   title: string;
-  rows: Array<[string, number]>;
-  footer?: string;
+  /** Label plus an already-formatted value. */
+  rows: Array<[string, string]>;
+  footer?: React.ReactNode;
 }) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
@@ -772,7 +794,7 @@ function TokenCard({
       <div className="mt-2 space-y-1 text-sm text-gray-700">
         {rows.map(([key, value]) => (
           <p key={`${title}:${key}`}>
-            {key}: <span className="font-semibold">{value.toLocaleString()}</span>
+            {key}: <span className="font-semibold">{value}</span>
           </p>
         ))}
       </div>
@@ -797,12 +819,12 @@ function ListToolbar({
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-3 md:flex-row md:items-center md:justify-between">
       <div className="relative w-full md:max-w-sm">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+        <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
         <input
           value={searchValue}
           onChange={(event) => onSearchChange(event.target.value)}
           placeholder={searchPlaceholder}
-          className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-700 focus:border-black focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 py-2 ps-9 pe-3 text-sm text-gray-700 focus:border-black focus:outline-none"
         />
       </div>
       <button
@@ -826,26 +848,29 @@ function EmptyListMessage({ message }: { message: string }) {
 }
 
 function SummaryCard({ title, summary }: { title: string; summary: CompanyOfferings['summary'] }) {
+  const t = useTranslations('tabsB.offerings');
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-4">
-      <h3 className="text-sm font-bold text-[#121212]">{title}</h3>
+      {/* The title carries a company name, so it is isolated as a whole. */}
+      <h3 className="text-sm font-bold text-[#121212]"><bdi>{title}</bdi></h3>
       <div className="mt-3 grid gap-2 text-sm text-gray-700 md:grid-cols-3">
-        <SummaryRow label="Main Model" value={summary.main_business_model_guess} />
-        <SummaryRow label="Main Focus" value={summary.main_offering_focus} />
-        <SummaryRow label="Primary Offer" value={summary.primary_offering} />
-        <SummaryRow label="Secondary Offer" value={summary.secondary_offering} />
-        <SummaryRow label="Revenue Model" value={summary.core_revenue_model_guess} />
-        <SummaryRow label="Product/Service Ratio" value={summary.product_service_ratio} />
+        <SummaryRow label={t('summary.mainModel')} value={summary.main_business_model_guess} />
+        <SummaryRow label={t('summary.mainFocus')} value={summary.main_offering_focus} />
+        <SummaryRow label={t('summary.primaryOffer')} value={summary.primary_offering} />
+        <SummaryRow label={t('summary.secondaryOffer')} value={summary.secondary_offering} />
+        <SummaryRow label={t('summary.revenueModel')} value={summary.core_revenue_model_guess} />
+        <SummaryRow label={t('summary.ratio')} value={summary.product_service_ratio} />
       </div>
     </div>
   );
 }
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
+  const t = useTranslations('tabsB.offerings');
   return (
     <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
       <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</p>
-      <p className="mt-0.5 text-sm font-medium text-gray-800">{value || 'n/a'}</p>
+      <p className="mt-0.5 text-sm font-medium text-gray-800">{value || t('na')}</p>
     </div>
   );
 }
@@ -861,79 +886,86 @@ function OfferingEditorCard({
   onChange: (patch: Partial<OfferingItem>) => void;
   onRemove: () => void;
 }) {
-  const title = offering.name.trim() || `Untitled Offering ${order}`;
+  const t = useTranslations('tabsB.offerings');
+  const format = useFormatter();
+  const title = offering.name.trim() || t('untitled', { order: format.number(order) });
   const normalized = offering.normalized_name || normalizeName(offering.name || title);
 
   return (
     <details className="rounded-2xl border border-gray-200 bg-white" open={order <= 1}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3">
         <div className="min-w-0">
-          <p className="truncate text-sm font-semibold text-[#121212]">{title}</p>
-          <p className="truncate text-xs text-gray-500">{normalized || 'normalized_name pending'}</p>
+          <p className="truncate text-sm font-semibold text-[#121212]"><bdi>{title}</bdi></p>
+          <p className="truncate text-xs text-gray-500">
+            {normalized ? <bdi>{normalized}</bdi> : t('normalizedPending')}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-semibold text-gray-600">
-            {offering.type}
+            {t(`types.${offering.type}`)}
           </span>
           <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[11px] font-semibold text-indigo-700">
-            {offering.confidence_score.toFixed(2)}
+            {format.number(offering.confidence_score, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}
           </span>
         </div>
       </summary>
 
       <div className="border-t border-gray-100 p-4">
         <div className="grid gap-3 md:grid-cols-2">
-          <Field label="Offering Name">
+          <Field label={t('fieldName')}>
             <input
               value={offering.name}
               onChange={(event) => onChange({ name: event.target.value })}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
-              placeholder="e.g. AI Strategy Engine"
+              placeholder={t('fieldNamePlaceholder')}
             />
           </Field>
 
-          <Field label="Type">
+          <Field label={t('fieldType')}>
             <select
               value={offering.type}
               onChange={(event) => onChange({ type: event.target.value as OfferingItem['type'] })}
               className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
             >
-              <option value="product">product</option>
-              <option value="service">service</option>
-              <option value="solution">solution</option>
-              <option value="platform_module">platform_module</option>
-              <option value="package">package</option>
+              {OFFERING_TYPES.map((key) => (
+                <option key={key} value={key}>
+                  {t(`types.${key}`)}
+                </option>
+              ))}
             </select>
           </Field>
 
-          <Field label="Description" full>
+          <Field label={t('fieldDescription')} full>
             <textarea
               value={offering.description}
               onChange={(event) => onChange({ description: event.target.value })}
               className="h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
-              placeholder="Neutral description of this offer and who it serves."
+              placeholder={t('fieldDescriptionPlaceholder')}
             />
           </Field>
 
-          <Field label="Problem Solved">
+          <Field label={t('fieldProblem')}>
             <textarea
               value={offering.problem_solved}
               onChange={(event) => onChange({ problem_solved: event.target.value })}
               className="h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
-              placeholder="What exact problem this offer solves"
+              placeholder={t('fieldProblemPlaceholder')}
             />
           </Field>
 
-          <Field label="Value Proposition">
+          <Field label={t('fieldValue')}>
             <textarea
               value={offering.value_proposition}
               onChange={(event) => onChange({ value_proposition: event.target.value })}
               className="h-20 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none"
-              placeholder="Core value this offer delivers"
+              placeholder={t('fieldValuePlaceholder')}
             />
           </Field>
 
-          <Field label="Confidence (0.30 - 1.00)">
+          <Field label={t('fieldConfidence')}>
             <input
               type="number"
               min={0.3}
@@ -949,17 +981,29 @@ function OfferingEditorCard({
         </div>
 
         <div className="mt-3 rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-600">
-          <p className="font-semibold text-gray-700">Signals</p>
-          <p className="mt-1">Source Pages: {offering.source_pages.join(', ') || 'n/a'}</p>
-          <p>Aliases: {offering.aliases.join(', ') || 'n/a'}</p>
-          <p>Related Keywords: {offering.related_keywords.join(', ') || 'n/a'}</p>
+          <p className="font-semibold text-gray-700">{t('signals')}</p>
+          {/* Pages, aliases and keywords are scraped data: isolated, never
+              translated. */}
+          <p className="mt-1">
+            {t.rich('sourcePages', {
+              value: offering.source_pages.join(', ') || t('na'),
+              v: bdi,
+            })}
+          </p>
+          <p>{t.rich('aliases', { value: offering.aliases.join(', ') || t('na'), v: bdi })}</p>
+          <p>
+            {t.rich('relatedKeywords', {
+              value: offering.related_keywords.join(', ') || t('na'),
+              v: bdi,
+            })}
+          </p>
         </div>
 
         <div className="mt-3 flex items-center justify-between gap-2">
           <p className="text-xs text-gray-500">
-            Keep <span className="font-semibold">name</span>, <span className="font-semibold">type</span>,{' '}
-            <span className="font-semibold">description</span>, and{' '}
-            <span className="font-semibold">problem solved</span> accurate.
+            {t.rich('keepAccurate', {
+              b: (chunks) => <span className="font-semibold">{chunks}</span>,
+            })}
           </p>
           <button
             type="button"
@@ -967,7 +1011,7 @@ function OfferingEditorCard({
             className="inline-flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Remove
+            {t('remove')}
           </button>
         </div>
       </div>
@@ -992,17 +1036,25 @@ function Field({
   );
 }
 
-function ListCard({ title, items }: { title: string; items: string[] }) {
+function ListCard({
+  title,
+  items,
+  emptyLabel,
+}: {
+  title: string;
+  items: string[];
+  emptyLabel: string;
+}) {
   return (
     <div className="rounded-xl border border-gray-200 bg-white p-4">
       <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{title}</p>
       {items.length === 0 ? (
-        <p className="mt-2 text-sm text-gray-500">No data.</p>
+        <p className="mt-2 text-sm text-gray-500">{emptyLabel}</p>
       ) : (
         <ul className="mt-2 space-y-1 text-sm text-gray-700">
           {items.map((item) => (
             <li key={`${title}:${item}`} className="rounded-md bg-gray-50 px-2.5 py-1.5">
-              {item}
+              <bdi>{item}</bdi>
             </li>
           ))}
         </ul>
@@ -1015,10 +1067,12 @@ function InsightCard({
   title,
   value,
   highlight,
+  emptyLabel,
 }: {
   title: string;
   value: string;
   highlight?: boolean;
+  emptyLabel: string;
 }) {
   return (
     <div
@@ -1033,7 +1087,9 @@ function InsightCard({
       >
         {title}
       </p>
-      <p className={`mt-1 text-sm ${highlight ? 'text-indigo-900' : 'text-gray-700'}`}>{value || 'n/a'}</p>
+      <p className={`mt-1 text-sm ${highlight ? 'text-indigo-900' : 'text-gray-700'}`}>
+        {value || emptyLabel}
+      </p>
     </div>
   );
 }

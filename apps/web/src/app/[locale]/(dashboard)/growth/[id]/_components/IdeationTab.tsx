@@ -213,9 +213,10 @@ export function IdeationTab({
         imageCount: includeImages ? imageCount : 0,
         autoInsertToCalendar,
       });
-      if (result.error) {
+      // The action returns a union; `in` narrows it to the success member.
+      if ('error' in result && result.error) {
         setError(result.error);
-      } else if (result.ideas) {
+      } else if ('ideas' in result && result.ideas) {
         setIdeas(
           result.ideas.map((idea) => ({
             ...idea,
@@ -600,12 +601,12 @@ function IdeaCard({
           : { targetWordCount },
       );
 
-      if (result?.error) {
+      if (result && 'error' in result && result.error) {
         setPreviewError(result.error);
         return;
       }
 
-      if (result?.success) {
+      if (result && 'success' in result && result.success) {
         setPreviewText(String(result.preview || ''));
         setPreviewChannel(String(result.channel || idea?.format || ''));
         setIsPreviewOpen(true);
@@ -621,7 +622,7 @@ function IdeaCard({
     setIsSaving(true);
     try {
       const res = await saveIdeaToPipeline(workspaceId, idea);
-      if (res?.success) {
+      if (res && 'success' in res && res.success) {
         setSaved(true);
         router.refresh();
       }

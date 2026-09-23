@@ -1,0 +1,346 @@
+{
+  "tabsA": {
+    "common": {
+      "attachFiles": "پیوست فایل (PDF/TXT/MD/CSV/JSON)",
+      "maxFiles": "حداکثر {count, number}",
+      "extracting": "در حال استخراج متن از فایل‌های پیوست…",
+      "tokensApprox": "حدود {count, number} توکن استخراج شد",
+      "remove": "حذف",
+      "cancel": "انصراف",
+      "date": "تاریخ",
+      "time": "ساعت",
+      "timezone": "منطقهٔ زمانی"
+    },
+    "channels": {
+      "linkedin": "LinkedIn",
+      "twitter": "X (Twitter)",
+      "instagram": "Instagram",
+      "blog": "بلاگ",
+      "email": "ایمیل"
+    },
+    "goals": {
+      "authority": "مرجعیت",
+      "awareness": "آگاهی",
+      "engagement": "تعامل",
+      "leads": "جذب سرنخ",
+      "education": "آموزش",
+      "conversion": "تبدیل",
+      "strategic_education": "آموزش راهبردی",
+      "decision_support": "پشتیبانی تصمیم"
+    },
+    "platforms": {
+      "linkedin": "LinkedIn",
+      "x": "X / Twitter",
+      "blog": "بلاگ",
+      "email": "ایمیل",
+      "landing_page": "لندینگ پیج",
+      "ad": "متن تبلیغ",
+      "strategy_note": "یادداشت راهبرد"
+    },
+    "funnel": {
+      "AUTO": "خودکار",
+      "TOFU": "TOFU",
+      "MOFU": "MOFU",
+      "BOFU": "BOFU"
+    },
+    "frameworks": {
+      "hook_value_cta": "قلاب ← ارزش ← فراخوان اقدام",
+      "problem_cause_solution": "مسئله ← علت ← راه‌حل",
+      "what_why_how": "چه ← چرا ← چگونه",
+      "opinion_reason_example": "موضع صریح ← دلیل ← مثال",
+      "aida": "AIDA",
+      "insight_implication_action": "بینش ← پیامد ← اقدام"
+    },
+    "wordCountPlatforms": {
+      "blog": "بلاگ / مقاله",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "ایمیل",
+      "instagram": "Instagram"
+    },
+    "timezones": {
+      "America/Toronto": "وقت شرقی (ET)",
+      "America/Los_Angeles": "وقت اقیانوس آرام (PT)",
+      "Europe/London": "لندن (GMT)"
+    },
+    "contentStatus": {
+      "DRAFT": "پیش‌نویس",
+      "GENERATED": "تولیدشده",
+      "READY": "آماده",
+      "SCHEDULED": "زمان‌بندی‌شده",
+      "PUBLISHED": "منتشرشده",
+      "FAILED": "ناموفق"
+    },
+    "autopilot": {
+      "agents": {
+        "title": "ایجنت‌ها",
+        "body": "هر ایجنت یک کار است، با ریتم، کانال‌ها و جهت‌دهی خودش. همه از هوشمندی همین فضای کاری استفاده می‌کنند و هیچ‌وقت یک نوبت را دوبار رزرو نمی‌کنند.",
+        "new": "ایجنت تازه",
+        "on": "روشن",
+        "off": "خاموش",
+        "postsPerWeek": "{count, number} در هفته",
+        "noChannel": "بدون کانال",
+        "lastRun": "آخرین اجرا {date}",
+        "created": "{name} ساخته شد. تنظیم‌ها را ببینید و بعد فعالش کنید.",
+        "recipesTitle": "از یک نسخهٔ آماده شروع کنید"
+      },
+      "recipes": {
+        "requiresSite": "به وب‌سایت نیاز دارد",
+        "requiresSocial": "به حساب شبکهٔ اجتماعی نیاز دارد",
+        "requiresEither": "هر کانالی",
+        "linkedin_voice": {
+          "name": "صدای LinkedIn",
+          "tagline": "پست‌های کوتاه و صریح با لحن خودتان، چند بار در هفته."
+        },
+        "blog_writer": {
+          "name": "نویسندهٔ بلاگ",
+          "tagline": "مقاله‌های بلند که مستقیم روی وب‌سایت شما منتشر می‌شود."
+        },
+        "thought_leader": {
+          "name": "رهبر فکری",
+          "tagline": "پست کمتر، استدلال بزرگ‌تر، دقیقاً برای خریدار شما."
+        },
+        "product_updates": {
+          "name": "محصول و پیشنهادها",
+          "tagline": "آنچه می‌فروشید را به یک ریتم پیوسته تبدیل می‌کند."
+        },
+        "custom": {
+          "name": "ایجنت دلخواه",
+          "tagline": "از صفر شروع کنید و همه‌چیز را خودتان تنظیم کنید."
+        }
+      },
+      "status": {
+        "defaultName": "اتوپایلت",
+        "body": "وقتی روشن باشد، Contivo طبق یک ریتم برایتان ایده می‌دهد، پیش‌نویس می‌نویسد و پست‌ها را زمان‌بندی می‌کند؛ بدون هیچ کلیکی. انتشار هم با رسیدن هر نوبت خودکار انجام می‌شود.",
+        "label": "وضعیت:",
+        "on": "روشن",
+        "off": "خاموش",
+        "lastRun": "آخرین اجرا: {date}",
+        "nextRun": "اجرای بعدی: {date}"
+      },
+      "actions": {
+        "runNow": "اجرای فوری",
+        "running": "در حال اجرا…",
+        "runNowTitle": "همین حالا یک چرخه اجرا کن",
+        "runDisabledTitle": "اول فعال و ذخیره کنید",
+        "save": "ذخیره",
+        "saving": "در حال ذخیره…"
+      },
+      "messages": {
+        "savedOn": "اتوپایلت روشن است. در نوبت زمان‌بندی‌شدهٔ بعدی، صف شما پر می‌شود.",
+        "savedOff": "تنظیم‌های اتوپایلت ذخیره شد (فعلاً خاموش است).",
+        "runResult": "اجرا {status}: {scheduled, number} زمان‌بندی‌شده، {skipped, number} ردشده.",
+        "runResultWithReason": "اجرا {status}: {scheduled, number} زمان‌بندی‌شده، {skipped, number} ردشده؛ {reason}."
+      },
+      "warnings": {
+        "ideation": "این فضای کاری هنوز نمی‌تواند ایده بدهد. اتوپایلت به حافظهٔ برند، ماتریس‌های بازار و کلیدواژه‌های رقبا نیاز دارد؛ اول آن تب‌ها را اجرا کنید. تا آن موقع اجراها رد می‌شود.",
+        "channels": "هیچ‌کدام از کانال‌های انتخاب‌شده هنوز نمی‌تواند منتشر کند. کانال‌های اجتماعی به یک حساب پیش‌فرض متصل نیاز دارند و بلاگ به یک وب‌سایت؛ یکی را در صفحهٔ <link>اتصال‌ها</link> راه بیندازید، وگرنه اتوپایلت هر اجرا را رد می‌کند."
+      },
+      "form": {
+        "enable": "فعال کردن اتوپایلت برای این فضای کاری",
+        "postsPerWeek": "پست در هفته",
+        "postsPerWeekHint": "اتوپایلت ۷ روز آینده را تا همین عدد پر نگه می‌دارد.",
+        "timezone": "منطقهٔ زمانی",
+        "timezoneHint": "نام IANA. بازهٔ انتشار و روزها در همین منطقه تفسیر می‌شود.",
+        "channels": "کانال‌ها",
+        "channelsHint": "نقطهٔ سبز یعنی آن کانال واقعاً می‌تواند منتشر کند؛ یعنی حساب اجتماعی یا وب‌سایتش وصل است.",
+        "publishDays": "روزهای انتشار",
+        "window": "بازهٔ انتشار (ساعت محلی)",
+        "windowTo": "تا",
+        "windowHint": "مثلاً ۹ تا ۱۸ یعنی پست‌ها بین ۰۹:۰۰ و ۱۷:۵۹ منتشر می‌شوند.",
+        "goal": "هدف اصلی",
+        "storylines": "این ایجنت کدام خط‌های روایت را جلو می‌برد",
+        "storylinesHint": "تا وقتی محدودش نکنید، همه. اجراکننده بین هر کدام که انتخاب شده می‌چرخد تا یک ادعا هفته‌به‌هفته تکرار نشود.",
+        "themes": "روی این موضوع‌ها تکیه کن",
+        "themesPlaceholder": "مثلاً پذیرش هوش مصنوعی در کسب‌وکارهای کوچک، درس‌های بنیان‌گذاری، به‌روزرسانی محصول",
+        "themesHint": "با ویرگول یا خط تازه جدا کنید. همین‌ها به‌عنوان جهت‌دهی به مدل داده می‌شود.",
+        "avoid": "هیچ‌وقت دربارهٔ این‌ها ننویس",
+        "avoidPlaceholder": "مثلاً قیمت، سیاست، نام رقبا",
+        "avoidHint": "ایده‌هایی که موضوعشان شامل این عبارت‌ها باشد حذف می‌شود."
+      },
+      "channelDot": {
+        "ready": "آمادهٔ انتشار",
+        "noSite": "اتصال فعالی به سایت نیست",
+        "noAccount": "حساب پیش‌فرض متصلی نیست"
+      },
+      "days": {
+        "0": "۱ش",
+        "1": "۲ش",
+        "2": "۳ش",
+        "3": "۴ش",
+        "4": "۵ش",
+        "5": "ج",
+        "6": "ش"
+      },
+      "narrative": {
+        "title": "این ایجنت بدون روایت منتشر می‌کند.",
+        "body": "باز هم اجرا می‌شود و چیزی اینجا بسته نیست. اما پست‌هایش به جایی نمی‌رسد، پس در طول یک ماه روی هم جمع نمی‌شود.",
+        "cta": "به آن یک موضع بدهید"
+      },
+      "runs": {
+        "title": "تاریخچهٔ اجرا",
+        "count": "{count, number} مورد آخر",
+        "empty": "هنوز اجرایی نبوده است. اتوپایلت را فعال و ذخیره کنید، یا روی اجرای فوری بزنید.",
+        "via": "از راه {trigger}",
+        "ideas": "{count, number} ایده",
+        "scheduled": "{count, number} زمان‌بندی‌شده",
+        "skipped": "{count, number} ردشده"
+      },
+      "runStatus": {
+        "SUCCEEDED": "موفق",
+        "PARTIAL": "نیمه‌موفق",
+        "FAILED": "ناموفق",
+        "RUNNING": "در حال اجرا",
+        "QUEUED": "در صف",
+        "SKIPPED": "ردشده"
+      },
+      "runStatusLower": {
+        "SUCCEEDED": "موفق",
+        "PARTIAL": "نیمه‌موفق",
+        "FAILED": "ناموفق",
+        "RUNNING": "در حال اجرا",
+        "QUEUED": "در صف",
+        "SKIPPED": "ردشده"
+      }
+    },
+    "ideation": {
+      "title": "ایستگاه ایده",
+      "lede": "ایده‌های محتوایی پربازده متناسب با مخاطب و ستون‌های برندتان بسازید. فقط از حافظهٔ برند، سنجهٔ بازار و کلیدواژه‌های رقبا به‌عنوان زمینهٔ لازم استفاده می‌کنیم.",
+      "requiredInputs": "ورودی‌های لازم برای ایده‌پردازی: حافظهٔ برند + سنجهٔ بازار + کلیدواژه‌های رقبا.",
+      "targetWords": "کلمهٔ هدف: {count, number} (بازهٔ {platform}: {min, number} تا {max, number})",
+      "goalOption": "هدف: {label}",
+      "platformOption": "پلتفرم: {label}",
+      "funnelOption": "قیف: {label}",
+      "frameworkAuto": "چارچوب: خودکار",
+      "frameworkManual": "چارچوب: دستی",
+      "ideasLabel": "ایده",
+      "wordsLabel": "کلمه",
+      "needImagesLabel": "تصویر لازم است",
+      "imagesLabel": "تصویر",
+      "autoCalendarLabel": "تقویم خودکار",
+      "generationPath": "مسیر تولید",
+      "directGenerate": "تولید مستقیم",
+      "sourceFormGenerate": "تولید با فرم منبع",
+      "sourcePlaceholder": "یادداشت‌ها، خلاصهٔ سند، متن یا ایده‌های اصلی‌تان را اینجا بچسبانید…",
+      "sourceNote": "این فرم منبع سراسری است و برای همهٔ پیش‌نمایش‌های این دور ایده‌پردازی استفاده می‌شود.",
+      "directNote": "حالت مستقیم: ایده‌ها بدون زمینهٔ دستی ساخته می‌شود.",
+      "generateCta": "{count, plural, one {ساخت # ایدهٔ محتوا} other {ساخت # ایدهٔ محتوا}}",
+      "brainstorming": "در حال ایده‌پردازی با هوش مصنوعی…",
+      "selectedFramework": "چارچوب انتخاب‌شده",
+      "overallScore": "امتیاز کلی: {score} از ۱۰",
+      "fallbackApplied": "جایگزین اعمال شد",
+      "imagesBadge": "تصویر: {count, number} (اولی کاور است)",
+      "imagesBadgeNone": "تصویر: ندارد",
+      "calendarAuto": "تقویم: درج خودکار (آزمایشی)",
+      "calendarManual": "تقویم: دستی",
+      "wordsBadge": "کلمه: {count, number}",
+      "freshIdeas": "ایده‌های تازه ساخته شد",
+      "freshIdeasCount": "({count, number})",
+      "formatFallback": "مقاله",
+      "pillarFallback": "عمومی",
+      "imagesCount": "{count, number} تصویر",
+      "wordsCount": "{count, number} کلمه",
+      "generatePreview": "ساخت پیش‌نمایش",
+      "generatingPreview": "در حال ساخت پیش‌نمایش…",
+      "addToPipeline": "افزودن به پایپ‌لاین",
+      "addedToPipeline": "به پایپ‌لاین اضافه شد",
+      "contentPreview": "پیش‌نمایش محتوا",
+      "closePreview": "بستن پیش‌نمایش",
+      "channelFallback": "محتوا",
+      "noPreview": "هنوز پیش‌نمایشی در دسترس نیست.",
+      "errors": {
+        "unexpected": "هنگام ایده‌پردازی خطای پیش‌بینی‌نشده‌ای رخ داد.",
+        "previewFailed": "ساخت پیش‌نمایش ناموفق بود.",
+        "maxFiles": "حداکثر {count, number} فایل می‌توانید پیوست کنید.",
+        "readFailed": "خواندن «{name}» ناموفق بود. از فایل PDF/TXT/MD/CSV/JSON استفاده کنید یا متن را دستی بچسبانید."
+      }
+    },
+    "pipeline": {
+      "empty": {
+        "title": "پایپ‌لاین شما خالی است",
+        "body": "هنوز برای این برند محتوایی نساخته‌اید. برای شروع به ایستگاه ایده بروید.",
+        "cta": "رفتن به ایستگاه ایده"
+      },
+      "wordsTarget": "هدف {count, number} کلمه",
+      "previewLabel": "پیش‌نمایش",
+      "publishAt": "انتشار: {date} {time}",
+      "quickSchedule": {
+        "title": "زمان‌بندی سریع انتشار",
+        "saving": "در حال ذخیره…",
+        "publish": "انتشار",
+        "note": "زمان‌بندی پیش‌فرض، {hours, number} ساعت پس از تولید است.",
+        "noteDraft": "همین حالا تولید کنید تا این زمان‌بندی خودکار اعمال شود.",
+        "noteReady": "همین‌جا با یک کلیک می‌توانید تغییرش دهید."
+      },
+      "source": {
+        "refineTitle": "پالایش با منبع خودتان",
+        "useTitle": "استفاده از منبع خودتان",
+        "hide": "پنهان کردن",
+        "addContext": "افزودن زمینه",
+        "wordCount": "تعداد کلمه ({platform}: {min, number} تا {max, number})",
+        "placeholder": "یادداشت‌ها، ایده‌های خام، متن پیاده‌شده یا نکته‌های اصلی‌تان را بچسبانید…",
+        "note": "تولید محتوا به یادداشت‌های دستی، متن منبع پیوست‌شده و تعداد کلمهٔ هدف شما اولویت می‌دهد."
+      },
+      "actions": {
+        "generate": "تولید، زمان‌بندی و پیش‌نمایش",
+        "edit": "ویرایش",
+        "approve": "تأیید ایده",
+        "reschedule": "زمان‌بندی دوباره",
+        "publish": "انتشار"
+      },
+      "editor": {
+        "eyebrow": "ویرایش و زمان‌بندی پست",
+        "close": "بستن پیش‌نمایش",
+        "draftLabel": "پیش‌نویس محتوا",
+        "scheduleTitle": "زمان‌بندی انتشار",
+        "dateOptional": "تاریخ (اختیاری)",
+        "timeOptional": "ساعت (اختیاری)",
+        "blankNote": "تاریخ و ساعت را خالی بگذارید تا فقط «آماده» ذخیره شود، یا پرشان کنید تا این پست خودکار «زمان‌بندی‌شده» علامت بخورد.",
+        "save": "ذخیرهٔ تغییرها"
+      },
+      "scheduleModal": {
+        "title": "زمان‌بندی محتوا",
+        "confirm": "تأیید زمان‌بندی"
+      },
+      "errors": {
+        "maxFiles": "حداکثر {count, number} فایل می‌توانید پیوست کنید.",
+        "readFailed": "خواندن «{name}» ناموفق بود. از فایل PDF/TXT/MD/CSV/JSON استفاده کنید یا متن را دستی بچسبانید."
+      }
+    },
+    "calendar": {
+      "title": "تقویم محتوا",
+      "subtitle": "زمان‌بندی و خط زمانی",
+      "weekView": "نمای هفته",
+      "listView": "نمای فهرست",
+      "loadError": "بارگذاری موارد تقویم ناموفق بود",
+      "emptyTitle": "تقویم شما خالی است",
+      "emptyBody": "از ایستگاه ایده محتوای تازه بسازید و زمان‌بندی کنید تا خط زمانی‌تان پر شود.",
+      "unscheduled": "بدون زمان‌بندی",
+      "noTime": "بدون ساعت",
+      "dayEmpty": "خالی"
+    },
+    "brandMemory": {
+      "badge": "حافظهٔ برند",
+      "title": "پایهٔ برند و لایهٔ دانش",
+      "body": "این بخش زمینهٔ برند شما را در راهبرد، محتوا و طراحی ثابت نگه می‌دارد. هوش مصنوعی نسخهٔ اول را از روی وب‌سایتتان می‌نویسد و بعد تیم شما تأیید و بهترش می‌کند.",
+      "assetsCount": "{count, number} دارایی",
+      "pendingCount": "{count, number} در انتظار بازبینی",
+      "approvedCount": "{count, number} تأییدشده",
+      "businessSummary": "خلاصهٔ کسب‌وکار",
+      "valueProposition": "ارزش پیشنهادی",
+      "audienceClarity": "شفافیت مخاطب",
+      "ready": "آماده",
+      "needsReview": "نیازمند بازبینی",
+      "noSummary": "خلاصه‌ای در دسترس نیست.",
+      "noValueProposition": "ارزش پیشنهادی تعریف نشده است.",
+      "targetAudience": "مخاطب هدف",
+      "personaFallback": "مخاطب عمومی",
+      "noAudience": "جزئیاتی دربارهٔ مخاطب ثبت نشده است.",
+      "brandTone": "لحن برند",
+      "toneNotSpecified": "مشخص نشده",
+      "pillarsTitle": "ستون‌های اصلی محتوا",
+      "pillarLabel": "ستون {index, number}",
+      "noPillars": "ستونی تعریف نشده است."
+    }
+  }
+}
