@@ -41,7 +41,6 @@ import {
 import {
   WORD_COUNT_LIMIT_ABSOLUTE_MAX,
   WORD_COUNT_LIMIT_ABSOLUTE_MIN,
-  WORD_COUNT_PLATFORM_LABELS,
   WORD_COUNT_PLATFORMS,
 } from '@/lib/content-word-count';
 
@@ -909,7 +908,7 @@ function SettingsSection({
               {WORD_COUNT_PLATFORMS.map((platform) => (
                 <div key={platform} className="rounded-xl border border-gray-200 bg-white p-3">
                   {/* Platform names are brands; they stay Latin in both languages. */}
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{WORD_COUNT_PLATFORM_LABELS[platform]}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{t(`platforms.${platform}`)}</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
                     <input type="number" name={`wordMin_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].min} className="rounded-lg border border-gray-300 px-2 py-2 text-sm outline-none focus:border-black" />
                     <input type="number" name={`wordMax_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].max} className="rounded-lg border border-gray-300 px-2 py-2 text-sm outline-none focus:border-black" />

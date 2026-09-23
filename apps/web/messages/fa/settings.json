@@ -1,6 +1,8 @@
 {
   "settings": {
-    "meta": { "title": "تنظیمات" },
+    "meta": {
+      "title": "تنظیمات"
+    },
     "title": "تنظیمات",
     "subtitle": "ترجیحات حساب و گزارش فعالیت‌های فضای کاری شما.",
     "limits": {
@@ -34,6 +36,52 @@
       "empty": "هنوز فعالیتی ثبت نشده است.",
       "workspace": "فضای کاری: {name}",
       "workspaceNone": "فضای کاری: ندارد"
+    },
+    "actions": {
+      "AUTOPILOT_AGENT_CREATED": "عامل اتوپایلت ساخته شد",
+      "AUTOPILOT_AGENT_DELETED": "عامل اتوپایلت حذف شد",
+      "AUTOPILOT_POLICY_SAVED": "تنظیمات اتوپایلت ذخیره شد",
+      "AUTOPILOT_RUN": "اجرای اتوپایلت",
+      "BRAND_ASSETS_EDITED": "دارایی‌های برند ویرایش شد",
+      "BRAND_ASSETS_GENERATED": "دارایی‌های برند ساخته شد",
+      "BRAND_MEMORY_RESCRAPE_BLOCKED": "خواندن دوبارهٔ حافظهٔ برند متوقف شد",
+      "BRAND_MEMORY_RESCRAPE_FAILED": "خواندن دوبارهٔ حافظهٔ برند ناموفق بود",
+      "BRAND_MEMORY_RESCRAPE_SUCCEEDED": "حافظهٔ برند دوباره خوانده شد",
+      "COMPETITIVE_MATRICES_EDITED": "نمودارهای رقابتی ویرایش شد",
+      "COMPETITIVE_MATRICES_GENERATED": "نمودارهای رقابتی ساخته شد",
+      "COMPETITOR_DECISION_SET": "تصمیم دربارهٔ رقیب ثبت شد",
+      "COMPETITOR_DISCOVERY_BLOCKED": "جست‌وجوی رقبا متوقف شد",
+      "COMPETITOR_DISCOVERY_FAILED": "جست‌وجوی رقبا ناموفق بود",
+      "COMPETITOR_DISCOVERY_RUN": "اجرای جست‌وجوی رقبا",
+      "COMPETITOR_KEYWORDS_GENERATED": "کلیدواژه‌های رقبا ساخته شد",
+      "COMPETITOR_MANUAL_EDIT_SAVED": "ویرایش دستی رقیب ذخیره شد",
+      "COMPETITOR_REVIEW_SAVED": "بازبینی رقبا ذخیره شد",
+      "CONTENT_CALENDAR_MOCK_INSERTED": "نمونهٔ تقویم محتوا اضافه شد",
+      "CONTENT_EDITED_AND_SCHEDULED": "محتوا ویرایش و زمان‌بندی شد",
+      "CONTENT_GENERATED_FROM_PIPELINE": "محتوا از خط تولید ساخته شد",
+      "CONTENT_PIPELINE_ITEM_SAVED": "آیتم خط تولید ذخیره شد",
+      "CONTENT_PREVIEW_GENERATED_FROM_IDEA": "پیش‌نمایش محتوا از ایده ساخته شد",
+      "CONTENT_SCHEDULED": "محتوا زمان‌بندی شد",
+      "EVOLUTION_REPORT_VIEWED": "گزارش تحول دیده شد",
+      "IDEATION_GENERATED": "ایده‌ها ساخته شد",
+      "INSTANT_CONTENT_GENERATED": "محتوای فوری ساخته شد",
+      "NARRATIVE_GENERATED": "روایت ساخته شد",
+      "PRODUCTS_SERVICES_INTEL_EDITED": "تحلیل محصولات و خدمات ویرایش شد",
+      "PRODUCTS_SERVICES_INTEL_GENERATED": "تحلیل محصولات و خدمات ساخته شد",
+      "SITE_CONNECTION_CREATED": "اتصال سایت ساخته شد",
+      "SITE_CONNECTION_DELETED": "اتصال سایت حذف شد",
+      "SITE_CONNECTION_KEY_ROTATED": "کلید اتصال سایت تعویض شد",
+      "SITE_CONNECTION_STATUS_CHANGED": "وضعیت اتصال سایت تغییر کرد",
+      "WEB_CONTENT_PUBLISHED": "محتوای وب منتشر شد",
+      "WORKSPACE_BASELINE_SNAPSHOT_CREATED": "عکس مبنای فضای کاری ثبت شد",
+      "WORKSPACE_CREATED": "فضای کاری ساخته شد"
+    },
+    "platforms": {
+      "blog": "بلاگ / مقاله",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "ایمیل",
+      "instagram": "Instagram"
     }
   }
 }
