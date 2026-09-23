@@ -114,9 +114,28 @@ themselves — do not write `row-reverse` to "fix" RTL, that double-flips.
   zeroes it under `[lang='fa']`, so a tracking class on a shared component is
   harmless, but do not add one that only the Persian side uses.
 
+## The parity check
+
+```bash
+pnpm --filter @contivo/web check:i18n
+```
+
+It runs as part of `pnpm lint`, so CI already gates on it. It fails when a
+namespace exists in one locale and not the other, when a message file is empty
+or malformed, when a key is present in one catalogue and missing from the
+other, and when a message's ICU placeholders differ between the two — the last
+one being the quiet failure, because a translation that dropped its `{count}`
+still renders, just without the number.
+
+The empty-file case is worth knowing about on its own: `request.ts` imports
+messages by a dynamic path, so webpack pulls in every JSON in those
+directories. A single zero-byte file takes down every route, not just the one
+that reads it.
+
 ## Before you call it done
 
 1. `pnpm --filter @contivo/web typecheck` is green.
+1b. `pnpm --filter @contivo/web check:i18n` passes.
 2. `fa_lint.py --check` reports zero issues on the Persian you wrote.
 3. You loaded the page in the browser at `/fa` **and** `/en` and looked at it.
    English must be unchanged. This codebase's recurring failure mode is
