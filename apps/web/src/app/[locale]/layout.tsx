@@ -55,11 +55,25 @@ export async function generateMetadata({
     title: t('title'),
     description: t('description'),
     /*
+      `metadataBase` is what turns the relative alternates below into fully
+      qualified URLs. Google requires hreflang targets to carry a scheme and
+      host and ignores them otherwise, so without this the two languages are
+      published as competing duplicates rather than as translations of each
+      other — which defeats the reason the locales live in the URL at all.
+    */
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.contivo.app'),
+    /*
       Tells Google the two versions are the same page in two languages rather
-      than duplicates competing with each other.
+      than duplicates competing with each other. `x-default` names the version
+      a searcher gets when none of their languages match, which is the same
+      answer the middleware gives an unrecognised Accept-Language.
     */
     alternates: {
-      languages: { en: '/en', fa: '/fa' },
+      languages: {
+        en: '/en',
+        fa: '/fa',
+        'x-default': `/${routing.defaultLocale}`,
+      },
     },
   };
 }
