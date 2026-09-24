@@ -1,4 +1,9 @@
 // Must be first: the SDK patches the runtime before anything else loads.
+// `import/order` wants this below ./app.module, which would import the app —
+// and every library it pulls in — before Sentry has patched anything, leaving
+// instrumentation silently attached to nothing. The rule is wrong here, so it
+// is disabled for this line rather than obeyed.
+// eslint-disable-next-line import/order
 import { sentryEnabled } from './instrument';
 
 import { Logger } from '@nestjs/common';
