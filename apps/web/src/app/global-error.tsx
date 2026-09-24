@@ -38,6 +38,17 @@ export default function GlobalError({ error }: { error: Error & { digest?: strin
             The error has been reported. Reloading usually works — nothing you were
             doing was lost.
           </p>
+          {/*
+            A plain anchor, not `<Link>`, and the lint rule is wrong to insist
+            otherwise. `global-error` replaces the root layout when the layout
+            itself has crashed, so there is no router context left for a client
+            link to use — a full document navigation is the only thing that can
+            be relied on here. This file also sits outside `[locale]`, so there
+            is no locale to build a localised href from; `/` lets the
+            middleware negotiate the language again from scratch, which is the
+            right outcome for someone whose session just fell over.
+          */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
           <a
             href="/"
             style={{
