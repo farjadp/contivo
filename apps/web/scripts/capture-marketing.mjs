@@ -149,7 +149,10 @@ try {
     '[b][3]xfade=transition=fade:duration=0.5:offset=9,scale=1280:800,format=yuv420p[v]',
   ].join(';');
   execFileSync('ffmpeg', ['-y', ...inputs, '-filter_complex', fades, '-map', '[v]', '-an', '-c:v', 'libx264', '-crf', '24', '-movflags', '+faststart', path.join(OUT, 'contivo-reel.mp4')], { stdio: 'inherit' });
-  execFileSync('ffmpeg', ['-y', '-i', path.join(frames, 'f0.png'), '-vf', 'scale=1280:800', '-quality', '86', path.join(OUT, 'reel-poster.webp')], { stdio: 'inherit' });
+  // Many ffmpeg builds (Homebrew's included) ship without a WebP encoder, so
+  // the poster goes through sharp, which Next.js already depends on.
+  const { default: sharp } = await import('sharp');
+  await sharp(path.join(frames, 'f0.png')).resize(1280, 800).webp({ quality: 86 }).toFile(path.join(OUT, 'reel-poster.webp'));
   writeFileSync(path.join(OUT, 'reel-poster.webp.json'), JSON.stringify(provenance('first frame of contivo-reel.mp4'), null, 2) + '\n');
   rmSync(frames, { recursive: true, force: true });
   console.log('  ✓ contivo-reel.mp4, reel-poster.webp');

@@ -108,15 +108,12 @@ the scrollbar, and scopes the shadcn variables (`--primary`, `--muted`,
 
 ## Assets
 
-`public/marketing/`: `brand-memory.webp`, `market-map.webp`,
-`setup-chain.webp`, `generated-post.webp` (Puppeteer, 1440×900 at DPR 2, from an
-example workspace built from `posthog.com`), `contivo-reel.mp4` (12 s, no audio)
-and `reel-poster.webp`.
-
-## Known gap
-
-**The captures and the reel predate this redesign** — they show the app's old
-look. They are honest, so they stay until re-shot. Re-shoot them with
-`pnpm --filter @contivo/web capture:marketing <workspaceId>` against a populated
-workspace: it opens Chrome, waits for you to sign in yourself, then writes all
-six files and their provenance sidecars at the sizes the page already expects.
+`public/marketing/`: `brand-memory.webp`, `market-map.webp`, `setup-chain.webp`,
+`generated-post.webp` (Puppeteer, 1440×900 at DPR 2), `contivo-reel.mp4` (12 s,
+1280×800, H.264, no audio) and `reel-poster.webp`, all captured on 26 Sep 2026
+from the founder's own workspace for farjadp.info on this design. Each has a
+`.webp.json` provenance sidecar. Re-shoot with
+`pnpm --filter @contivo/web capture:marketing <workspaceId>`: it opens Chrome,
+waits for a person to sign in, and writes every file at the sizes the page
+declares. Alt text and captions describe what the captures show — update them
+when the captures change.
