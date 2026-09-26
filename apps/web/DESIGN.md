@@ -116,5 +116,7 @@ and `reel-poster.webp`.
 ## Known gap
 
 **The captures and the reel predate this redesign** — they show the app's old
-look. They are honest, so they stay until they are re-shot from a populated
-workspace on the new system.
+look. They are honest, so they stay until re-shot. Re-shoot them with
+`pnpm --filter @contivo/web capture:marketing <workspaceId>` against a populated
+workspace: it opens Chrome, waits for you to sign in yourself, then writes all
+six files and their provenance sidecars at the sizes the page already expects.

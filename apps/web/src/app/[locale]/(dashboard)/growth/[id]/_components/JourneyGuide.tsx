@@ -56,7 +56,7 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
   const next = journey.next;
 
   return (
-    <div className="border border-rule bg-chalk-raised">
+    <div className="border border-rule bg-chalk-raised" data-capture="setup-chain">
       {/* Progress header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-rule px-5 py-3">
         <div className="flex items-center gap-3">
