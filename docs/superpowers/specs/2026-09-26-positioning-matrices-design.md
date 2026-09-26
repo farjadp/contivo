@@ -133,6 +133,8 @@ model MatrixOverride {
 
 **Projection.** After every run and every override, the server rebuilds `audienceInsights.competitiveMatrices` in the **existing payload shape** (charts / companies / x_score / summary / cross_chart_summary / strongest_differentiation_opportunity) with overrides applied, plus new fields `basis`, `stale`, `run_id`, and per-chart `content_angles`, `white_space`. Downstream consumers (content-engine, narrative, strategic reports, readiness, progress) keep reading the projection in this iteration, so nothing there breaks. The tables are the source of truth; the blob is a cache.
 
+**Dangling evidence refs.** Evidence ids (`EvidenceItem.id`, 8 hex chars, from discovery commit `c637c98`) are stable only for a surviving competitor row; a deleted-then-rediscovered domain gets a new row and new ids. The projection builder resolves each `evidenceRefs` id against the current competitor's evidence; unresolved ids are dropped from the UI list, and if none resolve the point is shown as `estimated` with a "شاهدها دیگر در دسترس نیستند" note. Nothing is thrown, nothing is regenerated automatically.
+
 **Staleness.** On read, compare the accepted-competitor set with `run.competitorSet`. Any difference sets `stale = true` (banner + still usable). Overrides whose competitor no longer exists are ignored, not deleted.
 
 ## 5. Pipeline
