@@ -370,9 +370,30 @@ function candidate(over: Partial<JudgedCandidate> = {}): JudgedCandidate {
 }
 
 describe('scoreCandidate', () => {
-  it('starts from the judge confidence', () => {
+  it('starts from the judge confidence and closes part of the headroom', () => {
+    // 0.70 + 0.05 * (1 - 0.70)
     expect(scoreCandidate(candidate({ frequency: 1, pageLanguage: 'en' }), { country: null, language: 'en' }))
-      .toBeCloseTo(0.75, 2); // 0.70 + 0.05 language match
+      .toBeCloseTo(0.715, 3);
+  });
+
+  it('never lets a lower certainty overtake a higher one', () => {
+    const likelyFullyCorroborated = scoreCandidate(
+      candidate({ judgeConfidence: 0.7, frequency: 3, sources: ['WEB_SEARCH', 'SERP'], pageLanguage: 'fa' }),
+      IR,
+    );
+    const certainWithNothing = scoreCandidate(
+      candidate({ judgeConfidence: 0.9, frequency: 1, sources: ['WEB_SEARCH'], pageLanguage: 'en' }),
+      IR,
+    );
+    expect(likelyFullyCorroborated).toBeLessThan(certainWithNothing);
+  });
+
+  it('never pins a candidate at exactly 1', () => {
+    const best = scoreCandidate(
+      candidate({ judgeConfidence: 0.9, frequency: 9, sources: ['WEB_SEARCH', 'SERP'], pageLanguage: 'fa' }),
+      IR,
+    );
+    expect(best).toBeLessThan(1);
   });
 
   it('rewards appearing in more queries, with a cap', () => {
@@ -380,19 +401,20 @@ describe('scoreCandidate', () => {
     const three = scoreCandidate(candidate({ frequency: 3 }), IR);
     const ten = scoreCandidate(candidate({ frequency: 10 }), IR);
     expect(three).toBeGreaterThan(one);
-    expect(ten).toBeCloseTo(three + 0.0, 2); // capped at 3 queries
+    expect(ten).toBeCloseTo(three, 6); // capped at 3 queries
   });
 
   it('rewards agreement between sources', () => {
     const single = scoreCandidate(candidate({ sources: ['WEB_SEARCH'] }), IR);
     const both = scoreCandidate(candidate({ sources: ['WEB_SEARCH', 'SERP'] }), IR);
-    expect(both - single).toBeCloseTo(0.1, 2);
+    expect(both).toBeGreaterThan(single);
+    expect(both - single).toBeCloseTo(0.1 * (1 - 0.7), 3);
   });
 
   it('rewards a page language matching the target market', () => {
     const fa = scoreCandidate(candidate({ pageLanguage: 'fa' }), IR);
     const en = scoreCandidate(candidate({ pageLanguage: 'en' }), IR);
-    expect(fa - en).toBeCloseTo(0.05, 2);
+    expect(fa - en).toBeCloseTo(0.05 * (1 - 0.7), 3);
   });
 
   it('never leaves the 0..1 range', () => {
@@ -462,15 +484,25 @@ const HIGH_BAND = 0.8;
  * source found it, and whether the site speaks the market's language.
  */
 export function scoreCandidate(candidate: JudgedCandidate, market: TargetMarket): number {
-  let score = candidate.judgeConfidence;
+  let bonus = 0;
 
   // Appearing in several distinct queries is corroboration; past three it
   // says more about the query set than the candidate.
-  score += Math.min(candidate.frequency - 1, 2) * 0.05;
+  bonus += Math.min(candidate.frequency - 1, 2) * 0.05;
 
-  if (new Set(candidate.sources).size > 1) score += 0.1;
+  if (new Set(candidate.sources).size > 1) bonus += 0.1;
 
-  if (candidate.pageLanguage && candidate.pageLanguage === market.language) score += 0.05;
+  if (candidate.pageLanguage && candidate.pageLanguage === market.language) bonus += 0.05;
+
+  // The bonus closes a fraction of the remaining headroom rather than being
+  // added flat. Added flat, a `likely` candidate with full corroboration
+  // (0.7 + 0.25) outranks a `certain` one with none (0.9), and any `certain`
+  // candidate with the slightest corroboration pins at exactly 1.0 — which is
+  // what the live run produced, and it undoes the whole point of replacing the
+  // model's self-graded float with a three-way certainty. Scaling by headroom
+  // keeps the order the judge chose while still letting countable evidence
+  // move a candidate within its band.
+  const score = candidate.judgeConfidence + bonus * (1 - candidate.judgeConfidence);
 
   return Math.max(0, Math.min(1, score));
 }
