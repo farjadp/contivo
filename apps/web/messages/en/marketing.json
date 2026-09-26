@@ -46,7 +46,8 @@
       "play": "Play",
       "pause": "Pause",
       "videoAlt": "Screen recording of Contivo: brand memory, the market map, the setup steps still locked, and a post it wrote.",
-      "caption": "Recorded from a running workspace. No narration, no sound."
+      "caption": "Recorded from a running workspace. No narration, no sound.",
+      "reducedNote": "Paused because your system asks for reduced motion."
     },
     "intelligence": {
       "headline": "Most tools start from a blank prompt. <accent>That</accent> is why they read like one.",
@@ -108,6 +109,119 @@
       "body": "In under a minute you have a brand memory and a competitive map. From there the queue fills itself, and the only thing it will not do is publish something it could not stand behind.",
       "cta": "Create your workspace",
       "pricing": "See pricing"
+    },
+    "loop": {
+      "title": "The Loop",
+      "sub": "every week, on its own",
+      "position": "{n} of 06",
+      "tabsLabel": "Loop stages",
+      "stages": {
+        "know": {
+          "name": "Know",
+          "short": "brand memory",
+          "title": "Your brand, read back to you.",
+          "body": "Business summary, value proposition, audience and tone, pulled from your site — and all of it yours to correct."
+        },
+        "watch": {
+          "name": "Watch",
+          "short": "market map",
+          "title": "The market, with you on it.",
+          "body": "Competitors at your scale, checked to exist, scored on five positioning charts with you plotted among them."
+        },
+        "think": {
+          "name": "Think",
+          "short": "locked until 01–02",
+          "title": "It will not write yet.",
+          "body": "Ideation stays locked until the intelligence underneath it exists. Neither you nor the model can skip it."
+        },
+        "make": {
+          "name": "Make",
+          "short": "drafts that pass the gate",
+          "title": "Then it writes.",
+          "body": "Only what survives a quality gate built to reject it: hard checks first, then a judge that can veto."
+        },
+        "ship": {
+          "name": "Ship",
+          "short": "your channels",
+          "title": "And it posts.",
+          "body": "1–14 posts a week, inside the days and hours you allow, on LinkedIn, X, Instagram or your own site."
+        },
+        "learn": {
+          "name": "Learn",
+          "short": "every run logged",
+          "title": "Every run on the record.",
+          "body": "Every run is logged, step by step, including what it rejected."
+        }
+      }
+    },
+    "steps": {
+      "heading": "What happens when you press Read · ≈ 20 sec",
+      "read": "Reading your pages",
+      "memory": "Writing your brand memory",
+      "competitors": "Finding competitors at your scale",
+      "charts": "Scoring five positioning charts"
+    },
+    "tryIt": {
+      "label": "Try it",
+      "button": "Make it write a post now",
+      "attempts": "{count, plural, =0 {Not pressed yet} one {Pressed once · still locked} other {Pressed # times · still locked}}",
+      "lines": {
+        "0": "Press it. This is the button every other tool gives you first.",
+        "1": "Locked. Ideas need competitor keywords, and step 03 has not run.",
+        "2": "Still locked. Asking again does not create the intelligence underneath.",
+        "3": "The model gets the same answer you do. There is no prompt that opens this.",
+        "4": "Finish 03 — Keywords — and ideation unlocks by itself."
+      },
+      "chain": {
+        "brand": "Brand memory",
+        "market": "Market map",
+        "keywords": "Keywords",
+        "ideas": "Ideas",
+        "channel": "Channel",
+        "autopilot": "Autopilot",
+        "done": "done",
+        "next": "next",
+        "locked": "locked"
+      }
+    },
+    "cadence": {
+      "label": "Try a cadence",
+      "value": "{count, plural, one {# post a week} other {# posts a week}}",
+      "caption": "Spread across your window, never two of the same idea in a row."
+    },
+    "log": {
+      "title": "Run log · example",
+      "replay": "Replay",
+      "rows": {
+        "r1": {
+          "kind": "Plan",
+          "text": "The week has 3 open slots in your window"
+        },
+        "r2": {
+          "kind": "Draft",
+          "text": "LinkedIn, from one of your storylines"
+        },
+        "r3": {
+          "kind": "Rejected",
+          "text": "Judge veto: it cited a study that does not exist"
+        },
+        "r4": {
+          "kind": "Draft",
+          "text": "Rewritten without the claim"
+        },
+        "r5": {
+          "kind": "Passed",
+          "text": "Brand fit, factual safety and clarity above threshold"
+        },
+        "r6": {
+          "kind": "Scheduled",
+          "text": "Thursday, inside your publishing window"
+        }
+      }
+    },
+    "chapters": {
+      "thinkLabel": "Think — and refuse",
+      "makeShip": "Make · Ship"
     }
   },
   "footer": {

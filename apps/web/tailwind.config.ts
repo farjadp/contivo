@@ -46,27 +46,6 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        paper: {
-          DEFAULT: '#F5F3EE',
-          2: '#ECE9E1',
-          /* The editorial world, shared with the onboarding screens. */
-          warm: '#EFECE5',
-          light: '#FDFCF8',
-        },
-        carbon: {
-          DEFAULT: '#121212',
-          80: '#3A3A38',
-          60: '#6B6B66',
-          40: '#9C9C95',
-          20: '#D6D3CA',
-        },
-        brick: {
-          DEFAULT: '#C04C36',
-          deep: '#A63D29',
-          /* Lifted from #FDF2EE: body copy on the red field measured 4.42:1,
-             under the 4.5 floor. This clears it without touching the brand red. */
-          ink: '#FFF8F4',
-        },
         /* ── Chalk & Saffron: the signed-in system (redesign/loop). ──
            One ground, one ink, one act-now accent. Saffron means "you" on a
            chart and "do this" on a button; rival blue is always a competitor.
@@ -79,7 +58,7 @@ const config: Config = {
         moss: {
           DEFAULT: '#17201B',
           700: '#2F4A3A',
-          /* 7.4:1 on chalk — secondary text, never lighter. */
+          /* 6.7:1 on chalk, 7.3:1 on chalk-raised — secondary text, never lighter. */
           muted: '#4A544D',
         },
         forest: {
@@ -109,7 +88,6 @@ const config: Config = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
-        accent: ['var(--font-accent)', 'Georgia', 'serif'],
         /* The Persian face. Named so a component can ask for it explicitly;
            the [lang='fa'] rules in globals.css already redirect display and
            accent to it, so most code never needs to. */
@@ -120,6 +98,31 @@ const config: Config = {
         plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'ui-monospace', 'monospace'],
       },
       keyframes: {
+        /* Marketing site motion (Chalk & Saffron). Every one of these is
+           wrapped in motion-safe: at the call site. */
+        rise: {
+          from: { opacity: '0', transform: 'translateY(24px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+        pop: {
+          '0%': { opacity: '0', transform: 'scale(.4)' },
+          '70%': { transform: 'scale(1.12)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        sweep: { from: { backgroundSize: '0% 34%' }, to: { backgroundSize: '100% 34%' } },
+        draw: { from: { strokeDashoffset: '461' }, to: { strokeDashoffset: '0' } },
+        ripple: {
+          '0%': { transform: 'scale(1)', opacity: '.7' },
+          '100%': { transform: 'scale(1.9)', opacity: '0' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'none' },
+          '20%': { transform: 'translateX(-10px) rotate(-2deg)' },
+          '40%': { transform: 'translateX(9px) rotate(2deg)' },
+          '60%': { transform: 'translateX(-6px)' },
+          '80%': { transform: 'translateX(4px)' },
+        },
         orbit: {
           '0%': { transform: 'rotate(0deg) translateX(40px) rotate(0deg)' },
           '100%': { transform: 'rotate(360deg) translateX(40px) rotate(-360deg)' },
@@ -134,6 +137,13 @@ const config: Config = {
         }
       },
       animation: {
+        rise: 'rise .9s cubic-bezier(.2,.7,.2,1) both',
+        'fade-in': 'fade-in .5s ease both',
+        pop: 'pop .55s cubic-bezier(.2,.7,.2,1) both',
+        sweep: 'sweep .8s .9s cubic-bezier(.2,.7,.2,1) both',
+        draw: 'draw 1.6s .5s cubic-bezier(.6,0,.2,1) both',
+        ripple: 'ripple 1.8s ease-out 2s infinite',
+        shake: 'shake .5s cubic-bezier(.36,.07,.19,.97)',
         orbit: 'orbit 20s linear infinite',
         'pulse-slow': 'pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         float: 'float 6s ease-in-out infinite',

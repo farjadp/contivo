@@ -44,8 +44,8 @@ export function LocaleSwitcher({ className }: { className?: string }) {
                 aria-current={isActive ? 'true' : undefined}
                 className={
                   isActive
-                    ? 'font-semibold text-carbon underline decoration-brick underline-offset-[6px]'
-                    : 'text-carbon-60 transition-colors hover:text-carbon'
+                    ? 'font-semibold text-moss underline decoration-saffron decoration-2 underline-offset-[6px]'
+                    : 'text-moss-muted transition-colors hover:text-moss'
                 }
                 aria-disabled={isPending || undefined}
               >

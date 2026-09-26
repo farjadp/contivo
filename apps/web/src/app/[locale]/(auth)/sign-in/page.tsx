@@ -22,7 +22,7 @@ export default function SignInPage() {
         link: (chunks) => (
           <Link
             href="/sign-up"
-            className="font-semibold text-carbon underline decoration-carbon/30 underline-offset-4 transition-colors hover:decoration-brick"
+            className="font-semibold text-moss underline decoration-moss/30 underline-offset-4 transition-colors hover:decoration-saffron"
           >
             {chunks}
           </Link>
@@ -31,7 +31,7 @@ export default function SignInPage() {
     >
       <form action={formAction} className="space-y-8" noValidate>
         {state?.error && (
-          <p role="alert" className="border-s-2 border-brick ps-4 text-[14px] text-brick-deep">
+          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
             {state.error}
           </p>
         )}
@@ -54,7 +54,7 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={isPending}
-          className="group w-full bg-carbon px-7 py-4 text-[14.5px] font-semibold text-paper-warm transition-colors duration-300 hover:bg-brick disabled:opacity-60"
+          className="group w-full bg-moss px-7 py-4 text-[14.5px] font-semibold text-chalk transition-colors duration-300 hover:bg-moss-700 disabled:opacity-60"
         >
           {isPending ? t('submitting') : t('submit')}
           <span
