@@ -64,7 +64,7 @@ function BottomLink({
       href={href as never}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium',
+        'flex min-h-[48px] min-w-0 flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium',
         isActive ? 'bg-moss text-chalk' : 'text-moss-muted',
       )}
     >
@@ -143,7 +143,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* ── Phone bar ────────────────────────────────────────────────── */}
       <nav
         aria-label={t('navLabel')}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 border-t border-rule bg-chalk-raised px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[repeat(5,minmax(0,1fr))] gap-1 border-t border-rule bg-chalk-raised px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:hidden"
       >
         {NAV_ITEMS.map((item) => (
           <BottomLink
