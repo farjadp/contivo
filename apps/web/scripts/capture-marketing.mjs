@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Re-shoot the marketing site's product captures and reel from the running app.
+ * Re-shoot the marketing site's product captures from the running app.
  *
  *   pnpm --filter @contivo/web capture:marketing <workspaceId> [baseUrl]
  *
@@ -15,12 +15,11 @@
  *   market-map.webp      1800×1074  Watch · Market matrices tab
  *   setup-chain.webp     1800×400   the setup guide (data-capture="setup-chain")
  *   generated-post.webp  1400×1114  Make  · Pipeline tab
- *   contivo-reel.mp4     12 s, 1280×800, H.264, no audio (needs ffmpeg)
- *   reel-poster.webp     first frame of the reel
  *
  * The pixel sizes are the ones the homepage already declares, so the page code
  * does not change when the pictures do. Each image gets a .webp.json sidecar
- * saying where it came from, as DESIGN.md requires.
+ * saying where it came from, as DESIGN.md requires. The homepage's showreel is
+ * a separate, drawn thing: scripts/render-showreel.mjs.
  *
  * Use a workspace with real data (competitors accepted, charts generated,
  * content in the pipeline); an empty workspace produces honest but empty shots.
@@ -29,9 +28,7 @@
  * tab and Today, in en and fa, for reviewing the app with real data.
  */
 
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import puppeteer from 'puppeteer';
@@ -110,10 +107,6 @@ try {
   }
   console.log('✓ Signed in. Capturing…');
 
-  // Stills for the reel, in the order the loop walks.
-  const frames = mkdtempSync(path.join(tmpdir(), 'contivo-reel-'));
-  const reelTabs = ['strategy', 'matrices', 'ideation', 'pipeline'];
-
   for (const shot of SHOTS) {
     await page.goto(`${BASE}/en/growth/${workspaceId}?tab=${shot.tab}`, { waitUntil: 'networkidle2' });
     await page.waitForSelector(shot.selector, { timeout: 30_000 });
@@ -134,28 +127,6 @@ try {
     writeFileSync(`${file}.json`, JSON.stringify(provenance(shot.what), null, 2) + '\n');
     console.log(`  ✓ ${shot.file}.webp`);
   }
-
-  for (const [i, tab] of reelTabs.entries()) {
-    await page.goto(`${BASE}/en/growth/${workspaceId}?tab=${tab}`, { waitUntil: 'networkidle2' });
-    await new Promise((r) => setTimeout(r, 1200));
-    await page.screenshot({ path: path.join(frames, `f${i}.png`), type: 'png' });
-  }
-
-  // 4 stills × 3 s with 0.5 s crossfades, 1280×800, no audio track.
-  const inputs = reelTabs.flatMap((_, i) => ['-loop', '1', '-t', '3.5', '-i', path.join(frames, `f${i}.png`)]);
-  const fades = [
-    '[0][1]xfade=transition=fade:duration=0.5:offset=3[a]',
-    '[a][2]xfade=transition=fade:duration=0.5:offset=6[b]',
-    '[b][3]xfade=transition=fade:duration=0.5:offset=9,scale=1280:800,format=yuv420p[v]',
-  ].join(';');
-  execFileSync('ffmpeg', ['-y', ...inputs, '-filter_complex', fades, '-map', '[v]', '-an', '-c:v', 'libx264', '-crf', '24', '-movflags', '+faststart', path.join(OUT, 'contivo-reel.mp4')], { stdio: 'inherit' });
-  // Many ffmpeg builds (Homebrew's included) ship without a WebP encoder, so
-  // the poster goes through sharp, which Next.js already depends on.
-  const { default: sharp } = await import('sharp');
-  await sharp(path.join(frames, 'f0.png')).resize(1280, 800).webp({ quality: 86 }).toFile(path.join(OUT, 'reel-poster.webp'));
-  writeFileSync(path.join(OUT, 'reel-poster.webp.json'), JSON.stringify(provenance('first frame of contivo-reel.mp4'), null, 2) + '\n');
-  rmSync(frames, { recursive: true, force: true });
-  console.log('  ✓ contivo-reel.mp4, reel-poster.webp');
 
   if (REVIEW_DIR) {
     const tabs = ['strategy', 'offerings', 'matrices', 'keywords', 'seo', 'narrative', 'ideation', 'pipeline', 'calendar', 'autopilot', 'reports'];

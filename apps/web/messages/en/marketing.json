@@ -41,13 +41,13 @@
       }
     },
     "reel": {
-      "headline": "This is the actual software.",
-      "body": "Twelve seconds, four screens, no mockups: brand memory, the market map, the steps still locked, and a post it wrote.",
+      "headline": "The whole loop, in twenty-two seconds.",
+      "body": "How one URL becomes a brand memory, a market map, a refusal, and a week of posts that published themselves.",
+      "videoAlt": "Animated walkthrough of Contivo: a website address is read into a brand memory, competitors are plotted on a positioning chart, ideation stays locked until the intelligence exists, a draft passes the quality gate, and a week fills with scheduled posts.",
+      "caption": "An animated explainer, not a screen recording — the screenshots further down are the real product. No sound.",
+      "reducedNote": "Paused because your system asks for reduced motion.",
       "play": "Play",
-      "pause": "Pause",
-      "videoAlt": "Screen recording of Contivo: brand memory, the market map, the setup steps still locked, and a post it wrote.",
-      "caption": "Recorded from a running workspace. No narration, no sound.",
-      "reducedNote": "Paused because your system asks for reduced motion."
+      "pause": "Pause"
     },
     "intelligence": {
       "headline": "Most tools start from a blank prompt. <accent>That</accent> is why they read like one.",

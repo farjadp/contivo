@@ -1,0 +1,396 @@
+<!doctype html>
+<!--
+  The showreel scene: 22 seconds of motion graphics in Chalk & Saffron.
+
+  Rendered to MP4 frame by frame by scripts/render-showreel.mjs, so nothing here
+  may animate on its own: there are no CSS animations and no transitions. A
+  single render(t) positions every element for the time t, which makes frame
+  N reproducible no matter how slowly the renderer walks the timeline.
+
+  It illustrates the product rather than screen-recording it — the drawn shapes
+  are the design system's own vocabulary, and the copy is the site's own. The
+  real captures stay on the page below it as the evidence.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contivo showreel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+  :root {
+    --chalk: #EEEDE6; --raised: #F8F7F2; --sunk: #E2E1D8;
+    --moss: #17201B; --moss7: #2F4A3A; --muted: #4A544D;
+    --forest: #1E2E25; --fline: #3A4C41; --fmuted: #B9C2B6;
+    --saffron: #E3A21A; --rival: #3D5F8A; --rule: #D5D4CA; --strong: #A9A89C;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: var(--chalk); }
+  body { font-family: 'IBM Plex Sans', sans-serif; color: var(--moss); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1280px; height: 800px; overflow: hidden; }
+  .scene { position: absolute; inset: 0; }
+  .mono { font-family: 'IBM Plex Mono', monospace; }
+  .display { font-family: 'Bricolage Grotesque', sans-serif; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+<script>
+// ── timeline helpers ─────────────────────────────────────────────────────────
+const DUR = 22;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+/** Progress 0..1 across [a,b], eased. */
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+/** Fade in over `inT`, hold, fade out over `outT`. */
+const window_ = (t, a, b, inT = 0.4, outT = 0.4) =>
+  clamp(Math.min((t - a) / inT, (b - t) / outT));
+
+const el = (tag, style, parent, text) => {
+  const n = document.createElement(tag);
+  if (style) n.setAttribute('style', style);
+  if (text != null) n.textContent = text;
+  (parent || stage).appendChild(n);
+  return n;
+};
+const svgEl = (tag, attrs, parent) => {
+  const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  parent.appendChild(n);
+  return n;
+};
+const stage = document.getElementById('stage');
+
+// ── persistent chrome ────────────────────────────────────────────────────────
+const bg = el('div', 'position:absolute;inset:0;background:var(--chalk)');
+
+const chip = el('div', 'position:absolute;left:64px;top:56px;display:flex;align-items:center;gap:12px');
+const chipNum = el('div', 'font:500 20px "IBM Plex Mono",monospace;color:var(--muted)', chip);
+const chipName = el('div', 'font:600 20px "IBM Plex Sans",sans-serif;letter-spacing:.14em;text-transform:uppercase', chip);
+
+const caption = el('div',
+  'position:absolute;left:64px;right:64px;bottom:64px;font:500 30px/1.35 "IBM Plex Sans",sans-serif;color:var(--muted)');
+
+const mark = el('div', 'position:absolute;right:64px;top:52px;display:flex;align-items:center;gap:12px');
+el('div', 'width:18px;height:18px;background:var(--saffron);transform:rotate(45deg)', mark);
+el('div', 'font:700 30px "Bricolage Grotesque",sans-serif;letter-spacing:-.02em', mark, 'contivo');
+
+// ── S1 · the input ───────────────────────────────────────────────────────────
+const s1 = el('div', 'position:absolute;inset:0', stage);
+const s1wrap = el('div', 'position:absolute;left:64px;top:300px;width:1000px', s1);
+el('div', 'font:500 22px "IBM Plex Mono",monospace;color:var(--muted);margin-bottom:22px', s1wrap,
+  'start with the only thing it needs');
+const s1field = el('div',
+  'display:flex;align-items:center;gap:14px;height:112px;padding:0 16px 0 32px;border:3px solid var(--moss);border-radius:28px;background:var(--raised)', s1wrap);
+const s1url = el('div', 'font:400 42px "IBM Plex Mono",monospace;white-space:pre', s1field, '');
+const s1caret = el('div', 'width:3px;height:48px;background:var(--moss)', s1field);
+el('div', 'flex:1', s1field);
+const s1btn = el('div',
+  'height:80px;padding:0 34px;border-radius:20px;background:var(--saffron);color:var(--moss);font:600 30px "IBM Plex Sans",sans-serif;display:flex;align-items:center;gap:14px', s1field, 'Read my site');
+const S1_URL = 'northwind-roasters.com';
+
+// ── S2 · Know ────────────────────────────────────────────────────────────────
+const s2 = el('div', 'position:absolute;inset:0', stage);
+const s2grid = el('div',
+  'position:absolute;left:64px;top:210px;width:1152px;display:grid;grid-template-columns:1fr 1fr;gap:24px', s2);
+const KNOW = [
+  ['BUSINESS SUMMARY', [96, 74]],
+  ['VALUE PROPOSITION', [88, 58]],
+  ['TARGET AUDIENCE', [66, 86]],
+  ['BRAND TONE', null],
+];
+const s2cards = KNOW.map(([title, widths]) => {
+  const card = el('div',
+    'height:178px;padding:26px 30px;border-radius:20px;background:var(--sunk);display:flex;flex-direction:column;gap:18px', s2grid);
+  el('div', 'font:500 17px "IBM Plex Mono",monospace;letter-spacing:.12em;color:var(--muted)', card, title);
+  let bars;
+  if (widths) {
+    bars = widths.map((w) => {
+      const b = el('div', 'height:16px;border-radius:8px;background:var(--strong)', card);
+      b.dataset.w = w;
+      return b;
+    });
+  } else {
+    const row = el('div', 'display:flex;gap:12px', card);
+    bars = ['pragmatic', 'direct', 'warm'].map((w) =>
+      el('div', 'height:44px;padding:0 20px;border-radius:22px;background:var(--moss);color:var(--chalk);font:500 20px "IBM Plex Sans",sans-serif;display:flex;align-items:center', row, w));
+  }
+  return { card, bars, isTone: !widths };
+});
+
+// ── S3 · Watch ───────────────────────────────────────────────────────────────
+const s3 = el('div', 'position:absolute;inset:0', stage);
+const s3svg = svgEl('svg', { viewBox: '0 0 1152 470', width: 1152, height: 470,
+  style: 'position:absolute;left:64px;top:190px' }, s3);
+const openRect = svgEl('rect', { x: 576, y: 0, width: 576, height: 235, fill: 'var(--saffron)', opacity: 0 }, s3svg);
+const axisX = svgEl('line', { x1: 40, y1: 430, x2: 1152, y2: 430, stroke: 'var(--moss)', 'stroke-width': 3 }, s3svg);
+const axisY = svgEl('line', { x1: 40, y1: 0, x2: 40, y2: 430, stroke: 'var(--moss)', 'stroke-width': 3 }, s3svg);
+const midH = svgEl('line', { x1: 40, y1: 235, x2: 1152, y2: 235, stroke: 'var(--rule)', 'stroke-width': 2 }, s3svg);
+const midV = svgEl('line', { x1: 576, y1: 0, x2: 576, y2: 430, stroke: 'var(--rule)', 'stroke-width': 2 }, s3svg);
+svgEl('text', { x: 1152, y: 462, 'text-anchor': 'end', 'font-family': 'IBM Plex Mono',
+  'font-size': 21, fill: 'var(--muted)' }, s3svg).textContent = 'audience size →';
+const yLab = svgEl('text', { x: 0, y: 0, 'font-family': 'IBM Plex Mono', 'font-size': 21,
+  fill: 'var(--muted)', transform: 'translate(24 430) rotate(-90)' }, s3svg);
+yLab.textContent = 'product sophistication →';
+const RIVALS = [
+  [190, 330, 1], [300, 150, 1], [420, 360, 1], [520, 250, 1], [700, 380, 1],
+  [250, 90, 0], [850, 120, 0], [980, 330, 0], [640, 60, 0],
+];
+const s3dots = RIVALS.map(([x, y, keep]) => ({
+  keep,
+  node: svgEl('circle', { cx: x, cy: y, r: 15, fill: 'var(--rival)' }, s3svg),
+}));
+const youRing = svgEl('circle', { cx: 900, cy: 120, r: 26, fill: 'none', stroke: 'var(--saffron)', 'stroke-width': 5, opacity: 0 }, s3svg);
+const you = svgEl('circle', { cx: 900, cy: 120, r: 26, fill: 'var(--saffron)', stroke: 'var(--moss)', 'stroke-width': 4 }, s3svg);
+const youLabel = svgEl('text', { x: 940, y: 132, 'font-family': 'Bricolage Grotesque', 'font-size': 34, 'font-weight': 700, fill: 'var(--moss)' }, s3svg);
+youLabel.textContent = 'You';
+
+// ── S4 · the refusal ─────────────────────────────────────────────────────────
+const s4 = el('div', 'position:absolute;inset:0', stage);
+const s4head = el('div',
+  'position:absolute;left:64px;top:210px;font:800 112px/0.96 "Bricolage Grotesque",sans-serif;letter-spacing:-.035em;color:var(--chalk)', s4);
+s4head.innerHTML = 'It will not write <span style="color:var(--saffron)">yet</span>.';
+const s4lock = el('div', 'position:absolute;left:64px;top:96px', s4);
+const lockSvg = svgEl('svg', { viewBox: '0 0 24 24', width: 66, height: 66, fill: 'none' }, s4lock);
+svgEl('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2, stroke: 'var(--saffron)', 'stroke-width': 2.2 }, lockSvg);
+svgEl('path', { d: 'M8 11V7a4 4 0 0 1 8 0v4', stroke: 'var(--saffron)', 'stroke-width': 2.2 }, lockSvg);
+const CHAIN = [['01', 'Brand memory', 2], ['02', 'Market map', 2], ['03', 'Keywords', 1],
+                ['04', 'Ideas', 0], ['05', 'Channel', 0], ['06', 'Autopilot', 0]];
+const s4chain = el('div',
+  'position:absolute;left:64px;top:470px;width:1152px;display:grid;grid-template-columns:repeat(6,1fr);gap:12px', s4);
+const s4items = CHAIN.map(([num, name, state]) => {
+  const border = state === 2 ? 'var(--chalk)' : state === 1 ? 'var(--saffron)' : 'var(--fline)';
+  const box = el('div',
+    `padding:18px 18px 22px;border-top:5px ${state === 0 ? 'dashed' : 'solid'} ${border};display:flex;flex-direction:column;gap:6px` +
+    (state === 1 ? ';background:var(--moss);border-radius:0 0 14px 14px' : ''), s4chain);
+  el('div', `font:500 18px "IBM Plex Mono",monospace;color:${state === 1 ? 'var(--saffron)' : 'var(--fmuted)'}`, box,
+    `${num} · ${state === 2 ? 'done' : state === 1 ? 'next' : 'locked'}`);
+  el('div', `font:600 21px "IBM Plex Sans",sans-serif;white-space:nowrap;color:${state === 0 ? 'var(--fmuted)' : 'var(--chalk)'}`, box, name);
+  return box;
+});
+
+// ── S5 · Make ────────────────────────────────────────────────────────────────
+const s5 = el('div', 'position:absolute;inset:0', stage);
+const s5card = el('div',
+  'position:absolute;left:64px;top:210px;width:600px;padding:34px 38px;border-radius:22px;background:var(--raised);border:2px solid var(--rule);display:flex;flex-direction:column;gap:20px', s5);
+el('div', 'font:500 17px "IBM Plex Mono",monospace;letter-spacing:.12em;color:var(--muted)', s5card, 'LINKEDIN · DRAFT');
+const s5lines = [96, 88, 72, 90, 54].map((w) => {
+  const b = el('div', 'height:16px;border-radius:8px;background:var(--strong)', s5card);
+  b.dataset.w = w;
+  return b;
+});
+const CHECKS = ['Platform limits and your word range', 'No leaked scaffolding or placeholders',
+                'Nothing from your never-write list', 'Not a near-duplicate'];
+const s5checks = el('div',
+  'position:absolute;left:712px;top:210px;width:504px;display:flex;flex-direction:column;gap:18px', s5);
+const s5rows = CHECKS.map((label) => {
+  const row = el('div', 'display:flex;align-items:center;gap:16px', s5checks);
+  const mark = el('div',
+    'width:38px;height:38px;border-radius:19px;background:var(--moss7);display:flex;align-items:center;justify-content:center;flex:none', row);
+  const tick = svgEl('svg', { viewBox: '0 0 24 24', width: 22, height: 22, fill: 'none' }, mark);
+  svgEl('path', { d: 'M5 12l5 5 9-10', stroke: 'var(--chalk)', 'stroke-width': 3.4, 'stroke-linecap': 'round' }, tick);
+  el('div', 'font:400 23px/1.3 "IBM Plex Sans",sans-serif', row, label);
+  return row;
+});
+const s5judge = el('div',
+  'position:absolute;left:712px;top:470px;width:504px;padding:26px 30px;border-radius:18px;background:var(--moss);color:var(--chalk);display:flex;flex-direction:column;gap:10px', s5);
+el('div', 'font:500 17px "IBM Plex Mono",monospace;letter-spacing:.12em;color:var(--fmuted)', s5judge, 'THE JUDGE');
+const s5verdict = el('div', 'font:600 30px "IBM Plex Sans",sans-serif', s5judge, '');
+
+// ── S6 · Ship ────────────────────────────────────────────────────────────────
+const s6 = el('div', 'position:absolute;inset:0', stage);
+const s6week = el('div',
+  'position:absolute;left:64px;top:230px;width:1152px;display:grid;grid-template-columns:repeat(7,1fr);gap:18px', s6);
+const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const PLAN = [1, 0, 2, 1, 0, 1, 0];
+const s6days = DAYS.map((d, i) => {
+  const col = el('div', 'display:flex;flex-direction:column;align-items:center;gap:14px', s6week);
+  const box = el('div',
+    'width:100%;height:280px;border-radius:16px;background:var(--sunk);padding:14px;display:flex;flex-direction:column;justify-content:flex-end;gap:12px', col);
+  const blocks = Array.from({ length: PLAN[i] }, () =>
+    el('div', 'height:54px;border-radius:10px;background:var(--saffron);border:2px solid var(--moss)', box));
+  el('div', 'font:500 24px "IBM Plex Mono",monospace;color:var(--muted)', col, d);
+  return blocks;
+});
+
+// ── S7 · close ───────────────────────────────────────────────────────────────
+const s7 = el('div', 'position:absolute;inset:0', stage);
+const ringSvg = svgEl('svg', { viewBox: '0 0 720 600', width: 560, height: 467,
+  style: 'position:absolute;left:96px;top:170px' }, s7);
+svgEl('circle', { cx: 360, cy: 300, r: 220, fill: 'none', stroke: 'var(--strong)', 'stroke-width': 3, 'stroke-dasharray': '7 9' }, ringSvg);
+const ringArc = svgEl('path', { d: 'M360 80 A220 220 0 1 1 359 80', fill: 'none', stroke: 'var(--moss)',
+  'stroke-width': 7, 'stroke-linecap': 'round', 'stroke-dasharray': 1382, 'stroke-dashoffset': 1382 }, ringSvg);
+const RING = [['Know', 360, 80], ['Watch', 550, 190], ['Think', 550, 410],
+              ['Make', 360, 520], ['Ship', 170, 410], ['Learn', 170, 190]];
+const ringNodes = RING.map(([name, x, y], i) => {
+  const g = svgEl('g', {}, ringSvg);
+  const c = svgEl('circle', { cx: x, cy: y, r: 40, fill: i === 2 ? 'var(--saffron)' : 'var(--moss)',
+    stroke: 'var(--moss)', 'stroke-width': 4 }, g);
+  const tx = svgEl('text', { x, y: y + 9, 'text-anchor': 'middle', 'font-family': 'IBM Plex Mono',
+    'font-size': 26, 'font-weight': 500, fill: i === 2 ? 'var(--moss)' : 'var(--chalk)' }, g);
+  tx.textContent = String(i + 1).padStart(2, '0');
+  const lx = x > 400 ? x + 58 : x < 300 ? x - 58 : x;
+  const anchor = x > 400 ? 'start' : x < 300 ? 'end' : 'middle';
+  const ly = y === 80 ? y - 58 : y === 520 ? y + 72 : y + 9;
+  const lb = svgEl('text', { x: lx, y: ly, 'text-anchor': anchor, 'font-family': 'IBM Plex Sans',
+    'font-size': 27, 'font-weight': 600, fill: 'var(--moss)' }, ringSvg);
+  lb.textContent = name;
+  return { g, lb };
+});
+const s7copy = el('div', 'position:absolute;left:700px;top:300px;width:520px', s7);
+const s7head = el('div', 'font:800 62px/1.02 "Bricolage Grotesque",sans-serif;letter-spacing:-.03em', s7copy,
+  'Paste a URL and go back to work.');
+const s7url = el('div', 'margin-top:28px;font:500 36px "IBM Plex Mono",monospace;color:var(--muted)', s7copy, 'contivo.app');
+
+// ── the timeline ─────────────────────────────────────────────────────────────
+const SCENES = [
+  { n: '01', name: 'Know',  a: 3.0,  b: 7.0,  cap: 'It reads your site into a brand memory.' },
+  { n: '02', name: 'Watch', a: 7.0,  b: 11.0, cap: 'Then maps the competitors you actually have.' },
+  { n: '03', name: 'Think', a: 11.0, b: 15.0, cap: 'And refuses to write until it knows enough.' },
+  { n: '04', name: 'Make',  a: 15.0, b: 18.2, cap: 'Only what survives the quality gate gets written.' },
+  { n: '05', name: 'Ship',  a: 18.2, b: 20.4, cap: 'Then it publishes, inside the hours you allow.' },
+];
+
+function render(t) {
+  // Ground: chalk, flipping to forest for the refusal.
+  const dark = clamp(Math.min((t - 10.85) / 0.45, (15.15 - t) / 0.45));
+  bg.style.background = dark > 0.5 ? 'var(--forest)' : 'var(--chalk)';
+  const onDark = dark > 0.5;
+  caption.style.color = onDark ? 'var(--fmuted)' : 'var(--muted)';
+  chipName.style.color = onDark ? 'var(--chalk)' : 'var(--moss)';
+  chipNum.style.color = onDark ? 'var(--saffron)' : 'var(--muted)';
+  mark.children[1].style.color = onDark ? 'var(--chalk)' : 'var(--moss)';
+
+  // Stage chip + caption follow whichever scene owns t.
+  const sc = SCENES.find((s) => t >= s.a && t < s.b);
+  const chipOn = sc ? window_(t, sc.a, sc.b, 0.35, 0.3) : 0;
+  chip.style.opacity = chipOn;
+  if (sc) { chipNum.textContent = sc.n; chipName.textContent = sc.name; }
+  caption.style.opacity = sc ? window_(t, sc.a + 0.25, sc.b, 0.45, 0.3) : 0;
+  if (sc) caption.textContent = sc.cap;
+  caption.style.transform = `translateY(${sc ? (1 - easeOut(seg(t, sc.a + 0.25, sc.a + 0.8))) * 18 : 0}px)`;
+  mark.style.opacity = t < 20.2 ? 1 : 0;
+
+  // S1 · typing the URL, then the press.
+  const on1 = window_(t, 0, 3.0, 0.5, 0.35);
+  s1.style.opacity = on1;
+  s1.style.transform = `translateY(${(1 - easeOut(seg(t, 0, 0.9))) * 26}px)`;
+  const typed = Math.round(easeInOut(seg(t, 0.55, 2.25)) * S1_URL.length);
+  s1url.textContent = S1_URL.slice(0, typed);
+  s1caret.style.opacity = t > 2.35 ? 0 : Math.floor(t * 2.2) % 2 ? 0.25 : 1;
+  const press = seg(t, 2.45, 2.62);
+  s1btn.style.transform = `scale(${1 - Math.sin(press * Math.PI) * 0.055})`;
+
+  // S2 · brand memory cards land, then their lines fill.
+  const on2 = window_(t, 3.0, 7.0, 0.45, 0.4);
+  s2.style.opacity = on2;
+  s2cards.forEach(({ card, bars, isTone }, i) => {
+    const rise = easeOut(seg(t, 3.15 + i * 0.16, 3.85 + i * 0.16));
+    card.style.transform = `translateY(${(1 - rise) * 44}px)`;
+    card.style.opacity = rise;
+    bars.forEach((b, j) => {
+      const p = easeOut(seg(t, 3.9 + i * 0.16 + j * 0.14, 4.5 + i * 0.16 + j * 0.14));
+      if (isTone) { b.style.opacity = p; b.style.transform = `scale(${0.85 + p * 0.15})`; }
+      else b.style.width = `${p * Number(b.dataset.w)}%`;
+    });
+  });
+
+  // S3 · the chart draws, rivals land, four are dropped, you arrive.
+  const on3 = window_(t, 7.0, 11.0, 0.45, 0.4);
+  s3.style.opacity = on3;
+  const axis = easeOut(seg(t, 7.1, 7.7));
+  axisX.setAttribute('stroke-dasharray', `${axis * 1112} 9999`);
+  axisY.setAttribute('stroke-dasharray', `${axis * 430} 9999`);
+  midH.style.opacity = midV.style.opacity = seg(t, 7.5, 7.9) * 0.9;
+  yLab.setAttribute('opacity', seg(t, 7.6, 8.1));
+  s3svg.querySelector('text').setAttribute('opacity', seg(t, 7.6, 8.1));
+  s3dots.forEach(({ node, keep }, i) => {
+    const pop = easeOut(seg(t, 7.75 + i * 0.075, 8.15 + i * 0.075));
+    node.setAttribute('r', 15 * pop);
+    if (!keep) {
+      const drop = seg(t, 9.15, 9.75);
+      node.setAttribute('opacity', pop * (1 - drop * 0.45));
+      node.setAttribute('fill', drop > 0.5 ? 'none' : 'var(--rival)');
+      node.setAttribute('stroke', 'var(--strong)');
+      node.setAttribute('stroke-width', drop > 0.5 ? 4 : 0);
+      node.setAttribute('stroke-dasharray', '4 4');
+    } else node.setAttribute('opacity', pop);
+  });
+  const land = easeOut(seg(t, 9.55, 10.2));
+  you.setAttribute('r', 26 * land);
+  you.setAttribute('opacity', land);
+  youLabel.setAttribute('opacity', seg(t, 10.0, 10.35));
+  const ripple = seg(t, 10.1, 10.9);
+  youRing.setAttribute('r', 26 + ripple * 52);
+  youRing.setAttribute('opacity', (1 - ripple) * 0.8);
+  openRect.setAttribute('opacity', seg(t, 10.25, 10.75) * 0.16);
+
+  // S4 · the refusal.
+  const on4 = window_(t, 11.0, 15.0, 0.45, 0.4);
+  s4.style.opacity = on4;
+  s4lock.style.opacity = easeOut(seg(t, 11.15, 11.6));
+  const headIn = easeOut(seg(t, 11.3, 12.0));
+  s4head.style.opacity = headIn;
+  s4head.style.transform = `translateY(${(1 - headIn) * 30}px)`;
+  // Someone presses the locked step: three quick shakes, nothing gives.
+  const shake = seg(t, 13.25, 13.85);
+  const amp = Math.sin(shake * Math.PI) * 15;
+  s4items.forEach((box, i) => {
+    const rise = easeOut(seg(t, 12.15 + i * 0.1, 12.7 + i * 0.1));
+    box.style.opacity = rise;
+    box.style.transform = `translateY(${(1 - rise) * 26}px)` +
+      (i === 2 && shake > 0 && shake < 1 ? ` translateX(${Math.sin(shake * Math.PI * 7) * amp}px)` : '');
+  });
+
+  // S5 · the draft writes itself and the gate checks it.
+  const on5 = window_(t, 15.0, 18.2, 0.4, 0.35);
+  s5.style.opacity = on5;
+  s5card.style.opacity = easeOut(seg(t, 15.1, 15.5));
+  s5lines.forEach((b, i) => {
+    const p = easeOut(seg(t, 15.35 + i * 0.16, 15.85 + i * 0.16));
+    b.style.width = `${p * Number(b.dataset.w)}%`;
+  });
+  s5rows.forEach((row, i) => {
+    const p = easeOut(seg(t, 16.15 + i * 0.22, 16.6 + i * 0.22));
+    row.style.opacity = p;
+    row.children[0].style.transform = `scale(${0.5 + p * 0.5})`;
+  });
+  const verdict = seg(t, 17.25, 17.6);
+  s5judge.style.opacity = verdict;
+  s5verdict.textContent = 'Brand fit, facts, clarity — all clear';
+
+  // S6 · the week fills.
+  const on6 = window_(t, 18.2, 20.4, 0.4, 0.35);
+  s6.style.opacity = on6;
+  let k = 0;
+  s6days.forEach((blocks) => blocks.forEach((b) => {
+    const p = easeOut(seg(t, 18.4 + k * 0.13, 18.85 + k * 0.13));
+    k++;
+    b.style.opacity = p;
+    b.style.transform = `scale(${0.4 + p * 0.6})`;
+  }));
+
+  // S7 · the loop closes.
+  const on7 = window_(t, 20.4, DUR, 0.5, 0.35);
+  s7.style.opacity = on7;
+  ringArc.setAttribute('stroke-dashoffset', 1382 * (1 - easeInOut(seg(t, 20.5, 21.5))));
+  ringNodes.forEach(({ g, lb }, i) => {
+    const p = easeOut(seg(t, 20.55 + i * 0.11, 20.95 + i * 0.11));
+    g.setAttribute('opacity', p);
+    g.setAttribute('transform', `translate(${RING[i][1]} ${RING[i][2]}) scale(${0.4 + p * 0.6}) translate(${-RING[i][1]} ${-RING[i][2]})`);
+    lb.setAttribute('opacity', p);
+  });
+  const copyIn = easeOut(seg(t, 21.0, 21.6));
+  s7copy.style.opacity = copyIn;
+  s7copy.style.transform = `translateY(${(1 - copyIn) * 24}px)`;
+  s7url.style.opacity = seg(t, 21.35, 21.8);
+}
+
+window.render = render;
+window.DUR = DUR;
+render(0);
+</script>
+</body>
+</html>

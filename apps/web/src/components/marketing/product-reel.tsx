@@ -1,15 +1,25 @@
 'use client';
 
 /**
- * The product reel.
+ * The showreel.
  *
- * Autoplays for everyone except visitors who asked their system for reduced
- * motion — they get the poster frame and an explicit control, because a
- * looping 12-second video is exactly the kind of thing that setting exists to
- * stop. PRODUCT.md makes the fallback required rather than optional.
+ * Motion graphics drawn in the product's own design system, rendered by
+ * scripts/render-showreel.mjs — an explainer of the six-stage loop, which the
+ * caption says plainly, because the real screenshots are what the rest of the
+ * page uses as evidence.
+ *
+ * It plays when it scrolls into view rather than on mount: the reel sits below
+ * the fold, so starting it at mount downloads and decodes half a megabyte for
+ * visitors who never reach it — and a play() call made before any scroll is
+ * also the one browsers are most likely to refuse.
+ *
+ * Visitors who asked their system for reduced motion get the poster frame and
+ * an explicit control instead, because a looping 22-second video is exactly
+ * the kind of thing that setting exists to stop. PRODUCT.md makes the fallback
+ * required rather than optional.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 
 export function ProductReel() {
@@ -17,6 +27,9 @@ export function ProductReel() {
   const [reduced, setReduced] = useState(false);
   const t = useTranslations('home.reel');
   const [playing, setPlaying] = useState(false);
+  /* Set once the visitor uses the button, after which visibility stops
+     deciding: nothing is more annoying than a video that restarts itself. */
+  const manual = useRef(false);
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -26,21 +39,40 @@ export function ProductReel() {
     return () => mq.removeEventListener('change', apply);
   }, []);
 
+  const play = useCallback(() => {
+    const v = ref.current;
+    if (!v) return;
+    void v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+  }, []);
+
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
     if (reduced) {
       v.pause();
       setPlaying(false);
-    } else {
-      void v.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      return;
     }
-  }, [reduced]);
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (manual.current) return;
+        if (entry.isIntersecting) play();
+        else {
+          v.pause();
+          setPlaying(false);
+        }
+      },
+      { threshold: 0.4 },
+    );
+    io.observe(v);
+    return () => io.disconnect();
+  }, [reduced, play]);
 
   function toggle() {
     const v = ref.current;
     if (!v) return;
-    if (v.paused) void v.play().then(() => setPlaying(true)).catch(() => {});
+    manual.current = true;
+    if (v.paused) play();
     else {
       v.pause();
       setPlaying(false);
@@ -53,8 +85,8 @@ export function ProductReel() {
         <video
           ref={ref}
           className="w-full rounded-2xl border border-rule bg-chalk"
-          src="/marketing/contivo-reel.mp4"
-          poster="/marketing/reel-poster.webp"
+          src="/marketing/contivo-showreel.mp4"
+          poster="/marketing/showreel-poster.webp"
           muted
           loop
           playsInline

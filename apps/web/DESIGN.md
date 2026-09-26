@@ -98,6 +98,7 @@ stills into a complete picture.
 | Cadence | 1–14 posts a week redistribute across the reader's week. |
 | Run log | Example lines type in, including a judge veto; Replay. |
 | Chapters | Rise into view once, on scroll. Content is visible without JS. |
+| Showreel | 22 s of motion graphics walking the whole loop; plays when it scrolls into view, pauses when it leaves. |
 
 ## Browser surfaces
 
@@ -108,12 +109,29 @@ the scrollbar, and scopes the shadcn variables (`--primary`, `--muted`,
 
 ## Assets
 
-`public/marketing/`: `brand-memory.webp`, `market-map.webp`, `setup-chain.webp`,
-`generated-post.webp` (Puppeteer, 1440×900 at DPR 2), `contivo-reel.mp4` (12 s,
-1280×800, H.264, no audio) and `reel-poster.webp`, all captured on 26 Sep 2026
-from the founder's own workspace for farjadp.info on this design. Each has a
-`.webp.json` provenance sidecar. Re-shoot with
-`pnpm --filter @contivo/web capture:marketing <workspaceId>`: it opens Chrome,
-waits for a person to sign in, and writes every file at the sizes the page
-declares. Alt text and captions describe what the captures show — update them
-when the captures change.
+`public/marketing/`:
+
+- **Captures** — `brand-memory.webp`, `market-map.webp`, `setup-chain.webp`,
+  `generated-post.webp`. Puppeteer at 1440×900 DPR 2, shot 26 Sep 2026 from the
+  founder's own farjadp.info workspace on this design. Re-shoot with
+  `pnpm --filter @contivo/web capture:marketing <workspaceId>`: it opens Chrome,
+  waits for a person to sign in, and writes each file at the size the page
+  declares.
+- **Showreel** — `contivo-showreel.mp4` (22 s, 1280×800, H.264, **no audio**)
+  and `showreel-poster.webp`. Not a capture: motion graphics drawn in this
+  system, authored in `scripts/showreel/scene.html` and rendered by
+  `pnpm --filter @contivo/web showreel`. The scene exposes `render(t)` and has
+  no CSS animations, so frame N is reproducible; the renderer captures at 2×
+  and scales down, which is what keeps the type crisp.
+
+Every file carries a `.json` provenance sidecar, and the showreel's says in
+plain words that it is drawn rather than recorded.
+
+**The line to hold:** a drawn illustration of the product may explain, but it
+may never stand in as evidence. The showreel is labelled as an explainer in its
+own caption; the claims on this page are carried by the real captures. If the
+showreel ever starts showing something the product cannot do, it stops being an
+explainer and becomes a lie.
+
+Alt text and captions describe what each asset actually shows — update them
+when the asset changes.
