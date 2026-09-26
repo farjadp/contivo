@@ -46,22 +46,6 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        ink: {
-          950: '#07090C',
-          900: '#0B0F14',
-          800: '#121820',
-          700: '#1B232E',
-          600: '#2A3441',
-          400: '#5C6878',
-          300: '#8A96A6',
-          200: '#B7C0CC',
-          100: '#E6EAF0',
-        },
-        signal: {
-          DEFAULT: '#3DFF8F',
-          dim: '#22B865',
-          ink: '#052A15',
-        },
         paper: {
           DEFAULT: '#F5F3EE',
           2: '#ECE9E1',
@@ -115,16 +99,6 @@ const config: Config = {
           DEFAULT: '#D5D4CA',
           strong: '#A9A89C',
         },
-        brand: {
-          indigo: '#2B2DFF',
-          violet: '#7A5CFF',
-          midnight: '#0E0F1A',
-          cyan: '#00E5FF',
-          purple: '#B8A8FF',
-          light: '#F6F7FB',
-          gray: '#7C7F93',
-          dark: '#1F2235',
-        }
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -144,9 +118,6 @@ const config: Config = {
            through to Vazirmatn per character instead of to the OS. */
         plex: ['var(--font-plex)', 'var(--font-vazir)', 'system-ui', 'sans-serif'],
         plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'ui-monospace', 'monospace'],
-      },
-      backgroundImage: {
-        'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',
       },
       keyframes: {
         orbit: {
