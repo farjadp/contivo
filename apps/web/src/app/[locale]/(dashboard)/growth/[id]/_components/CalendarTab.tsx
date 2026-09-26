@@ -82,17 +82,17 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-gray-900 tracking-tight">{t('title')}</h2>
-          <p className="text-sm font-bold text-gray-400 mt-1 uppercase tracking-widest">{t('subtitle')}</p>
+          <h2 className="text-2xl font-black text-moss tracking-tight">{t('title')}</h2>
+          <p className="text-sm font-bold text-moss-muted mt-1 uppercase tracking-widest">{t('subtitle')}</p>
         </div>
 
-        <div className="flex items-center gap-1 bg-gray-50/80 p-1 rounded-[16px] border border-gray-100 shadow-inner">
+        <div className="flex items-center gap-1 bg-chalk/80 p-1 rounded-[16px] border border-rule shadow-inner">
           <button
             onClick={() => setView('week')}
             className={`flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-bold transition-all ${
               view === 'week' 
-                ? 'bg-white shadow-[0_4px_12px_rgb(0,0,0,0.05)] text-[#2B2DFF] border border-gray-100' 
-                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100/50 border border-transparent'
+                ? 'bg-chalk-raised shadow-[0_4px_12px_rgb(0,0,0,0.05)] text-moss-700 border border-rule' 
+                : 'text-moss-muted hover:text-moss hover:bg-chalk-sunk/50 border border-transparent'
             }`}
           >
             <CalendarIcon className="w-4 h-4" />
@@ -102,8 +102,8 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
             onClick={() => setView('list')}
             className={`flex items-center gap-2 px-4 py-2 rounded-[12px] text-sm font-bold transition-all ${
               view === 'list' 
-                ? 'bg-white shadow-[0_4px_12px_rgb(0,0,0,0.05)] text-[#2B2DFF] border border-gray-100' 
-                : 'text-gray-400 hover:text-gray-900 hover:bg-gray-100/50 border border-transparent'
+                ? 'bg-chalk-raised shadow-[0_4px_12px_rgb(0,0,0,0.05)] text-moss-700 border border-rule' 
+                : 'text-moss-muted hover:text-moss hover:bg-chalk-sunk/50 border border-transparent'
             }`}
           >
             <List className="w-4 h-4" />
@@ -114,7 +114,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
 
       {isLoading ? (
         <div className="flex justify-center items-center py-32">
-          <Loader2 className="w-10 h-10 animate-spin text-[#2B2DFF]" />
+          <Loader2 className="w-10 h-10 animate-spin text-moss-700" />
         </div>
       ) : error ? (
         <div className="flex justify-center items-center py-20">
@@ -124,33 +124,33 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
           </div>
         </div>
       ) : items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-gray-50/30 rounded-[32px] border border-dashed border-gray-200">
-          <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-xl shadow-gray-200/50">
-            <CalendarIcon className="w-8 h-8 text-gray-400" />
+        <div className="flex flex-col items-center justify-center py-32 text-center bg-chalk/30 rounded-[32px] border border-dashed border-rule">
+          <div className="w-20 h-20 bg-chalk-raised rounded-full flex items-center justify-center mb-6 shadow-xl shadow-forest-muted/50">
+            <CalendarIcon className="w-8 h-8 text-moss-muted" />
           </div>
-          <h3 className="text-xl font-black text-gray-900 tracking-tight">{t('emptyTitle')}</h3>
-          <p className="text-gray-500 text-sm font-medium max-w-sm mt-3">{t('emptyBody')}</p>
+          <h3 className="text-xl font-black text-moss tracking-tight">{t('emptyTitle')}</h3>
+          <p className="text-moss-muted text-sm font-medium max-w-sm mt-3">{t('emptyBody')}</p>
         </div>
       ) : (
-        <div className="bg-white rounded-[32px] border border-gray-100 overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)] pb-2">
+        <div className="bg-chalk-raised rounded-[32px] border border-rule overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.03)] pb-2">
           {view === 'list' && (
-            <div className="divide-y divide-gray-50/50 p-2">
+            <div className="divide-y divide-rule/50 p-2">
               {items.map((item) => (
-                <div key={item.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 rounded-[24px] transition-colors group">
+                <div key={item.id} className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-chalk/50 rounded-[24px] transition-colors group">
                   <div>
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-moss bg-chalk-sunk px-2.5 py-1 rounded-lg">
                         <bdi>{channelLabel(tRoot, item.channel)}</bdi>
                       </span>
-                      <span className="text-[9px] font-black uppercase tracking-widest text-[#00E5FF] bg-[#00E5FF]/10 px-2.5 py-1 rounded-lg">
+                      <span className="text-[9px] font-black uppercase tracking-widest text-saffron-ink bg-saffron/10 px-2.5 py-1 rounded-lg">
                         {statusLabel(tRoot, item.status)}
                       </span>
                     </div>
-                    <h4 className="font-bold text-gray-900 text-base lg:text-lg group-hover:text-[#2B2DFF] transition-colors">{item.topic}</h4>
-                    <p className="text-sm font-medium text-gray-500 mt-1.5 line-clamp-1">{item.content}</p>
+                    <h4 className="font-bold text-moss text-base lg:text-lg group-hover:text-moss-700 transition-colors">{item.topic}</h4>
+                    <p className="text-sm font-medium text-moss-muted mt-1.5 line-clamp-1">{item.content}</p>
                   </div>
-                  <div className="sm:text-end shrink-0 bg-white border border-gray-100 px-5 py-3 rounded-[20px] shadow-sm">
-                    <p className="text-sm font-black text-gray-900">
+                  <div className="sm:text-end shrink-0 bg-chalk-raised border border-rule px-5 py-3 rounded-[20px] shadow-sm">
+                    <p className="text-sm font-black text-moss">
                       {item.scheduledAtUtc
                         ? format.dateTime(new Date(item.scheduledAtUtc), {
                             weekday: 'short',
@@ -159,7 +159,7 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
                           })
                         : t('unscheduled')}
                     </p>
-                    <p className="text-[11px] font-bold tracking-widest uppercase text-gray-400 mt-0.5">
+                    <p className="text-[11px] font-bold tracking-widest uppercase text-moss-muted mt-0.5">
                       {item.scheduledAtUtc
                         ? format.dateTime(new Date(item.scheduledAtUtc), {
                             hour: '2-digit',
@@ -174,21 +174,21 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
           )}
 
           {view === 'week' && (
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-px bg-gray-100">
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-px bg-chalk-sunk">
               {next7Days.map((day, idx) => {
                 const dateString = dayKey(day);
                 const dayItems = itemsByDate[dateString] || [];
                 const isToday = idx === 0;
 
                 return (
-                  <div key={dateString} className={`flex flex-col bg-white min-h-[350px] p-4 ${isToday ? 'bg-indigo-50/10 relative' : ''}`}>
-                    {isToday && <div className="absolute inset-x-0 top-0 h-1 bg-[#2B2DFF]" />}
+                  <div key={dateString} className={`flex flex-col bg-chalk-raised min-h-[350px] p-4 ${isToday ? 'bg-chalk-sunk/10 relative' : ''}`}>
+                    {isToday && <div className="absolute inset-x-0 top-0 h-1 bg-moss" />}
                     
                     <div className="mb-4">
-                      <p className={`text-[10px] uppercase tracking-widest font-black ${isToday ? 'text-[#2B2DFF]' : 'text-gray-400'}`}>
+                      <p className={`text-[10px] uppercase tracking-widest font-black ${isToday ? 'text-moss-700' : 'text-moss-muted'}`}>
                         {format.dateTime(day, { weekday: 'short' })}
                       </p>
-                      <p className={`text-2xl font-black tracking-tighter mt-0.5 ${isToday ? 'text-gray-900' : 'text-gray-700'}`}>
+                      <p className={`text-2xl font-black tracking-tighter mt-0.5 ${isToday ? 'text-moss' : 'text-moss'}`}>
                         {format.dateTime(day, { day: 'numeric' })}
                       </p>
                     </div>
@@ -196,18 +196,18 @@ export function CalendarTab({ workspaceId }: { workspaceId: string }) {
                     <div className="flex flex-col gap-2 flex-1">
                       {dayItems.length === 0 ? (
                         <div className="flex-1 flex items-center justify-center">
-                          <span className="text-xs font-bold text-gray-300">{t('dayEmpty')}</span>
+                          <span className="text-xs font-bold text-moss-muted">{t('dayEmpty')}</span>
                         </div>
                       ) : (
                         dayItems.map((item: any) => (
-                          <div key={item.id} className="bg-gray-50 border border-gray-100 p-3 rounded-[16px] hover:border-[#2B2DFF]/30 hover:shadow-lg hover:shadow-indigo-500/10 transition-all cursor-pointer group">
-                            <div className="text-[9px] font-black uppercase tracking-widest text-[#2B2DFF] mb-1.5 line-clamp-1">
+                          <div key={item.id} className="bg-chalk border border-rule p-3 rounded-[16px] hover:border-moss/30 hover:shadow-lg hover:shadow-moss-700/10 transition-all cursor-pointer group">
+                            <div className="text-[9px] font-black uppercase tracking-widest text-moss-700 mb-1.5 line-clamp-1">
                               <bdi>{channelLabel(tRoot, item.channel)}</bdi>
                             </div>
-                            <h5 className="text-[13px] font-bold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#2B2DFF] transition-colors">
+                            <h5 className="text-[13px] font-bold text-moss leading-snug line-clamp-2 group-hover:text-moss-700 transition-colors">
                               {item.topic}
                             </h5>
-                            <p className="text-[10px] font-bold text-gray-400 mt-2 flex items-center gap-1">
+                            <p className="text-[10px] font-bold text-moss-muted mt-2 flex items-center gap-1">
                               <CalendarIcon className="w-3 h-3" />
                               {format.dateTime(new Date(item.scheduledAtUtc!), {
                                 hour: '2-digit',

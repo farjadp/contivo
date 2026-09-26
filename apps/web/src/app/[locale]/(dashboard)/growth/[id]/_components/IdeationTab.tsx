@@ -236,16 +236,16 @@ export function IdeationTab({
 
   return (
     <div className="space-y-6 animate-in fade-in py-2 duration-500">
-      <div className="rounded-2xl border border-indigo-100 bg-gradient-to-b from-indigo-50/50 to-white p-8 text-center shadow-sm">
-        <div className="mx-auto w-16 h-16 bg-white rounded-2xl shadow-md border border-indigo-100 flex items-center justify-center mb-6">
-          <Sparkles className="w-8 h-8 text-indigo-600" />
+      <div className="rounded-2xl border border-rule bg-gradient-to-b from-chalk-sunk/50 to-chalk-raised p-8 text-center shadow-sm">
+        <div className="mx-auto w-16 h-16 bg-chalk-raised rounded-2xl shadow-md border border-rule flex items-center justify-center mb-6">
+          <Sparkles className="w-8 h-8 text-moss-700" />
         </div>
-        <h2 className="text-2xl font-bold text-[#121212] mb-3">{t('ideation.title')}</h2>
-        <p className="text-gray-500 max-w-lg mx-auto mb-8 leading-relaxed">{t('ideation.lede')}</p>
-        <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-indigo-100 bg-indigo-50/70 px-4 py-2 text-xs font-semibold text-indigo-700">
+        <h2 className="text-2xl font-bold text-moss mb-3">{t('ideation.title')}</h2>
+        <p className="text-moss-muted max-w-lg mx-auto mb-8 leading-relaxed">{t('ideation.lede')}</p>
+        <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-rule bg-chalk-sunk/70 px-4 py-2 text-xs font-semibold text-moss">
           {t('ideation.requiredInputs')}
         </p>
-        <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-700">
+        <p className="mx-auto mb-4 max-w-3xl rounded-xl border border-rule bg-chalk-raised px-4 py-2 text-xs font-semibold text-moss">
           {t('ideation.targetWords', {
             count: normalizedTargetWordCount,
             platform: wordCountPlatformLabel(t, wordCountPlatform),
@@ -253,11 +253,11 @@ export function IdeationTab({
             max: wordCountRange.max,
           })}
         </p>
-        <div className="mx-auto mb-6 grid max-w-6xl gap-2 rounded-2xl border border-gray-200 bg-white/90 p-3 md:grid-cols-4 lg:grid-cols-8">
+        <div className="mx-auto mb-6 grid max-w-6xl gap-2 rounded-2xl border border-rule bg-chalk-raised/90 p-3 md:grid-cols-4 lg:grid-cols-8">
           <select
             value={goal}
             onChange={(event) => setGoal(event.target.value)}
-            className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700"
+            className="h-10 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss"
           >
             {CONTENT_GOAL_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -268,7 +268,7 @@ export function IdeationTab({
           <select
             value={platform}
             onChange={(event) => setPlatform(event.target.value)}
-            className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700"
+            className="h-10 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss"
           >
             {CONTENT_PLATFORM_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -279,7 +279,7 @@ export function IdeationTab({
           <select
             value={funnelStage}
             onChange={(event) => setFunnelStage(event.target.value)}
-            className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700"
+            className="h-10 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss"
           >
             {FUNNEL_STAGE_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -290,7 +290,7 @@ export function IdeationTab({
           <select
             value={selectionMode}
             onChange={(event) => setSelectionMode(event.target.value as 'auto' | 'manual')}
-            className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700"
+            className="h-10 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss"
           >
             <option value="auto">{t('ideation.frameworkAuto')}</option>
             <option value="manual">{t('ideation.frameworkManual')}</option>
@@ -299,7 +299,7 @@ export function IdeationTab({
             value={manualFrameworkId}
             onChange={(event) => setManualFrameworkId(event.target.value as FrameworkId)}
             disabled={selectionMode !== 'manual'}
-            className="h-10 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700 disabled:opacity-50"
+            className="h-10 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss disabled:opacity-50"
           >
             {Object.entries(FRAMEWORK_LABELS).map(([id, label]) => (
               <option key={id} value={id}>
@@ -307,7 +307,7 @@ export function IdeationTab({
               </option>
             ))}
           </select>
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
             <span className="whitespace-nowrap">{t('ideation.ideasLabel')}</span>
             <input
               type="number"
@@ -321,7 +321,7 @@ export function IdeationTab({
               className="w-full min-w-0 bg-transparent text-end outline-none"
             />
           </label>
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
             <span className="whitespace-nowrap">{t('ideation.wordsLabel')}</span>
             <input
               type="number"
@@ -341,7 +341,7 @@ export function IdeationTab({
               className="w-full min-w-0 bg-transparent text-end outline-none"
             />
           </label>
-          <label className="flex h-10 items-center justify-between rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
+          <label className="flex h-10 items-center justify-between rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
             <span className="whitespace-nowrap">{t('ideation.needImagesLabel')}</span>
             <input
               type="checkbox"
@@ -350,7 +350,7 @@ export function IdeationTab({
               className="h-4 w-4"
             />
           </label>
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
+          <label className="flex h-10 items-center gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
             <span className="whitespace-nowrap">{t('ideation.imagesLabel')}</span>
             <input
               type="number"
@@ -365,7 +365,7 @@ export function IdeationTab({
               className="w-full min-w-0 bg-transparent text-end outline-none disabled:opacity-50"
             />
           </label>
-          <label className="flex h-10 items-center justify-between rounded-lg border border-gray-300 bg-white px-2.5 text-xs font-semibold text-gray-700">
+          <label className="flex h-10 items-center justify-between rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
             <span className="whitespace-nowrap">{t('ideation.autoCalendarLabel')}</span>
             <input
               type="checkbox"
@@ -375,16 +375,16 @@ export function IdeationTab({
             />
           </label>
         </div>
-        <div className="mx-auto mb-6 w-full max-w-6xl rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 text-start">
-          <p className="text-xs font-bold uppercase tracking-widest text-indigo-700">{t('ideation.generationPath')}</p>
+        <div className="mx-auto mb-6 w-full max-w-6xl rounded-2xl border border-rule bg-chalk-sunk/40 p-4 text-start">
+          <p className="text-xs font-bold uppercase tracking-widest text-moss">{t('ideation.generationPath')}</p>
           <div className="mt-3 grid gap-2 sm:grid-cols-2">
             <button
               type="button"
               onClick={() => setGenerationPath('direct')}
               className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${
                 generationPath === 'direct'
-                  ? 'border-[#121212] bg-[#121212] text-white'
-                  : 'border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50'
+                  ? 'border-moss bg-moss text-chalk'
+                  : 'border-rule bg-chalk-raised text-moss hover:bg-chalk-sunk'
               }`}
             >
               {t('ideation.directGenerate')}
@@ -394,8 +394,8 @@ export function IdeationTab({
               onClick={() => setGenerationPath('source_form')}
               className={`rounded-xl border px-3 py-2 text-sm font-bold transition ${
                 generationPath === 'source_form'
-                  ? 'border-[#121212] bg-[#121212] text-white'
-                  : 'border-indigo-100 bg-white text-indigo-700 hover:bg-indigo-50'
+                  ? 'border-moss bg-moss text-chalk'
+                  : 'border-rule bg-chalk-raised text-moss hover:bg-chalk-sunk'
               }`}
             >
               {t('ideation.sourceFormGenerate')}
@@ -408,9 +408,9 @@ export function IdeationTab({
                 value={manualSourceNotes}
                 onChange={(event) => setManualSourceNotes(event.target.value)}
                 placeholder={t('ideation.sourcePlaceholder')}
-                className="h-24 w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none ring-indigo-500 focus:ring-2"
+                className="h-24 w-full rounded-lg border border-rule bg-chalk-raised px-3 py-2 text-sm text-moss outline-none ring-saffron focus:ring-2"
               />
-              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
+              <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk-sunk">
                 <span className="inline-flex items-center gap-2">
                   <Paperclip className="h-3.5 w-3.5" />
                   {t('common.attachFiles')}
@@ -425,7 +425,7 @@ export function IdeationTab({
                 />
               </label>
               {isExtractingSourceFiles ? (
-                <p className="text-xs font-medium text-indigo-600">{t('common.extracting')}</p>
+                <p className="text-xs font-medium text-moss-700">{t('common.extracting')}</p>
               ) : null}
               {manualSourceError ? <p className="text-xs font-medium text-red-600">{manualSourceError}</p> : null}
               {manualSourceFiles.length > 0 ? (
@@ -433,11 +433,11 @@ export function IdeationTab({
                   {manualSourceFiles.map((file) => (
                     <div
                       key={`${file.name}-${file.size}`}
-                      className="flex items-center justify-between rounded-lg border border-indigo-100 bg-white px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-rule bg-chalk-raised px-3 py-2"
                     >
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-semibold text-gray-700">{file.name}</p>
-                        <p className="text-[11px] text-gray-500">
+                        <p className="truncate text-xs font-semibold text-moss">{file.name}</p>
+                        <p className="text-[11px] text-moss-muted">
                           {t('common.tokensApprox', {
                             count: Math.max(1, Math.round(file.extractedText.length / 4)),
                           })}
@@ -458,16 +458,16 @@ export function IdeationTab({
                   ))}
                 </div>
               ) : null}
-              <p className="text-[11px] text-gray-500">{t('ideation.sourceNote')}</p>
+              <p className="text-[11px] text-moss-muted">{t('ideation.sourceNote')}</p>
             </div>
           ) : (
-            <p className="mt-3 text-xs text-gray-600">{t('ideation.directNote')}</p>
+            <p className="mt-3 text-xs text-moss-muted">{t('ideation.directNote')}</p>
           )}
         </div>
         <button
           onClick={handleGenerate}
           disabled={isGenerating}
-          className="inline-flex items-center gap-2 bg-[#121212] text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-black hover:scale-[1.02] transition-all disabled:opacity-50 disabled:pointer-events-none"
+          className="inline-flex items-center gap-2 bg-moss text-chalk px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-moss hover:scale-[1.02] transition-all disabled:opacity-50 disabled:pointer-events-none"
         >
           {isGenerating ? (
             <>
@@ -485,15 +485,15 @@ export function IdeationTab({
       </div>
 
       {frameworkMeta && qualityScores ? (
-        <div className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div className="rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
-              <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('ideation.selectedFramework')}</p>
-              <p className="mt-1 text-base font-bold text-[#121212]">{frameworkMeta.framework_name}</p>
-              <p className="mt-1 text-sm text-gray-600">{frameworkMeta.selection_reason}</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('ideation.selectedFramework')}</p>
+              <p className="mt-1 text-base font-bold text-moss">{frameworkMeta.framework_name}</p>
+              <p className="mt-1 text-sm text-moss-muted">{frameworkMeta.selection_reason}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
+              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss-700">
                 {t('ideation.overallScore', {
                   score: format.number(Number(qualityScores.overall_score || 0), {
                     minimumFractionDigits: 2,
@@ -506,15 +506,15 @@ export function IdeationTab({
                   {t('ideation.fallbackApplied')}
                 </span>
               ) : null}
-              <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
                 {includeImages
                   ? t('ideation.imagesBadge', { count: imageCount })
                   : t('ideation.imagesBadgeNone')}
               </span>
-              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
                 {autoInsertToCalendar ? t('ideation.calendarAuto') : t('ideation.calendarManual')}
               </span>
-              <span className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
                 {t('ideation.wordsBadge', { count: normalizedTargetWordCount })}
               </span>
             </div>
@@ -524,9 +524,9 @@ export function IdeationTab({
 
       {ideas.length > 0 && (
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-[#121212] px-1">
+          <h3 className="text-lg font-bold text-moss px-1">
             {t('ideation.freshIdeas')}{' '}
-            <span className="text-sm text-gray-400 font-normal ms-2">
+            <span className="text-sm text-moss-muted font-normal ms-2">
               {t('ideation.freshIdeasCount', { count: ideas.length })}
             </span>
           </h3>
@@ -634,45 +634,45 @@ function IdeaCard({
   };
 
   return (
-    <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-indigo-300 hover:shadow-md transition-all">
+    <div className="group relative flex flex-col rounded-2xl border border-rule bg-chalk-raised p-5 shadow-sm hover:border-rule-strong hover:shadow-md transition-all">
       <div className="flex items-center gap-2 mb-3">
-        <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-indigo-700 uppercase">
+        <span className="inline-flex items-center rounded-full bg-chalk-sunk px-2.5 py-1 text-[10px] font-bold tracking-widest text-moss uppercase">
           {idea.format || t('ideation.formatFallback')}
         </span>
-        <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-1 text-[10px] font-bold tracking-widest text-gray-600 uppercase">
+        <span className="inline-flex items-center rounded-full bg-chalk-sunk px-2.5 py-1 text-[10px] font-bold tracking-widest text-moss-muted uppercase">
           {idea.pillar || t('ideation.pillarFallback')}
         </span>
         {idea.framework_name ? (
-          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-emerald-700 uppercase">
+          <span className="inline-flex items-center rounded-full bg-chalk-sunk px-2.5 py-1 text-[10px] font-bold tracking-widest text-moss-700 uppercase">
             {idea.framework_name}
           </span>
         ) : null}
         {idea.include_images ? (
-          <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold tracking-widest text-indigo-700 uppercase">
+          <span className="inline-flex items-center rounded-full bg-chalk-sunk px-2.5 py-1 text-[10px] font-bold tracking-widest text-moss uppercase">
             {t('ideation.imagesCount', { count: idea.image_count || 1 })}
           </span>
         ) : null}
         {Number(idea?.target_word_count) > 0 ? (
-          <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-bold tracking-widest text-slate-700 uppercase">
+          <span className="inline-flex items-center rounded-full bg-chalk-sunk px-2.5 py-1 text-[10px] font-bold tracking-widest text-moss uppercase">
             {t('ideation.wordsCount', { count: Math.floor(Number(idea.target_word_count)) })}
           </span>
         ) : null}
       </div>
       
-      <h3 className="font-bold text-[#121212] leading-snug mb-2">
+      <h3 className="font-bold text-moss leading-snug mb-2">
         {idea.topic}
       </h3>
-      <p className="text-sm text-gray-500 mb-6 flex-1 line-clamp-3">
+      <p className="text-sm text-moss-muted mb-6 flex-1 line-clamp-3">
         {idea.angle}
       </p>
 
       {previewError ? <p className="mb-3 text-xs font-medium text-red-600">{previewError}</p> : null}
 
-      <div className="pt-4 border-t border-gray-100 mt-auto space-y-2">
+      <div className="pt-4 border-t border-rule mt-auto space-y-2">
         <button
           onClick={handleGeneratePreview}
           disabled={isPreviewing}
-          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-indigo-600 py-2.5 text-xs font-bold text-white transition-all hover:bg-indigo-700 disabled:opacity-50"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-moss py-2.5 text-xs font-bold text-chalk transition-all hover:bg-moss-700 disabled:opacity-50"
         >
           {isPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
           {isPreviewing ? t('ideation.generatingPreview') : t('ideation.generatePreview')}
@@ -681,7 +681,7 @@ function IdeaCard({
           onClick={handleSaveToPipeline}
           disabled={isSaving || saved}
           className={`w-full inline-flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-all
-            ${saved ? 'bg-emerald-50 text-emerald-700' : 'bg-[#121212] text-white hover:bg-black'}`}
+            ${saved ? 'bg-chalk-sunk text-moss-700' : 'bg-moss text-chalk hover:bg-moss'}`}
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
            saved ? <><CheckCircle2 className="w-4 h-4" /> {t('ideation.addedToPipeline')}</> : 
@@ -690,26 +690,26 @@ function IdeaCard({
       </div>
 
       {isPreviewOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-moss/50 p-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-rule bg-chalk-raised shadow-2xl">
+            <div className="flex items-center justify-between border-b border-rule px-5 py-4">
               <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('ideation.contentPreview')}</p>
-                <h4 className="text-base font-bold text-[#121212]">{idea.topic}</h4>
+                <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('ideation.contentPreview')}</p>
+                <h4 className="text-base font-bold text-moss">{idea.topic}</h4>
               </div>
               <button
                 onClick={() => setIsPreviewOpen(false)}
-                className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                className="rounded-lg p-2 text-moss-muted transition-colors hover:bg-chalk-sunk hover:text-moss"
                 aria-label={t('ideation.closePreview')}
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
             <div className="max-h-[65vh] overflow-y-auto px-5 py-4">
-              <div className="mb-3 inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-gray-600">
+              <div className="mb-3 inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss-muted">
                 {String(previewChannel || idea.format || t('ideation.channelFallback'))}
               </div>
-              <p className="whitespace-pre-wrap text-sm leading-7 text-gray-800">
+              <p className="whitespace-pre-wrap text-sm leading-7 text-moss">
                 {previewText || t('ideation.noPreview')}
               </p>
             </div>

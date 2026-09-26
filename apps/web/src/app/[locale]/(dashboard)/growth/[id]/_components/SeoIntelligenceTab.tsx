@@ -249,7 +249,7 @@ export function SeoIntelligenceTab({
             onClick={() => setActiveTab(tab.key)}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === tab.key
-                ? 'border-[#121212] bg-[#121212] text-chalk'
+                ? 'border-moss bg-moss text-chalk'
                 : 'border-rule bg-chalk-raised text-moss-muted hover:border-rule-strong'
             }`}
           >
@@ -325,7 +325,7 @@ export function SeoIntelligenceTab({
                         type="button"
                         onClick={() => handleScanDomain(domain)}
                         disabled={isScanning || (daysLeft > 0 && !scanMessages[domain])}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#121212] text-chalk px-3 py-2 text-xs font-bold transition hover:bg-moss disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-moss text-chalk px-3 py-2 text-xs font-bold transition hover:bg-moss disabled:opacity-50"
                       >
                         {isScanning ? (
                           <><Loader2 className="w-3 h-3 animate-spin" /> {t('scanning')}</>

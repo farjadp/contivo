@@ -22,7 +22,7 @@ export function RescrapeManager({ workspace, maxRuns }: { workspace: any; maxRun
         {archives.length > 0 && (
            <button 
              onClick={() => setShowArchive(!showArchive)}
-             className="flex items-center gap-1.5 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 px-3 py-2 rounded-lg transition"
+             className="flex items-center gap-1.5 text-xs font-bold text-moss-muted bg-chalk-sunk hover:bg-chalk-sunk px-3 py-2 rounded-lg transition"
            >
              <History className="w-3.5 h-3.5" /> 
              {t('history', { count: format.number(archives.length) })}
@@ -35,7 +35,7 @@ export function RescrapeManager({ workspace, maxRuns }: { workspace: any; maxRun
           <button 
             type="submit" 
             disabled={pending || remaining <= 0}
-            className="flex items-center gap-2 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:hover:bg-indigo-600 px-4 py-2 rounded-lg transition shadow-sm"
+            className="flex items-center gap-2 text-xs font-bold text-chalk bg-moss hover:bg-moss-700 disabled:opacity-50 disabled:hover:bg-moss px-4 py-2 rounded-lg transition shadow-sm"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${pending ? 'animate-spin' : ''}`} />
             {pending ? t('scraping') : t('rescrape', { remaining: format.number(remaining) })}
@@ -48,8 +48,8 @@ export function RescrapeManager({ workspace, maxRuns }: { workspace: any; maxRun
       )}
 
       {showArchive && archives.length > 0 && (
-         <div className="mt-2 w-full max-w-lg bg-gray-50 border border-gray-200 rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
-           <h4 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">{t('previousVersions')}</h4>
+         <div className="mt-2 w-full max-w-lg bg-chalk border border-rule rounded-xl p-4 shadow-sm animate-in fade-in slide-in-from-top-2">
+           <h4 className="text-xs font-bold text-moss-muted uppercase tracking-widest mb-3">{t('previousVersions')}</h4>
            <div className="space-y-3">
              {archives.map((arch: any, idx: number) => {
                 /* Through next-intl rather than toLocaleDateString(), so the
@@ -61,14 +61,14 @@ export function RescrapeManager({ workspace, maxRuns }: { workspace: any; maxRun
                       month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
                     });
                 return (
-                  <div key={idx} className="bg-white p-3 rounded-lg border border-gray-100 text-sm">
+                  <div key={idx} className="bg-chalk-raised p-3 rounded-lg border border-rule text-sm">
                      <div className="flex justify-between items-center mb-1">
-                        <span className="font-bold text-gray-700">{t('archived', { date })}</span>
+                        <span className="font-bold text-moss">{t('archived', { date })}</span>
                      </div>
-                     <p className="text-gray-500 text-xs line-clamp-2">{arch.summary?.businessSummary || t('noSummary')}</p>
+                     <p className="text-moss-muted text-xs line-clamp-2">{arch.summary?.businessSummary || t('noSummary')}</p>
                      
                      <div className="mt-2 text-xs">
-                        <span className="font-semibold text-gray-600">{t('tone')}</span>
+                        <span className="font-semibold text-moss-muted">{t('tone')}</span>
                         {arch.summary?.tone || t('na')}
                      </div>
                   </div>

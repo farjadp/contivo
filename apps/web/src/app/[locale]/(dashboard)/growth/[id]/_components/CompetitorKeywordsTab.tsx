@@ -143,7 +143,7 @@ export function CompetitorKeywordsTab({
           type="button"
           onClick={generate}
           disabled={isGenerating}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss disabled:opacity-60"
         >
           {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
           {t('analyze')}
@@ -246,7 +246,7 @@ export function CompetitorKeywordsTab({
                 onClick={() => setSection(key)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                   section === key
-                    ? 'border-[#121212] bg-[#121212] text-chalk'
+                    ? 'border-moss bg-moss text-chalk'
                     : 'border-rule bg-chalk-raised text-moss-muted hover:border-rule-strong'
                 }`}
               >

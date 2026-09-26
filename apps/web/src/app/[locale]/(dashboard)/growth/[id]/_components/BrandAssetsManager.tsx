@@ -340,22 +340,22 @@ export function BrandAssetsManager({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5">
+      <div className="rounded-2xl border border-rule bg-gradient-to-br from-chalk-raised to-chalk p-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <p className="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-semibold text-gray-700">
+            <p className="inline-flex items-center gap-2 rounded-full border border-rule bg-chalk-raised px-3 py-1 text-xs font-semibold text-moss">
               <Sparkles className="h-3.5 w-3.5" />
               {t('badge')}
             </p>
-            <h3 className="text-lg font-bold text-[#121212]">{t('title')}</h3>
-            <p className="max-w-2xl text-sm text-gray-600">{t('subtitle')}</p>
+            <h3 className="text-lg font-bold text-moss">{t('title')}</h3>
+            <p className="max-w-2xl text-sm text-moss-muted">{t('subtitle')}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={generate}
               disabled={isGenerating}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-white hover:bg-black disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk hover:bg-moss disabled:opacity-60"
             >
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               {t('refresh')}
@@ -364,7 +364,7 @@ export function BrandAssetsManager({
               type="button"
               onClick={save}
               disabled={isSaving || !payload}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2.5 text-sm font-bold text-[#121212] hover:bg-gray-50 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl border border-rule-strong bg-chalk-raised px-4 py-2.5 text-sm font-bold text-moss hover:bg-chalk disabled:opacity-60"
             >
               {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               {t('save')}
@@ -379,7 +379,7 @@ export function BrandAssetsManager({
         </div>
       ) : null}
       {success ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-700">
+        <div className="rounded-xl border border-rule bg-chalk-sunk px-4 py-3 text-sm font-medium text-moss-700">
           <span className="inline-flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4" />
             {success}
@@ -388,9 +388,9 @@ export function BrandAssetsManager({
       ) : null}
 
       {!payload ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center">
-          <p className="text-sm font-semibold text-[#121212]">{t('emptyTitle')}</p>
-          <p className="mt-1 text-sm text-gray-500">
+        <div className="rounded-2xl border border-dashed border-rule-strong bg-chalk-raised p-8 text-center">
+          <p className="text-sm font-semibold text-moss">{t('emptyTitle')}</p>
+          <p className="mt-1 text-sm text-moss-muted">
             {t.rich('emptyBody', {
               b: (chunks) => <span className="font-semibold">{chunks}</span>,
             })}
@@ -409,7 +409,7 @@ export function BrandAssetsManager({
             <StatCard label={t('statApproved')} value={format.number(byStatusCount(payload, 'approved'))} />
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-white p-2">
+          <div className="rounded-2xl border border-rule bg-chalk-raised p-2">
             <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
               {CATEGORY_TABS.map((tab) => {
                 const Icon = tab.icon;
@@ -425,18 +425,18 @@ export function BrandAssetsManager({
                     onClick={() => setActiveTab(tab.key)}
                     className={`rounded-xl border px-3 py-3 text-start transition ${
                       isActive
-                        ? 'border-[#121212] bg-[#121212] text-white'
-                        : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-moss bg-moss text-chalk'
+                        : 'border-rule bg-chalk-raised text-moss hover:border-rule-strong hover:bg-chalk'
                     }`}
                   >
                     <p className="inline-flex items-center gap-2 text-xs font-bold">
                       <Icon className="h-4 w-4" />
                       {t(`tabs.${tab.key}`)}
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${isActive ? 'bg-white/15' : 'bg-gray-100'}`}>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] ${isActive ? 'bg-chalk-raised/15' : 'bg-chalk-sunk'}`}>
                         {format.number(count)}
                       </span>
                     </p>
-                    <p className={`mt-1 text-[11px] ${isActive ? 'text-gray-200' : 'text-gray-500'}`}>
+                    <p className={`mt-1 text-[11px] ${isActive ? 'text-forest-muted' : 'text-moss-muted'}`}>
                       {t(`tabDescriptions.${tab.key}`)}
                     </p>
                   </button>
@@ -448,11 +448,11 @@ export function BrandAssetsManager({
           {activeTab === 'overview' ? (
             <div className="grid gap-3 md:grid-cols-2">
               {OVERVIEW_CATEGORIES.map((key) => (
-                <div key={key} className="rounded-xl border border-gray-200 bg-white p-4">
-                  <p className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                <div key={key} className="rounded-xl border border-rule bg-chalk-raised p-4">
+                  <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">
                     {t(`tabs.${key}`)}
                   </p>
-                  <p className="mt-1 text-sm text-gray-700">
+                  <p className="mt-1 text-sm text-moss">
                     {t('overviewCount', {
                       assets: format.number(payload.brand_assets[key].length),
                       pending: format.number(
@@ -466,19 +466,19 @@ export function BrandAssetsManager({
             </div>
           ) : activeTab === 'visual_identity' ? (
             <div className="space-y-4">
-              <div className="rounded-xl border border-gray-200 bg-white p-3">
+              <div className="rounded-xl border border-rule bg-chalk-raised p-3">
                 <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
                   <input
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
                     placeholder={t('searchVisual')}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none md:max-w-sm"
+                    className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none md:max-w-sm"
                   />
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       type="button"
                       onClick={() => addVisualAsset('logo')}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk"
                     >
                       <ImageIcon className="h-3.5 w-3.5" />
                       {t('addLogo')}
@@ -486,7 +486,7 @@ export function BrandAssetsManager({
                     <button
                       type="button"
                       onClick={() => addVisualAsset('color')}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk"
                     >
                       <Palette className="h-3.5 w-3.5" />
                       {t('addColor')}
@@ -494,7 +494,7 @@ export function BrandAssetsManager({
                     <button
                       type="button"
                       onClick={() => addVisualAsset('font')}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk"
                     >
                       <Type className="h-3.5 w-3.5" />
                       {t('addFont')}
@@ -511,9 +511,9 @@ export function BrandAssetsManager({
               </div>
 
               <section className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('logosHeading')}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('logosHeading')}</p>
                 {visualGroups.logos.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-sm text-gray-500">
+                  <div className="rounded-xl border border-dashed border-rule-strong bg-chalk-raised p-5 text-sm text-moss-muted">
                     {t('noLogos')}
                   </div>
                 ) : (
@@ -521,36 +521,36 @@ export function BrandAssetsManager({
                     {visualGroups.logos.map((asset) => {
                       const imageUrl = extractImageUrl(asset, workspaceWebsiteUrl);
                       return (
-                        <details key={asset.id} className="rounded-xl border border-gray-200 bg-white">
+                        <details key={asset.id} className="rounded-xl border border-rule bg-chalk-raised">
                           <summary className="flex list-none cursor-pointer items-center justify-between gap-3 px-4 py-3">
                             <div className="flex min-w-0 items-center gap-3">
-                              <div className="h-16 w-16 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
+                              <div className="h-16 w-16 overflow-hidden rounded-lg border border-rule bg-chalk">
                                 {imageUrl ? (
                                   <img src={imageUrl} alt={asset.title || t('untitledLogo')} className="h-full w-full object-contain" />
                                 ) : (
-                                  <div className="flex h-full w-full items-center justify-center text-gray-400">
+                                  <div className="flex h-full w-full items-center justify-center text-moss-muted">
                                     <ImageIcon className="h-6 w-6" />
                                   </div>
                                 )}
                               </div>
                               <div className="min-w-0">
-                                <p className="truncate text-sm font-semibold text-[#121212]">
+                                <p className="truncate text-sm font-semibold text-moss">
                                   <bdi>{asset.title || t('untitledLogo')}</bdi>
                                 </p>
-                                <p className="truncate text-xs text-gray-500">{t('clickToEdit')}</p>
+                                <p className="truncate text-xs text-moss-muted">{t('clickToEdit')}</p>
                               </div>
                             </div>
-                            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                            <span className="rounded-full bg-chalk-sunk px-2 py-0.5 text-[10px] font-semibold text-moss-muted">
                               {t(`status.${asset.status}`)}
                             </span>
                           </summary>
-                          <div className="border-t border-gray-100 p-4">
+                          <div className="border-t border-rule p-4">
                             <div className="grid gap-3 md:grid-cols-2">
                               <Field label={t('fieldLogoName')}>
                                 <input
                                   value={asset.title}
                                   onChange={(event) => updateAsset('visual_identity', asset.id, { title: event.target.value })}
-                                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                  className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                                 />
                               </Field>
                               <Field label={t('fieldStatus')}>
@@ -561,7 +561,7 @@ export function BrandAssetsManager({
                                       status: event.target.value as BrandAsset['status'],
                                     })
                                   }
-                                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                  className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                                 >
     
                                 </select>
@@ -572,14 +572,14 @@ export function BrandAssetsManager({
                                   onChange={(event) =>
                                     updateAsset('visual_identity', asset.id, { source_url: event.target.value })
                                   }
-                                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                                  className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                                   placeholder="https://..."
                                 />
                               </Field>
                             </div>
 
                             <div className="mt-3 flex items-center justify-between gap-2">
-                              <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <label className="inline-flex items-center gap-2 text-xs font-medium text-moss-muted">
                                 <input
                                   type="checkbox"
                                   checked={asset.is_primary}
@@ -607,9 +607,9 @@ export function BrandAssetsManager({
               </section>
 
               <section className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('paletteHeading')}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('paletteHeading')}</p>
                 {visualGroups.colors.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-sm text-gray-500">
+                  <div className="rounded-xl border border-dashed border-rule-strong bg-chalk-raised p-5 text-sm text-moss-muted">
                     {t('noColors')}
                   </div>
                 ) : (
@@ -617,13 +617,13 @@ export function BrandAssetsManager({
                     {visualGroups.colors.map((asset) => {
                       const color = extractColorValue(asset);
                       return (
-                        <div key={asset.id} className="rounded-xl border border-gray-200 bg-white p-3">
-                          <div className="h-24 rounded-lg border border-gray-200" style={{ backgroundColor: color }} />
+                        <div key={asset.id} className="rounded-xl border border-rule bg-chalk-raised p-3">
+                          <div className="h-24 rounded-lg border border-rule" style={{ backgroundColor: color }} />
                           <div className="mt-3 space-y-2">
                             <input
                               value={asset.title}
                               onChange={(event) => updateAsset('visual_identity', asset.id, { title: event.target.value })}
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-[#121212]"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm font-semibold text-moss"
                               placeholder={t('colorNamePlaceholder')}
                             />
                             <div className="flex items-center gap-2">
@@ -631,7 +631,7 @@ export function BrandAssetsManager({
                                 type="color"
                                 value={color}
                                 onChange={(event) => updateAsset('visual_identity', asset.id, { content: event.target.value })}
-                                className="h-10 w-12 cursor-pointer rounded border border-gray-300 bg-white p-1"
+                                className="h-10 w-12 cursor-pointer rounded border border-rule-strong bg-chalk-raised p-1"
                               />
                               <select
                                 value={asset.status}
@@ -640,7 +640,7 @@ export function BrandAssetsManager({
                                     status: event.target.value as BrandAsset['status'],
                                   })
                                 }
-                                className="h-10 flex-1 rounded-md border border-gray-300 px-2 text-xs"
+                                className="h-10 flex-1 rounded-md border border-rule-strong px-2 text-xs"
                               >
                                 {ASSET_STATUSES.map((key) => (
                                   <option key={key} value={key}>
@@ -650,7 +650,7 @@ export function BrandAssetsManager({
                               </select>
                             </div>
                             <div className="flex items-center justify-between gap-2">
-                              <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                              <label className="inline-flex items-center gap-2 text-xs font-medium text-moss-muted">
                                 <input
                                   type="checkbox"
                                   checked={asset.is_primary}
@@ -678,34 +678,34 @@ export function BrandAssetsManager({
               </section>
 
               <section className="space-y-3">
-                <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('typographyHeading')}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('typographyHeading')}</p>
                 {visualGroups.fonts.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-gray-300 bg-white p-5 text-sm text-gray-500">
+                  <div className="rounded-xl border border-dashed border-rule-strong bg-chalk-raised p-5 text-sm text-moss-muted">
                     {t('noFonts')}
                   </div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2">
                     {visualGroups.fonts.map((asset) => (
-                      <div key={asset.id} className="rounded-xl border border-gray-200 bg-white p-4">
+                      <div key={asset.id} className="rounded-xl border border-rule bg-chalk-raised p-4">
                         <input
                           value={asset.title}
                           onChange={(event) => updateAsset('visual_identity', asset.id, { title: event.target.value })}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold"
+                          className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm font-semibold"
                           placeholder={t('fontLabelPlaceholder')}
                         />
                         <textarea
                           value={asset.content}
                           onChange={(event) => updateAsset('visual_identity', asset.id, { content: event.target.value })}
-                          className="mt-2 h-16 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                          className="mt-2 h-16 w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                           placeholder={t('fontNotePlaceholder')}
                         />
-                        <p className="mt-3 rounded-md border border-gray-200 bg-gray-50 px-3 py-3 text-sm text-gray-700">
+                        <p className="mt-3 rounded-md border border-rule bg-chalk px-3 py-3 text-sm text-moss">
                           {/* A specimen line: it has to be in the reader's own
                               script, or it shows nothing about the font. */}
                           {t('fontSample')}
                         </p>
                         <div className="mt-2 flex items-center justify-between gap-2">
-                          <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-moss-muted">
                             <input
                               type="checkbox"
                               checked={asset.is_primary}
@@ -732,17 +732,17 @@ export function BrandAssetsManager({
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-2 rounded-xl border border-rule bg-chalk-raised p-3 md:flex-row md:items-center md:justify-between">
                 <input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder={t('searchAssets')}
-                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-black focus:outline-none md:max-w-sm"
+                  className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none md:max-w-sm"
                 />
                 <button
                   type="button"
                   onClick={() => addAsset(activeTab as CategoryKey)}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk"
                 >
                   <Sparkles className="h-3.5 w-3.5" />
                   {t('addManual')}
@@ -750,26 +750,26 @@ export function BrandAssetsManager({
               </div>
 
               {currentAssets.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-gray-300 bg-white p-6 text-center text-sm text-gray-500">
+                <div className="rounded-xl border border-dashed border-rule-strong bg-chalk-raised p-6 text-center text-sm text-moss-muted">
                   {t('noAssets')}
                 </div>
               ) : (
                 <div className="space-y-3">
                   {currentAssets.map((asset) => (
-                    <details key={asset.id} className="rounded-xl border border-gray-200 bg-white" open>
+                    <details key={asset.id} className="rounded-xl border border-rule bg-chalk-raised" open>
                       <summary className="flex list-none cursor-pointer items-center justify-between gap-2 px-4 py-3">
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-[#121212]">
+                          <p className="truncate text-sm font-semibold text-moss">
                             <bdi>{asset.title || t('untitledAsset')}</bdi>
                           </p>
                           {/* asset_type is a stored identifier, not copy. */}
-                          <p className="truncate text-xs text-gray-500"><bdi>{asset.asset_type}</bdi></p>
+                          <p className="truncate text-xs text-moss-muted"><bdi>{asset.asset_type}</bdi></p>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-600">
+                          <span className="rounded-full bg-chalk-sunk px-2 py-0.5 text-[10px] font-semibold text-moss-muted">
                             {t(`status.${asset.status}`)}
                           </span>
-                          <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-700">
+                          <span className="rounded-full bg-chalk-sunk px-2 py-0.5 text-[10px] font-semibold text-moss">
                             {format.number(asset.confidence_score, {
                               minimumFractionDigits: 2,
                               maximumFractionDigits: 2,
@@ -777,7 +777,7 @@ export function BrandAssetsManager({
                           </span>
                         </div>
                       </summary>
-                      <div className="border-t border-gray-100 p-4">
+                      <div className="border-t border-rule p-4">
                         <div className="grid gap-3 md:grid-cols-2">
                           <Field label={t('fieldTitle')}>
                             <input
@@ -785,7 +785,7 @@ export function BrandAssetsManager({
                               onChange={(event) =>
                                 updateAsset(activeTab as CategoryKey, asset.id, { title: event.target.value })
                               }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                             />
                           </Field>
                           <Field label={t('fieldAssetType')}>
@@ -794,7 +794,7 @@ export function BrandAssetsManager({
                               onChange={(event) =>
                                 updateAsset(activeTab as CategoryKey, asset.id, { asset_type: event.target.value })
                               }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                             />
                           </Field>
                           <Field label={t('fieldContent')} full>
@@ -803,7 +803,7 @@ export function BrandAssetsManager({
                               onChange={(event) =>
                                 updateAsset(activeTab as CategoryKey, asset.id, { content: event.target.value })
                               }
-                              className="h-24 w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="h-24 w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                             />
                           </Field>
                           <Field label={t('fieldSourceUrl')}>
@@ -812,7 +812,7 @@ export function BrandAssetsManager({
                               onChange={(event) =>
                                 updateAsset(activeTab as CategoryKey, asset.id, { source_url: event.target.value })
                               }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                               placeholder="https://..."
                             />
                           </Field>
@@ -824,7 +824,7 @@ export function BrandAssetsManager({
                                   status: event.target.value as BrandAsset['status'],
                                 })
                               }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                             >
                               {ASSET_STATUSES.map((key) => (
                                 <option key={key} value={key}>
@@ -845,13 +845,13 @@ export function BrandAssetsManager({
                                   confidence_score: Math.max(0.3, Math.min(1, Number(event.target.value) || 0.3)),
                                 })
                               }
-                              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                              className="w-full rounded-md border border-rule-strong px-3 py-2 text-sm"
                             />
                           </Field>
                         </div>
 
                         <div className="mt-3 flex items-center justify-between gap-2">
-                          <label className="inline-flex items-center gap-2 text-xs font-medium text-gray-600">
+                          <label className="inline-flex items-center gap-2 text-xs font-medium text-moss-muted">
                             <input
                               type="checkbox"
                               checked={asset.is_primary}
@@ -879,7 +879,7 @@ export function BrandAssetsManager({
           )}
 
           {activeTab === 'uploaded_files' ? (
-            <div className="rounded-xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-indigo-900">
+            <div className="rounded-xl border border-rule bg-chalk-sunk p-4 text-sm text-moss">
               <p className="font-semibold">{t('uploadNoteTitle')}</p>
               <p className="mt-1">{t('uploadNoteBody')}</p>
             </div>
@@ -901,9 +901,9 @@ function StatCard({
   suffix?: string;
 }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-500">{label}</p>
-      <p className="mt-1 text-lg font-bold text-[#121212]">
+    <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-moss-muted">{label}</p>
+      <p className="mt-1 text-lg font-bold text-moss">
         {value}
         {suffix || ''}
       </p>
@@ -922,7 +922,7 @@ function Field({
 }) {
   return (
     <label className={full ? 'space-y-1.5 md:col-span-2' : 'space-y-1.5'}>
-      <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">{label}</span>
+      <span className="text-[11px] font-semibold uppercase tracking-wider text-moss-muted">{label}</span>
       {children}
     </label>
   );

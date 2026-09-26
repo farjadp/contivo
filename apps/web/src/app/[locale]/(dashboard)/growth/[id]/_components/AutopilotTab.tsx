@@ -214,15 +214,15 @@ export function AutopilotTab({
   return (
     <div className="space-y-6">
       {/* ── Agents ── */}
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-chalk-raised rounded-lg border p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="text-xl font-semibold">{t('autopilot.agents.title')}</h2>
-            <p className="text-gray-600 text-sm mt-1 max-w-2xl">{t('autopilot.agents.body')}</p>
+            <p className="text-moss-muted text-sm mt-1 max-w-2xl">{t('autopilot.agents.body')}</p>
           </div>
           <button
             onClick={() => setShowRecipes((v) => !v)}
-            className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3.5 py-2 text-sm font-semibold hover:bg-gray-50"
+            className="shrink-0 inline-flex items-center gap-2 rounded-lg border border-rule-strong px-3.5 py-2 text-sm font-semibold hover:bg-chalk"
           >
             <Plus className="w-4 h-4" />
             {t('autopilot.agents.new')}
@@ -238,20 +238,20 @@ export function AutopilotTab({
                   <button
                     onClick={() => setSelectedId(a.id)}
                     className={`w-full text-start rounded-lg border p-3.5 transition-colors ${
-                      isSelected ? 'border-gray-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300'
+                      isSelected ? 'border-moss bg-chalk' : 'border-rule hover:border-rule-strong'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-semibold text-[15px]">{a.name}</span>
                       <span
                         className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide ${
-                          a.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                          a.enabled ? 'bg-green-100 text-green-800' : 'bg-chalk-sunk text-moss-muted'
                         }`}
                       >
                         {a.enabled ? t('autopilot.agents.on') : t('autopilot.agents.off')}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-moss-muted">
                       {[
                         t('autopilot.agents.postsPerWeek', { count: a.postsPerWeek }),
                         a.channels.map((c) => channelLabel(t, c)).join('، ') ||
@@ -277,7 +277,7 @@ export function AutopilotTab({
 
         {showRecipes && (
           <div className="mt-5 border-t pt-5">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-moss-muted mb-3">
               {t('autopilot.agents.recipesTitle')}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -286,11 +286,11 @@ export function AutopilotTab({
                   key={r.key}
                   onClick={() => handleCreate(r.key)}
                   disabled={isCreating}
-                  className="text-start rounded-lg border border-gray-200 p-3.5 hover:border-gray-400 disabled:opacity-60"
+                  className="text-start rounded-lg border border-rule p-3.5 hover:border-rule-strong disabled:opacity-60"
                 >
                   <p className="font-semibold text-[15px]">{t(`autopilot.recipes.${r.key}.name`)}</p>
-                  <p className="mt-0.5 text-xs text-gray-500">{t(`autopilot.recipes.${r.key}.tagline`)}</p>
-                  <p className="mt-2 text-[11px] text-gray-400">
+                  <p className="mt-0.5 text-xs text-moss-muted">{t(`autopilot.recipes.${r.key}.tagline`)}</p>
+                  <p className="mt-2 text-[11px] text-moss-muted">
                     {[
                       t('autopilot.agents.postsPerWeek', { count: r.defaults.postsPerWeek }),
                       r.defaults.channels.map((c) => channelLabel(t, c)).join('، '),
@@ -309,19 +309,19 @@ export function AutopilotTab({
       </div>
 
       {/* ── Status header ── */}
-      <div className="bg-white rounded-lg border p-6">
+      <div className="bg-chalk-raised rounded-lg border p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-start gap-3">
-            <div className={`p-2 rounded-lg ${policy?.enabled ? 'bg-green-100' : 'bg-gray-100'}`}>
-              <Bot className={`w-6 h-6 ${policy?.enabled ? 'text-green-700' : 'text-gray-500'}`} />
+            <div className={`p-2 rounded-lg ${policy?.enabled ? 'bg-green-100' : 'bg-chalk-sunk'}`}>
+              <Bot className={`w-6 h-6 ${policy?.enabled ? 'text-green-700' : 'text-moss-muted'}`} />
             </div>
             <div>
               <h2 className="text-xl font-semibold">{selected?.name ?? t('autopilot.status.defaultName')}</h2>
-              <p className="text-gray-600 text-sm mt-1 max-w-2xl">{t('autopilot.status.body')}</p>
-              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+              <p className="text-moss-muted text-sm mt-1 max-w-2xl">{t('autopilot.status.body')}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-moss-muted">
                 <span>
                   {t('autopilot.status.label')}{' '}
-                  <span className={`font-semibold ${policy?.enabled ? 'text-green-700' : 'text-gray-700'}`}>
+                  <span className={`font-semibold ${policy?.enabled ? 'text-green-700' : 'text-moss'}`}>
                     {policy?.enabled ? t('autopilot.status.on') : t('autopilot.status.off')}
                   </span>
                 </span>
@@ -354,8 +354,8 @@ export function AutopilotTab({
               disabled={!policy?.enabled || isRunning || isSaving}
               className={`px-4 py-2 rounded-lg font-semibold flex items-center gap-2 border ${
                 policy?.enabled && !isRunning
-                  ? 'bg-white text-gray-900 hover:bg-gray-50'
-                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  ? 'bg-chalk-raised text-moss hover:bg-chalk'
+                  : 'bg-chalk-sunk text-moss-muted cursor-not-allowed'
               }`}
               title={
                 policy?.enabled
@@ -369,7 +369,7 @@ export function AutopilotTab({
             <button
               onClick={handleSave}
               disabled={isSaving || isRunning}
-              className="px-4 py-2 rounded-lg font-semibold flex items-center gap-2 bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+              className="px-4 py-2 rounded-lg font-semibold flex items-center gap-2 bg-saffron text-moss hover:bg-saffron-soft disabled:opacity-60"
             >
               <Save className="w-4 h-4" />
               {isSaving ? t('autopilot.actions.saving') : t('autopilot.actions.save')}
@@ -413,7 +413,7 @@ export function AutopilotTab({
       </div>
 
       {/* ── Policy form ── */}
-      <div className="bg-white rounded-lg border p-6 space-y-6">
+      <div className="bg-chalk-raised rounded-lg border p-6 space-y-6">
         <label className="flex items-center gap-3 cursor-pointer select-none">
           <input
             type="checkbox"
@@ -461,12 +461,12 @@ export function AutopilotTab({
                     type="button"
                     onClick={() => toggleChannel(channel)}
                     className={`px-3 py-1.5 rounded-full text-sm border flex items-center gap-2 ${
-                      on ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700'
+                      on ? 'bg-moss text-chalk border-moss' : 'bg-chalk-raised text-moss'
                     }`}
                   >
                     {channelLabel(t, channel)}
                     <span
-                      className={`h-2 w-2 rounded-full ${connected ? 'bg-green-500' : 'bg-gray-300'}`}
+                      className={`h-2 w-2 rounded-full ${connected ? 'bg-moss-700' : 'bg-rule-strong'}`}
                       title={
                         connected
                           ? t('autopilot.channelDot.ready')
@@ -492,7 +492,7 @@ export function AutopilotTab({
                     type="button"
                     onClick={() => toggleDay(day)}
                     className={`w-11 py-1.5 rounded-md text-sm border ${
-                      on ? 'bg-gray-900 text-white border-gray-900' : 'bg-white text-gray-700'
+                      on ? 'bg-moss text-chalk border-moss' : 'bg-chalk-raised text-moss'
                     }`}
                   >
                     {t(`autopilot.days.${day}`)}
@@ -512,7 +512,7 @@ export function AutopilotTab({
                 onChange={(e) => setForm((f) => ({ ...f, windowStartHour: Number(e.target.value) }))}
                 className={`${inputCls} w-24`}
               />
-              <span className="text-gray-500">{t('autopilot.form.windowTo')}</span>
+              <span className="text-moss-muted">{t('autopilot.form.windowTo')}</span>
               <input
                 type="number"
                 min={1}
@@ -543,12 +543,12 @@ export function AutopilotTab({
               this is an invitation rather than a block. Saying nothing would
               leave the agent quietly writing without a position. */}
           {storylines.length === 0 && (
-            <div className="border border-ink-200 bg-ink-50 px-4 py-3.5">
-              <p className="text-[13px] font-medium text-ink-900">{t('autopilot.narrative.title')}</p>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-600">{t('autopilot.narrative.body')}</p>
+            <div className="border border-rule bg-chalk-sunk px-4 py-3.5">
+              <p className="text-[13px] font-medium text-moss">{t('autopilot.narrative.title')}</p>
+              <p className="mt-1 text-[12.5px] leading-relaxed text-moss-muted">{t('autopilot.narrative.body')}</p>
               <Link
                 href={{ pathname: '/growth/[id]', params: { id: workspaceId }, query: { tab: 'narrative' } }}
-                className="mt-2.5 inline-block text-[12.5px] font-medium text-ink-900 underline underline-offset-4 hover:text-ink-600"
+                className="mt-2.5 inline-block text-[12.5px] font-medium text-moss underline underline-offset-4 hover:text-moss-muted"
               >
                 {t('autopilot.narrative.cta')}
               </Link>
@@ -578,9 +578,9 @@ export function AutopilotTab({
                             storylineIds: next.length === storylines.length ? [] : next,
                           });
                         }}
-                        className="mt-0.5 h-4 w-4 shrink-0 accent-ink-900"
+                        className="mt-0.5 h-4 w-4 shrink-0 accent-moss"
                       />
-                      <span className="text-[13px] leading-snug text-ink-700">{sl.claim}</span>
+                      <span className="text-[13px] leading-snug text-moss-muted">{sl.claim}</span>
                     </label>
                   );
                 })}
@@ -614,13 +614,13 @@ export function AutopilotTab({
       </div>
 
       {/* ── Run history ── */}
-      <div className="bg-white rounded-lg border">
+      <div className="bg-chalk-raised rounded-lg border">
         <div className="p-6 border-b flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t('autopilot.runs.title')}</h3>
-          <span className="text-xs text-gray-500">{t('autopilot.runs.count', { count: runs.length })}</span>
+          <span className="text-xs text-moss-muted">{t('autopilot.runs.count', { count: runs.length })}</span>
         </div>
         {runs.length === 0 ? (
-          <p className="p-6 text-sm text-gray-500">{t('autopilot.runs.empty')}</p>
+          <p className="p-6 text-sm text-moss-muted">{t('autopilot.runs.empty')}</p>
         ) : (
           <ul className="divide-y">
             {runs.map((run) => (
@@ -638,7 +638,7 @@ export function AutopilotTab({
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  'block w-full rounded-md border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black';
+  'block w-full rounded-md border border-rule px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss';
 
 /** `CHANNEL_LABELS` is data; the human half of it is copy, so it is looked up here. */
 function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
@@ -659,14 +659,14 @@ function runStatusLabel(
 function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-900 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-moss mb-1.5">{label}</label>
       {children}
     </div>
   );
 }
 
 function Hint({ children }: { children: React.ReactNode }) {
-  return <p className="mt-1 text-xs text-gray-500">{children}</p>;
+  return <p className="mt-1 text-xs text-moss-muted">{children}</p>;
 }
 
 function Warning({ children }: { children: React.ReactNode }) {
@@ -689,7 +689,7 @@ function statusStyle(status: string) {
     case 'RUNNING':
       return 'bg-blue-100 text-blue-800';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-chalk-sunk text-moss';
   }
 }
 
@@ -708,14 +708,14 @@ function RunRow({ run }: { run: SerializedRun }) {
           <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusStyle(run.status)}`}>
             {runStatusLabel(t, 'autopilot.runStatus', run.status)}
           </span>
-          <span className="text-sm text-gray-900">
+          <span className="text-sm text-moss">
             {format.dateTime(new Date(run.startedAt), { dateStyle: 'medium', timeStyle: 'short' })}
           </span>
-          <span className="text-xs text-gray-500">{t('autopilot.runs.via', { trigger: run.trigger })}</span>
+          <span className="text-xs text-moss-muted">{t('autopilot.runs.via', { trigger: run.trigger })}</span>
         </div>
-        <div className="flex items-center gap-4 text-xs text-gray-600 shrink-0">
+        <div className="flex items-center gap-4 text-xs text-moss-muted shrink-0">
           <span>{t('autopilot.runs.ideas', { count: run.ideasGenerated })}</span>
-          <span className="font-semibold text-gray-900">
+          <span className="font-semibold text-moss">
             {t('autopilot.runs.scheduled', { count: run.itemsScheduled })}
           </span>
           <span>{t('autopilot.runs.skipped', { count: run.itemsSkipped })}</span>
@@ -726,17 +726,17 @@ function RunRow({ run }: { run: SerializedRun }) {
       {open && (
         <ol
           dir="ltr"
-          className="mt-3 space-y-1 text-xs font-mono text-gray-700 bg-gray-50 rounded-md p-3 overflow-x-auto text-left"
+          className="mt-3 space-y-1 text-xs font-plexmono text-moss bg-chalk rounded-md p-3 overflow-x-auto text-left"
         >
           {run.log.map((entry, i) => {
             const { at, step, ...rest } = entry as { at?: string; step?: string } & Record<string, unknown>;
             return (
               <li key={i} className="whitespace-nowrap">
-                <span className="text-gray-400">
+                <span className="text-moss-muted">
                   {at ? format.dateTime(new Date(at), { timeStyle: 'medium' }) : ''}
                 </span>{' '}
                 <span className="font-semibold">{step}</span>{' '}
-                <span className="text-gray-600">{Object.keys(rest).length ? JSON.stringify(rest) : ''}</span>
+                <span className="text-moss-muted">{Object.keys(rest).length ? JSON.stringify(rest) : ''}</span>
               </li>
             );
           })}

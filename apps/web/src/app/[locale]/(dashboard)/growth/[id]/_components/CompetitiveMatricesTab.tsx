@@ -289,7 +289,7 @@ export function CompetitiveMatricesTab({
               type="button"
               onClick={generate}
               disabled={isGenerating}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-[#121212] px-5 py-2 text-[13px] font-bold text-chalk transition hover:bg-moss disabled:opacity-50"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-moss px-5 py-2 text-[13px] font-bold text-chalk transition hover:bg-moss disabled:opacity-50"
             >
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
               {t('generate')}

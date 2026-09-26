@@ -624,7 +624,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="min-h-[50vh] border border-rule bg-chalk-raised p-6 md:p-8">
+      <div className="min-h-[50vh]">
         {activeTab === 'strategy' && (
           <BrandMemoryTab
             workspace={workspace}
