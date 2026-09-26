@@ -321,6 +321,20 @@ Rules, applied strictly:
 - Judge scale. If the candidate is far larger or far more established than the business, set scaleMatch false and type ASPIRATIONAL. Never DIRECT.
 - "SEO" means it competes for the same searches. "BUSINESS" means it sells the same thing to the same buyer. Both can apply; at least one must, or isCompetitor is false.`;
 
+/**
+ * Confidence rubric, kept separate from `JUDGE_RULES` (which is reproduced
+ * verbatim from the brief and must not be touched). Without this, the
+ * `confidence` field is an unanchored float with no stated meaning — a live
+ * run returned 1.0 for every candidate regardless of verdict, which makes
+ * the number useless as the input to a keep-threshold or confidence bands.
+ */
+const CONFIDENCE_RUBRIC = `Score "confidence" using this rubric, applied strictly:
+- Confidence describes how well the evidence pins down your isCompetitor call. It is not enthusiasm about the company, and a confident rejection is just as valid as a confident acceptance — a candidate you are sure is NOT a competitor also gets high confidence.
+- Use 0.9 or higher only when the evidence explicitly and unambiguously shows the same product sold to the same buyer (or, for a rejection, unambiguously shows it is not).
+- Use 0.6 to 0.8 when your call is a reasonable inference from what the site says, not a direct statement of it.
+- Use below 0.6 when the evidence is thin, ambiguous, or leaves real doubt either way.
+- 1.0 is not a default value. It should be rare. Do not give every candidate the same confidence — let the score actually vary with how certain the evidence makes you.`;
+
 const JUDGE_SCHEMA = {
   type: 'object',
   properties: {
@@ -335,7 +349,13 @@ const JUDGE_SCHEMA = {
           labels: { type: 'array', items: { type: 'string', enum: ['SEO', 'BUSINESS'] } },
           type: { type: 'string', enum: ['DIRECT', 'INDIRECT', 'ASPIRATIONAL'] },
           scaleMatch: { type: 'boolean' },
-          confidence: { type: 'number' },
+          confidence: {
+            type: 'number',
+            minimum: 0,
+            maximum: 1,
+            description:
+              'How well the evidence pins down the isCompetitor call, not enthusiasm about the company. 0.9+ only when the evidence explicitly and unambiguously settles it either way; 0.6-0.8 for a reasonable inference; below 0.6 when the evidence is thin or ambiguous. 1.0 is rare, never a default — vary the score with actual certainty.',
+          },
           reason: { type: 'string' },
           positioning: { type: 'string' },
           keyFeatures: { type: 'array', items: { type: 'string' } },
@@ -365,6 +385,8 @@ const JUDGE_SCHEMA = {
 function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]): string {
   const lines = [
     JUDGE_RULES,
+    '',
+    CONFIDENCE_RUBRIC,
     '',
     'Business being defended:',
     `- name: ${brief.companyName}`,
@@ -506,7 +528,10 @@ export async function judgeCandidates(
     if ('error' in outcome) {
       // Per-batch isolation, following ./search's pattern: one bad batch
       // drops its candidates from the result rather than failing the run
-      // or approving them by default.
+      // or approving them by default. Logged because a judge batch costs
+      // real money and real candidates — losing it silently would leave no
+      // trace beyond a suspiciously low token count.
+      console.error('Judge batch dropped:', outcome.error);
       continue;
     }
     judged.push(...outcome.judged);
