@@ -33,18 +33,18 @@ export function AdminBarChart({
     <div className="h-[250px] w-full" dir="ltr">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#D5D4CA" />
           <XAxis
             dataKey={nameKey}
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: 12, fill: '#4A544D' }}
             dy={10}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fontSize: 12, fill: '#64748b' }}
+            tick={{ fontSize: 12, fill: '#4A544D' }}
             tickFormatter={(value: number) =>
               value > 1000
                 ? t('units.thousands', {
@@ -54,7 +54,7 @@ export function AdminBarChart({
             }
           />
           <Tooltip
-            cursor={{ fill: '#f1f5f9' }}
+            cursor={{ fill: '#E2E1D8' }}
             contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
             /* Recharts types the incoming value as possibly undefined, so it is
                taken as `unknown` and narrowed here. */
@@ -82,7 +82,9 @@ export function AdminPieChart({
   valueName?: string;
 }) {
   const format = useFormatter();
-  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#64748b'];
+  // Chalk & Saffron series: distinct in lightness as well as hue, so adjacent
+  // slices still separate in greyscale.
+  const COLORS = ['#17201B', '#E3A21A', '#3D5F8A', '#2F4A3A', '#A9A89C', '#6B5410'];
 
   return (
     <div className="h-[250px] w-full flex justify-center" dir="ltr">

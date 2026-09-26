@@ -104,13 +104,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
           <>
             <Link
               href={{ pathname: '/admin', query: { section: 'credits', userId: user.id } }}
-              className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              className="rounded-xl border border-rule bg-chalk-raised px-4 py-2 text-sm font-semibold text-moss transition hover:border-rule-strong hover:bg-chalk"
             >
               {t('userDetail.openLedger')}
             </Link>
             <Link
               href={{ pathname: '/admin', query: { section: 'users', q: encodeURIComponent(user.email) } }}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-moss px-4 py-2 text-sm font-semibold text-chalk"
             >
               {t('userDetail.searchInUsers')}
             </Link>
@@ -169,13 +169,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
           ) : (
             <div className="space-y-3">
               {user.workspaces.map((workspace: any) => (
-                <div key={workspace.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <div key={workspace.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: workspace.id } }} className="text-sm font-bold text-[#121212] hover:underline">
+                      <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: workspace.id } }} className="text-sm font-bold text-moss hover:underline">
                         {workspace.name}
                       </Link>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-moss-muted">
                         {workspace.websiteUrl ? <bdi>{workspace.websiteUrl}</bdi> : t('common.noWebsiteUrl')}
                       </p>
                     </div>
@@ -198,12 +198,12 @@ export default async function AdminUserDetailPage({ params }: Props) {
           ) : (
             <div className="space-y-3">
               {recentAiUsage.map((entry: any) => (
-                <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <div key={entry.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-[#121212]">{entry.feature}</p>
-                    <p className="text-xs font-semibold text-slate-500">{fmt.usd(Number(entry.estimatedCostUsd))}</p>
+                    <p className="text-sm font-bold text-moss">{entry.feature}</p>
+                    <p className="text-xs font-semibold text-moss-muted">{fmt.usd(Number(entry.estimatedCostUsd))}</p>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-moss-muted">
                     {/* The model name is a provider identifier and stays Latin. */}
                     {t('userDetail.aiUsageLine', {
                       model: entry.model,
@@ -225,13 +225,13 @@ export default async function AdminUserDetailPage({ params }: Props) {
           ) : (
             <div className="space-y-3">
               {recentContent.map((item: any) => (
-                <div key={item.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <div key={item.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <Link href={{ pathname: '/admin/content/[contentId]', params: { contentId: item.id } }} className="text-sm font-bold text-[#121212] hover:underline">
+                      <Link href={{ pathname: '/admin/content/[contentId]', params: { contentId: item.id } }} className="text-sm font-bold text-moss hover:underline">
                         {item.topic}
                       </Link>
-                      <p className="mt-1 text-xs text-slate-500">
+                      <p className="mt-1 text-xs text-moss-muted">
                         {t('userDetail.contentLine', {
                           workspace: item.workspace?.name || t('common.noWorkspace'),
                           channel: item.channel,
@@ -252,11 +252,11 @@ export default async function AdminUserDetailPage({ params }: Props) {
           ) : (
             <div className="space-y-3">
               {recentJobs.map((job: any) => (
-                <div key={job.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <div key={job.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-sm font-bold text-[#121212]" dir="ltr">{job.type}</p>
-                      <p className="mt-1 text-xs text-slate-500">{fmt.dateTime(job.createdAt)}</p>
+                      <p className="text-sm font-bold text-moss" dir="ltr">{job.type}</p>
+                      <p className="mt-1 text-xs text-moss-muted">{fmt.dateTime(job.createdAt)}</p>
                     </div>
                     <StatusBadge status={job.status} />
                   </div>

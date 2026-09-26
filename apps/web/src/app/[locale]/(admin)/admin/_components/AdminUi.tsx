@@ -75,9 +75,9 @@ export function getStatusTone(status: string): string {
     return 'text-amber-700 bg-amber-50 border-amber-200';
   }
   if (['SCHEDULED', 'PUBLISHED', 'READY', 'ACTIVE', 'COMPLETED', 'healthy'].includes(status)) {
-    return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    return 'text-moss-700 bg-chalk-sunk border-rule';
   }
-  return 'text-slate-700 bg-slate-50 border-slate-200';
+  return 'text-moss bg-chalk border-rule';
 }
 
 export function PageHeader({
@@ -94,16 +94,16 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <div className="rounded-3xl border border-gray-200 bg-gradient-to-br from-white via-white to-slate-50 p-6 shadow-sm">
+    <div className="rounded-3xl border border-rule bg-gradient-to-br from-chalk-raised via-chalk-raised to-chalk p-6 shadow-sm">
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <a href={backHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 transition hover:text-black">
+          <a href={backHref} className="inline-flex items-center gap-1.5 text-sm font-medium text-moss-muted transition hover:text-moss">
             {/* The arrow points back the way the reader came, so it flips with the page. */}
             <span aria-hidden className="inline-block rtl:rotate-180">←</span>
             {backLabel}
           </a>
-          <h1 className="mt-3 text-3xl font-bold tracking-tight text-[#121212]">{title}</h1>
-          {subtitle ? <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">{subtitle}</p> : null}
+          <h1 className="mt-3 text-3xl font-bold tracking-tight text-moss">{title}</h1>
+          {subtitle ? <p className="mt-2 max-w-3xl text-sm leading-6 text-moss-muted">{subtitle}</p> : null}
         </div>
         {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
       </div>
@@ -121,10 +121,10 @@ export function Panel({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-5 py-4">
-        <p className="text-base font-bold text-[#121212]">{title}</p>
-        {subtitle ? <p className="mt-1 text-sm text-slate-500">{subtitle}</p> : null}
+    <div className="rounded-2xl border border-rule bg-chalk-raised shadow-sm">
+      <div className="border-b border-rule px-5 py-4">
+        <p className="text-base font-bold text-moss">{title}</p>
+        {subtitle ? <p className="mt-1 text-sm text-moss-muted">{subtitle}</p> : null}
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -141,19 +141,19 @@ export function MetricCard({
   helper?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white p-4">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className="mt-2 text-2xl font-bold text-[#121212]">{value}</p>
-      {helper ? <p className="mt-1 text-xs text-slate-500">{helper}</p> : null}
+    <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-moss-muted">{label}</p>
+      <p className="mt-2 text-2xl font-bold text-moss">{value}</p>
+      {helper ? <p className="mt-1 text-xs text-moss-muted">{helper}</p> : null}
     </div>
   );
 }
 
 export function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-slate-50 px-3 py-2">
-      <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{label}</p>
-      <p className="mt-1 text-sm font-bold text-[#121212]">{value}</p>
+    <div className="rounded-xl border border-rule bg-chalk px-3 py-2">
+      <p className="text-[11px] font-bold uppercase tracking-widest text-moss-muted">{label}</p>
+      <p className="mt-1 text-sm font-bold text-moss">{value}</p>
     </div>
   );
 }
@@ -167,7 +167,7 @@ export function StatusBadge({ status }: { status: string }) {
 }
 
 export function EmptyState({ text }: { text: string }) {
-  return <p className="text-sm text-slate-500">{text}</p>;
+  return <p className="text-sm text-moss-muted">{text}</p>;
 }
 
 export function KeyValueGrid({
@@ -187,9 +187,9 @@ export function KeyValueGrid({
   return (
     <div className={className}>
       {items.map((item) => (
-        <div key={item.label} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-slate-500">{item.label}</p>
-          <div className="mt-2 text-sm font-medium text-[#121212]">{item.value}</div>
+        <div key={item.label} className="rounded-xl border border-rule bg-chalk p-3">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-moss-muted">{item.label}</p>
+          <div className="mt-2 text-sm font-medium text-moss">{item.value}</div>
         </div>
       ))}
     </div>
@@ -211,16 +211,16 @@ export function LogList({
   return (
     <div className="space-y-3">
       {rows.map((row) => (
-        <div key={row.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+        <div key={row.id} className="rounded-xl border border-rule bg-chalk p-3">
           <div className="flex items-center justify-between gap-3">
             {/* Audit action codes are stored values, so they stay Latin and LTR. */}
-            <p className="text-sm font-bold text-[#121212]" dir="ltr">{row.action}</p>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-sm font-bold text-moss" dir="ltr">{row.action}</p>
+            <p className="text-[11px] text-moss-muted">
               {format.dateTime(new Date(row.createdAt), { dateStyle: 'medium', timeStyle: 'short' })}
             </p>
           </div>
-          <p className="mt-1 text-xs text-slate-500">{row.workspaceName || t('common.noWorkspace')}</p>
-          <pre dir="ltr" className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-gray-200 bg-white p-2 text-start text-[11px] text-slate-600">
+          <p className="mt-1 text-xs text-moss-muted">{row.workspaceName || t('common.noWorkspace')}</p>
+          <pre dir="ltr" className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-lg border border-rule bg-chalk-raised p-2 text-start text-[11px] text-moss-muted">
             {JSON.stringify(row.detail, null, 2)}
           </pre>
         </div>
