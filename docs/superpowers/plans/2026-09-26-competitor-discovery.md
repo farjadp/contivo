@@ -750,7 +750,7 @@ Sort by `frequency` descending, take `MAX_ENRICHED`, and run `collectWebsiteEvid
 
 - [ ] **Step 2: Implement `judgeCandidates`**
 
-Batch of 5 candidates per call, concurrency 2. Use `response_format: { type: 'json_schema' }` with `strict: true` so the shape cannot drift. Schema per candidate: `domain, name, isCompetitor (bool), labels (array of "SEO"|"BUSINESS"), type ("DIRECT"|"INDIRECT"|"ASPIRATIONAL"), scaleMatch (bool), confidence (number), reason (string), positioning (string), keyFeatures (array of string), description (string)`.
+Batch of 5 candidates per call, concurrency 2. Use `response_format: { type: 'json_schema' }` with `strict: true` so the shape cannot drift. Schema per candidate: `domain, name, isCompetitor (bool), labels (array of "SEO"|"BUSINESS"), type ("DIRECT"|"INDIRECT"|"ASPIRATIONAL"), scaleMatch (bool), certainty ("certain"|"likely"|"unsure"), reason (string), positioning (string), keyFeatures (array of string), description (string)`.
 
 The prompt must state these rules verbatim:
 ```
@@ -768,7 +768,9 @@ Rules, applied strictly:
   same thing to the same buyer. Both can apply; at least one must, or
   isCompetitor is false.
 ```
-Set `judgeConfidence` from the returned `confidence`, and force `isCompetitor = false` when `labels` is empty. Return the summed token usage.
+Derive `judgeConfidence` deterministically from `certainty` — certain 0.9, likely 0.7, unsure 0.5 — and force `isCompetitor = false` when `labels` is empty.
+
+**Why an enum and not a float the model writes:** a self-reported probability compresses into the top of its range. Measured live on this very code, an unanchored float returned 1.0 for every candidate including rejected ones; adding a written rubric only moved it to 0.90–0.98 — still all inside one band, so the keep-threshold and the high/medium split filtered nothing. A three-way choice cannot compress that way, and the mapping is ours, not the model's. Return the summed token usage.
 
 - [ ] **Step 3: Verify against the real API**
 
@@ -941,12 +943,21 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Produces:
   ```ts
   export type SelectionBasis = 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE';
-  export function selectCompetitors<T extends { userDecision: string | null; confidence: number | null }>(
+  export type CorroborationInput = {
+    userDecision: string | null;
+    confidence: number | null;
+    sources?: string[] | null;
+    evidence?: unknown;            // EvidenceItem[] as stored; items may carry `query`
+  };
+  export function isCorroborated(row: CorroborationInput): boolean
+  export function selectCompetitors<T extends CorroborationInput>(
     all: T[],
   ): { competitors: T[]; basis: SelectionBasis }
   ```
 
-**Context:** This implements D8. Today those three files fall back to *every* non-rejected competitor, which lets unreviewed guesses into analysis silently. The new rule: accepted first; if there are none, only PENDING with `confidence >= 0.8`; otherwise nothing.
+**Context:** This implements D8. Today those three files fall back to *every* non-rejected competitor, which lets unreviewed guesses into analysis silently. The new rule: accepted first; if there are none, only PENDING that are BOTH `confidence >= 0.8` AND corroborated; otherwise nothing.
+
+**Corroborated** means the competitor's stored `evidence` carries citations from at least two distinct `query` values, or its `sources` array holds more than one source. This second condition exists because the first is the model grading itself: the judge's certainty is its own opinion, while the number of distinct searches that surfaced a domain is a fact it cannot inflate. Only the combination is allowed to feed analysis unreviewed.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -963,10 +974,23 @@ describe('selectCompetitors', () => {
     expect(competitors.map((x) => x.id)).toEqual(['a']);
   });
 
-  it('falls back only to high-confidence pending competitors', () => {
-    const { competitors, basis } = selectCompetitors([c('PENDING', 0.95, 'a'), c('PENDING', 0.7, 'b')]);
+  it('falls back only to pending competitors that are high-confidence AND corroborated', () => {
+    const corroborated = { ...c('PENDING', 0.95, 'a'), evidence: [{ query: 'q1' }, { query: 'q2' }] };
+    const highButAlone = { ...c('PENDING', 0.95, 'b'), evidence: [{ query: 'q1' }, { query: 'q1' }] };
+    const corroboratedButLow = { ...c('PENDING', 0.7, 'c'), evidence: [{ query: 'q1' }, { query: 'q2' }] };
+    const { competitors, basis } = selectCompetitors([corroborated, highButAlone, corroboratedButLow]);
     expect(basis).toBe('UNCONFIRMED_HIGH');
     expect(competitors.map((x) => x.id)).toEqual(['a']);
+  });
+
+  it('treats more than one source as corroboration too', () => {
+    const twoSources = { ...c('PENDING', 0.95, 'a'), sources: ['WEB_SEARCH', 'SERP'], evidence: [{ query: 'q1' }] };
+    expect(selectCompetitors([twoSources]).competitors.map((x) => x.id)).toEqual(['a']);
+  });
+
+  it('never corroborates from malformed evidence', () => {
+    const junk = { ...c('PENDING', 0.99, 'a'), evidence: 'not an array' };
+    expect(selectCompetitors([junk])).toEqual({ competitors: [], basis: 'NONE' });
   });
 
   it('never returns rejected competitors', () => {
@@ -1004,7 +1028,10 @@ export function selectCompetitors<T extends { userDecision: string | null; confi
   if (accepted.length > 0) return { competitors: accepted, basis: 'ACCEPTED' };
 
   const unconfirmed = all.filter(
-    (item) => item.userDecision !== 'REJECTED' && confidenceBand(item.confidence) === 'high',
+    (item) =>
+      item.userDecision !== 'REJECTED' &&
+      confidenceBand(item.confidence) === 'high' &&
+      isCorroborated(item),
   );
   if (unconfirmed.length > 0) return { competitors: unconfirmed, basis: 'UNCONFIRMED_HIGH' };
 
