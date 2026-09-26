@@ -124,10 +124,6 @@
       "statAiTokens": "توکن‌های هوش مصنوعی",
       "statEstCost": "هزینهٔ تخمینی",
       "trackedNote": "فقط بخش‌های رصدشده",
-      "groupIntelligence": "شناخت",
-      "groupCreate": "ساخت",
-      "groupAutomate": "خودکارسازی",
-      "groupReview": "بررسی",
       "tabTitleGated": "{helper}؛ {gate}",
       "tabs": {
         "strategyLabel": "حافظهٔ برند",
@@ -158,6 +154,40 @@
       },
       "warnings": {
         "competitorDiscoveryEmpty": "جست‌وجوی رقبا بدون نتیجه برگشت؛ سرویس‌دهندهٔ هوش مصنوعی در دسترس نبود. می‌توانید از بخش نمودارهای بازار دوباره اجرایش کنید."
+      },
+      "loop": {
+        "label": "مرحله‌های فضای کاری",
+        "tabsLabel": "بخش‌های این مرحله",
+        "state": {
+          "done": "انجام شد",
+          "next": "قدم بعد",
+          "open": "باز",
+          "locked": "قفل"
+        },
+        "know": {
+          "name": "شناخت",
+          "sub": "برند و پیشنهاد"
+        },
+        "watch": {
+          "name": "رصد",
+          "sub": "بازار"
+        },
+        "think": {
+          "name": "فکر",
+          "sub": "جایگاه و ایده"
+        },
+        "make": {
+          "name": "ساخت",
+          "sub": "خط تولید"
+        },
+        "ship": {
+          "name": "انتشار",
+          "sub": "تقویم و اتوپایلت"
+        },
+        "learn": {
+          "name": "یادگیری",
+          "sub": "گزارش‌ها"
+        }
       }
     }
   }

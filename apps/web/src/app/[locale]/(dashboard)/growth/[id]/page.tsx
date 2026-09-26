@@ -20,7 +20,6 @@ import {
   Sparkles,
   Tags,
   CalendarDays,
-  Lock,
   TrendingUp,
   AlertTriangle,
   BookOpen,
@@ -52,7 +51,9 @@ import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
+import { LoopRail } from './_components/LoopRail';
 import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { buildLoop, stageForTab, STAGES, type StageId } from '@/lib/workspace-loop';
 import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
 import { getNarrative } from '@/app/actions/narrative';
@@ -353,35 +354,30 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const tabItems = [
     {
       key: 'strategy',
-      group: 'intelligence',
       label: t('tabs.strategyLabel'),
       helper: t('tabs.strategyHelper', { count: initialBrandAssetsPayload?.summary?.asset_count || 0 }),
       icon: <Sparkles className="h-4 w-4" />,
     },
     {
       key: 'matrices',
-      group: 'intelligence',
       label: t('tabs.matricesLabel'),
       helper: t('tabs.matricesHelper', { count: initialMatrices?.charts?.length || 0 }),
       icon: <LineChart className="h-4 w-4" />,
     },
     {
       key: 'keywords',
-      group: 'intelligence',
       label: t('tabs.keywordsLabel'),
       helper: t('tabs.keywordsHelper', { count: initialKeywordPayload?.competitors?.length || 0 }),
       icon: <Tags className="h-4 w-4" />,
     },
     {
       key: 'narrative',
-      group: 'intelligence',
       label: t('tabs.narrativeLabel'),
       helper: t('tabs.narrativeHelper', { count: narrativeData?.narrative?.storylines?.length || 0 }),
       icon: <BookOpen className="h-4 w-4" />,
     },
     {
       key: 'offerings',
-      group: 'intelligence',
       label: t('tabs.offeringsLabel'),
       helper: t('tabs.offeringsHelper', {
         count: initialOfferingsPayload?.client_offerings?.offerings?.length || 0,
@@ -390,35 +386,30 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     },
     {
       key: 'seo',
-      group: 'intelligence',
       label: t('tabs.seoLabel'),
       helper: t('tabs.seoHelper', { count: seoIntelligence.keywordOpportunities.length }),
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
       key: 'ideation',
-      group: 'create',
       label: t('tabs.ideationLabel'),
       helper: t('tabs.ideationHelper'),
       icon: <Lightbulb className="h-4 w-4" />,
     },
     {
       key: 'pipeline',
-      group: 'create',
       label: t('tabs.pipelineLabel'),
       helper: t('tabs.pipelineHelper', { count: workspace.contentItems.length }),
       icon: <ListTodo className="h-4 w-4" />,
     },
     {
       key: 'calendar',
-      group: 'create',
       label: t('tabs.calendarLabel'),
       helper: t('tabs.calendarHelper'),
       icon: <CalendarDays className="h-4 w-4" />,
     },
     {
       key: 'autopilot',
-      group: 'automate',
       label: t('tabs.autopilotLabel'),
       helper: autopilotPolicy?.enabled
         ? t('tabs.autopilotHelperOn', { posts: autopilotPolicy.postsPerWeek })
@@ -427,7 +418,6 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     },
     {
       key: 'reports',
-      group: 'review',
       label: t('tabs.reportsLabel'),
       helper: t('tabs.reportsHelper', { count: reportEligibility.remainingReports }),
       icon: <FileText className="h-4 w-4" />,
@@ -436,7 +426,6 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       ? [
           {
             key: 'progress',
-            group: 'review',
             label: t('tabs.progressLabel'),
             helper: t('tabs.progressHelper', {
               before: progressReport.maturity.before_stage,
@@ -448,12 +437,13 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       : []),
   ];
 
-  const tabGroups = [
-    { key: 'intelligence', label: t('groupIntelligence') },
-    { key: 'create', label: t('groupCreate') },
-    { key: 'automate', label: t('groupAutomate') },
-    { key: 'review', label: t('groupReview') },
-  ] as const;
+
+  const loop = buildLoop(
+    journey,
+    gates,
+    tabItems.map((item) => item.key),
+    workspace.contentItems.length > 0,
+  );
 
   // Setup problems that used to be invisible: a Gemini outage during
   // extraction left the workspace looking like a site with no competitors,
@@ -578,55 +568,40 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
       <JourneyGuide workspaceId={workspace.id} journey={journey} />
 
-      {/* ── TABS ────────────────────────────────────────────────── */}
-      <div className="border-b border-ink-200">
-        {tabGroups.map((group) => {
-          const items = tabItems.filter((item) => item.group === group.key);
-          if (items.length === 0) return null;
-          return (
-            <div key={group.key} className="flex flex-wrap items-center gap-x-1 gap-y-0.5 py-1">
-              <span className="w-24 shrink-0 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
-                {group.label}
-              </span>
-              {items.map((item) => {
-                const isActive = activeTab === item.key;
-                const gate = gates[item.key];
-                return (
-                  <Link
-                    key={item.key}
-                    href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: item.key } }}
-                    title={
-                      gate
-                        ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) })
-                        : item.helper
-                    }
-                    className={`group relative flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
-                      isActive
-                        ? 'font-semibold text-ink-900'
-                        : gate
-                          ? 'text-ink-300 hover:text-ink-600'
-                          : 'text-ink-600 hover:text-ink-900'
-                    }`}
-                  >
-                    <span className={isActive ? 'text-ink-900' : gate ? 'text-ink-300' : 'text-ink-400'}>
-                      {item.icon}
-                    </span>
-                    {item.label}
-                    {gate && <Lock className="h-3 w-3 text-ink-300" />}
-                    {item.key === 'autopilot' && autopilotPolicy?.enabled && (
-                      <span className="h-1.5 w-1.5 bg-signal" />
-                    )}
-                    <span
-                      aria-hidden
-                      className={`absolute inset-x-2 -bottom-px h-[2px] ${isActive ? 'bg-ink-900' : 'bg-transparent'}`}
-                    />
-                  </Link>
-                );
-              })}
-            </div>
-          );
+      {/* ── THE LOOP ────────────────────────────────────────────── */}
+      <LoopRail
+        workspaceId={workspace.id}
+        stages={loop}
+        activeStage={stageForTab(activeTab)}
+        activeTab={activeTab}
+        tabs={tabItems.map((item) => {
+          const gate = gates[item.key];
+          return {
+            key: item.key,
+            label: item.label,
+            title: gate ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) }) : item.helper,
+            icon: item.icon,
+            gated: Boolean(gate),
+            live: item.key === 'autopilot' && Boolean(autopilotPolicy?.enabled),
+          };
         })}
-      </div>
+        names={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.name`)])) as Record<StageId, string>}
+        numbers={
+          Object.fromEntries(loop.map((st) => [st.id, format.number(st.order, { minimumIntegerDigits: 2 })])) as Record<
+            StageId,
+            string
+          >
+        }
+        subs={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.sub`)])) as Record<StageId, string>}
+        stateLabels={{
+          done: t('loop.state.done'),
+          next: t('loop.state.next'),
+          open: t('loop.state.open'),
+          locked: t('loop.state.locked'),
+        }}
+        navLabel={t('loop.tabsLabel')}
+        stagesLabel={t('loop.label')}
+      />
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
       {gates[activeTab] && (

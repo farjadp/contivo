@@ -124,10 +124,6 @@
       "statAiTokens": "AI tokens",
       "statEstCost": "Est. cost",
       "trackedNote": "tracked modules only",
-      "groupIntelligence": "Intelligence",
-      "groupCreate": "Create",
-      "groupAutomate": "Automate",
-      "groupReview": "Review",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Brand Memory",
@@ -158,6 +154,40 @@
       },
       "warnings": {
         "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices."
+      },
+      "loop": {
+        "label": "Workspace stages",
+        "tabsLabel": "Stage sections",
+        "state": {
+          "done": "done",
+          "next": "next up",
+          "open": "open",
+          "locked": "locked"
+        },
+        "know": {
+          "name": "Know",
+          "sub": "Brand & offer"
+        },
+        "watch": {
+          "name": "Watch",
+          "sub": "Market"
+        },
+        "think": {
+          "name": "Think",
+          "sub": "Position & ideas"
+        },
+        "make": {
+          "name": "Make",
+          "sub": "Pipeline"
+        },
+        "ship": {
+          "name": "Ship",
+          "sub": "Calendar & autopilot"
+        },
+        "learn": {
+          "name": "Learn",
+          "sub": "Reports"
+        }
       }
     }
   }
