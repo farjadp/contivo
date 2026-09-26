@@ -3,7 +3,7 @@
 - **Date:** 2026-09-26
 - **Status:** Draft for review. **Do not implement until the competitor-discovery redesign has landed** (see §11).
 - **Branch:** `competitor-discovery-redesign` (spec only); implementation on its own branch after discovery.
-- **Depends on:** `2026-09-26-competitor-discovery-design.md` (§4 Competitor fields, §7 `selectCompetitorsForAnalysis`, §5.0 async run pattern).
+- **Depends on:** `2026-09-26-competitor-discovery-design.md` (§4 Competitor fields, §7 selector, §5.0 async run pattern). Final names from the discovery session (2026-09-26): `selectCompetitors()` in `apps/web/src/lib/competitors/selection.ts` returning `{ competitors, basis: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE' }`; `triggerBackgroundRun(path, body)` in `apps/web/src/lib/background-run.ts`; evidence items carry a stable `id` (requested, agreed); confidence bands shared: high ≥ 0.8, medium ≥ 0.6, shown as a word never a percentage; `Workspace.targetLanguage` exists separately from `contentLanguage`..
 
 ## 1. Why
 
@@ -28,9 +28,9 @@ Today (`generateWorkspaceCompetitiveMatrices`, `apps/web/src/app/actions/growth-
 | M2 | **Axes = 2 core + 1–3 market-specific** (3–5 charts). Core charts are identical across workspaces so downstream code can rely on them; market charts are proposed by the model from the brand brief and competitor positioning, and the user picks/renames them. | proposed |
 | M3 | **Fail closed.** No heuristic fallback. A failed run saves nothing; the ideation gate stays shut with a clear message. | proposed |
 | M4 | Manual score edits live in an **override layer** that survives regeneration, is visible on the chart, and can be reset per point. | approved (Q4) |
-| M5 | Competitor input comes only from `selectCompetitorsForAnalysis` (discovery §7). `basis` is stored on the run and shown in the UI. | proposed |
+| M5 | Competitor input comes only from `selectCompetitors` (discovery §7). `basis` is stored on the run, mirrored as `competitor_basis` on the projection (the key discovery already writes), and shown in the UI. | proposed |
 | M6 | Evidence bundle is limited to what the app already holds: discovery `evidence`, `positioning`, `keyFeatures`, `labels`, `confidence`, own-site `brandSummary`, and `competitorKeywordsIntel` when present. **No new crawling or paid data in this iteration** (Q3). Deferred items are tracked in Notion Mission Control. | approved (Q3) |
-| M7 | Output language = workspace `contentLanguage`. Core axis labels come from i18n, never from the model. | proposed |
+| M7 | Output language = workspace `contentLanguage` (the content is for the customer's audience; `targetLanguage` is the search language and is passed to the prompt only as market context). Core axis labels come from i18n, never from the model. | proposed |
 | M8 | The token-usage panel leaves the main UI and becomes a collapsed technical disclosure. | proposed |
 
 ## 3. Axes
@@ -107,7 +107,7 @@ model MatrixScore {
   yScore        Int
   xReason       String
   yReason       String
-  evidenceRefs  Json     // string[] of evidence ids from the bundle
+  evidenceRefs  Json     // string[] of stable evidence item ids (Competitor.evidence[].id)
   confidence    Float
   estimated     Boolean  @default(false) // true when evidenceRefs is empty
   chart         MatrixChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
@@ -138,10 +138,10 @@ model MatrixOverride {
 ## 5. Pipeline
 
 ### 5.0 Trigger
-Same pattern as discovery §5.0: the action checks ownership, calls `selectCompetitorsForAnalysis`, refuses when `basis = NONE` or fewer than 2 competitors, refuses when a run is PENDING/RUNNING, creates `MatrixRun (PENDING)`, schedules the work with `after()` in a `maxDuration = 300` route, returns the run id. UI polls. A run RUNNING for > 10 min is marked FAILED on next read.
+Same pattern as discovery §5.0: the action checks ownership, calls `selectCompetitors`, refuses when `basis = NONE` or fewer than 2 competitors, refuses when a run is PENDING/RUNNING, creates `MatrixRun (PENDING)`, calls `triggerBackgroundRun('/api/matrices/run', { runId })`; that route owns `maxDuration = 300` and `after()`. The action returns the run id. UI polls. A run RUNNING for > 10 min is marked FAILED on next read.
 
 ### 5.1 Evidence bundle (deterministic)
-Per company: `{ id, name, domain, type, positioning, keyFeatures, labels, discoveryConfidence, evidence: EvidenceItem[] (ids E1..En), keywordClusters?, keywordCount? }`. For the target: brandSummary offers, value proposition, audience, own keyword data if any. Each evidence item gets a stable id so scores can cite it.
+Per company: `{ id, name, domain, type, positioning, keyFeatures, labels, discoveryConfidence, evidence: EvidenceItem[] (each with its stable id), keywordClusters?, keywordCount? }`. For the target: brandSummary offers, value proposition, audience, own keyword data if any; target evidence items get ids prefixed `own:`.
 
 ### 5.2 Axes (0–1 LLM call)
 If `Workspace.matrixAxes` exists, skip. Otherwise propose 4 candidates (§3.2) and pause the run at stage `AXES` until the user picks; the UI shows the chooser. Default: the first 2 candidates are preselected so one click continues.
@@ -150,6 +150,7 @@ If `Workspace.matrixAxes` exists, skip. Otherwise propose 4 candidates (§3.2) a
 Input: the bundle, the axis definition with a scoring rubric for each end, the language. Output per company: `xScore`, `yScore`, `xReason`, `yReason`, `evidenceRefs`, `confidence`. Hard rules in the prompt and enforced in code:
 - A score with no `evidenceRefs` is kept but flagged `estimated = true` and its confidence is capped at 0.5.
 - Scale: the judge already labelled ASPIRATIONAL competitors; the prompt states the target's scale explicitly so the target is never defaulted to 5.
+- Confidence is shown with the shared bands (high ≥ 0.8, medium ≥ 0.6, otherwise low), as a word.
 - Reasons are ≤ 200 chars, in `language`, and must not contain the words "estimated" or "inferred" when evidenceRefs is non-empty.
 
 ### 5.4 Target self-score
@@ -201,7 +202,7 @@ Same stance as discovery §9: each stage fails loudly, a missing `OPENAI_API_KEY
 - **Live:** local app, one Persian and one English workspace, a human signs in (verification habit); confirm evidence links, override marker, stale banner, and that ideation is blocked until 3 charts exist.
 
 ## 11. Sequencing and conflicts
-- Discovery implementation must land first: it provides `Competitor.evidence/positioning/keyFeatures/labels/confidence`, `selectCompetitorsForAnalysis`, and the `after()` run pattern this spec reuses.
+- Discovery implementation must land first: it provides `Competitor.evidence/positioning/keyFeatures/labels/confidence` (evidence items with stable ids), `selectCompetitors`, and `triggerBackgroundRun`. Its plan: `docs/superpowers/plans/2026-09-26-competitor-discovery.md`; the handover is after its Task 11.
 - Both features live in `CompetitiveMatricesTab.tsx`. Discovery §6 restructures the competitors half; this spec rebuilds the matrix half. Implement sequentially on separate branches to avoid a merge fight.
 - Checked 2026-09-26 16:00: the discovery session is still at spec stage (last commit `33c94c1`, docs only). No code conflict yet.
 
