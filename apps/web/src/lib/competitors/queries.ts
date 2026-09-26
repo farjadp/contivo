@@ -117,7 +117,22 @@ function buildQueryGenerationPrompt(brief: BrandBrief): string {
   return lines.join('\n');
 }
 
-export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number }> {
+/**
+ * Read `usage.total_tokens` out of a chat-completions response body.
+ *
+ * Returns `null` — not `0` — when the field is missing or malformed. A
+ * missing usage field is a provider metadata quirk, not a zero-token run,
+ * and this project's cost ceiling (`DiscoveryRun.tokensUsed`) must be able
+ * to tell "really zero" apart from "unknown"; collapsing the two would
+ * silently understate spend the way the fallback data this repo already
+ * regretted once did.
+ */
+export function readTokenUsage(data: unknown): number | null {
+  const raw = (data as { usage?: { total_tokens?: unknown } })?.usage?.total_tokens;
+  return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
+}
+
+export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number | null }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not set — cannot generate discovery queries');
@@ -156,7 +171,7 @@ export async function generateQueries(brief: BrandBrief): Promise<{ queries: str
     throw new Error('OpenAI query generation returned no content');
   }
 
-  const tokens = Number(data?.usage?.total_tokens) || 0;
+  const tokens = readTokenUsage(data);
 
   let parsed: unknown;
   try {

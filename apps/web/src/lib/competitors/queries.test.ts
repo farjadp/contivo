@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildBrandBrief } from './queries';
+import { buildBrandBrief, readTokenUsage } from './queries';
 
 describe('buildBrandBrief', () => {
   it('survives a brandSummary missing every field', () => {
@@ -150,5 +150,23 @@ describe('buildBrandBrief', () => {
     });
 
     expect(brief.knownDomains).toEqual(['a.com', 'c.com']);
+  });
+});
+
+describe('readTokenUsage', () => {
+  it('reads total_tokens from a well-formed payload', () => {
+    expect(readTokenUsage({ usage: { total_tokens: 385 } })).toBe(385);
+  });
+
+  it('returns null, not 0, when usage is missing entirely', () => {
+    expect(readTokenUsage({ choices: [] })).toBeNull();
+  });
+
+  it('returns null when total_tokens is a string', () => {
+    expect(readTokenUsage({ usage: { total_tokens: '385' } })).toBeNull();
+  });
+
+  it('returns null when total_tokens is NaN', () => {
+    expect(readTokenUsage({ usage: { total_tokens: NaN } })).toBeNull();
   });
 });
