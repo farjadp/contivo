@@ -262,15 +262,18 @@ export function LoopRing() {
 
 // ─── What happens after "Read" ────────────────────────────────────────────────
 
+/* Each step, and which loop stage it belongs to. The stage number is formatted,
+   not written: a literal '01' stays Latin on the Persian page. */
 const STEP_KEYS = [
-  ['read', '01'],
-  ['memory', '01'],
-  ['competitors', '02'],
-  ['charts', '02'],
+  ['read', 1],
+  ['memory', 1],
+  ['competitors', 2],
+  ['charts', 2],
 ] as const;
 
 export function IntakeSteps() {
   const t = useTranslations('home.steps');
+  const format = useFormatter();
   const reduced = useReducedMotion();
   const [ref, seen] = useInView<HTMLDivElement>(0.4);
   const [phase, setPhase] = useState(-1);
@@ -309,7 +312,9 @@ export function IntakeSteps() {
                 <span className="m-0.5 h-[18px] w-[18px] rounded-full border-2 border-dashed border-rule-strong" />
               )}
               <span className="flex-1">{t(key)}</span>
-              <span className="font-plexmono text-[12px] text-moss-muted">{stage}</span>
+              <span className="font-plexmono text-[12px] text-moss-muted">
+                {format.number(stage, { minimumIntegerDigits: 2 })}
+              </span>
             </li>
           );
         })}

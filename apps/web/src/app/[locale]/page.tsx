@@ -11,7 +11,7 @@
  * (home-interactions.tsx) demonstrate behaviour; none of them invents results.
  */
 
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
@@ -153,13 +153,14 @@ function Chapter({
   first,
 }: {
   id: string;
-  num: string;
+  num: number;
   label: string;
   title: ReactNode;
   children: ReactNode;
   aside: ReactNode;
   first?: boolean;
 }) {
+  const format = useFormatter();
   return (
     <section
       id={id}
@@ -169,7 +170,7 @@ function Chapter({
       <div className="mx-auto grid max-w-[90rem] gap-10 px-5 py-16 md:px-16 md:py-24 lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,38rem)] lg:gap-12">
         <Reveal>
           <span aria-hidden className="font-plexmono text-[clamp(2.5rem,4.4vw,4rem)] font-medium leading-none text-rule-strong">
-            {num}
+            {format.number(num, { minimumIntegerDigits: 2 })}
           </span>
         </Reveal>
         <Reveal delay={80} className="flex flex-col gap-4">
@@ -201,7 +202,7 @@ function Know() {
   return (
     <Chapter
       id="know"
-      num="01"
+      num={1}
       first
       label={t('loop.stages.know.name')}
       title={t('intelligence.brandTitle')}
@@ -217,7 +218,7 @@ function Watch() {
   return (
     <Chapter
       id="watch"
-      num="02"
+      num={2}
       label={t('loop.stages.watch.name')}
       title={t('intelligence.marketTitle')}
       aside={<Shot src="/marketing/market-map.webp" alt={t('intelligence.marketAlt')} w={1800} h={1074} />}
@@ -234,13 +235,14 @@ function Watch() {
 
 function Think() {
   const t = useTranslations('home');
+  const format = useFormatter();
 
   return (
     <section id="refusal" aria-labelledby="refusal-title" className="scroll-mt-16 bg-forest text-chalk">
       <div className="mx-auto flex max-w-[90rem] flex-col gap-14 px-5 py-20 md:px-16 md:py-28">
         <div className="grid gap-10 lg:grid-cols-[8rem_minmax(0,1fr)] lg:gap-12">
           <span aria-hidden className="self-start font-plexmono text-[clamp(2.5rem,4.4vw,4rem)] font-medium leading-none text-saffron">
-            03
+            {format.number(3, { minimumIntegerDigits: 2 })}
           </span>
           <Reveal className="flex flex-col gap-5">
             <span className="font-plexmono text-[13px] uppercase tracking-widest text-saffron">{t('chapters.thinkLabel')}</span>
@@ -318,7 +320,7 @@ function MakeShip() {
   return (
     <Chapter
       id="ship"
-      num="04"
+      num={4}
       label={t('chapters.makeShip')}
       title={t.rich('actThree.headline', { accent })}
       aside={
@@ -352,7 +354,7 @@ function Learn() {
     [t('channels.record'), t('channels.recordBody')],
   ];
   return (
-    <Chapter id="learn" num="06" label={t('loop.stages.learn.name')} title={t('channels.headline')} aside={<RunLog />}>
+    <Chapter id="learn" num={6} label={t('loop.stages.learn.name')} title={t('channels.headline')} aside={<RunLog />}>
       <p className="text-[17px] leading-[1.65] text-moss-muted">{t('channels.body')}</p>
       <ol className="mt-2 grid gap-0 border-t border-moss sm:grid-cols-2">
         {steps.map(([k, v], i) => (

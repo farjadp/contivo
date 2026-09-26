@@ -1,4 +1,4 @@
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import type { ComponentProps } from 'react';
 
 import { Link } from '@/i18n/navigation';
@@ -13,6 +13,7 @@ type FooterHref = ComponentProps<typeof Link>['href'];
 
 export function SiteFooter() {
   const t = useTranslations('footer');
+  const format = useFormatter();
 
   return (
     <footer className="theme-chalk border-t border-moss bg-chalk font-plex text-moss">
@@ -64,7 +65,11 @@ export function SiteFooter() {
 
       <div className="border-t border-rule">
         <div className="mx-auto flex max-w-[92rem] flex-wrap items-center justify-between gap-3 px-6 py-5 text-[13px] text-moss-muted md:px-12">
-          <span>{t('copyright', { year: new Date().getFullYear() })}</span>
+          <span>{t('copyright', {
+            /* A year is a label, not a quantity: no thousands separator, and
+               Persian digits on the Persian side. */
+            year: format.number(new Date().getFullYear(), { useGrouping: false }),
+          })}</span>
           <span>{t('standBehind')}</span>
         </div>
       </div>
