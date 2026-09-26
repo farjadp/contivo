@@ -8,22 +8,32 @@
  * caption says plainly, because the real screenshots are what the rest of the
  * page uses as evidence.
  *
+ * Each language plays its own film. The Persian one is not the English cut
+ * with the words swapped: it is a separate piece, one continuous camera move
+ * round the loop, written in Persian.
+ *
  * It plays when it scrolls into view rather than on mount: the reel sits below
  * the fold, so starting it at mount downloads and decodes half a megabyte for
  * visitors who never reach it — and a play() call made before any scroll is
  * also the one browsers are most likely to refuse.
  *
  * Visitors who asked their system for reduced motion get the poster frame and
- * an explicit control instead, because a looping 22-second video is exactly
+ * an explicit control instead, because a looping video is exactly
  * the kind of thing that setting exists to stop. PRODUCT.md makes the fallback
  * required rather than optional.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+
+const FILMS = {
+  en: { src: '/marketing/contivo-showreel.mp4', poster: '/marketing/showreel-poster.webp' },
+  fa: { src: '/marketing/contivo-showreel-fa.mp4', poster: '/marketing/showreel-poster-fa.webp' },
+} as const;
 
 export function ProductReel() {
   const ref = useRef<HTMLVideoElement>(null);
+  const film = FILMS[useLocale() as keyof typeof FILMS] ?? FILMS.en;
   const [reduced, setReduced] = useState(false);
   const t = useTranslations('home.reel');
   const [playing, setPlaying] = useState(false);
@@ -85,8 +95,8 @@ export function ProductReel() {
         <video
           ref={ref}
           className="w-full rounded-2xl border border-rule bg-chalk"
-          src="/marketing/contivo-showreel.mp4"
-          poster="/marketing/showreel-poster.webp"
+          src={film.src}
+          poster={film.poster}
           muted
           loop
           playsInline

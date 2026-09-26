@@ -1,0 +1,471 @@
+<!doctype html>
+<!--
+  The Persian showreel: one continuous shot around the loop.
+
+  Unlike the English cut, nothing here cuts. The six stages sit on one ring in a
+  single world, and a camera travels between them along the ring, pulling back
+  mid-flight so the neighbouring stages show, then closes the loop and rises
+  until the whole ring is in frame.
+
+  Same rules as scene.html: a single render(t) places everything, no CSS
+  animations or transitions, so frame N is reproducible. Persian text reveals
+  word by word, never letter by letter — animating single letters would break
+  the joins that make the script readable.
+
+  Drawn, not recorded: an explainer. The real captures stay on the page.
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>شوریل کانتیوو</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800;900&family=IBM+Plex+Mono:wght@400;500&family=Bricolage+Grotesque:opsz,wght@12..96,700&display=block" rel="stylesheet">
+<style>
+  :root {
+    --chalk: #EEEDE6; --raised: #F8F7F2; --sunk: #E2E1D8;
+    --moss: #17201B; --moss7: #2F4A3A; --muted: #4A544D;
+    --forest: #1E2E25; --fline: #3A4C41; --fmuted: #B9C2B6;
+    --saffron: #E3A21A; --soft: #F4DFA8; --rival: #3D5F8A; --rule: #D5D4CA; --strong: #A9A89C;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1280px; height: 800px; overflow: hidden; background: var(--chalk); }
+  body { font-family: 'Vazirmatn', sans-serif; color: var(--moss); -webkit-font-smoothing: antialiased; }
+  #stage { position: relative; width: 1280px; height: 800px; overflow: hidden; background: var(--chalk); }
+  #world { position: absolute; left: 0; top: 0; width: 4800px; height: 4800px; transform-origin: 0 0; }
+  .w { display: inline-block; }
+  .ltr { direction: ltr; unicode-bidi: isolate; }
+</style>
+</head>
+<body>
+<div id="stage"><div id="world"></div></div>
+<script>
+// ── geometry and timing ──────────────────────────────────────────────────────
+const DUR = 29;
+const O = 2400;          // world centre
+const R = 1500;          // ring radius
+const BOX_W = 1200, BOX_H = 760;
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const seg = (t, a, b) => clamp((t - a) / (b - a));
+const lerp = (a, b, p) => a + (b - a) * p;
+const easeOut = (p) => 1 - Math.pow(1 - p, 3);
+const easeInOut = (p) => (p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2);
+const easeBack = (p) => { const c = 1.7; return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2); };
+const win = (t, a, b, i = 0.4, o = 0.4) => clamp(Math.min((t - a) / i, (b - t) / o));
+const theta = (i) => ((-90 + 60 * i) * Math.PI) / 180;
+const at = (i) => [R * Math.cos(theta(i)), R * Math.sin(theta(i))];
+
+const stage = document.getElementById('stage');
+const world = document.getElementById('world');
+const el = (tag, style, parent, text) => {
+  const n = document.createElement(tag);
+  if (style) n.setAttribute('style', style);
+  if (text != null) n.textContent = text;
+  (parent || world).appendChild(n);
+  return n;
+};
+const svgEl = (tag, attrs, parent) => {
+  const n = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  parent.appendChild(n);
+  return n;
+};
+/** A line of Persian set as one span per word, so it can be revealed a word at a time. */
+const words = (parent, text, style) => {
+  const line = el('div', style, parent);
+  return text.split(' ').map((w, i) => {
+    if (i) line.appendChild(document.createTextNode(' '));
+    return el('span', 'display:inline-block', line, w);
+  });
+};
+const reveal = (spans, t, start, step = 0.09) => spans.forEach((s, i) => {
+  const p = easeOut(seg(t, start + i * step, start + i * step + 0.45));
+  s.style.opacity = p;
+  s.style.transform = `translateY(${(1 - p) * 26}px)`;
+});
+const NAMES = ['شناخت', 'رصد', 'فکر', 'ساخت', 'انتشار', 'یادگیری'];
+const DIGITS = ['۰۱', '۰۲', '۰۳', '۰۴', '۰۵', '۰۶'];
+/**
+ * A stage: a solid tile on the ring carrying its own name, visible from afar.
+ * The tile (plate) and what is written on it (content) are siblings, not
+ * parent and child, so the finale can fade the writing first while the tile
+ * still hides the ring, and only then let the empty tile go.
+ */
+const stationBox = (i, w = BOX_W, h = BOX_H, look = 'background:var(--chalk);border:4px solid var(--rule);border-radius:52px', pad = '40px 60px') => {
+  const [x, y] = at(i);
+  const pos = `position:absolute;left:${O + x - w / 2}px;top:${O + y - h / 2}px;width:${w}px;height:${h}px;`;
+  const plate = el('div', pos + look);
+  const c = el('div', `${pos}padding:${pad}`);
+  c.plate = plate;
+  c.label = el('div', 'font:800 26px Vazirmatn,sans-serif;color:var(--muted);margin-bottom:6px', c, `${DIGITS[i]} · ${NAMES[i]}`);
+  return c;
+};
+const titleStyle = 'font:900 50px/1.5 Vazirmatn,sans-serif;margin-bottom:26px';
+
+// ── the ring (behind everything) ─────────────────────────────────────────────
+const ring = svgEl('svg', { width: 4800, height: 4800, viewBox: '0 0 4800 4800',
+  style: 'position:absolute;left:0;top:0' }, world);
+svgEl('circle', { cx: O, cy: O, r: R, fill: 'none', stroke: 'var(--strong)', 'stroke-width': 8, 'stroke-dasharray': '30 36' }, ring);
+const CIRC = 2 * Math.PI * R;
+const arc = svgEl('path', { d: `M ${O} ${O - R} A ${R} ${R} 0 1 1 ${O - 0.01} ${O - R}`, fill: 'none',
+  stroke: 'var(--moss)', 'stroke-width': 16, 'stroke-linecap': 'round', 'stroke-dasharray': CIRC, 'stroke-dashoffset': CIRC }, ring);
+
+// ── intro, at the centre of the ring ────────────────────────────────────────
+const intro = el('div', `position:absolute;left:${O - 560}px;top:${O - 250}px;width:1120px;height:500px`);
+const introHead = words(intro, 'همه‌چیز از یک نشانی شروع می‌شود.', 'font:900 66px/1.45 Vazirmatn,sans-serif;margin-bottom:44px');
+el('div', 'font:500 24px Vazirmatn,sans-serif;color:var(--muted);margin-bottom:16px', intro, 'با تنها چیزی که لازم دارد شروع کنید');
+const field = el('div',
+  'direction:ltr;display:flex;align-items:center;gap:14px;height:112px;padding:0 16px 0 32px;border:3px solid var(--moss);border-radius:28px;background:var(--raised)', intro);
+const url = el('div', 'font:400 42px "IBM Plex Mono",monospace;white-space:pre', field, '');
+const caret = el('div', 'width:3px;height:48px;background:var(--moss)', field);
+el('div', 'flex:1', field);
+const readBtn = el('div',
+  'direction:rtl;height:80px;padding:0 34px;border-radius:20px;background:var(--saffron);font:800 30px Vazirmatn,sans-serif;display:flex;align-items:center', field, 'سایتم را بخوان');
+const URL_TEXT = 'kafe-shomal.ir';
+
+// ── 01 · شناخت ───────────────────────────────────────────────────────────────
+const s0 = stationBox(0);
+const s0title = words(s0, 'سایتتان را می‌خواند و برندتان را می‌شناسد.', titleStyle);
+const s0grid = el('div', 'display:grid;grid-template-columns:1fr 1fr;gap:24px', s0);
+const KNOW = [['خلاصهٔ کسب‌وکار', [94, 70]], ['ارزش پیشنهادی', [86, 56]], ['مخاطب', [64, 88]], ['لحن برند', null]];
+const s0cards = KNOW.map(([title, widths]) => {
+  const card = el('div', 'height:206px;padding:26px 32px;border-radius:26px;background:var(--sunk)', s0grid);
+  el('div', 'font:700 26px Vazirmatn,sans-serif;color:var(--muted);margin-bottom:22px', card, title);
+  if (widths) {
+    return { card, bars: widths.map((w) => {
+      const b = el('div', 'height:18px;border-radius:9px;background:var(--strong);margin-bottom:22px', card);
+      b.dataset.w = w;
+      return b;
+    }) };
+  }
+  const row = el('div', 'display:flex;gap:12px', card);
+  return { card, chips: ['صمیمی', 'دقیق', 'بی‌تعارف'].map((w) =>
+    el('div', 'height:54px;padding:0 24px;border-radius:27px;background:var(--moss);color:var(--chalk);font:700 24px Vazirmatn,sans-serif;display:flex;align-items:center', row, w)) };
+});
+
+// ── 02 · رصد ────────────────────────────────────────────────────────────────
+const s1 = stationBox(1);
+const s1title = words(s1, 'رقبای واقعی‌تان را روی نقشه می‌آورد.', titleStyle);
+const chartWrap = el('div', 'direction:ltr', s1);
+const chart = svgEl('svg', { viewBox: '0 0 1080 470', width: 1080, height: 470 }, chartWrap);
+const openRect = svgEl('rect', { x: 560, y: 0, width: 520, height: 220, fill: 'var(--saffron)', opacity: 0 }, chart);
+const axX = svgEl('line', { x1: 50, y1: 420, x2: 1080, y2: 420, stroke: 'var(--moss)', 'stroke-width': 4 }, chart);
+const axY = svgEl('line', { x1: 50, y1: 0, x2: 50, y2: 420, stroke: 'var(--moss)', 'stroke-width': 4 }, chart);
+const labX = svgEl('text', { x: 1080, y: 458, 'text-anchor': 'end', 'font-family': 'Vazirmatn', 'font-size': 24, 'font-weight': 500, fill: 'var(--muted)' }, chart);
+labX.textContent = 'اندازهٔ مخاطب';
+const labY = svgEl('text', { 'font-family': 'Vazirmatn', 'font-size': 24, 'font-weight': 500, fill: 'var(--muted)',
+  transform: 'translate(30 210) rotate(-90)', 'text-anchor': 'middle' }, chart);
+labY.textContent = 'پیچیدگی محصول';
+const RIV = [[180, 320, 1], [290, 140, 1], [410, 350, 1], [500, 240, 1], [690, 370, 1],
+             [240, 80, 0], [820, 110, 0], [960, 320, 0], [620, 60, 0]];
+const dots = RIV.map(([x, y, keep]) => ({ keep, n: svgEl('circle', { cx: x, cy: y, r: 16, fill: 'var(--rival)' }, chart) }));
+const youRing = svgEl('circle', { cx: 880, cy: 118, r: 28, fill: 'none', stroke: 'var(--saffron)', 'stroke-width': 6, opacity: 0 }, chart);
+const you = svgEl('circle', { cx: 880, cy: 118, r: 28, fill: 'var(--saffron)', stroke: 'var(--moss)', 'stroke-width': 5 }, chart);
+const youLab = svgEl('text', { x: 846, y: 130, 'text-anchor': 'end', 'font-family': 'Vazirmatn', 'font-size': 38, 'font-weight': 900, fill: 'var(--moss)' }, chart);
+youLab.textContent = 'شما';
+
+// ── 03 · فکر (the refusal: a dark island big enough to fill the frame) ───────
+const s2 = stationBox(2, 1340, 860, 'background:var(--forest);border-radius:64px', '0');
+s2.style.color = 'var(--chalk)';
+s2.label.setAttribute('style', 'position:absolute;right:110px;top:52px;font:800 26px Vazirmatn,sans-serif;color:var(--saffron)');
+const s2inner = el('div', 'position:absolute;left:110px;top:120px;width:1120px;height:640px', s2);
+const s2head = words(s2inner, 'هنوز نمی‌نویسد.', 'font:900 124px/1.3 Vazirmatn,sans-serif;text-align:center');
+s2head[0].style.color = 'var(--saffron)';
+const s2btn = el('div',
+  'position:absolute;left:310px;top:270px;width:500px;height:96px;border:4px solid var(--saffron);border-radius:24px;display:flex;align-items:center;justify-content:center;gap:16px;font:800 34px Vazirmatn,sans-serif', s2inner);
+const lock = svgEl('svg', { viewBox: '0 0 24 24', width: 38, height: 38, fill: 'none' }, s2btn);
+svgEl('rect', { x: 5, y: 11, width: 14, height: 10, rx: 2, stroke: 'var(--saffron)', 'stroke-width': 2.4 }, lock);
+svgEl('path', { d: 'M8 11V7a4 4 0 0 1 8 0v4', stroke: 'var(--saffron)', 'stroke-width': 2.4 }, lock);
+el('span', null, s2btn, 'همین حالا بنویس');
+const s2reply = el('div', 'position:absolute;left:0;right:0;top:400px;text-align:center;font:700 40px Vazirmatn,sans-serif', s2inner, '');
+const s2sub = el('div', 'position:absolute;left:0;right:0;top:500px;text-align:center;font:500 30px/1.7 Vazirmatn,sans-serif;color:var(--fmuted)', s2inner,
+  'تا شناخت کامل نشود، هیچ پرامپتی این قفل را باز نمی‌کند.');
+const cursor = svgEl('svg', { viewBox: '0 0 24 24', width: 58, height: 58,
+  style: 'position:absolute;left:0;top:0;overflow:visible' }, s2inner);
+svgEl('path', { d: 'M4 2 L4 19 L8.6 14.8 L11.6 21.5 L14.4 20.2 L11.4 13.6 L17.6 13.6 Z',
+  fill: 'var(--chalk)', stroke: 'var(--moss)', 'stroke-width': 1.4, 'stroke-linejoin': 'round' }, cursor);
+const REPLIES = ['قفل است.', 'هنوز نه.', 'اول باید بشناسد.'];
+const CLICKS = [12.25, 12.95, 13.65];
+
+// ── 04 · ساخت ───────────────────────────────────────────────────────────────
+const s3 = stationBox(3);
+const s3title = words(s3, 'فقط چیزی را می‌نویسد که از دروازه بگذرد.', titleStyle);
+const s3row = el('div', 'display:flex;gap:40px', s3);
+const draft = el('div', 'width:520px;padding:30px 34px;border-radius:26px;background:var(--raised);border:3px solid var(--rule);position:relative', s3row);
+el('div', 'font:700 22px Vazirmatn,sans-serif;color:var(--muted);margin-bottom:24px', draft, 'لینکدین · پیش‌نویس');
+const LINES = [92, 80, 74, 88, 50];
+const lines = LINES.map((w) => {
+  const holder = el('div', 'position:relative;height:18px;margin-bottom:22px', draft);
+  const bar = el('div', 'position:absolute;right:0;top:0;height:18px;border-radius:9px;background:var(--strong)', holder);
+  return { holder, bar, w };
+});
+const flag = el('div', 'position:absolute;right:-6px;top:0;height:30px;border-radius:8px;background:var(--soft)', lines[2].holder);
+flag.style.top = '-6px';
+lines[2].holder.appendChild(lines[2].bar);
+const strike = el('div', 'position:absolute;right:0;top:7px;height:4px;background:var(--moss)', lines[2].holder);
+const note = el('div', 'position:absolute;left:-6px;top:-44px;font:800 22px Vazirmatn,sans-serif;color:var(--moss);background:var(--saffron);padding:4px 14px;border-radius:10px', lines[2].holder, 'ادعای بی‌منبع');
+const checks = el('div', 'flex:1;display:flex;flex-direction:column;gap:20px;padding-top:6px', s3row);
+const CHECKS = ['در محدودهٔ تعداد کلمه', 'بدون متنِ جامانده از قالب', 'سراغ موضوع‌های ممنوع نرفته', 'تکرار پست‌های قبلی نیست'];
+const checkRows = CHECKS.map((c) => {
+  const row = el('div', 'display:flex;align-items:center;gap:16px', checks);
+  const mark = el('div', 'flex:none;width:42px;height:42px;border-radius:21px;background:var(--moss7);display:flex;align-items:center;justify-content:center', row);
+  const tick = svgEl('svg', { viewBox: '0 0 24 24', width: 24, height: 24, fill: 'none' }, mark);
+  svgEl('path', { d: 'M5 12l5 5 9-10', stroke: 'var(--chalk)', 'stroke-width': 3.4, 'stroke-linecap': 'round' }, tick);
+  el('div', 'font:500 26px Vazirmatn,sans-serif', row, c);
+  return row;
+});
+const verdict = el('div', 'margin-top:14px;padding:20px 26px;border-radius:20px;background:var(--moss);color:var(--chalk);font:700 26px/1.6 Vazirmatn,sans-serif', checks,
+  'داور: تناسب با برند، درستی، روشنی؛ قبول.');
+
+// ── 05 · انتشار ─────────────────────────────────────────────────────────────
+const s4 = stationBox(4);
+const s4title = words(s4, 'و در ساعت‌هایی که اجازه داده‌اید منتشر می‌کند.', titleStyle);
+const week = el('div', 'display:grid;grid-template-columns:repeat(7,1fr);gap:18px', s4);
+const DAYS = ['ش', 'ی', 'د', 'س', 'چ', 'پ', 'ج'];
+const PLAN = [1, 0, 2, 1, 0, 1, 1];
+const drops = [];
+DAYS.forEach((d, i) => {
+  const col = el('div', 'display:flex;flex-direction:column;align-items:center;gap:14px', week);
+  const box = el('div', 'width:100%;height:360px;border-radius:20px;background:var(--sunk);padding:12px;display:flex;flex-direction:column;justify-content:flex-end;gap:12px;overflow:hidden', col);
+  for (let k = 0; k < PLAN[i]; k++) drops.push(el('div', 'height:64px;border-radius:12px;background:var(--saffron);border:3px solid var(--moss)', box));
+  el('div', 'font:800 30px Vazirmatn,sans-serif;color:var(--muted)', col, d);
+});
+
+// ── 06 · یادگیری ────────────────────────────────────────────────────────────
+const s5 = stationBox(5);
+const s5title = words(s5, 'هر اجرا ثبت می‌شود، حتی آنچه رد کرد.', titleStyle);
+const log = el('div', 'padding:26px 34px;border-radius:28px;background:var(--moss);color:var(--chalk)', s5);
+const LOG = [
+  ['۰۹:۰۰', 'برنامه', 'این هفته ۳ جای خالی در بازهٔ شما', 'var(--chalk)'],
+  ['۰۹:۰۰', 'پیش‌نویس', 'لینکدین، از یکی از روایت‌های شما', 'var(--chalk)'],
+  ['۰۹:۰۱', 'رد شد', 'به پژوهشی استناد کرده بود که وجود ندارد', 'var(--saffron)'],
+  ['۰۹:۰۲', 'زمان‌بندی', 'پنجشنبه، داخل بازهٔ انتشار شما', 'var(--fmuted)'],
+];
+const logRows = LOG.map(([time, kind, text, color], i) => {
+  const row = el('div', `display:grid;grid-template-columns:110px 150px 1fr;gap:18px;align-items:center;padding:16px 0;${i ? 'border-top:2px solid var(--fline);' : ''}font:500 26px Vazirmatn,sans-serif`, log);
+  el('div', 'font:500 24px "IBM Plex Mono",Vazirmatn,monospace;color:var(--fmuted)', row, time).classList.add('ltr');
+  el('div', `font:800 26px Vazirmatn,sans-serif;color:${color}`, row, kind);
+  el('div', null, row, text);
+  return row;
+});
+
+// ── finale: numbered nodes on the ring, above the stations ──────────────────
+const nodes = svgEl('svg', { width: 4800, height: 4800, viewBox: '0 0 4800 4800', direction: 'ltr', style: 'position:absolute;left:0;top:0;direction:ltr' }, world);
+const nodeEls = NAMES.map((name, i) => {
+  const [x, y] = at(i);
+  const g = svgEl('g', {}, nodes);
+  svgEl('circle', { cx: O + x, cy: O + y, r: 170, fill: i === 2 ? 'var(--saffron)' : 'var(--moss)', stroke: 'var(--moss)', 'stroke-width': 12 }, g);
+  const d = svgEl('text', { x: O + x, y: O + y + 44, 'text-anchor': 'middle', 'font-family': 'Vazirmatn', 'font-size': 130, 'font-weight': 800,
+    fill: i === 2 ? 'var(--moss)' : 'var(--chalk)' }, g);
+  d.textContent = DIGITS[i];
+  // Side nodes carry their names beside them; top and bottom, above and below.
+  const c = Math.cos(theta(i));
+  const side = c > 0.3 ? 1 : c < -0.3 ? -1 : 0;
+  const lx = O + x + side * 240;
+  const ly = side ? O + y + 52 : O + y + Math.sign(y) * 300 + 50;
+  const l = svgEl('text', { x: lx, y: ly, 'text-anchor': side > 0 ? 'start' : side < 0 ? 'end' : 'middle',
+    'font-family': 'Vazirmatn', 'font-size': 150, 'font-weight': 900, fill: 'var(--moss)',
+    stroke: 'var(--chalk)', 'stroke-width': 34, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, nodes);
+  l.textContent = name;
+  return { g, l };
+});
+
+// ── screen-space overlay ─────────────────────────────────────────────────────
+const logo = el('div', 'position:absolute;left:48px;top:40px;direction:ltr;display:flex;align-items:center;gap:12px', stage);
+el('div', 'width:18px;height:18px;background:var(--saffron);transform:rotate(45deg)', logo);
+const logoText = el('div', 'font:700 30px "Bricolage Grotesque",sans-serif;letter-spacing:-.02em', logo, 'contivo');
+const finale = el('div', 'position:absolute;left:390px;top:240px;width:500px;text-align:center', stage);
+const finHead = words(finale, 'یک نشانی بچسبانید و برگردید سر کارتان.', 'font:900 44px/1.55 Vazirmatn,sans-serif');
+const finSub = el('div', 'margin-top:18px;font:500 24px Vazirmatn,sans-serif;color:var(--muted)', finale, 'هر هفته، بدون شما');
+const finUrl = el('div', 'margin-top:14px;direction:ltr;font:500 30px "IBM Plex Mono",monospace;color:var(--moss)', finale, 'contivo.app');
+
+// ── the camera ───────────────────────────────────────────────────────────────
+const STOPS = [
+  { pos: [0, 0], arrive: 0, leave: 2.8 },
+  { i: 0, arrive: 3.8, leave: 6.6 },
+  { i: 1, arrive: 7.6, leave: 10.4 },
+  { i: 2, arrive: 11.4, leave: 15.0 },
+  { i: 3, arrive: 16.0, leave: 18.8 },
+  { i: 4, arrive: 19.8, leave: 22.0 },
+  { i: 5, arrive: 23.0, leave: 25.4 },
+  { pos: [0, 0], arrive: 27.0, leave: DUR, s: 0.19 },
+];
+const posOf = (st) => (st.i != null ? at(st.i) : st.pos);
+
+function camera(t) {
+  for (let k = 0; k < STOPS.length; k++) {
+    const a = STOPS[k];
+    if (t >= a.arrive && t <= a.leave) {
+      const base = a.s || 1;
+      const push = 1 + 0.025 * seg(t, a.arrive, a.leave);
+      const frac = a.i != null ? a.i / 6 : k === 0 ? 0 : 1;
+      return { pos: posOf(a), s: base * push, frac };
+    }
+    const b = STOPS[k + 1];
+    if (b && t > a.leave && t < b.arrive) {
+      const p = easeInOut((t - a.leave) / (b.arrive - a.leave));
+      if (a.i != null && b.i != null) {
+        const th = lerp(theta(a.i), theta(b.i), p);
+        return { pos: [R * Math.cos(th), R * Math.sin(th)], s: 1 - 0.42 * Math.sin(p * Math.PI), frac: (a.i + p) / 6 };
+      }
+      const [ax, ay] = posOf(a), [bx, by] = posOf(b);
+      if (a.i == null) return { pos: [lerp(ax, bx, p), lerp(ay, by, p)], s: 1 - 0.36 * Math.sin(p * Math.PI), frac: 0 };
+      return { pos: [lerp(ax, bx, p), lerp(ay, by, p)], s: Math.pow(0.19, p), frac: (5 + p) / 6 };
+    }
+  }
+  return { pos: [0, 0], s: 0.19, frac: 1 };
+}
+
+// ── render ───────────────────────────────────────────────────────────────────
+function render(t) {
+  const cam = camera(t);
+  world.style.transform = `translate(640px,400px) scale(${cam.s}) translate(${-(O + cam.pos[0])}px,${-(O + cam.pos[1])}px)`;
+  arc.setAttribute('stroke-dashoffset', CIRC * (1 - cam.frac));
+
+  // The logo sits on the dark tile while the camera is there.
+  const dark = t > 11.15 && t < 15.25;
+  stage.style.background = 'var(--chalk)';
+  logoText.style.color = dark ? 'var(--chalk)' : 'var(--moss)';
+
+  // Intro.
+  intro.style.opacity = win(t, 0, 3.3, 0.01, 0.6);
+  reveal(introHead, t, 0.15, 0.1);
+  field.style.opacity = easeOut(seg(t, 0.6, 1.0));
+  const typed = Math.round(easeInOut(seg(t, 1.05, 2.3)) * URL_TEXT.length);
+  url.textContent = URL_TEXT.slice(0, typed);
+  caret.style.opacity = t > 2.35 ? 0 : Math.floor(t * 2.2) % 2 ? 0.25 : 1;
+  readBtn.style.transform = `scale(${1 - Math.sin(seg(t, 2.45, 2.65) * Math.PI) * 0.06})`;
+
+  // Station detail dims away as the camera rises for the finale.
+  const writing = 1 - 0.93 * easeInOut(seg(t, 25.5, 26.2));
+  const tile = 1 - easeInOut(seg(t, 26.0, 26.6));
+  [s0, s1, s2, s3, s4, s5].forEach((s) => {
+    s.style.opacity = writing;
+    s.plate.style.opacity = tile;
+  });
+
+  // 01 · Know.
+  reveal(s0title, t, 3.45);
+  s0cards.forEach(({ card, bars, chips }, i) => {
+    const r = easeOut(seg(t, 3.95 + i * 0.14, 4.6 + i * 0.14));
+    card.style.opacity = r;
+    card.style.transform = `translateY(${(1 - r) * 40}px)`;
+    (bars || []).forEach((b, j) => (b.style.width = `${easeOut(seg(t, 4.55 + i * 0.14 + j * 0.13, 5.15 + i * 0.14 + j * 0.13)) * b.dataset.w}%`));
+    (chips || []).forEach((c, j) => {
+      const p = easeBack(seg(t, 5.0 + j * 0.16, 5.4 + j * 0.16));
+      c.style.opacity = clamp(p);
+      c.style.transform = `scale(${0.4 + 0.6 * p})`;
+    });
+  });
+
+  // 02 · Watch.
+  reveal(s1title, t, 7.25);
+  const ax = easeOut(seg(t, 7.45, 8.05));
+  axX.setAttribute('stroke-dasharray', `${ax * 1030} 9999`);
+  axY.setAttribute('stroke-dasharray', `${ax * 420} 9999`);
+  labX.setAttribute('opacity', seg(t, 7.8, 8.2));
+  labY.setAttribute('opacity', seg(t, 7.8, 8.2));
+  dots.forEach(({ n, keep }, i) => {
+    const pop = easeBack(seg(t, 7.95 + i * 0.08, 8.35 + i * 0.08));
+    n.setAttribute('r', Math.max(0, 16 * pop));
+    if (!keep) {
+      const drop = seg(t, 9.05, 9.55);
+      n.setAttribute('fill', drop > 0.5 ? 'none' : 'var(--rival)');
+      n.setAttribute('stroke', 'var(--strong)');
+      n.setAttribute('stroke-width', drop > 0.5 ? 4 : 0);
+      n.setAttribute('stroke-dasharray', '5 5');
+      n.setAttribute('opacity', clamp(pop) * (1 - drop * 0.4));
+    } else n.setAttribute('opacity', clamp(pop));
+  });
+  const land = easeBack(seg(t, 9.4, 9.95));
+  you.setAttribute('r', Math.max(0, 28 * land));
+  youLab.setAttribute('opacity', seg(t, 9.8, 10.1));
+  const rip = seg(t, 9.9, 10.6);
+  youRing.setAttribute('r', 28 + rip * 58);
+  youRing.setAttribute('opacity', rip > 0 ? (1 - rip) * 0.85 : 0);
+  openRect.setAttribute('opacity', seg(t, 9.95, 10.35) * 0.16);
+
+  // 03 · Think: three presses, three refusals, then the verdict.
+  s2btn.style.opacity = easeOut(seg(t, 11.2, 11.6));
+  // The cursor glides in from the lower left, then taps.
+  const glide = easeInOut(seg(t, 11.55, 12.15));
+  let cx = lerp(1000, 590, glide), cy = lerp(620, 330, glide);
+  let press = 0;
+  CLICKS.forEach((c) => (press = Math.max(press, Math.sin(seg(t, c - 0.08, c + 0.1) * Math.PI))));
+  cursor.style.transform = `translate(${cx}px,${cy}px) scale(${1 - press * 0.16})`;
+  cursor.style.opacity = t < 14.0 ? seg(t, 11.5, 11.7) : 1 - seg(t, 14.0, 14.3);
+  let shake = 0;
+  CLICKS.forEach((c) => {
+    const s = seg(t, c, c + 0.42);
+    if (s > 0 && s < 1) shake = Math.sin(s * Math.PI * 6) * Math.sin(s * Math.PI) * 14;
+  });
+  s2btn.style.transform = `translateX(${shake}px) scale(${1 - press * 0.035})`;
+  const n = CLICKS.filter((c) => t >= c).length;
+  s2reply.textContent = n ? REPLIES[n - 1] : '';
+  const since = n ? t - CLICKS[n - 1] : 0;
+  s2reply.style.opacity = n ? easeOut(clamp(since / 0.25)) * (1 - seg(t, 13.95, 14.2)) : 0;
+  s2reply.style.color = n === 3 ? 'var(--saffron)' : 'var(--chalk)';
+  // The button sinks once the verdict takes the stage.
+  const verdictIn = seg(t, 14.0, 14.35);
+  s2btn.style.top = `${270 + 30 * easeOut(verdictIn)}px`;
+  reveal(s2head, t, 14.05, 0.14);
+  s2head.forEach((w) => (w.parentElement.style.marginTop = '20px'));
+  s2sub.style.opacity = easeOut(seg(t, 14.45, 14.85));
+
+  // 04 · Make: a claim is caught, struck, and rewritten; then the gate passes it.
+  reveal(s3title, t, 15.65);
+  draft.style.opacity = easeOut(seg(t, 15.95, 16.35));
+  lines.forEach(({ bar, w }, i) => {
+    const p = easeOut(seg(t, 16.2 + i * 0.13, 16.7 + i * 0.13));
+    const width = i === 2 ? lerp(w, 58, easeInOut(seg(t, 17.55, 17.85))) : w;
+    bar.style.width = `${p * width}%`;
+  });
+  const caught = seg(t, 16.95, 17.15) * (1 - seg(t, 17.6, 17.85));
+  flag.style.width = `${80 * caught}%`;
+  flag.style.opacity = caught;
+  strike.style.width = `${74 * easeOut(seg(t, 17.1, 17.35)) * (1 - seg(t, 17.55, 17.7))}%`;
+  note.style.opacity = seg(t, 17.15, 17.3) * (1 - seg(t, 17.6, 17.8));
+  checkRows.forEach((row, i) => {
+    const p = easeBack(seg(t, 17.8 + i * 0.17, 18.15 + i * 0.17));
+    row.style.opacity = clamp(p);
+    row.firstChild.style.transform = `scale(${0.3 + 0.7 * p})`;
+  });
+  verdict.style.opacity = easeOut(seg(t, 18.45, 18.75));
+
+  // 05 · Ship: posts drop into the week, Persian week starting on Saturday.
+  reveal(s4title, t, 19.45);
+  drops.forEach((d, k) => {
+    const p = seg(t, 20.0 + k * 0.15, 20.5 + k * 0.15);
+    d.style.transform = `translateY(${(1 - easeBack(p)) * -380}px)`;
+    d.style.opacity = p > 0 ? 1 : 0;
+  });
+
+  // 06 · Learn: the run log writes itself, veto included.
+  reveal(s5title, t, 22.65);
+  log.style.opacity = easeOut(seg(t, 22.95, 23.3));
+  logRows.forEach((row, i) => {
+    const p = easeOut(seg(t, 23.3 + i * 0.36, 23.65 + i * 0.36));
+    row.style.opacity = p;
+    row.style.transform = `translateX(${(1 - p) * -30}px)`;
+  });
+
+  // Finale: nodes land on the ring, a light runs round the loop once.
+  nodeEls.forEach(({ g, l }, i) => {
+    const p = easeBack(seg(t, 26.1 + i * 0.1, 26.6 + i * 0.1));
+    const chase = Math.sin(seg(t, 27.3 + i * 0.17, 27.65 + i * 0.17) * Math.PI);
+    const [x, y] = at(i);
+    const sc = Math.max(0, p) * (1 + chase * 0.22);
+    g.setAttribute('transform', `translate(${O + x} ${O + y}) scale(${sc}) translate(${-(O + x)} ${-(O + y)})`);
+    l.setAttribute('opacity', clamp(p));
+  });
+  reveal(finHead, t, 27.15, 0.08);
+  finSub.style.opacity = easeOut(seg(t, 27.75, 28.1));
+  finUrl.style.opacity = easeOut(seg(t, 27.95, 28.3));
+}
+
+window.render = render;
+window.DUR = DUR;
+render(0);
+</script>
+</body>
+</html>

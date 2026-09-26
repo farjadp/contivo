@@ -98,7 +98,8 @@ stills into a complete picture.
 | Cadence | 1–14 posts a week redistribute across the reader's week. |
 | Run log | Example lines type in, including a judge veto; Replay. |
 | Chapters | Rise into view once, on scroll. Content is visible without JS. |
-| Showreel | 22 s of motion graphics walking the whole loop; plays when it scrolls into view, pauses when it leaves. |
+| Showreel (en) | 22 s, seven scenes, one per stage; plays when it scrolls into view, pauses when it leaves. |
+| Showreel (fa) | 29 s, **one continuous camera move**: the stages are tiles on a single ring, the camera travels between them along it, and pulls back at the end to show the whole loop. Persian text reveals word by word — never letter by letter, which would break the joins. |
 
 ## Browser surfaces
 
@@ -117,10 +118,14 @@ the scrollbar, and scopes the shadcn variables (`--primary`, `--muted`,
   `pnpm --filter @contivo/web capture:marketing <workspaceId>`: it opens Chrome,
   waits for a person to sign in, and writes each file at the size the page
   declares.
-- **Showreel** — `contivo-showreel.mp4` (22 s, 1280×800, H.264, **no audio**)
-  and `showreel-poster.webp`. Not a capture: motion graphics drawn in this
-  system, authored in `scripts/showreel/scene.html` and rendered by
-  `pnpm --filter @contivo/web showreel`. The scene exposes `render(t)` and has
+- **Showreels** — not captures: motion graphics drawn in this system, 1280×800,
+  H.264, **no audio**, one film per language and chosen by locale.
+  `contivo-showreel.mp4` + `showreel-poster.webp` (English, 22 s, from
+  `scripts/showreel/scene.html`, `pnpm --filter @contivo/web showreel`) and
+  `contivo-showreel-fa.mp4` + `showreel-poster-fa.webp` (Persian, 29 s, from
+  `scene-fa.html`, `showreel:fa`). The Persian film is its own piece written in
+  Persian, not the English cut with the words swapped; it is encoded a notch
+  lower because a moving camera changes every pixel of every frame. The scene exposes `render(t)` and has
   no CSS animations, so frame N is reproducible; the renderer captures at 2×
   and scales down, which is what keeps the type crisp.
 

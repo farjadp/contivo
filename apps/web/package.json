@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "check:i18n": "node scripts/check-i18n.mjs",
     "capture:marketing": "node scripts/capture-marketing.mjs",
-    "showreel": "node scripts/render-showreel.mjs"
+    "showreel": "node scripts/render-showreel.mjs en",
+    "showreel:fa": "node scripts/render-showreel.mjs fa"
   },
   "dependencies": {
     "@contivo/api": "workspace:*",

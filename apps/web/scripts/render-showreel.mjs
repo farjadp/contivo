@@ -2,7 +2,8 @@
 /**
  * Render the motion-graphics showreel to MP4.
  *
- *   pnpm --filter @contivo/web showreel
+ *   pnpm --filter @contivo/web showreel      # English cut
+ *   pnpm --filter @contivo/web showreel:fa   # Persian: one continuous shot round the loop
  *
  * Walks scripts/showreel/scene.html frame by frame — the scene exposes
  * render(t), so nothing depends on wall-clock timing and the output is
@@ -23,7 +24,26 @@ import sharp from 'sharp';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.resolve(HERE, '../public/marketing');
-const SCENE = path.resolve(HERE, 'showreel/scene.html');
+
+/* Each locale has its own scene, not a translated copy of one: the Persian
+   film is a different piece, written in Persian. posterAt is the moment that
+   best stands for the whole film when it is not playing. */
+const CUTS = {
+  en: { scene: 'showreel/scene.html', mp4: 'contivo-showreel.mp4', poster: 'showreel-poster.webp', posterAt: 10.4, crf: 21,
+        what: 'English cut: seven scenes, one per stage of the loop' },
+  fa: { scene: 'showreel/scene-fa.html', mp4: 'contivo-showreel-fa.mp4', poster: 'showreel-poster-fa.webp', posterAt: 28.6,
+        // The camera moves every pixel on every frame, so this cut compresses
+        // far worse than the English one; a notch lower quality halves it.
+        crf: 24,
+        what: 'Persian film: one continuous camera move round the six-stage loop, written in Persian' },
+};
+const locale = process.argv[2] || 'en';
+const cut = CUTS[locale];
+if (!cut) {
+  console.error(`Unknown locale "${locale}". Use one of: ${Object.keys(CUTS).join(', ')}`);
+  process.exit(1);
+}
+const SCENE = path.resolve(HERE, cut.scene);
 const FPS = 25;
 const W = 1280;
 const H = 800;
@@ -56,23 +76,21 @@ try {
   }
   process.stdout.write(`  ${total}/${total}\n`);
 
-  const mp4 = path.join(OUT, 'contivo-showreel.mp4');
+  const mp4 = path.join(OUT, cut.mp4);
   execFileSync('ffmpeg', [
     '-y', '-framerate', String(FPS), '-i', path.join(frames, 'f%04d.png'),
     '-vf', `scale=${W}:${H}:flags=lanczos`,
-    '-c:v', 'libx264', '-preset', 'slow', '-crf', '21',
+    '-c:v', 'libx264', '-preset', 'slow', '-crf', String(cut.crf),
     '-pix_fmt', 'yuv420p', '-an', '-movflags', '+faststart', mp4,
   ], { stdio: ['ignore', 'ignore', 'inherit'] });
 
-  // Poster: a frame from the middle of the Watch scene, where the chart reads
-  // as the product rather than as an empty page.
-  const poster = path.join(OUT, 'showreel-poster.webp');
-  await sharp(path.join(frames, `f${String(Math.round(10.4 * FPS)).padStart(4, '0')}.png`))
+  const poster = path.join(OUT, cut.poster);
+  await sharp(path.join(frames, `f${String(Math.round(cut.posterAt * FPS)).padStart(4, '0')}.png`))
     .resize(W, H).webp({ quality: 88 }).toFile(poster);
 
   const provenance = {
-    prompt: 'Motion-graphics showreel of Contivo, drawn in the product\'s own design system ' +
-      '(Chalk & Saffron) and rendered from scripts/showreel/scene.html by scripts/render-showreel.mjs. ' +
+    prompt: `Motion-graphics showreel of Contivo (${cut.what}), drawn in the product's own design system ` +
+      `(Chalk & Saffron) and rendered from scripts/${cut.scene} by scripts/render-showreel.mjs. ` +
       'An illustrated explainer of the six-stage loop, not a screen recording — the product captures ' +
       'elsewhere on the page are the real screenshots. No audio track.',
     createdAt: new Date().toISOString(),
