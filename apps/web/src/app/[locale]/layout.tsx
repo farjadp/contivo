@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { Bodoni_Moda, Bricolage_Grotesque, Inter, JetBrains_Mono, Vazirmatn } from 'next/font/google';
+import { Bodoni_Moda, Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans, Inter, JetBrains_Mono, Vazirmatn } from 'next/font/google';
 
 import { GlobalHeader } from '@/components/layout/global-header';
 import { TimezoneProbe } from '@/components/layout/timezone-probe';
@@ -11,6 +11,10 @@ import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
+
+/** The signed-in surface's text and numbers (Chalk & Saffron). */
+const plex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex' });
+const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex-mono' });
 
 /** Display voice: an editorial grotesque with real character, not a UI sans blown up. */
 const display = Bricolage_Grotesque({
@@ -127,7 +131,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir}>
       <body
-        className={`${inter.variable} ${display.variable} ${accent.variable} ${mono.variable} ${vazir.variable} font-sans bg-paper-warm text-carbon antialiased`}
+        className={`${inter.variable} ${display.variable} ${accent.variable} ${mono.variable} ${vazir.variable} ${plex.variable} ${plexMono.variable} font-sans bg-paper-warm text-carbon antialiased`}
       >
         <div hidden dangerouslySetInnerHTML={{ __html: `<!--${DIRECTION_CONTRACT}-->` }} />
         <NextIntlClientProvider messages={messages}>

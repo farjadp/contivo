@@ -83,6 +83,38 @@ const config: Config = {
              under the 4.5 floor. This clears it without touching the brand red. */
           ink: '#FFF8F4',
         },
+        /* ── Chalk & Saffron: the signed-in system (redesign/loop). ──
+           One ground, one ink, one act-now accent. Saffron means "you" on a
+           chart and "do this" on a button; rival blue is always a competitor.
+           They differ in lightness as well as hue, so they survive greyscale. */
+        chalk: {
+          DEFAULT: '#EEEDE6',
+          raised: '#F8F7F2',
+          sunk: '#E2E1D8',
+        },
+        moss: {
+          DEFAULT: '#17201B',
+          700: '#2F4A3A',
+          /* 7.4:1 on chalk — secondary text, never lighter. */
+          muted: '#4A544D',
+        },
+        forest: {
+          DEFAULT: '#1E2E25',
+          line: '#3A4C41',
+          /* Secondary text on forest, 7:1. */
+          muted: '#B9C2B6',
+        },
+        saffron: {
+          DEFAULT: '#E3A21A',
+          soft: '#F4DFA8',
+          /* Saffron-family text that passes 4.5:1 on chalk. */
+          ink: '#6B5410',
+        },
+        rival: '#3D5F8A',
+        rule: {
+          DEFAULT: '#D5D4CA',
+          strong: '#A9A89C',
+        },
         brand: {
           indigo: '#2B2DFF',
           violet: '#7A5CFF',
@@ -108,6 +140,10 @@ const config: Config = {
            the [lang='fa'] rules in globals.css already redirect display and
            accent to it, so most code never needs to. */
         vazir: ['var(--font-vazir)', 'Segoe UI', 'Tahoma', 'sans-serif'],
+        /* Signed-in UI. Plex has no Persian glyphs, so Persian text falls
+           through to Vazirmatn per character instead of to the OS. */
+        plex: ['var(--font-plex)', 'var(--font-vazir)', 'system-ui', 'sans-serif'],
+        plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
         'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',

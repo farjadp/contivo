@@ -1,35 +1,54 @@
 'use client';
 
 /**
- * AppShell — layout for every signed-in page.
+ * AppShell — layout for every signed-in page (Chalk & Saffron).
  *
- * Dark "control room" rail on the inline-start edge, paper-white working area
- * beside it. The rail carries the product's one accent (signal green) only on
- * the active item and the Autopilot state, so the eye lands where the
- * machine is running.
+ * A top bar instead of a side rail: the six-stage loop lives inside each
+ * workspace, so the global chrome only has to say where you are and get out
+ * of the way. Saffron marks the active destination and nothing else.
  *
- * The rail is pinned to the *start* edge, not the left one: in Persian it
- * mirrors to the right, which is where a Persian reader looks first.
+ * On phones the same destinations move to a bottom bar within thumb reach.
+ * Everything is laid out with logical properties, so Persian mirrors for free.
  */
 
 import { Link, usePathname } from '@/i18n/navigation';
 import type { ElementType, ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { Zap, TrendingUp, Settings, LayoutDashboard, LogOut, Share2, Bot } from 'lucide-react';
+import { Sun, Layers, Settings, LogOut, Share2, Zap } from 'lucide-react';
 
 import { logout } from '@/app/actions/auth';
 import { LocaleSwitcher } from '@/components/marketing/locale-switcher';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { labelKey: 'nav.overview', href: '/dashboard', icon: LayoutDashboard },
-  { labelKey: 'nav.growth', href: '/growth', icon: TrendingUp },
+  { labelKey: 'nav.overview', href: '/dashboard', icon: Sun },
+  { labelKey: 'nav.growth', href: '/growth', icon: Layers },
   { labelKey: 'nav.connections', href: '/connections', icon: Share2 },
   { labelKey: 'nav.instant', href: '/instant', icon: Zap },
   { labelKey: 'nav.settings', href: '/settings', icon: Settings },
 ] as const;
 
-function RailLink({
+function isActivePath(pathname: string, href: string) {
+  return href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(href);
+}
+
+function TopLink({ href, label, isActive }: { href: string; label: string; isActive: boolean }) {
+  return (
+    <Link
+      href={href as never}
+      aria-current={isActive ? 'page' : undefined}
+      className={cn(
+        'relative flex h-10 items-center rounded-lg px-3 text-[14px] font-medium transition-colors',
+        isActive ? 'bg-moss text-chalk' : 'text-moss-muted hover:bg-chalk-sunk hover:text-moss',
+      )}
+    >
+      {isActive && <span aria-hidden className="me-2 h-1.5 w-1.5 rotate-45 bg-saffron" />}
+      {label}
+    </Link>
+  );
+}
+
+function BottomLink({
   href,
   label,
   icon: Icon,
@@ -43,20 +62,14 @@ function RailLink({
   return (
     <Link
       href={href as never}
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'group relative flex items-center gap-3 px-4 py-2.5 text-[13px] font-medium transition-colors',
-        isActive ? 'text-white' : 'text-ink-300 hover:text-white',
+        'flex min-h-[48px] flex-col items-center justify-center gap-1 rounded-xl text-[11px] font-medium',
+        isActive ? 'bg-moss text-chalk' : 'text-moss-muted',
       )}
     >
-      <span
-        aria-hidden
-        className={cn(
-          'absolute start-0 top-1/2 h-5 w-[2px] -translate-y-1/2 transition-colors',
-          isActive ? 'bg-signal' : 'bg-transparent group-hover:bg-ink-600',
-        )}
-      />
-      <Icon className={cn('h-4 w-4 shrink-0', isActive ? 'text-signal' : 'text-ink-400 group-hover:text-ink-200')} />
-      {label}
+      <Icon className={cn('h-[18px] w-[18px]', isActive ? 'text-saffron' : 'text-moss-muted')} />
+      <span className="max-w-full truncate px-1">{label}</span>
     </Link>
   );
 }
@@ -65,60 +78,83 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations('shell');
 
-  // Full-bleed flows (workspace creation / analysis) render without the rail.
+  // Full-bleed flows (workspace creation / analysis) render without chrome.
   if (pathname === '/growth/new' || pathname === '/growth/analyzing') {
-    return <main className="h-screen w-full overflow-y-auto bg-paper text-ink-900">{children}</main>;
+    return <main className="h-screen w-full overflow-y-auto bg-chalk font-plex text-moss">{children}</main>;
   }
 
+  const primary = NAV_ITEMS.filter((item) => item.href !== '/settings');
+
   return (
-    <div className="flex h-screen overflow-hidden bg-paper text-ink-900">
-      {/* ── Rail ─────────────────────────────────────────────────────── */}
-      <aside className="hidden w-60 shrink-0 flex-col border-e border-ink-800 bg-ink-950 md:flex">
-        <div className="flex h-14 items-center gap-2 border-b border-ink-800 px-5">
-          <span className="inline-block h-2.5 w-2.5 bg-signal shadow-[0_0_10px_rgba(61,255,143,0.7)]" />
+    <div className="flex h-screen flex-col overflow-hidden bg-chalk font-plex text-moss">
+      {/* ── Top bar ──────────────────────────────────────────────────── */}
+      <header className="flex h-16 shrink-0 items-center gap-6 border-b border-rule px-4 md:px-8">
+        <Link href="/dashboard" className="flex items-center gap-2.5">
+          <span aria-hidden className="h-3 w-3 rotate-45 bg-saffron" />
           {/* The wordmark stays Latin in both languages; `bdi` keeps the
               surrounding Persian from reordering it. */}
-          <bdi className="font-display text-[15px] font-bold tracking-tight text-white">Contivo</bdi>
-        </div>
+          <bdi className="font-display text-[22px] font-bold lowercase tracking-tight">contivo</bdi>
+        </Link>
 
-        <nav className="mt-4 flex flex-1 flex-col gap-0.5">
-          {NAV_ITEMS.map((item) => (
-            <RailLink
+        <nav aria-label={t('navLabel')} className="hidden items-center gap-1 md:flex">
+          {primary.map((item) => (
+            <TopLink
               key={item.href}
               href={item.href}
-              icon={item.icon}
               label={t(item.labelKey)}
-              isActive={item.href === '/dashboard' ? pathname === '/dashboard' : pathname.startsWith(item.href)}
+              isActive={isActivePath(pathname, item.href)}
             />
           ))}
         </nav>
 
-        <div className="border-t border-ink-800 px-4 py-3">
-          {/*
-            The same switcher the marketing nav uses. Its own colours are
-            written for the paper-white marketing surface, so the rail
-            re-tints its links rather than forking the component — the shape,
-            the brick underline on the active language and the "each language
-            written in itself" rule all stay exactly as they are.
-          */}
-          <LocaleSwitcher className="mb-3 px-1 [&_a:hover]:text-white [&_a[aria-current]]:text-white [&_a]:text-ink-400" />
-          <div className="mb-3 flex items-center gap-2 px-1 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
-            <Bot className="h-3.5 w-3.5" />
-            {t('railBadge')}
-          </div>
+        <div className="ms-auto flex items-center gap-2">
+          {/* The marketing switcher, re-tinted for chalk rather than forked. */}
+          <LocaleSwitcher className="me-2 [&_a:hover]:text-moss [&_a[aria-current]]:text-moss [&_a]:text-moss-muted" />
+          <Link
+            href="/settings"
+            aria-label={t('nav.settings')}
+            aria-current={isActivePath(pathname, '/settings') ? 'page' : undefined}
+            className={cn(
+              'hidden h-10 w-10 items-center justify-center rounded-full border transition-colors md:flex',
+              isActivePath(pathname, '/settings')
+                ? 'border-moss bg-moss text-chalk'
+                : 'border-rule bg-chalk-raised text-moss hover:border-rule-strong',
+            )}
+          >
+            <Settings className="h-[18px] w-[18px]" />
+          </Link>
           <form action={logout}>
-            <button className="flex w-full items-center gap-3 px-1 py-2 text-[13px] text-ink-300 transition-colors hover:text-white">
-              <LogOut className="h-4 w-4 shrink-0 rtl:rotate-180" />
-              {t('signOut')}
+            <button
+              aria-label={t('signOut')}
+              title={t('signOut')}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-rule bg-chalk-raised text-moss transition-colors hover:border-rule-strong"
+            >
+              <LogOut className="h-[18px] w-[18px] rtl:rotate-180" />
             </button>
           </form>
         </div>
-      </aside>
+      </header>
 
       {/* ── Working area ─────────────────────────────────────────────── */}
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-7xl p-6 md:p-10">{children}</div>
+        <div className="mx-auto max-w-7xl p-4 pb-28 md:p-10">{children}</div>
       </main>
+
+      {/* ── Phone bar ────────────────────────────────────────────────── */}
+      <nav
+        aria-label={t('navLabel')}
+        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-5 gap-1 border-t border-rule bg-chalk-raised px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:hidden"
+      >
+        {NAV_ITEMS.map((item) => (
+          <BottomLink
+            key={item.href}
+            href={item.href}
+            icon={item.icon}
+            label={t(item.labelKey)}
+            isActive={isActivePath(pathname, item.href)}
+          />
+        ))}
+      </nav>
     </div>
   );
 }
