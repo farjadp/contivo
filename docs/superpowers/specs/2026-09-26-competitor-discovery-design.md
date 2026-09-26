@@ -30,7 +30,7 @@ Discovery today (`discoverWorkspaceCompetitors`, `apps/web/src/app/actions/growt
 | D6 | Failed or empty runs do **not** count against the quota. |
 | D7 | At most **10** competitors saved per run. |
 | D8 | Downstream fallback, option **B**: use ACCEPTED competitors. If there are none, use only PENDING competitors with **high** confidence, and label the resulting output "based on unconfirmed competitors". |
-| D9 | Delete the orphan `/growth/competitors` page and the heuristic map in the discovery UI. *(Recommended in Section 3. The user did not object; confirm at spec review.)* |
+| D9 | Delete the orphan `/growth/competitors` page (plus its only caller of `saveCompetitors` and its route entry) and the heuristic map in the discovery UI. Reasons: nothing links to it; it duplicates the live surface; it defaults unreviewed AI guesses to ACCEPTED, so one save pushes them into ACCEPTED-only consumers (reports, narrative); and its map is invented. If a standalone competitors page is wanted later, it is built from the new review components. |
 
 ## 3. Spike evidence (2026-09-26, throwaway code, not in repo)
 
@@ -162,7 +162,7 @@ One shared helper `selectCompetitorsForAnalysis(workspaceId)` returns `{ competi
 ## 8. Cost and limits
 - Record the token count of each run in `DiscoveryRun.tokensUsed`.
 - Try `search_context_size: 'low'` first. Cap queries at 8 and enrichment at 20.
-- Before rollout, measure 5 real workspaces (a mix of fa and en). If the median run costs more than an agreed ceiling, reduce the number of queries.
+- **No ceiling is set in this spec.** Once the solution is complete, the user walks it end to end and sets costs, token budgets and limits from that run, optionally benchmarked against competitors' pricing. Until then, `tokensUsed` per run is the input for that decision.
 
 ## 9. Error handling
 - Each source fails on its own. One failed source produces a partial run, and its stats record the error.
@@ -181,5 +181,4 @@ One shared helper `selectCompetitorsForAnalysis(workspaceId)` returns `{ competi
 - Redesigning Competitive Matrices.
 
 ## 12. Open for spec review
-1. Confirm D9 (the deletions).
-2. The cost ceiling per run for §8.
+Nothing open. D9 is confirmed and the cost ceiling is deferred to the user's end-to-end walkthrough (§8).
