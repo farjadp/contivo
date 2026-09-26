@@ -22,6 +22,8 @@
 - No silent fallbacks to invented data anywhere. A missing credential is an error, not mock output.
 - Failed and empty runs do not count against the quota.
 - Run `pnpm --filter web typecheck` and `pnpm --filter web check:i18n` before every commit that touches `apps/web`.
+- **A stage that cannot report its real token usage returns `null`, never `0`.** The pipeline sums the known values and records separately that the total is incomplete. `DiscoveryRun.tokensUsed` is the number the cost ceiling will be set from, so a fabricated zero reads as a free run and is worse than an admitted gap.
+- Another session has uncommitted work in this shared working tree. **Never `git add -A` or `git commit -a`** — always stage an explicit file list.
 - End every commit message with: `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`
 
 ---
@@ -601,7 +603,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
     competitors: Array<{ name: string; domain: string | null; userDecision: string | null; rejectionReason: string | null }>;
   }): BrandBrief
   export const MAX_QUERIES = 8;
-  export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number }>
+  export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number | null }>
   ```
 
 **Context:** `apps/web/src/app/actions/growth-competitors.ts` already has `trimTo` and `normalizeDomain` helpers; move the ones you need into `apps/web/src/lib/competitors/` rather than importing from a `'use server'` file — a server-action module cannot export non-action values.
@@ -662,12 +664,12 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
     queries: string[],
     market: TargetMarket,
     exclude: Set<string>,
-  ): Promise<{ candidates: Candidate[]; tokens: number; errors: string[] }>
+  ): Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }>
   export async function harvestFromSerp(
     queries: string[],
     market: TargetMarket,
     exclude: Set<string>,
-  ): Promise<{ candidates: Candidate[]; tokens: number; errors: string[] }>
+  ): Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }>
   ```
 
 **Context:** This is the heart of D4. Candidate domains come from the message's **annotation** URLs only. The `web_search_call.action.sources` list (26–112 domains per query in the spike) is used **only** to raise `frequency` for a domain already found via an annotation — never to create a candidate.
@@ -691,7 +693,7 @@ Merge across queries by domain: `frequency` is the number of distinct queries in
 - [ ] **Step 2: Implement `harvestFromSerp`**
 
 ```ts
-export async function harvestFromSerp(): Promise<{ candidates: Candidate[]; tokens: number; errors: string[] }> {
+export async function harvestFromSerp(): Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }> {
   // DataForSEO has no credentials in production and its client currently
   // returns fabricated keywords and SERP rows when they are missing, so this
   // source stays off until that is fixed. Returning nothing is the honest
@@ -737,7 +739,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   export async function judgeCandidates(
     brief: BrandBrief,
     candidates: EnrichedCandidate[],
-  ): Promise<{ judged: JudgedCandidate[]; tokens: number }>
+  ): Promise<{ judged: JudgedCandidate[]; tokens: number | null }>
   ```
 
 **Context:** `collectWebsiteEvidence(domain)` already exists in `growth-competitors.ts` (line ~191) and returns `{ domain, pagesScanned, evidence }`. Move it into `judge.ts` — it is a plain async function, and leaving it in the `'use server'` module means it cannot be imported.

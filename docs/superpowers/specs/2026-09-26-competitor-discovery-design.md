@@ -162,7 +162,7 @@ Copy is written in both `en` and `fa`. The Persian is written as Persian, not tr
 One shared helper `selectCompetitorsForAnalysis(workspaceId)` returns `{ competitors, basis: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE' }`. It replaces the ad-hoc filters in `growth-matrices.ts`, `growth-keywords.ts` and `growth-offerings.ts`. When `basis = UNCONFIRMED_HIGH`, those features store that fact and show the "based on unconfirmed competitors" label. Strategic reports, report eligibility and narrative stay ACCEPTED-only.
 
 ## 8. Cost and limits
-- Record the token count of each run in `DiscoveryRun.tokensUsed`.
+- Record the token count of each run in `DiscoveryRun.tokensUsed`. A stage that cannot report real usage returns `null`, never `0`; the run records that its total is incomplete rather than understating it.
 - Try `search_context_size: 'low'` first. Cap queries at 8 and enrichment at 20.
 - **No ceiling is set in this spec.** Once the solution is complete, the user walks it end to end and sets costs, token budgets and limits from that run, optionally benchmarked against competitors' pricing. Until then, `tokensUsed` per run is the input for that decision.
 
