@@ -389,7 +389,11 @@
       "analyzedOn": "Analyzed {date} · ",
       "refreshIn": "Refresh in {hours}h",
       "readyToRefresh": "Ready to refresh",
-      "empty": "—"
+      "empty": "—",
+      "sampleDataTitle": "Sample data, not saved",
+      "sampleDataBody": "DATAFORSEO_MOCK is on, so these {count} rows are generated locally and are not real. Nothing was saved, and matrices and ideation will not see them.",
+      "notConfiguredTitle": "DataForSEO is not connected",
+      "notConfiguredBody": "Add DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD to the environment to pull live keyword and SERP data."
     },
     "rescrape": {
       "history": "History ({count})",
