@@ -14,7 +14,7 @@
 
 - Branch: `competitor-discovery-redesign`. Do not merge to `main` — **a push to `main` auto-deploys www.contivo.app on Vercel.**
 - TypeScript only. Functional React components. Tailwind classes only, no inline styles. No hardcoded config — everything through env vars.
-- Schema changes are applied with `pnpm --filter @contivo/api exec prisma db push`, never `migrate`. The Prisma schema file is `apps/api/prisma/schema.prisma`; the DB schema name is `contivo`, not `public`.
+- Schema changes are applied with `pnpm --filter @contivo/api exec prisma db push`, never `migrate`. The Prisma schema file is `apps/api/prisma/schema.prisma`. The DB schema name is `contivo` in **production** (Neon) but `public` **locally** (`apps/api/.env` → `localhost:5433/contivo_dev?schema=public`) — verify local work against `public.*`.
 - The local database runs on port **5433**. The local web dev server picks a random port — read the actual port from the dev server output.
 - Every user-facing string exists in both `apps/web/messages/en/growth.json` and `apps/web/messages/fa/growth.json` with identical key sets and identical ICU placeholders, or `pnpm --filter web check:i18n` fails. Persian is **written as Persian, not translated from the English**. Never hardcode digits in Persian copy — format numbers through `useFormatter` / `next-intl`.
 - Confidence bands: **high ≥ 0.8**, **medium ≥ 0.6**, keep threshold **≥ 0.6**, at most **10** competitors saved per run, at most **8** queries, at most **20** candidates enriched.
