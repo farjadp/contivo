@@ -1,14 +1,54 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// ---------------------------------------------------------------------------
+// Mocks for runDiscoveryPipeline / reapStaleRuns tests further down. These
+// don't affect the pure-helper tests above them — mergeCandidateLists,
+// reconcileEvidence, etc. never touch prisma or any of these modules.
+//
+// vi.hoisted is required here: vi.mock factories are hoisted above all
+// imports (including this file's own), so a factory can only reference
+// something also produced through vi.hoisted, never an ordinary
+// module-scope `const`.
+// ---------------------------------------------------------------------------
+const { prismaMock, activityLogMock, queriesMock, searchMock, judgeMock, scoringMock } = vi.hoisted(() => ({
+  prismaMock: {
+    discoveryRun: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
+      findMany: vi.fn(),
+      updateMany: vi.fn(),
+    },
+    competitor: {
+      update: vi.fn(),
+      create: vi.fn(),
+    },
+    $transaction: vi.fn(),
+  },
+  activityLogMock: { writeActivityLog: vi.fn() },
+  queriesMock: { buildBrandBrief: vi.fn(), generateQueries: vi.fn() },
+  searchMock: { harvestFromWebSearch: vi.fn(), harvestFromSerp: vi.fn() },
+  judgeMock: { enrichCandidates: vi.fn(), judgeCandidates: vi.fn() },
+  scoringMock: { rankAndKeep: vi.fn() },
+}));
+
+vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
+vi.mock('@/lib/activity-log', () => activityLogMock);
+vi.mock('./queries', () => queriesMock);
+vi.mock('./search', () => searchMock);
+vi.mock('./judge', () => judgeMock);
+vi.mock('./scoring', () => scoringMock);
 
 import {
   buildEvidenceIdMap,
   isStaleRun,
   mergeCandidateLists,
   parseStoredEvidence,
+  reapStaleRuns,
   reconcileEvidence,
+  runDiscoveryPipeline,
   STALE_RUN_MINUTES,
 } from './pipeline';
-import type { Candidate, EvidenceItem } from './types';
+import type { Candidate, EvidenceItem, ScoredCandidate } from './types';
 
 function candidate(overrides: Partial<Candidate> = {}): Candidate {
   return {
@@ -187,5 +227,251 @@ describe('isStaleRun', () => {
   it('is exactly on the boundary: not stale at precisely the threshold', () => {
     const startedAt = new Date(now.getTime() - STALE_RUN_MINUTES * 60 * 1000);
     expect(isStaleRun({ status: 'RUNNING', startedAt }, now, STALE_RUN_MINUTES)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// runDiscoveryPipeline / reapStaleRuns — @/lib/db (and the other stage
+// modules) mocked per the mocks declared at the top of this file.
+// ---------------------------------------------------------------------------
+
+function scoredCandidate(overrides: Partial<ScoredCandidate> = {}): ScoredCandidate {
+  return {
+    domain: 'example.com',
+    frequency: 1,
+    sources: ['WEB_SEARCH'],
+    evidence: [],
+    siteTitle: null,
+    siteEvidence: '',
+    pageLanguage: 'en',
+    name: 'Example',
+    isCompetitor: true,
+    labels: ['BUSINESS'],
+    type: 'DIRECT',
+    scaleMatch: true,
+    judgeConfidence: 0.8,
+    reason: 'reason',
+    positioning: null,
+    keyFeatures: [],
+    description: 'desc',
+    finalConfidence: 0.8,
+    ...overrides,
+  };
+}
+
+function baseRun(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'run1',
+    userId: 'user1',
+    workspace: {
+      id: 'ws1',
+      name: 'Acme',
+      websiteUrl: null,
+      brandSummary: null,
+      targetCountry: null,
+      targetLanguage: 'en',
+      competitors: [] as unknown[],
+    },
+    ...overrides,
+  };
+}
+
+/** Find the `prisma.discoveryRun.update({ data: { status, ... } })` call matching `status`, on a plain `vi.fn()` mock (untyped, so `.mock.calls` is `any[][]`). */
+function findCallByStatus(mockFn: { mock: { calls: any[][] } }, status: string): { data: Record<string, any> } | undefined {
+  const call = mockFn.mock.calls.find((c) => c[0]?.data?.status === status);
+  return call ? call[0] : undefined;
+}
+
+describe('runDiscoveryPipeline', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    queriesMock.buildBrandBrief.mockReturnValue({
+      companyName: 'Acme',
+      ownDomain: null,
+      summary: '',
+      valueProposition: '',
+      industry: '',
+      audience: '',
+      market: { country: null, language: 'en' },
+      acceptedCompetitors: [],
+      rejectedCompetitors: [],
+      knownDomains: [],
+    });
+    queriesMock.generateQueries.mockResolvedValue({ queries: ['q1'], tokens: 10 });
+    searchMock.harvestFromWebSearch.mockResolvedValue({ candidates: [], tokens: 5, errors: [] });
+    searchMock.harvestFromSerp.mockResolvedValue({ candidates: [], tokens: 0, errors: [] });
+    judgeMock.enrichCandidates.mockResolvedValue([]);
+    judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 20 });
+    scoringMock.rankAndKeep.mockReturnValue([]);
+
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun());
+    prismaMock.discoveryRun.update.mockResolvedValue({});
+    prismaMock.discoveryRun.findMany.mockResolvedValue([]);
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 0 });
+    prismaMock.competitor.update.mockImplementation((args: unknown) => Promise.resolve({ op: 'update', args }));
+    prismaMock.competitor.create.mockImplementation((args: unknown) => Promise.resolve({ op: 'create', args }));
+    prismaMock.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
+  });
+
+  it('never throws to its caller, and lands the run FAILED with the error recorded, when JUDGE rejects mid-run', async () => {
+    judgeMock.judgeCandidates.mockRejectedValue(new Error('judge exploded'));
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.update, 'FAILED');
+    expect(failedCall).toBeTruthy();
+    expect(failedCall!.data.error).toBe('judge exploded');
+    expect(failedCall!.data.finishedAt).toBeInstanceOf(Date);
+    // The run never got to SAVE, so nothing was (or could have been) saved —
+    // savedCount must not be asserted to any nonzero value here.
+    expect(failedCall!.data.savedCount).toBeUndefined();
+  });
+
+  it('never throws to its caller, and lands the run FAILED, when SEARCH itself cannot even start (mid-SEARCH failure)', async () => {
+    // Simulate the SEARCH stage transition itself failing (e.g. the DB
+    // write that advances `stage` to 'SEARCH' fails) — a real "mid-SEARCH"
+    // failure that isn't swallowed by the Promise.allSettled around the
+    // two harvest calls, since it happens before either of them run.
+    prismaMock.discoveryRun.update.mockImplementation((args: { data: Record<string, unknown> }) => {
+      if (args.data.stage === 'SEARCH') throw new Error('lost DB connection advancing to SEARCH');
+      return Promise.resolve({});
+    });
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    // The mocked discoveryRun.update throws synchronously rather than
+    // rejecting, so the FAILED write itself goes through the same mock and
+    // would throw too — proving the *outer* catch's own nested try/catch
+    // (for when even the failure-recording write fails) is what kept this
+    // from escaping. Nothing more to assert on the row itself in this
+    // case; the promise resolving at all is the property under test.
+  });
+
+  it('never writes a userDecision key when updating an existing competitor', async () => {
+    const existingCompetitor = {
+      id: 'comp1',
+      domain: 'existing.com',
+      userDecision: 'ACCEPTED',
+      evidence: [],
+    };
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(
+      baseRun({
+        workspace: {
+          id: 'ws1',
+          name: 'Acme',
+          websiteUrl: null,
+          brandSummary: null,
+          targetCountry: null,
+          targetLanguage: 'en',
+          competitors: [existingCompetitor],
+        },
+      }),
+    );
+    scoringMock.rankAndKeep.mockReturnValue([scoredCandidate({ domain: 'existing.com' })]);
+
+    await runDiscoveryPipeline('run1');
+
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.update).toHaveBeenCalledTimes(1);
+    const [{ data }] = prismaMock.competitor.update.mock.calls[0];
+    expect(data).not.toHaveProperty('userDecision');
+  });
+
+  it('bundles every SAVE write into one $transaction call, and on success sets savedCount to exactly what was written', async () => {
+    scoringMock.rankAndKeep.mockReturnValue([
+      scoredCandidate({ domain: 'new1.com' }),
+      scoredCandidate({ domain: 'new2.com' }),
+    ]);
+
+    await runDiscoveryPipeline('run1');
+
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.$transaction.mock.calls[0][0]).toHaveLength(2);
+    expect(prismaMock.competitor.create).toHaveBeenCalledTimes(2);
+
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.update, 'DONE');
+    expect(doneCall!.data.savedCount).toBe(2);
+  });
+
+  it('leaves savedCount untouched (never a stale nonzero value) when the SAVE transaction itself fails outright', async () => {
+    scoringMock.rankAndKeep.mockReturnValue([
+      scoredCandidate({ domain: 'new1.com' }),
+      scoredCandidate({ domain: 'new2.com' }),
+    ]);
+    prismaMock.$transaction.mockRejectedValue(new Error('DB connection lost mid-save'));
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    // The transaction is offered every write bundled together, never one
+    // write at a time outside a transaction.
+    expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
+    expect(prismaMock.$transaction.mock.calls[0][0]).toHaveLength(2);
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.update, 'FAILED');
+    expect(failedCall).toBeTruthy();
+    expect(failedCall!.data.error).toContain('DB connection lost mid-save');
+    // This is the property the transaction fix exists for: since the
+    // transaction rejected, nothing was actually committed, and the FAILED
+    // write must not claim otherwise by setting savedCount to anything —
+    // the row's savedCount stays at whatever it already was (0), matching
+    // the real, unwritten state.
+    expect(failedCall!.data).not.toHaveProperty('savedCount');
+  });
+
+  it('rounds confidence to three decimals before writing', async () => {
+    scoringMock.rankAndKeep.mockReturnValue([
+      scoredCandidate({ domain: 'new1.com', finalConfidence: 0.9500000000000001 }),
+    ]);
+
+    await runDiscoveryPipeline('run1');
+
+    const [{ data }] = prismaMock.competitor.create.mock.calls[0];
+    expect(data.confidence).toBe(0.95);
+  });
+
+  it('marks tokens incomplete when a harvest promise rejects outright, not just when one resolves with tokens: null', async () => {
+    searchMock.harvestFromWebSearch.mockRejectedValue(new Error('network blew up'));
+
+    await runDiscoveryPipeline('run1');
+
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.update, 'DONE') ??
+      findCallByStatus(prismaMock.discoveryRun.update, 'EMPTY');
+    expect(doneCall).toBeTruthy();
+    const sourceStats = doneCall!.data.sourceStats as Record<string, unknown>;
+    expect(sourceStats.tokensIncomplete).toBe(true);
+  });
+});
+
+describe('reapStaleRuns', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 0 });
+  });
+
+  it('reaps only the in-flight runs old enough to be stale, leaving fresh ones alone', async () => {
+    const now = Date.now();
+    prismaMock.discoveryRun.findMany.mockResolvedValue([
+      { id: 'stale-1', status: 'RUNNING', startedAt: new Date(now - (STALE_RUN_MINUTES + 5) * 60 * 1000) },
+      { id: 'fresh-1', status: 'PENDING', startedAt: new Date(now - 1 * 60 * 1000) },
+    ]);
+
+    await reapStaleRuns('ws1');
+
+    expect(prismaMock.discoveryRun.updateMany).toHaveBeenCalledTimes(1);
+    const [{ where, data }] = prismaMock.discoveryRun.updateMany.mock.calls[0];
+    expect(where.id.in).toEqual(['stale-1']);
+    expect(data.status).toBe('FAILED');
+    expect(data.error).toBe('TIMED_OUT');
+  });
+
+  it('does nothing when there is nothing stale', async () => {
+    prismaMock.discoveryRun.findMany.mockResolvedValue([
+      { id: 'fresh-1', status: 'RUNNING', startedAt: new Date() },
+    ]);
+
+    await reapStaleRuns('ws1');
+
+    expect(prismaMock.discoveryRun.updateMany).not.toHaveBeenCalled();
   });
 });

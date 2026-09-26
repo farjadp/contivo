@@ -28,9 +28,30 @@ function candidate(over: Partial<JudgedCandidate> = {}): JudgedCandidate {
 }
 
 describe('scoreCandidate', () => {
-  it('starts from the judge confidence', () => {
+  it('starts from the judge confidence and closes part of the headroom', () => {
+    // 0.70 + 0.05 * (1 - 0.70)
     expect(scoreCandidate(candidate({ frequency: 1, pageLanguage: 'en' }), { country: null, language: 'en' }))
-      .toBeCloseTo(0.75, 2); // 0.70 + 0.05 language match
+      .toBeCloseTo(0.715, 3);
+  });
+
+  it('never lets a lower certainty overtake a higher one', () => {
+    const likelyFullyCorroborated = scoreCandidate(
+      candidate({ judgeConfidence: 0.7, frequency: 3, sources: ['WEB_SEARCH', 'SERP'], pageLanguage: 'fa' }),
+      IR,
+    );
+    const certainWithNothing = scoreCandidate(
+      candidate({ judgeConfidence: 0.9, frequency: 1, sources: ['WEB_SEARCH'], pageLanguage: 'en' }),
+      IR,
+    );
+    expect(likelyFullyCorroborated).toBeLessThan(certainWithNothing);
+  });
+
+  it('never pins a candidate at exactly 1', () => {
+    const best = scoreCandidate(
+      candidate({ judgeConfidence: 0.9, frequency: 9, sources: ['WEB_SEARCH', 'SERP'], pageLanguage: 'fa' }),
+      IR,
+    );
+    expect(best).toBeLessThan(1);
   });
 
   it('rewards appearing in more queries, with a cap', () => {
@@ -38,19 +59,20 @@ describe('scoreCandidate', () => {
     const three = scoreCandidate(candidate({ frequency: 3 }), IR);
     const ten = scoreCandidate(candidate({ frequency: 10 }), IR);
     expect(three).toBeGreaterThan(one);
-    expect(ten).toBeCloseTo(three + 0.0, 2); // capped at 3 queries
+    expect(ten).toBeCloseTo(three, 6); // capped at 3 queries
   });
 
   it('rewards agreement between sources', () => {
     const single = scoreCandidate(candidate({ sources: ['WEB_SEARCH'] }), IR);
     const both = scoreCandidate(candidate({ sources: ['WEB_SEARCH', 'SERP'] }), IR);
-    expect(both - single).toBeCloseTo(0.1, 2);
+    expect(both).toBeGreaterThan(single);
+    expect(both - single).toBeCloseTo(0.1 * (1 - 0.7), 3);
   });
 
   it('rewards a page language matching the target market', () => {
     const fa = scoreCandidate(candidate({ pageLanguage: 'fa' }), IR);
     const en = scoreCandidate(candidate({ pageLanguage: 'en' }), IR);
-    expect(fa - en).toBeCloseTo(0.05, 2);
+    expect(fa - en).toBeCloseTo(0.05 * (1 - 0.7), 3);
   });
 
   it('never leaves the 0..1 range', () => {

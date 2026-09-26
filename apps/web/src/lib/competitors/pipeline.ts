@@ -229,6 +229,12 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
         const message = outcome.reason instanceof Error ? outcome.reason.message : String(outcome.reason);
         runErrors.push(`${label} harvest threw: ${message}`);
         searchCounts[label] = { harvested: 0, tokens: null, errors: 1 };
+        // A rejected promise never reported a token figure at all — this
+        // must count as an unreadable stage the same as a resolved
+        // `{ tokens: null }` would, or the run-level `tokensIncomplete`
+        // flag would silently stay false while this stage's own stat
+        // already says "unknown".
+        tokens.add(null);
       }
     }
 
@@ -256,21 +262,34 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
         .map((c) => [normalizeStoredDomain(c.domain as string), c]),
     );
 
-    let savedCount = 0;
-    for (const candidate of kept) {
+    // Every write is prepared first (no `await` yet — these are pending
+    // Prisma operations, not yet sent) and only then run together inside
+    // `$transaction`. Ten rows is small and short-lived, and all-or-nothing
+    // is the only honest semantic here: if write N+1 of a plain sequential
+    // loop threw, the outer catch would record `FAILED` with `savedCount`
+    // defaulting to 0 while up to N real rows had already been persisted —
+    // the run row would lie about what happened. With a transaction, either
+    // every kept candidate lands and `savedCount` is set to match, or none
+    // of them do and `savedCount` is never touched (staying at its true
+    // value of 0, since nothing was actually written).
+    const operations = kept.map((candidate) => {
       const existing = existingByDomain.get(candidate.domain);
       const existingEvidence = existing ? parseStoredEvidence(existing.evidence) : [];
       const evidence = reconcileEvidence(existingEvidence, candidate.evidence);
+      // Round before writing so the database stops holding
+      // floating-point noise like 0.9500000000000001 for a number that
+      // is shown to a user.
+      const confidence = Math.round(candidate.finalConfidence * 1000) / 1000;
 
       if (existing) {
-        await prisma.competitor.update({
+        return prisma.competitor.update({
           where: { id: existing.id },
           data: {
             name: candidate.name,
             domain: candidate.domain,
             description: candidate.description || null,
             type: candidate.type,
-            confidence: candidate.finalConfidence,
+            confidence,
             labels: candidate.labels,
             sources: candidate.sources,
             evidence,
@@ -280,28 +299,32 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
             // userDecision is never written here — a user's decision is sacred.
           },
         });
-      } else {
-        await prisma.competitor.create({
-          data: {
-            workspaceId: workspace.id,
-            name: candidate.name,
-            domain: candidate.domain,
-            description: candidate.description || null,
-            type: candidate.type,
-            confidence: candidate.finalConfidence,
-            labels: candidate.labels,
-            sources: candidate.sources,
-            evidence,
-            positioning: candidate.positioning,
-            keyFeatures: candidate.keyFeatures,
-            source: 'AI',
-            userDecision: 'PENDING',
-            discoveryRunId: runId,
-          },
-        });
       }
-      savedCount += 1;
+
+      return prisma.competitor.create({
+        data: {
+          workspaceId: workspace.id,
+          name: candidate.name,
+          domain: candidate.domain,
+          description: candidate.description || null,
+          type: candidate.type,
+          confidence,
+          labels: candidate.labels,
+          sources: candidate.sources,
+          evidence,
+          positioning: candidate.positioning,
+          keyFeatures: candidate.keyFeatures,
+          source: 'AI',
+          userDecision: 'PENDING',
+          discoveryRunId: runId,
+        },
+      });
+    });
+
+    if (operations.length > 0) {
+      await prisma.$transaction(operations);
     }
+    const savedCount = operations.length;
 
     sourceStats.save = { saved: savedCount };
     if (runErrors.length > 0) sourceStats.errors = runErrors;
