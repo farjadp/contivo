@@ -137,7 +137,7 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
 
       {/* Current step call-out */}
       {next && (
-        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule bg-paper px-5 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-rule bg-chalk-sunk px-5 py-3">
           <p className="text-[13px] text-moss-muted">
             <span className="font-semibold text-moss">{tg('youAreHere')}</span> {msg(next.why)}
           </p>

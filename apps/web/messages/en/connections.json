@@ -5,7 +5,7 @@
     "subtitle": "Connect your brand's social channels and websites. Publish and schedule content directly from Contivo.",
     "noWorkspace": {
       "title": "Create a workspace first",
-      "body": "Connections belong to a workspace — it decides which brand's content gets published. Create one in the Growth Engine, then come back.",
+      "body": "Connections belong to a workspace — it decides which brand's content gets published. Create one under Workspaces, then come back.",
       "cta": "Create workspace"
     },
     "workspaceLabel": "Workspace",
@@ -124,7 +124,7 @@
     },
     "sites": {
       "noWorkspaceTitle": "No workspace yet",
-      "noWorkspaceBody": "Create a Growth Engine workspace first — a site connection serves the content of one workspace.",
+      "noWorkspaceBody": "Create a workspace first — a site connection serves the content of one workspace.",
       "title": "Websites",
       "subtitle": "Give a site an API key and it can pull its published posts from <bdi>Contivo</bdi>. Works with any stack — the site fetches, <bdi>Contivo</bdi> never pushes into your codebase.",
       "add": "Add site",

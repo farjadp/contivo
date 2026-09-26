@@ -38,14 +38,14 @@ function Snippet({ label, code }: { label: string; code: string }) {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-gray-500">{label}</p>
+        <p className="text-xs font-semibold text-moss-muted">{label}</p>
         <button
           onClick={async () => {
             await navigator.clipboard.writeText(code);
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           }}
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2B2DFF] hover:opacity-80"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-moss-700 hover:opacity-80"
         >
           {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copied ? t('copied') : t('copy')}
@@ -55,7 +55,7 @@ function Snippet({ label, code }: { label: string; code: string }) {
           reorder its lines or push its punctuation to the wrong end. */}
       <pre
         dir="ltr"
-        className="mt-1.5 overflow-x-auto rounded-xl bg-[#0B0F14] p-4 text-left text-[12px] leading-relaxed text-gray-200"
+        className="mt-1.5 overflow-x-auto rounded-xl bg-moss p-4 text-left text-[12px] leading-relaxed text-forest-muted"
       >
         <code>{code}</code>
       </pre>
@@ -121,91 +121,91 @@ do {
 
   /** The literal token a troubleshooting line is about, kept out of the prose. */
   const c = (chunks: React.ReactNode) => (
-    <bdi className="font-mono text-[#121212]">{chunks}</bdi>
+    <bdi className="font-plexmono text-moss">{chunks}</bdi>
   );
   /** Same, for the line whose token was never given the darker ink. */
-  const cp = (chunks: React.ReactNode) => <bdi className="font-mono">{chunks}</bdi>;
+  const cp = (chunks: React.ReactNode) => <bdi className="font-plexmono">{chunks}</bdi>;
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-white">
+    <div className="rounded-2xl border border-rule bg-chalk-raised">
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center justify-between gap-4 p-5 text-start"
         aria-expanded={open}
       >
         <div>
-          <p className="text-sm font-bold text-[#121212]">{t('toggleTitle')}</p>
-          <p className="mt-0.5 text-xs text-gray-500">{t('toggleBody')}</p>
+          <p className="text-sm font-bold text-moss">{t('toggleTitle')}</p>
+          <p className="mt-0.5 text-xs text-moss-muted">{t('toggleBody')}</p>
         </div>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+          className={`h-4 w-4 shrink-0 text-moss-muted transition-transform ${open ? 'rotate-180' : ''}`}
         />
       </button>
 
       {open && (
-        <div className="space-y-6 border-t border-gray-100 p-5">
+        <div className="space-y-6 border-t border-rule p-5">
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('step1Title')}</h4>
-            <p className="mt-1 text-xs leading-relaxed text-gray-600">
+            <h4 className="text-sm font-bold text-moss">{t('step1Title')}</h4>
+            <p className="mt-1 text-xs leading-relaxed text-moss-muted">
               {t.rich('step1Body', {
                 code: (chunks) => (
-                  <code className="rounded bg-gray-100 px-1 py-0.5 font-mono">{chunks}</code>
+                  <code className="rounded bg-chalk-sunk px-1 py-0.5 font-plexmono">{chunks}</code>
                 ),
               })}
             </p>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('step2Title')}</h4>
+            <h4 className="text-sm font-bold text-moss">{t('step2Title')}</h4>
             <Snippet label={t('step2Label')} code={list} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('step3Title')}</h4>
+            <h4 className="text-sm font-bold text-moss">{t('step3Title')}</h4>
             <Snippet label={t('step3Label')} code={nextjs} />
-            <p className="mt-2 text-xs leading-relaxed text-gray-600">{t('step3Body')}</p>
+            <p className="mt-2 text-xs leading-relaxed text-moss-muted">{t('step3Body')}</p>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('step4Title')}</h4>
+            <h4 className="text-sm font-bold text-moss">{t('step4Title')}</h4>
             <Snippet label={t('step4Label')} code={single} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('fieldsTitle')}</h4>
-            <dl className="mt-2 divide-y divide-gray-100 rounded-xl border border-gray-100">
+            <h4 className="text-sm font-bold text-moss">{t('fieldsTitle')}</h4>
+            <dl className="mt-2 divide-y divide-rule rounded-xl border border-rule">
               {FIELDS.map((name) => (
                 <div key={name} className="grid grid-cols-[7.5rem_1fr] gap-3 px-3.5 py-2.5">
-                  <dt className="font-mono text-[12px] text-[#121212]">
+                  <dt className="font-plexmono text-[12px] text-moss">
                     <bdi>{name}</bdi>
                   </dt>
-                  <dd className="text-xs leading-relaxed text-gray-600">{t(`fields.${name}`)}</dd>
+                  <dd className="text-xs leading-relaxed text-moss-muted">{t(`fields.${name}`)}</dd>
                 </div>
               ))}
             </dl>
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('pagingTitle')}</h4>
+            <h4 className="text-sm font-bold text-moss">{t('pagingTitle')}</h4>
             <Snippet label={t('pagingLabel')} code={paging} />
           </section>
 
           <section>
-            <h4 className="text-sm font-bold text-[#121212]">{t('troubleTitle')}</h4>
-            <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-gray-600">
+            <h4 className="text-sm font-bold text-moss">{t('troubleTitle')}</h4>
+            <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-moss-muted">
               <li>{t.rich('trouble401', { c })}</li>
               <li>{t.rich('trouble404', { c })}</li>
               <li>{t.rich('troubleEmpty', { c: cp })}</li>
             </ul>
           </section>
 
-          <p className="text-xs leading-relaxed text-gray-500">{t('revalidateNote')}</p>
+          <p className="text-xs leading-relaxed text-moss-muted">{t('revalidateNote')}</p>
 
           <Link
             href="/docs/site-api"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#2B2DFF] hover:opacity-80"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-moss-700 hover:opacity-80"
           >
             {t('fullReference')}
             <span aria-hidden className="rtl:rotate-180">

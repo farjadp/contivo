@@ -125,22 +125,22 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
   return (
     /* Backdrop */
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-moss/30 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+      <div className="w-full max-w-md bg-chalk-raised rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-rule">
           <div>
-            <h2 className="text-lg font-bold text-[#121212]">{t('title')}</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h2 className="text-lg font-bold text-moss">{t('title')}</h2>
+            <p className="text-xs text-moss-muted mt-0.5">
               {selected ? t('subtitleReview') : t('subtitleChoose')}
             </p>
           </div>
           <button
             onClick={onClose}
             aria-label={t('close')}
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors"
+            className="w-8 h-8 rounded-xl flex items-center justify-center text-moss-muted hover:bg-chalk-sunk hover:text-moss transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -162,8 +162,8 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                     title={unavailable ? t('unavailableTitle', { platform: label }) : undefined}
                     className={`w-full flex items-center gap-4 rounded-2xl border p-4 transition-all text-start group ${
                       unavailable
-                        ? 'border-dashed border-gray-200 bg-gray-50 cursor-not-allowed'
-                        : 'border-gray-100 bg-white hover:border-gray-300 hover:shadow-sm'
+                        ? 'border-dashed border-rule bg-chalk cursor-not-allowed'
+                        : 'border-rule bg-chalk-raised hover:border-rule-strong hover:shadow-sm'
                     }`}
                   >
                     <div
@@ -173,30 +173,30 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                       <PIcon className="w-5 h-5" style={{ color: p.color }} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-bold text-[#121212]">{label}</p>
-                      <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                      <p className="text-sm font-bold text-moss">{label}</p>
+                      <p className="text-xs text-moss-muted mt-0.5 line-clamp-1">
                         {unavailable
                           ? t('unavailableDescription')
                           : t.rich(`platforms.${p.key}Description`, { bdi })}
                       </p>
                     </div>
                     {!unavailable && (
-                      <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-700 transition-colors rtl:rotate-180" />
+                      <ChevronRight className="w-4 h-4 text-moss-muted group-hover:text-moss transition-colors rtl:rotate-180" />
                     )}
                   </button>
                 );
               })}
 
               {/* Instagram coming soon */}
-              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-gray-200 bg-gray-50 p-4 opacity-70">
+              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-rule bg-chalk p-4 opacity-70">
                 <div className="w-11 h-11 rounded-xl bg-pink-50 flex items-center justify-center shrink-0">
                   <span className="text-lg">📸</span>
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-gray-600">{t('instagramLabel')}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{t('instagramNote')}</p>
+                  <p className="text-sm font-bold text-moss-muted">{t('instagramLabel')}</p>
+                  <p className="text-xs text-moss-muted mt-0.5">{t('instagramNote')}</p>
                 </div>
-                <span className="text-[10px] font-bold text-gray-400 bg-gray-200 rounded-full px-2 py-0.5">
+                <span className="text-[10px] font-bold text-moss-muted bg-chalk-sunk rounded-full px-2 py-0.5">
                   {t('instagramBadge')}
                 </span>
               </div>
@@ -206,7 +206,7 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
             <div>
               <button
                 onClick={() => setSelected(null)}
-                className="text-xs text-[#2B2DFF] font-semibold hover:underline mb-4 flex items-center gap-1.5"
+                className="text-xs text-moss-700 font-semibold hover:underline mb-4 flex items-center gap-1.5"
               >
                 <span aria-hidden className="rtl:rotate-180">
                   &larr;
@@ -219,14 +219,14 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                 style={{ background: platform!.bg, border: `1px solid ${platform!.border}` }}
               >
                 {(() => { const SelectedIcon = platform!.Icon; return (
-                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-chalk-raised flex items-center justify-center">
                   <SelectedIcon className="w-5 h-5" style={{ color: platform!.color }} />
                 </div>); })()}
                 <div>
-                  <p className="text-sm font-bold text-[#121212]">
+                  <p className="text-sm font-bold text-moss">
                     {t(`platforms.${platform!.key}Label`)}
                   </p>
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-moss-muted">
                     {t.rich(`platforms.${platform!.key}Description`, { bdi })}
                   </p>
                 </div>
@@ -234,14 +234,14 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
 
               {/* Permissions */}
               <div className="mb-4">
-                <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+                <p className="text-xs font-semibold text-moss-muted mb-2 uppercase tracking-wide">
                   {t('permissionsTitle')}
                 </p>
                 <div className="space-y-1.5">
                   {platform!.scopes.map((scope) => (
-                    <div key={scope} className="flex items-center gap-2 text-xs text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-[#2B2DFF]" />
-                      <code className="font-mono">{scope}</code>
+                    <div key={scope} className="flex items-center gap-2 text-xs text-moss-muted">
+                      <div className="w-1.5 h-1.5 rounded-full bg-moss" />
+                      <code className="font-plexmono">{scope}</code>
                     </div>
                   ))}
                 </div>
@@ -260,7 +260,7 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
               <button
                 onClick={handleConnect}
                 disabled={isConnecting}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-white shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
+                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-chalk shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
                 style={{ backgroundColor: platform!.color }}
               >
                 {isConnecting ? (

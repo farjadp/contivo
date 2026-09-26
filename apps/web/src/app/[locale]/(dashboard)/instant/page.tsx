@@ -16,7 +16,7 @@ export default async function InstantContentPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gradient mb-1">{t('title')}</h1>
+          <h1 className="mb-1 font-display text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-muted-foreground text-sm font-medium">{t('subtitle')}</p>
         </div>
         <CreditBalance />

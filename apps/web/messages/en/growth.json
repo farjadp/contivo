@@ -1,14 +1,14 @@
 {
   "growth": {
     "index": {
-      "metaTitle": "Growth Engine",
-      "title": "Growth Engine",
+      "metaTitle": "Workspaces",
+      "title": "Workspaces",
       "subtitle": "Your AI-powered strategy workspaces. Each row includes direct entry to every internal module with a quick explanation.",
       "newWorkspace": "New Workspace",
       "rowHint": "Each workspace is shown as one row. From inside that row you can go straight into any of its tabs.",
       "empty": {
         "title": "No workspaces yet",
-        "body": "Create your first Growth Engine workspace. Tell us about your brand and we'll build a tailored content strategy in seconds.",
+        "body": "Create your first workspace. Tell us about your brand and we'll build a tailored content strategy in seconds.",
         "cta": "Initialize Workspace"
       },
       "statusActive": "Active",

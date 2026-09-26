@@ -31,8 +31,8 @@ export default async function CompetitorsPage({ searchParams }: Props) {
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 lg:px-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212] mb-2">{t('title')}</h1>
-        <p className="text-gray-500 text-sm max-w-2xl">
+        <h1 className="text-3xl font-bold tracking-tight text-moss mb-2">{t('title')}</h1>
+        <p className="text-moss-muted text-sm max-w-2xl">
           {t('subtitle', { count: workspace.competitors.length })}
         </p>
       </div>

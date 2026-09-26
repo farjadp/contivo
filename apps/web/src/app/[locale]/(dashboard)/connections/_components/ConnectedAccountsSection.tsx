@@ -61,7 +61,7 @@ const STATUS_META: Record<string, { key: string; color: string; Icon: React.Elem
   CONNECTED:      { key: 'connected',     color: 'text-green-600',  Icon: CheckCircle },
   EXPIRED:        { key: 'expired',       color: 'text-yellow-600', Icon: Clock },
   FAILED:         { key: 'failed',        color: 'text-red-600',    Icon: XCircle },
-  REVOKED:        { key: 'revoked',       color: 'text-gray-500',   Icon: XCircle },
+  REVOKED:        { key: 'revoked',       color: 'text-moss-muted',   Icon: XCircle },
   PENDING_REAUTH: { key: 'pendingReauth', color: 'text-orange-500', Icon: AlertCircle },
 };
 
@@ -102,12 +102,12 @@ export function ConnectedAccountsSection({
     <div>
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
-          <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
+          <h3 className="text-base font-bold text-moss">{t('title')}</h3>
+          <p className="text-xs text-moss-muted mt-0.5">{t('subtitle')}</p>
         </div>
         <button
           onClick={onConnectNew}
-          className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B2DFF] text-white px-4 py-2 text-sm font-semibold hover:bg-[#2325d4] transition-colors shadow-sm"
+          className="inline-flex items-center gap-1.5 rounded-xl bg-moss text-chalk px-4 py-2 text-sm font-semibold hover:bg-moss-700 transition-colors shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
           {t('connect')}
@@ -115,22 +115,22 @@ export function ConnectedAccountsSection({
       </div>
 
       {accounts.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 p-10 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-rule p-10 text-center">
           <div className="flex justify-center gap-3 mb-4">
             {(['LINKEDIN', 'X', 'FACEBOOK'] as const).map((p) => {
               const { Icon, color } = PLATFORM_META[p];
               return (
-                <div key={p} className="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100">
+                <div key={p} className="w-10 h-10 rounded-full flex items-center justify-center bg-chalk-sunk">
                   <Icon className="w-5 h-5" style={{ color }} />
                 </div>
               );
             })}
           </div>
-          <p className="text-sm font-semibold text-gray-700">{t('emptyTitle')}</p>
-          <p className="text-xs text-gray-400 mt-1 mb-4">{t.rich('emptyBody', { bdi })}</p>
+          <p className="text-sm font-semibold text-moss">{t('emptyTitle')}</p>
+          <p className="text-xs text-moss-muted mt-1 mb-4">{t.rich('emptyBody', { bdi })}</p>
           <button
             onClick={onConnectNew}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#2B2DFF] text-white px-4 py-2 text-sm font-semibold hover:bg-[#2325d4] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-moss text-chalk px-4 py-2 text-sm font-semibold hover:bg-moss-700 transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             {t('emptyCta')}
@@ -148,7 +148,7 @@ export function ConnectedAccountsSection({
             return (
               <div
                 key={account.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center gap-3">
                   {/* Platform icon */}
@@ -162,7 +162,7 @@ export function ConnectedAccountsSection({
                   {/* Account info */}
                   <div>
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-bold text-[#121212]">{account.accountName}</p>
+                      <p className="text-sm font-bold text-moss">{account.accountName}</p>
                       {account.isDefault && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-1.5 py-0.5">
                           <Star className="w-2.5 h-2.5" />
@@ -170,7 +170,7 @@ export function ConnectedAccountsSection({
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-400">{platform.label} · {account.accountIdentifier}</p>
+                    <p className="text-xs text-moss-muted">{platform.label} · {account.accountIdentifier}</p>
                   </div>
                 </div>
 
@@ -183,7 +183,7 @@ export function ConnectedAccountsSection({
 
                   {/* Last sync */}
                   {account.lastSyncAt && (
-                    <span className="text-xs text-gray-400 hidden md:block">
+                    <span className="text-xs text-moss-muted hidden md:block">
                       {/* Formatted through next-intl so the Persian side gets the
                           Persian calendar, Persian digits and Tehran time. */}
                       {t('synced', {
@@ -201,7 +201,7 @@ export function ConnectedAccountsSection({
                         onClick={() => handleSetDefault(account.id)}
                         disabled={isLoading}
                         title={t('setDefault')}
-                        className="p-1.5 rounded-lg text-gray-400 hover:text-amber-500 hover:bg-amber-50 transition-colors disabled:opacity-50"
+                        className="p-1.5 rounded-lg text-moss-muted hover:text-amber-500 hover:bg-amber-50 transition-colors disabled:opacity-50"
                       >
                         <Star className="w-4 h-4" />
                       </button>
@@ -211,7 +211,7 @@ export function ConnectedAccountsSection({
                         onClick={() => handleReconnect(account.id)}
                         disabled={isLoading}
                         title={t('reconnectTitle')}
-                        className="inline-flex items-center gap-1 text-xs font-semibold text-[#2B2DFF] hover:underline disabled:opacity-50"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline disabled:opacity-50"
                       >
                         <RefreshCw className="w-3.5 h-3.5" />
                         {t('reconnect')}
@@ -221,7 +221,7 @@ export function ConnectedAccountsSection({
                       onClick={() => handleDisconnect(account.id)}
                       disabled={isLoading}
                       title={t('disconnectTitle')}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-lg text-moss-muted hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>

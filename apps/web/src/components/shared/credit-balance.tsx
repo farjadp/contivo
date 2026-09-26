@@ -48,8 +48,8 @@ export function CreditBalance() {
   if (balance === null) return null;
 
   return (
-    <div className="flex items-center gap-2 border border-ink-200 bg-white px-3 py-1.5 rounded-full text-sm font-medium text-ink-800">
-      <Coins className="w-4 h-4 text-ink-500" />
+    <div className="flex items-center gap-2 border border-rule bg-chalk-raised px-3 py-1.5 rounded-full text-sm font-medium text-moss">
+      <Coins className="w-4 h-4 text-moss-muted" />
       {/* The count goes through ICU rather than `toLocaleString`, so a Persian
           balance reads ۱٬۲۵۰ and the word sits on the right side of it. */}
       <span>{t('credits.label', { count: balance })}</span>

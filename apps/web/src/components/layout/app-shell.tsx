@@ -80,13 +80,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   // Full-bleed flows (workspace creation / analysis) render without chrome.
   if (pathname === '/growth/new' || pathname === '/growth/analyzing') {
-    return <main className="h-screen w-full overflow-y-auto bg-chalk font-plex text-moss">{children}</main>;
+    return <main className="theme-chalk h-screen w-full overflow-y-auto bg-chalk font-plex text-moss">{children}</main>;
   }
 
   const primary = NAV_ITEMS.filter((item) => item.href !== '/settings');
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-chalk font-plex text-moss">
+    <div className="theme-chalk flex h-screen flex-col overflow-hidden bg-chalk font-plex text-moss">
       {/* ── Top bar ──────────────────────────────────────────────────── */}
       <header className="flex h-16 shrink-0 items-center gap-6 border-b border-rule px-4 md:px-8">
         <Link href="/dashboard" className="flex items-center gap-2.5">
@@ -109,7 +109,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="ms-auto flex items-center gap-2">
           {/* The marketing switcher, re-tinted for chalk rather than forked. */}
-          <LocaleSwitcher className="me-2 [&_a:hover]:text-moss [&_a[aria-current]]:text-moss [&_a]:text-moss-muted" />
+          <LocaleSwitcher className="me-2 [&_a:hover]:text-moss [&_a[aria-current]]:text-moss [&_a[aria-current]]:decoration-saffron [&_a]:text-moss-muted" />
           <Link
             href="/settings"
             aria-label={t('nav.settings')}

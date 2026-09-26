@@ -91,12 +91,12 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
-          <p className="text-sm text-gray-500 mt-1 max-w-xl">{t.rich('subtitle', { bdi })}</p>
+          <h3 className="text-base font-bold text-moss">{t('title')}</h3>
+          <p className="text-sm text-moss-muted mt-1 max-w-xl">{t.rich('subtitle', { bdi })}</p>
         </div>
         <button
           onClick={() => setShowForm((v) => !v)}
-          className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-[#121212] text-white text-sm font-semibold hover:bg-black/80"
+          className="shrink-0 flex items-center gap-2 px-4 py-2 rounded-xl bg-moss text-chalk text-sm font-semibold hover:bg-moss/80"
         >
           <Plus className="w-4 h-4" />
           {t('add')}
@@ -122,7 +122,7 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
       )}
 
       {showForm && (
-        <div className="rounded-2xl border border-gray-200 p-5 space-y-4">
+        <div className="rounded-2xl border border-rule p-5 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label={t('fieldWorkspace')} hint={t('fieldWorkspaceHint')}>
               <select
@@ -172,13 +172,13 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
             </Field>
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600">
+            <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-xl text-sm font-semibold text-moss-muted">
               {t('cancel')}
             </button>
             <button
               onClick={handleCreate}
               disabled={isPending}
-              className="px-4 py-2 rounded-xl bg-[#2B2DFF] text-white text-sm font-semibold disabled:opacity-60"
+              className="px-4 py-2 rounded-xl bg-moss text-chalk text-sm font-semibold disabled:opacity-60"
             >
               {isPending ? t('creating') : t('create')}
             </button>
@@ -191,21 +191,21 @@ export function SitesSection({ sites, workspaces, appUrl }: Props) {
       ) : (
         <ul className="space-y-3">
           {sites.map((site) => (
-            <li key={site.id} className="rounded-2xl border border-gray-200 p-4">
+            <li key={site.id} className="rounded-2xl border border-rule p-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-gray-400 shrink-0" />
-                    <span className="font-semibold text-[#121212]">{site.name}</span>
+                    <Globe className="w-4 h-4 text-moss-muted shrink-0" />
+                    <span className="font-semibold text-moss">{site.name}</span>
                     <StatusPill status={site.status} label={t(statusKey(site.status))} />
                   </div>
-                  <p className="text-xs text-gray-500 mt-1 break-all" dir="ltr">
+                  <p className="text-xs text-moss-muted mt-1 break-all" dir="ltr">
                     {site.siteUrl}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-moss-muted">
                     <span>{t('metaWorkspace', { name: site.workspaceName })}</span>
                     <span>{t('metaPublished', { count: site.publishedCount })}</span>
-                    <span className="font-mono" dir="ltr">{site.keyPrefix}…</span>
+                    <span className="font-plexmono" dir="ltr">{site.keyPrefix}…</span>
                     {site.lastFetchedAt && (
                       <span>{t('metaLastFetch', { date: formatDate(site.lastFetchedAt) })}</span>
                     )}
@@ -297,26 +297,26 @@ const { posts } = await res.json();`;
   };
 
   return (
-    <div className="rounded-2xl border-2 border-[#2B2DFF] bg-[#2B2DFF]/5 p-5 space-y-4">
+    <div className="rounded-2xl border-2 border-moss bg-moss/5 p-5 space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h4 className="font-bold text-[#121212]">
+          <h4 className="font-bold text-moss">
             {t.rich('keyTitle', { bdi, site: siteName })}
           </h4>
-          <p className="text-sm text-gray-600 mt-1">{t.rich('keyBody', { bdi })}</p>
+          <p className="text-sm text-moss-muted mt-1">{t.rich('keyBody', { bdi })}</p>
         </div>
-        <button onClick={onDismiss} className="text-sm font-semibold text-gray-500 shrink-0">
+        <button onClick={onDismiss} className="text-sm font-semibold text-moss-muted shrink-0">
           {t('keyDone')}
         </button>
       </div>
 
       <div className="flex items-center gap-2">
-        <code dir="ltr" className="flex-1 bg-white border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono break-all">
+        <code dir="ltr" className="flex-1 bg-chalk-raised border border-rule rounded-lg px-3 py-2 text-xs font-plexmono break-all">
           {apiKey}
         </code>
         <button
           onClick={() => copy(apiKey, 'key')}
-          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#121212] text-white text-xs font-semibold"
+          className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-moss text-chalk text-xs font-semibold"
         >
           {copied === 'key' ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
           {copied === 'key' ? t('keyCopied') : t('keyCopy')}
@@ -325,17 +325,17 @@ const { posts } = await res.json();`;
 
       <div>
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+          <span className="text-xs font-bold uppercase tracking-wide text-moss-muted">
             {t('keyFetchPosts')}
           </span>
-          <button onClick={() => copy(snippet, 'snippet')} className="text-xs font-semibold text-[#2B2DFF]">
+          <button onClick={() => copy(snippet, 'snippet')} className="text-xs font-semibold text-moss-700">
             {copied === 'snippet' ? t('keyCopied') : t('keyCopySnippet')}
           </button>
         </div>
-        <pre dir="ltr" className="bg-white border border-gray-200 rounded-lg p-3 text-xs font-mono overflow-x-auto text-start">
+        <pre dir="ltr" className="bg-chalk-raised border border-rule rounded-lg p-3 text-xs font-plexmono overflow-x-auto text-start">
           {snippet}
         </pre>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-moss-muted mt-2">
           {t.rich('keyStore', { code })}{' '}
           {t.rich('keySinglePost', { code, slug: '<slug>' })}
         </p>
@@ -345,17 +345,17 @@ const { posts } = await res.json();`;
 }
 
 /** Code fragments are Latin by nature; `globals.css` isolates <code> under fa. */
-const code = (chunks: React.ReactNode) => <code className="font-mono">{chunks}</code>;
+const code = (chunks: React.ReactNode) => <code className="font-plexmono">{chunks}</code>;
 
 const inputCls =
-  'block w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 focus:border-black focus:outline-none focus:ring-1 focus:ring-black';
+  'block w-full rounded-xl border border-rule px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none focus:ring-1 focus:ring-moss';
 
 function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-900 mb-1.5">{label}</label>
+      <label className="block text-sm font-medium text-moss mb-1.5">{label}</label>
       {children}
-      {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
+      {hint && <p className="mt-1 text-xs text-moss-muted">{hint}</p>}
     </div>
   );
 }
@@ -378,8 +378,8 @@ function IconButton({
       title={title}
       onClick={onClick}
       disabled={disabled}
-      className={`p-2 rounded-lg border border-gray-200 disabled:opacity-50 ${
-        danger ? 'text-red-600 hover:bg-red-50' : 'text-gray-600 hover:bg-gray-50'
+      className={`p-2 rounded-lg border border-rule disabled:opacity-50 ${
+        danger ? 'text-red-600 hover:bg-red-50' : 'text-moss-muted hover:bg-chalk'
       }`}
     >
       {children}
@@ -399,7 +399,7 @@ function statusKey(status: string) {
 function StatusPill({ status, label }: { status: string; label: string }) {
   const styles: Record<string, string> = {
     ACTIVE: 'bg-green-100 text-green-800',
-    DISABLED: 'bg-gray-100 text-gray-700',
+    DISABLED: 'bg-chalk-sunk text-moss',
     REVOKED: 'bg-red-100 text-red-800',
   };
   return (
@@ -412,11 +412,11 @@ function StatusPill({ status, label }: { status: string; label: string }) {
 function Empty({ title, body }: { title: string; body: string }) {
   return (
     <div className="py-14 text-center">
-      <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-        <Globe className="w-6 h-6 text-gray-400" />
+      <div className="w-14 h-14 rounded-2xl bg-chalk-sunk flex items-center justify-center mx-auto mb-4">
+        <Globe className="w-6 h-6 text-moss-muted" />
       </div>
-      <h3 className="text-base font-bold text-[#121212]">{title}</h3>
-      <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto">{body}</p>
+      <h3 className="text-base font-bold text-moss">{title}</h3>
+      <p className="text-sm text-moss-muted mt-1 max-w-sm mx-auto">{body}</p>
     </div>
   );
 }

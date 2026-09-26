@@ -10,11 +10,11 @@ import { cn } from '@/lib/utils';
 // ─── Channel → icon + label ───────────────────────────────────────────────────
 
 const CHANNEL_META: Record<string, { Icon: React.ElementType; color: string }> = {
-  linkedin: { Icon: Linkedin, color: 'text-blue-400' },
-  twitter: { Icon: Twitter, color: 'text-sky-400' },
-  instagram: { Icon: Camera, color: 'text-pink-400' },
-  email: { Icon: Mail, color: 'text-violet-400' },
-  blog: { Icon: BookOpen, color: 'text-emerald-400' },
+  linkedin: { Icon: Linkedin, color: 'text-moss-700' },
+  twitter: { Icon: Twitter, color: 'text-moss-700' },
+  instagram: { Icon: Camera, color: 'text-moss-700' },
+  email: { Icon: Mail, color: 'text-moss-700' },
+  blog: { Icon: BookOpen, color: 'text-moss-700' },
 };
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -51,7 +51,7 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
   return (
     <div className="relative rounded-2xl border border-border bg-card overflow-hidden shadow-sm">
       {/* Top accent gradient bar */}
-      <div className="absolute inset-x-0 top-0 h-1 bg-brand-gradient" />
+      <div className="absolute inset-x-0 top-0 h-1 bg-saffron" />
 
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between border-b border-border px-5 py-3">
@@ -70,7 +70,7 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
             className={cn(
               'flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all',
               copied
-                ? 'border-green-500/40 bg-green-500/10 text-green-400'
+                ? 'border-moss-700 bg-chalk-sunk text-moss-700'
                 : 'border-border text-muted-foreground hover:border-muted-foreground hover:text-foreground',
             )}
           >
@@ -124,7 +124,7 @@ export function InstantResult({ item, creditsRemaining, onReset }: InstantResult
             {t('creditsUsed', { count: item.creditsCost ?? 0 })}
           </span>
           {creditsRemaining !== undefined && (
-            <span className="text-[11px] font-medium text-brand-cyan">
+            <span className="text-[11px] font-medium text-moss-700">
               {t('creditsRemaining', { count: creditsRemaining })}
             </span>
           )}

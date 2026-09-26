@@ -37,14 +37,14 @@ interface PublishQueueSectionProps {
 
 /** `key` indexes into `connections.queue.status.*` — the label itself is copy. */
 const STATUS_CONFIG: Record<string, { key: string; className: string; Icon: React.ElementType }> = {
-  DRAFT:          { key: 'draft',      className: 'text-gray-500 bg-gray-100',    Icon: Clock },
+  DRAFT:          { key: 'draft',      className: 'text-moss-muted bg-chalk-sunk',    Icon: Clock },
   READY:          { key: 'ready',      className: 'text-blue-600 bg-blue-50',     Icon: Zap },
-  SCHEDULED:      { key: 'scheduled',  className: 'text-indigo-600 bg-indigo-50', Icon: Clock },
+  SCHEDULED:      { key: 'scheduled',  className: 'text-moss-700 bg-chalk-sunk', Icon: Clock },
   PUBLISH_QUEUED: { key: 'queued',     className: 'text-purple-600 bg-purple-50', Icon: Zap },
   PUBLISHING:     { key: 'publishing', className: 'text-yellow-600 bg-yellow-50', Icon: Loader2 },
   PUBLISHED:      { key: 'published',  className: 'text-green-600 bg-green-50',   Icon: CheckCircle },
   FAILED:         { key: 'failed',     className: 'text-red-600 bg-red-50',        Icon: XCircle },
-  CANCELLED:      { key: 'cancelled',  className: 'text-gray-400 bg-gray-100',    Icon: X },
+  CANCELLED:      { key: 'cancelled',  className: 'text-moss-muted bg-chalk-sunk',    Icon: X },
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -79,23 +79,23 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
+        <h3 className="text-base font-bold text-moss">{t('title')}</h3>
+        <p className="text-xs text-moss-muted mt-0.5">{t('subtitle')}</p>
       </div>
 
       {activeJobs.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
-          <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-3">
-            <Clock className="w-5 h-5 text-[#2B2DFF]" />
+        <div className="rounded-2xl border-2 border-dashed border-rule p-8 text-center">
+          <div className="w-10 h-10 rounded-full bg-chalk-sunk flex items-center justify-center mx-auto mb-3">
+            <Clock className="w-5 h-5 text-moss-700" />
           </div>
-          <p className="text-sm font-semibold text-gray-700">{t('emptyTitle')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('emptyBody')}</p>
+          <p className="text-sm font-semibold text-moss">{t('emptyTitle')}</p>
+          <p className="text-xs text-moss-muted mt-1">{t('emptyBody')}</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-gray-100 text-start text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <tr className="border-b border-rule text-start text-xs font-semibold text-moss-muted uppercase tracking-wide">
                 <th className="pb-3 pe-4 text-start">{t('columnPlatform')}</th>
                 <th className="pb-3 pe-4 text-start">{t('columnScheduled')}</th>
                 <th className="pb-3 pe-4 text-start">{t('columnStatus')}</th>
@@ -103,18 +103,18 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                 <th className="pb-3 text-start">{t('columnActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-rule">
               {activeJobs.map((job) => {
                 const config = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.DRAFT;
                 const StatusIcon = config.Icon;
                 const isJobLoading = loading?.endsWith(job.id);
 
                 return (
-                  <tr key={job.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-3 pe-4 font-semibold text-[#121212]">
+                  <tr key={job.id} className="hover:bg-chalk/50 transition-colors">
+                    <td className="py-3 pe-4 font-semibold text-moss">
                       {PLATFORM_LABELS[job.platform] ?? job.platform}
                     </td>
-                    <td className="py-3 pe-4 text-gray-500 text-xs">
+                    <td className="py-3 pe-4 text-moss-muted text-xs">
                       {/* Formatted through next-intl so the Persian side gets the
                           Persian calendar, Persian digits and Tehran time. */}
                       {job.scheduledAtUtc
@@ -130,7 +130,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                         {t(`status.${config.key}`)}
                       </span>
                     </td>
-                    <td className="py-3 pe-4 text-gray-500 text-xs">
+                    <td className="py-3 pe-4 text-moss-muted text-xs">
                       {job.retryCount > 0 ? (
                         <span className="text-orange-500 font-semibold">
                           ×{format.number(job.retryCount)}
@@ -143,7 +143,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                           <button
                             onClick={() => handleRetry(job.id)}
                             disabled={isJobLoading}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#2B2DFF] hover:underline disabled:opacity-50"
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline disabled:opacity-50"
                           >
                             <RotateCcw className="w-3.5 h-3.5" />
                             {t('retry')}

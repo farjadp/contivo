@@ -36,32 +36,32 @@ function Toggle({
 }) {
   return (
     <div className={`flex items-start gap-4 rounded-2xl border p-4 transition-colors ${
-      disabled ? 'bg-gray-50 border-gray-100 opacity-60' : 'bg-white border-gray-100 hover:border-gray-200'
+      disabled ? 'bg-chalk border-rule opacity-60' : 'bg-chalk-raised border-rule hover:border-rule'
     }`}>
-      <div className="w-9 h-9 rounded-xl bg-[#F3F4FF] flex items-center justify-center shrink-0">
-        <Icon className="w-4.5 h-4.5 text-[#2B2DFF]" />
+      <div className="w-9 h-9 rounded-xl bg-chalk-sunk flex items-center justify-center shrink-0">
+        <Icon className="w-4.5 h-4.5 text-moss-700" />
       </div>
       <div className="flex-1">
         <div className="flex items-center justify-between">
-          <p className="text-sm font-bold text-[#121212]">{label}</p>
+          <p className="text-sm font-bold text-moss">{label}</p>
           <button
             disabled={disabled}
             onClick={() => !disabled && onChange(!checked)}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full transition-colors ${
-              checked ? 'bg-[#2B2DFF]' : 'bg-gray-200'
+              checked ? 'bg-moss' : 'bg-chalk-sunk'
             } ${disabled ? 'cursor-not-allowed' : ''}`}
           >
             <span
               /* Pinned to the logical start so the knob rests on the correct
                  side in both directions; the travel is mirrored explicitly
                  because Tailwind does not flip translate-x under `rtl`. */
-              className={`absolute top-0.5 start-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
+              className={`absolute top-0.5 start-0.5 h-4 w-4 rounded-full bg-chalk-raised shadow-sm transition-transform ${
                 checked ? 'translate-x-4 rtl:-translate-x-4' : 'translate-x-0'
               }`}
             />
           </button>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+        <p className="text-xs text-moss-muted mt-0.5">{description}</p>
       </div>
     </div>
   );
@@ -77,8 +77,8 @@ export function PublishRulesSection() {
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
+        <h3 className="text-base font-bold text-moss">{t('title')}</h3>
+        <p className="text-xs text-moss-muted mt-0.5">{t('subtitle')}</p>
       </div>
 
       <div className="space-y-3">

@@ -29,8 +29,8 @@ export default async function GrowthReviewPage({ searchParams }: Props) {
   return (
     <div className="max-w-4xl mx-auto py-8 lg:px-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212] mb-2">{t('title')}</h1>
-        <p className="text-gray-500 text-sm">
+        <h1 className="text-3xl font-bold tracking-tight text-moss mb-2">{t('title')}</h1>
+        <p className="text-moss-muted text-sm">
           {t('subtitle')}
         </p>
       </div>
