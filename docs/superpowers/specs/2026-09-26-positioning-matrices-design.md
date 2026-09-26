@@ -42,7 +42,7 @@ Chosen because both ends can be argued from evidence the app already has.
 | key | X | Y | Evidence sources |
 |---|---|---|---|
 | `offer_breadth_specialization` | Breadth of offer (1 = one thing, 10 = full suite) | Specialization (1 = generalist, 10 = niche expert) | `keyFeatures`, `positioning`, site headings, brandSummary offers |
-| `content_presence_focus` | Content presence (1 = almost none, 10 = publishing machine) | Content focus (1 = scattered topics, 10 = tightly themed) | `competitorKeywordsIntel` clusters and counts when present; otherwise site evidence (blog/nav headings). If neither exists the point is `estimated` (§5.4). |
+| `content_presence_focus` | Content presence (1 = almost none, 10 = publishing machine) | Content focus (1 = scattered topics, 10 = tightly themed) | Site evidence (blog/nav headings, discovery `site` items). `competitorKeywordsIntel` is used **only** once it carries a provenance flag proving it came from live DataForSEO: today `lib/dataforseo.ts` returns unmarked mock data whenever `NODE_ENV === 'development'` or credentials are missing (verified 2026-09-26, `serp_analyses` empty locally), and the stored intel has no source field. Until the DataForSEO fix adds `data_source: 'LIVE' \| 'MOCK'`, treat keyword intel as absent. If no site evidence exists either, the point is `estimated` (§5.4). |
 
 ### 3.2 Market (kind `MARKET`, 1–3 charts, default 2)
 
