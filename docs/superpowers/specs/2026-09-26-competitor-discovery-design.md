@@ -61,7 +61,9 @@ keyFeatures     String[]  @default([])
 rejectionReason String?   // "DIFFERENT_MARKET" | "TOO_BIG" | "DIFFERENT_PRODUCT" | "NOT_A_COMPANY" | free text
 discoveryRunId  String?
 ```
-`EvidenceItem = { kind: 'citation' | 'serp' | 'site'; url: string; title?: string; snippet?: string; query?: string }`
+`EvidenceItem = { id: string; kind: 'citation' | 'serp' | 'site'; url: string; title?: string; snippet?: string; query?: string }`
+
+`id` is 8 hex characters assigned when the item is first stored. On a rerun, an item whose normalised URL already exists **keeps its id**; only genuinely new items get new ones. Other features cite evidence by id (positioning matrices does), so a rerun must never silently re-point an existing citation.
 
 `description` goes back to being a plain description. Legacy rows keep their flattened string and `confidence = null`. There is no parse-back migration.
 

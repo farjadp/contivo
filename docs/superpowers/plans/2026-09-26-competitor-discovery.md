@@ -67,6 +67,7 @@
   ```ts
   export function normalizeCandidateDomain(input: string): string | null
   export function isExcludedDomain(domain: string): boolean
+  export function normalizeEvidenceUrl(input: string): string   // lowercase host, no hash, no trailing slash
   ```
   `normalizeCandidateDomain` returns the registrable domain in lowercase with no `www.`, or `null` when the input is not a usable company domain (unparseable, an IP, or on the excluded list).
 
@@ -277,6 +278,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   // types.ts
   export type TargetMarket = { country: string | null; language: 'fa' | 'en' };
   export type EvidenceItem = {
+    id: string;              // 8 hex chars, stable across reruns for the same url
     kind: 'citation' | 'serp' | 'site';
     url: string;
     title?: string;
@@ -319,9 +321,18 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
   export function rankAndKeep(list: JudgedCandidate[], market: TargetMarket): ScoredCandidate[]
   ```
 
-- [ ] **Step 1: Write the types**
+- [ ] **Step 1: Write the types and the evidence-id helper**
 
-Create `apps/web/src/lib/competitors/types.ts` with exactly the type declarations listed in the **Produces** block above.
+Create `apps/web/src/lib/competitors/types.ts` with exactly the type declarations listed in the **Produces** block above, plus:
+```ts
+import { randomBytes } from 'node:crypto';
+
+/** 8 hex chars. Short enough to read in a payload, unique enough within one competitor. */
+export function newEvidenceId(): string {
+  return randomBytes(4).toString('hex');
+}
+```
+No new dependency — `nanoid` is not installed and `node:crypto` is already available server-side.
 
 - [ ] **Step 2: Write the failing test**
 
@@ -801,6 +812,8 @@ Load the run and its workspace with competitors. Set `status: 'RUNNING'`. Then:
 4. `JUDGE` → `judgeCandidates`, then `rankAndKeep`.
 5. `SAVE` → upsert each kept candidate by `(workspaceId, domain)`. On an existing row, write the new fields but **never** touch `userDecision`. New rows get `userDecision: 'PENDING'`, `source: 'AI'`, `discoveryRunId`.
 
+   **Evidence ids must survive a rerun.** Before writing evidence to an existing competitor, read its stored evidence, build a map of `normalizeEvidenceUrl(url) -> id`, and reuse the id for any new item whose normalised URL matches. Only genuinely new URLs get `newEvidenceId()`. Other features cite evidence by id — the positioning-matrices work depends on this — so a rerun must never re-point an existing citation.
+
 Finish with `status: 'DONE'` and `savedCount` when at least one was saved, `'EMPTY'` when none survived, and `'FAILED'` with `error` on a thrown error. Always set `finishedAt`, accumulate `tokensUsed`, and write `sourceStats` with per-stage counts. Keep `writeActivityLog` calls for `COMPETITOR_DISCOVERY_RUN` so the admin console keeps working.
 
 - [ ] **Step 2: Add stale-run reaping**
@@ -1125,6 +1138,6 @@ Report the median tokens and duration per run to the user. **Do not set a cost c
 
 **Spec coverage:** §4 → Task 3. §5.0 → Tasks 7, 8. §5.1–5.2 → Task 4. §5.3 → Tasks 1, 5. §5.4–5.5 → Task 6. §5.6 → Task 2. §5.7 → Task 7. §5.8 → Task 8. §6 → Tasks 10, 11. §7 → Task 9. §8 → Task 11 step 6. §9 → Tasks 5, 7, 8. §10 → Tasks 1, 2, 9 (unit), 7, 8, 10 (live). §11 out of scope, untouched.
 
-**Teammate dependency:** the positioning-matrices session (same branch, code not started, waiting on this work) depends on three things this plan already produces: `selectCompetitors` returning `{ competitors, basis }`, addressable `Competitor.evidence` items plus `positioning` / `keyFeatures` / `labels` / `confidence`, and the background-run pattern being reusable (Task 8 step 2). Message them the final signatures when Task 11 is done.
+**Teammate dependency:** the positioning-matrices session (same branch, code not started, waiting on this work) depends on three things this plan produces: `selectCompetitors` returning `{ competitors, basis }`, evidence items with **stable ids** (Task 2 step 1, preserved on rerun in Task 7 step 1) plus `positioning` / `keyFeatures` / `labels` / `confidence`, and the background-run pattern being reusable (Task 8 step 2). Message them the final signatures when Task 11 is done.
 
 **Known gap, accepted:** the spec's integration test with recorded OpenAI fixtures (§10) is replaced by the live verification steps in Tasks 5–8, because there is no fixture harness in this repo and building one would be a larger job than the pipeline. The invariants it would have covered — rejected domains never reappear, decisions never overwritten, the ten cap — are covered by Task 7 step 3 against the real database and by the Task 2 unit tests.
