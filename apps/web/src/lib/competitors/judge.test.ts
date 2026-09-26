@@ -6,6 +6,7 @@ import {
   extractHtmlLangAttr,
   extractTitle,
   forceIsCompetitorFalseWhenLabelsEmpty,
+  mapCertaintyToConfidence,
   normalizeJudgedType,
   normalizeLabels,
   pickTopCandidates,
@@ -181,6 +182,22 @@ describe('normalizeJudgedType', () => {
     expect(normalizeJudgedType('DIRECT')).toBe('DIRECT');
     expect(normalizeJudgedType('garbage')).toBe('DIRECT');
     expect(normalizeJudgedType(undefined)).toBe('DIRECT');
+  });
+});
+
+describe('mapCertaintyToConfidence', () => {
+  it('maps each of the three recognised buckets to its fixed number', () => {
+    expect(mapCertaintyToConfidence('certain')).toBe(0.9);
+    expect(mapCertaintyToConfidence('likely')).toBe(0.7);
+    expect(mapCertaintyToConfidence('unsure')).toBe(0.5);
+  });
+
+  it('rejects an unrecognised value rather than defaulting to a passing number', () => {
+    expect(mapCertaintyToConfidence('very certain')).toBeNull();
+    expect(mapCertaintyToConfidence('CERTAIN')).toBeNull();
+    expect(mapCertaintyToConfidence(1)).toBeNull();
+    expect(mapCertaintyToConfidence(undefined)).toBeNull();
+    expect(mapCertaintyToConfidence(null)).toBeNull();
   });
 });
 

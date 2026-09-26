@@ -322,18 +322,51 @@ Rules, applied strictly:
 - "SEO" means it competes for the same searches. "BUSINESS" means it sells the same thing to the same buyer. Both can apply; at least one must, or isCompetitor is false.`;
 
 /**
- * Confidence rubric, kept separate from `JUDGE_RULES` (which is reproduced
- * verbatim from the brief and must not be touched). Without this, the
- * `confidence` field is an unanchored float with no stated meaning — a live
- * run returned 1.0 for every candidate regardless of verdict, which makes
- * the number useless as the input to a keep-threshold or confidence bands.
+ * Certainty rubric, kept separate from `JUDGE_RULES` (which is reproduced
+ * verbatim from the brief and must not be touched).
+ *
+ * Round 1 tried a free `confidence: number` field with a written rubric;
+ * live runs still came back compressed into the top of the range (0.90,
+ * 0.95, 0.98 — never below 0.8, regardless of verdict). That's a property
+ * of asking a model to self-report a probability, not a prompt-wording
+ * problem, so a third rubric wasn't tried. Instead the model now picks one
+ * of three named buckets, and this file maps that pick to a number
+ * deterministically in code (`mapCertaintyToConfidence`) — the model can no
+ * longer choose the number itself, only the bucket.
  */
-const CONFIDENCE_RUBRIC = `Score "confidence" using this rubric, applied strictly:
-- Confidence describes how well the evidence pins down your isCompetitor call. It is not enthusiasm about the company, and a confident rejection is just as valid as a confident acceptance — a candidate you are sure is NOT a competitor also gets high confidence.
-- Use 0.9 or higher only when the evidence explicitly and unambiguously shows the same product sold to the same buyer (or, for a rejection, unambiguously shows it is not).
-- Use 0.6 to 0.8 when your call is a reasonable inference from what the site says, not a direct statement of it.
-- Use below 0.6 when the evidence is thin, ambiguous, or leaves real doubt either way.
-- 1.0 is not a default value. It should be rare. Do not give every candidate the same confidence — let the score actually vary with how certain the evidence makes you.`;
+const CONFIDENCE_RUBRIC = `Score "certainty" using this rubric, applied strictly:
+- Certainty describes how well the evidence pins down your isCompetitor call. It is not enthusiasm about the company, and a confident rejection is just as valid as a confident acceptance — a candidate you are sure is NOT a competitor is also "certain".
+- Use "certain" only when the evidence explicitly and unambiguously settles the call, either way — the same product sold to the same buyer, or unambiguously not.
+- Use "likely" when your call is a reasonable inference from what the site says, not a direct statement of it.
+- Use "unsure" when the evidence is thin, ambiguous, or leaves real doubt either way.`;
+
+/** The three certainty buckets the judge is allowed to pick from. */
+export type Certainty = 'certain' | 'likely' | 'unsure';
+
+/**
+ * The deterministic, code-side mapping from the model's certainty bucket to
+ * a numeric confidence. This is the only place a `judgeConfidence` number is
+ * produced — the model never emits a number directly, closing off the
+ * compression-toward-1.0 failure mode round 1 found.
+ */
+const CERTAINTY_CONFIDENCE: Record<Certainty, number> = {
+  certain: 0.9,
+  likely: 0.7,
+  unsure: 0.5,
+};
+
+/**
+ * Map a raw `certainty` value to its fixed confidence number, or `null` when
+ * it isn't one of the three recognised buckets. An unrecognised value is a
+ * parse failure like any other malformed field — the caller must drop the
+ * candidate, never fall back to a passing number.
+ */
+export function mapCertaintyToConfidence(value: unknown): number | null {
+  if (value === 'certain' || value === 'likely' || value === 'unsure') {
+    return CERTAINTY_CONFIDENCE[value];
+  }
+  return null;
+}
 
 const JUDGE_SCHEMA = {
   type: 'object',
@@ -349,12 +382,11 @@ const JUDGE_SCHEMA = {
           labels: { type: 'array', items: { type: 'string', enum: ['SEO', 'BUSINESS'] } },
           type: { type: 'string', enum: ['DIRECT', 'INDIRECT', 'ASPIRATIONAL'] },
           scaleMatch: { type: 'boolean' },
-          confidence: {
-            type: 'number',
-            minimum: 0,
-            maximum: 1,
+          certainty: {
+            type: 'string',
+            enum: ['certain', 'likely', 'unsure'],
             description:
-              'How well the evidence pins down the isCompetitor call, not enthusiasm about the company. 0.9+ only when the evidence explicitly and unambiguously settles it either way; 0.6-0.8 for a reasonable inference; below 0.6 when the evidence is thin or ambiguous. 1.0 is rare, never a default — vary the score with actual certainty.',
+              'How well the evidence pins down the isCompetitor call, not enthusiasm about the company. "certain": the evidence explicitly and unambiguously settles the call, either way. "likely": a reasonable inference from what the site says. "unsure": the evidence is thin or ambiguous. A confident rejection is also "certain".',
           },
           reason: { type: 'string' },
           positioning: { type: 'string' },
@@ -368,7 +400,7 @@ const JUDGE_SCHEMA = {
           'labels',
           'type',
           'scaleMatch',
-          'confidence',
+          'certainty',
           'reason',
           'positioning',
           'keyFeatures',
@@ -479,6 +511,12 @@ async function runOneBatch(
       const candidate = byDomain.get(domain);
       if (!candidate) continue; // unmatched result — never fabricate a candidate for it
 
+      // An unrecognised certainty value is a parse failure like any other
+      // malformed field: drop the candidate rather than defaulting to a
+      // number that would let it pass a downstream keep-threshold.
+      const judgeConfidence = mapCertaintyToConfidence(record.certainty);
+      if (judgeConfidence === null) continue;
+
       const labels = normalizeLabels(record.labels);
       const isCompetitor = forceIsCompetitorFalseWhenLabelsEmpty(Boolean(record.isCompetitor), labels);
 
@@ -489,7 +527,7 @@ async function runOneBatch(
         labels,
         type: normalizeJudgedType(record.type),
         scaleMatch: Boolean(record.scaleMatch),
-        judgeConfidence: typeof record.confidence === 'number' && Number.isFinite(record.confidence) ? record.confidence : 0,
+        judgeConfidence,
         reason: typeof record.reason === 'string' ? record.reason : '',
         positioning: typeof record.positioning === 'string' ? record.positioning : null,
         keyFeatures: Array.isArray(record.keyFeatures)
