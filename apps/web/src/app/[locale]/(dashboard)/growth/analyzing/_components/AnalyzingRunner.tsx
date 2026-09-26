@@ -115,28 +115,28 @@ function AnalyzingContent() {
 function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => void }) {
   const t = useTranslations('growth.analyzing');
   return (
-    <div className="w-full h-full min-h-[80vh] flex items-center justify-center bg-[#FDFCF8] text-[#121212] rounded-[32px] border border-[#121212]/10 p-8">
+    <div className="w-full h-full min-h-[80vh] flex items-center justify-center bg-chalk-raised text-moss rounded-[32px] border border-moss/10 p-8">
       <div className="max-w-lg">
-        <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-[#C04C36] mb-8">
+        <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase text-saffron-ink mb-8">
           <AlertTriangle className="h-4 w-4" /> {t('error.eyebrow')}
         </div>
         <h1 className="text-4xl md:text-5xl font-medium tracking-tighter leading-[1] mb-6">
           {t('error.titleTop')}
           <br />
-          <span className="italic text-[#121212]/50 font-serif font-light">{t('error.titleAccent')}</span>
+          <span className="italic text-moss/50 font-serif font-light">{t('error.titleAccent')}</span>
         </h1>
-        <p className="text-lg text-[#121212]/70 leading-relaxed font-medium mb-10">{message}</p>
+        <p className="text-lg text-moss/70 leading-relaxed font-medium mb-10">{message}</p>
         <div className="flex flex-wrap gap-3">
           <button
             onClick={onRetry}
-            className="group inline-flex items-center gap-3 bg-[#121212] text-[#FDFCF8] py-4 px-6 hover:bg-[#C04C36] transition-colors duration-500"
+            className="group inline-flex items-center gap-3 bg-moss text-chalk py-4 px-6 hover:bg-moss-700 transition-colors duration-500"
           >
             <RefreshCw className="w-4 h-4" />
             <span className="text-sm font-bold tracking-widest uppercase">{t('error.retry')}</span>
           </button>
           <Link
             href="/growth"
-            className="inline-flex items-center py-4 px-6 border border-[#121212]/20 text-sm font-bold tracking-widest uppercase hover:border-[#121212] transition-colors"
+            className="inline-flex items-center py-4 px-6 border border-moss/20 text-sm font-bold tracking-widest uppercase hover:border-moss transition-colors"
           >
             {t('error.back')}
           </Link>
@@ -149,23 +149,23 @@ function AnalyzingError({ message, onRetry }: { message: string; onRetry: () => 
 function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
   const t = useTranslations('growth.analyzing');
   return (
-    <div className="w-full h-full min-h-[80vh] flex flex-col lg:flex-row bg-[#FDFCF8] text-[#121212] overflow-hidden rounded-[32px] border border-[#121212]/10">
+    <div className="w-full h-full min-h-[80vh] flex flex-col lg:flex-row bg-chalk-raised text-moss overflow-hidden rounded-[32px] border border-moss/10">
 
       {/* Left Column: Intro */}
-      <div className="w-full lg:w-[45%] p-8 lg:p-12 xl:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-e border-[#121212]/10 bg-[#EFECE5]">
+      <div className="w-full lg:w-[45%] p-8 lg:p-12 xl:p-16 flex flex-col justify-between border-b lg:border-b-0 lg:border-e border-moss/10 bg-chalk">
         <div>
            <div className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase opacity-50 mb-16">
               {t('processing')}
            </div>
 
-           <h1 className="text-5xl md:text-6xl font-medium tracking-tighter leading-[1] text-[#121212] mb-8">
+           <h1 className="text-5xl md:text-6xl font-medium tracking-tighter leading-[1] text-moss mb-8">
              <div className="animate-in slide-in-from-bottom duration-700 delay-100 fill-mode-both">{t('titleTop')}</div>
              <div className="animate-in slide-in-from-bottom duration-700 delay-200 fill-mode-both">
-                 <span className="italic text-[#121212]/50 font-serif font-light">{t('titleAccent')}</span>
+                 <span className="italic text-moss/50 font-serif font-light">{t('titleAccent')}</span>
              </div>
            </h1>
 
-           <p className="text-lg text-[#121212]/70 leading-relaxed font-medium max-w-sm animate-in fade-in duration-1000 delay-300 fill-mode-both">
+           <p className="text-lg text-moss/70 leading-relaxed font-medium max-w-sm animate-in fade-in duration-1000 delay-300 fill-mode-both">
              {/* The brand name is a Latin island in Persian prose; without the
                  isolate the punctuation around it jumps sides. */}
              {t.rich('lead', { brand: (chunks) => <bdi>{chunks}</bdi> })}
@@ -173,16 +173,16 @@ function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
         </div>
 
         <div className="hidden lg:flex items-center gap-3 mt-12 animate-pulse">
-            <div className="w-3 h-3 bg-[#C04C36]" />
+            <div className="w-3 h-3 rotate-45 bg-saffron" />
             <span className="text-xs font-bold tracking-widest uppercase opacity-40">{t('doNotClose')}</span>
         </div>
       </div>
 
       {/* Right Column: Steps Progress array */}
-      <div className="w-full lg:w-[55%] p-8 lg:p-12 xl:p-24 flex flex-col justify-center bg-[#FDFCF8] animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
+      <div className="w-full lg:w-[55%] p-8 lg:p-12 xl:p-24 flex flex-col justify-center bg-chalk-raised animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
          <div className="w-full max-w-md mx-auto relative ps-4">
              {/* Timeline line */}
-             <div className="absolute start-0 top-6 bottom-6 w-[2px] bg-[#121212]/10 rounded-full" />
+             <div className="absolute start-0 top-6 bottom-6 w-[2px] bg-moss/10 rounded-full" />
 
              {STEPS.map((step, index) => {
                 const isActive = index === currentStepIndex;
@@ -197,7 +197,7 @@ function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
                   >
                      {/* Timeline Node */}
                      <div className={`absolute start-[-5px] top-[calc(50%-5px)] w-[12px] h-[12px] rounded-sm transition-all duration-700 ${
-                         isPast ? 'bg-[#121212]/40' : isActive ? 'bg-[#C04C36]' : 'bg-[#121212]/20'
+                         isPast ? 'bg-moss/40' : isActive ? 'bg-saffron' : 'bg-moss/20'
                      }`}
                      style={{
                          transform: isActive ? 'rotate(45deg) scale(1.2)' : 'rotate(0deg)'
@@ -205,14 +205,14 @@ function AnalyzingLayout({ currentStepIndex }: { currentStepIndex: number }) {
 
                      <div className="flex flex-col">
                         <span className={`text-[10px] sm:text-xs font-bold tracking-widest uppercase mb-1 transition-colors duration-500 ${
-                            isActive ? 'text-[#C04C36]' : 'text-[#121212]/40'
+                            isActive ? 'text-saffron-ink' : 'text-moss/40'
                         }`}>
                            {t('phase', { n: step.id })}
-                           {isActive && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/60 animate-pulse">{t('running')}</span>}
-                           {isPast && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-[#121212]/40">{t('complete')}</span>}
+                           {isActive && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-moss/60 animate-pulse">{t('running')}</span>}
+                           {isPast && <span className="ms-2 lowercase italic font-serif font-medium tracking-normal text-moss/40">{t('complete')}</span>}
                         </span>
                         <span className={`text-xl md:text-2xl font-medium tracking-tighter transition-colors duration-500 ${
-                          isPast ? 'text-[#121212] line-through decoration-[#121212]/30' : isActive ? 'text-[#121212]' : 'text-[#121212]/60'
+                          isPast ? 'text-moss line-through decoration-moss/30' : isActive ? 'text-moss' : 'text-moss/60'
                         }`}>
                           {t(`steps.${step.key}`)}
                         </span>

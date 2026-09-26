@@ -19,12 +19,19 @@ export function UrlIntake() {
   const [value, setValue] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [shaking, setShaking] = useState(false);
+
+  function fail(message: string) {
+    setError(message);
+    setShaking(false);
+    requestAnimationFrame(() => setShaking(true));
+  }
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const raw = value.trim();
     if (!raw) {
-      setError(t('errorEmpty'));
+      fail(t('errorEmpty'));
       return;
     }
     let host: string;
@@ -32,7 +39,7 @@ export function UrlIntake() {
       host = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`).hostname;
       if (!host.includes('.')) throw new Error('no tld');
     } catch {
-      setError(t('errorInvalid'));
+      fail(t('errorInvalid'));
       return;
     }
     setError(null);
@@ -44,19 +51,24 @@ export function UrlIntake() {
     <form onSubmit={submit} noValidate className="max-w-3xl">
       <label
         htmlFor="site"
-        className="block font-display text-[clamp(1.05rem,1.7vw,1.3rem)] font-medium tracking-[-0.02em] text-carbon-80"
+        className="block font-plexmono text-[13px] text-moss-muted"
       >
         {t('label')}
       </label>
 
-      <div className="mt-4 flex items-baseline gap-3 border-b-2 border-carbon/25 pb-3 transition-colors duration-300 focus-within:border-brick">
+      <div
+        onAnimationEnd={() => setShaking(false)}
+        className={`mt-3 flex items-center gap-2 rounded-2xl border-2 bg-chalk-raised py-1.5 pe-1.5 ps-4 transition-shadow duration-200 focus-within:shadow-[0_0_0_4px_rgba(227,162,26,.45)] ${
+          error ? 'border-red-700' : 'border-moss'
+        } ${shaking ? 'motion-safe:animate-shake' : ''}`}
+      >
         {/* `dir="ltr"` is load-bearing, not decoration: inside the Persian
             page this scheme renders as "//:https" without it, because bidi
             reorders the trailing punctuation around a neutral run. */}
         <span
           aria-hidden
           dir="ltr"
-          className="hidden select-none font-display text-[clamp(1.5rem,2.9vw,2.5rem)] font-medium leading-none tracking-[-0.04em] text-carbon-40 sm:block"
+          className="hidden select-none font-plexmono text-[17px] text-moss-muted/70 sm:block"
         >
           https://
         </span>
@@ -76,31 +88,30 @@ export function UrlIntake() {
           }}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? 'site-error' : undefined}
-          className="w-full min-w-0 bg-transparent font-display text-[clamp(1.5rem,2.9vw,2.5rem)] font-medium leading-none tracking-[-0.04em] text-carbon outline-none placeholder:text-carbon-40"
+          className="h-12 w-full min-w-0 bg-transparent font-plex text-[clamp(1.05rem,1.6vw,1.2rem)] text-moss outline-none placeholder:text-moss-muted/60"
         />
-      </div>
-
-      {/* Submit sits under the field rather than inside it: at display scale an
-          inline button was clipping the placeholder's top-level domain. */}
-      <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+        {/* Inside the field now that it is body-size: the old display-scale
+            field clipped the placeholder when the button sat inline. */}
         <button
           type="submit"
           disabled={pending}
-          className="group bg-carbon px-7 py-4 text-[14.5px] font-semibold text-paper-warm transition-colors duration-300 hover:bg-brick disabled:opacity-60"
+          className="group inline-flex h-12 shrink-0 items-center rounded-xl bg-saffron px-5 text-[15px] font-semibold text-moss transition-transform duration-200 hover:-translate-y-0.5 disabled:opacity-60"
         >
           {pending ? t('submitting') : t('submit')}
           <span
             aria-hidden
-            className="ms-3 inline-block transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180"
+            className="ms-3 inline-block transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1"
           >
             &rarr;
           </span>
         </button>
+      </div>
 
+      <div className="mt-2 min-h-[1.5rem]">
         <p
           id="site-error"
           role="alert"
-          className={`text-[14px] text-brick-deep transition-opacity duration-200 ${
+          className={`text-[14px] text-red-700 transition-opacity duration-200 ${
             error ? 'opacity-100' : 'select-none opacity-0'
           }`}
         >

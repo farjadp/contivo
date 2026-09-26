@@ -94,14 +94,14 @@ export default async function AdminContentDetailPage({ params }: Props) {
             {contentItem.workspace ? (
               <Link
                 href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }}
-                className="rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+                className="rounded-xl border border-rule bg-chalk-raised px-4 py-2 text-sm font-semibold text-moss transition hover:border-rule-strong hover:bg-chalk"
               >
                 {t('contentDetail.openWorkspace')}
               </Link>
             ) : null}
             <Link
               href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+              className="rounded-xl bg-moss px-4 py-2 text-sm font-semibold text-chalk"
             >
               {t('contentDetail.openUser')}
             </Link>
@@ -125,8 +125,8 @@ export default async function AdminContentDetailPage({ params }: Props) {
           <KeyValueGrid
             items={[
               { label: t('contentDetail.contentId'), value: <span dir="ltr">{contentItem.id}</span> },
-              { label: t('contentDetail.workspace'), value: contentItem.workspace ? <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }} className="font-semibold text-slate-700 hover:underline">{contentItem.workspace.name}</Link> : t('common.noWorkspace') },
-              { label: t('contentDetail.user'), value: <Link href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }} className="font-semibold text-slate-700 hover:underline"><bdi>{contentItem.user.email}</bdi></Link> },
+              { label: t('contentDetail.workspace'), value: contentItem.workspace ? <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: contentItem.workspace.id } }} className="font-semibold text-moss hover:underline">{contentItem.workspace.name}</Link> : t('common.noWorkspace') },
+              { label: t('contentDetail.user'), value: <Link href={{ pathname: '/admin/users/[userId]', params: { userId: contentItem.user.id } }} className="font-semibold text-moss hover:underline"><bdi>{contentItem.user.email}</bdi></Link> },
               { label: t('contentDetail.platform'), value: contentItem.channel },
               { label: t('contentDetail.type'), value: contentItem.type },
               { label: t('contentDetail.status'), value: <StatusBadge status={contentItem.status} /> },
@@ -154,7 +154,7 @@ export default async function AdminContentDetailPage({ params }: Props) {
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel title={t('contentDetail.outputTitle')} subtitle={t('contentDetail.outputSubtitle')}>
-          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-4 text-start text-[12px] leading-6 text-slate-700">
+          <pre className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-rule bg-chalk p-4 text-start text-[12px] leading-6 text-moss">
             {contentItem.content}
           </pre>
         </Panel>
@@ -175,7 +175,7 @@ export default async function AdminContentDetailPage({ params }: Props) {
                 ]}
                 columns={2}
               />
-              <pre dir="ltr" className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-gray-200 bg-slate-50 p-3 text-start text-[11px] text-slate-600">
+              <pre dir="ltr" className="overflow-x-auto whitespace-pre-wrap rounded-xl border border-rule bg-chalk p-3 text-start text-[11px] text-moss-muted">
                 {JSON.stringify(frameworkMeta.qualityScores, null, 2)}
               </pre>
             </div>
@@ -210,12 +210,12 @@ export default async function AdminContentDetailPage({ params }: Props) {
           ) : (
             <div className="space-y-3">
               {frameworkHistory.map((entry: any) => (
-                <div key={entry.id} className="rounded-xl border border-gray-200 bg-slate-50 p-3">
+                <div key={entry.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-[#121212]">{entry.frameworkName}</p>
-                    <p className="text-[11px] text-slate-400">{fmt.dateTime(entry.createdAt)}</p>
+                    <p className="text-sm font-bold text-moss">{entry.frameworkName}</p>
+                    <p className="text-[11px] text-moss-muted">{fmt.dateTime(entry.createdAt)}</p>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">
+                  <p className="mt-1 text-xs text-moss-muted">
                     {t('contentDetail.historyLine', {
                       event: entry.eventName,
                       mode: entry.selectionMode,

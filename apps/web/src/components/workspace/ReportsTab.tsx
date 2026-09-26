@@ -81,15 +81,15 @@ export function ReportsTab({
 
       <div className="space-y-6">
         {/* ── Eligibility / Generate card ── */}
-        <div className="bg-white rounded-lg border p-6">
+        <div className="bg-chalk-raised rounded-lg border p-6">
           <h2 className="text-xl font-semibold mb-4">{t('title')}</h2>
 
           <div className="flex items-start gap-4 mb-6">
             <div className="flex-1">
-              <p className="text-gray-600 mb-4">{t('subtitle')}</p>
+              <p className="text-moss-muted mb-4">{t('subtitle')}</p>
 
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-gray-600">{t('reportsThisMonth')}</span>
+                <span className="text-moss-muted">{t('reportsThisMonth')}</span>
                 <span className="font-semibold">
                   {t('quota', {
                     used: format.number(eligibility.reportsThisMonth),
@@ -107,8 +107,8 @@ export function ReportsTab({
               disabled={!eligibility.canGenerate || isGenerating}
               className={`px-6 py-3 rounded-lg font-semibold flex items-center gap-2 ${
                 eligibility.canGenerate && !isGenerating
-                  ? 'bg-red-600 text-white hover:bg-red-700'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  ? 'bg-saffron text-moss hover:bg-saffron-soft'
+                  : 'bg-rule-strong text-moss-muted cursor-not-allowed'
               }`}
             >
               <FileText className="w-5 h-5" />
@@ -145,43 +145,43 @@ export function ReportsTab({
         </div>
 
         {/* ── Report History Table ── */}
-        <div className="bg-white rounded-lg border">
+        <div className="bg-chalk-raised rounded-lg border">
           <div className="p-6 border-b">
             <h3 className="text-lg font-semibold">{t('historyTitle')}</h3>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-chalk">
                 <tr>
-                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-moss-muted uppercase">
                     {t('colGenerated')}
                   </th>
-                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-moss-muted uppercase">
                     {t('colData')}
                   </th>
-                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-moss-muted uppercase">
                     {t('colAnalytics')}
                   </th>
-                  <th className="px-6 py-3 text-start text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-start text-xs font-medium text-moss-muted uppercase">
                     {t('colSize')}
                   </th>
-                  <th className="px-6 py-3 text-end text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-end text-xs font-medium text-moss-muted uppercase">
                     {t('colDownloads')}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-rule">
                 {history.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <td colSpan={5} className="px-6 py-8 text-center text-moss-muted">
                       {t('historyEmpty')}
                     </td>
                   </tr>
                 ) : (
                   history.map((report) => (
-                    <tr key={report.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-900">
+                    <tr key={report.id} className="hover:bg-chalk">
+                      <td className="px-6 py-4 text-sm text-moss">
                         {/* Through next-intl, so Persian gets the Persian
                             calendar, Persian digits and Tehran time. */}
                         {format.dateTime(new Date(report.reportDate), {
@@ -205,14 +205,14 @@ export function ReportsTab({
                           ))}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-moss-muted">
                         {t('competitors', { count: format.number(report.competitorsCount) })}
                         <br />
                         {t('charts', { count: format.number(report.chartsGenerated) })}
                         <br />
                         {t('keywords', { count: format.number(report.keywordsAnalyzed) })}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">
+                      <td className="px-6 py-4 text-sm text-moss-muted">
                         {t('megabytes', {
                           value: format.number(report.fileSize / 1024 / 1024, {
                             minimumFractionDigits: 2,
@@ -226,7 +226,7 @@ export function ReportsTab({
                             href={report.pdfPath}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
+                            className="inline-flex items-center gap-1 px-3 py-1 bg-moss text-chalk text-sm rounded hover:bg-moss-700"
                           >
                             <Download className="w-4 h-4" />
                             PDF
@@ -235,7 +235,7 @@ export function ReportsTab({
                             href={report.docxPath}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                            className="inline-flex items-center gap-1 px-3 py-1 border border-moss text-moss text-sm rounded hover:bg-chalk-sunk"
                           >
                             <Download className="w-4 h-4" />
                             HTML

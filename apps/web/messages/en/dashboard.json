@@ -1,9 +1,6 @@
 {
   "dashboard": {
     "eyebrow": "Overview",
-    "eyebrowWorkspace": "Overview · {name}",
-    "greeting": "Good to see you, {name}.",
-    "ideateNow": "Ideate now",
     "openWorkspace": "Open workspace",
     "archived": {
       "title": "All workspaces are archived",
@@ -27,46 +24,57 @@
       "ready": "Everything is ready. Turn it on and it keeps your week filled.",
       "open": "Open Autopilot",
       "setUp": "Set up Autopilot",
-      "connectChannel": "Connect a channel",
-      "queued": "Queued",
-      "published7d": "Published · 7d",
-      "inPipeline": "In pipeline"
-    },
-    "readiness": {
-      "label": "Readiness",
-      "outOf": "/ 100 overall",
-      "brand": "Brand memory",
-      "market": "Market intelligence",
-      "seo": "Keywords & SEO",
-      "publishing": "Publishing",
-      "competitors": "Competitors",
-      "keywords": "Keywords",
-      "credits": "Credits"
-    },
-    "moves": {
-      "label": "Next moves",
-      "none": "Nothing urgent",
-      "some": "What moves the needle",
-      "healthy": "Intelligence and pipeline are healthy. Let Autopilot run, or ideate by hand."
+      "connectChannel": "Connect a channel"
     },
     "actions": {
-      "brandTitle": "Fortify Brand Assets",
-      "brandDesc": "Clarity is low. Add missing brand info.",
-      "marketTitle": "Map the Market",
-      "marketDesc": "Select more rivals to analyze.",
-      "keywordsTitle": "Capture Search Volume",
-      "keywordsDesc": "{count, number} keywords ready to target.",
-      "scheduleTitle": "Schedule Inbox",
-      "scheduleDesc": "{count, number} pending drafts. Queue them up.",
-      "momentumTitle": "Maintain Momentum",
-      "momentumDesc": "No posts scheduled. Break the silence."
+      "brandTitle": "Fill the gaps in your brand memory",
+      "brandDesc": "Contivo understands your brand poorly. Drafts will be generic until it knows more.",
+      "brandCta": "Review brand memory",
+      "marketTitle": "Confirm more competitors",
+      "marketDesc": "Fewer than three accepted. The market map needs them to show where you stand.",
+      "marketCta": "Find competitors",
+      "keywordsTitle": "Turn keyword gaps into ideas",
+      "keywordsDesc": "{count, number} keywords are ready to target.",
+      "keywordsCta": "Ideate from keywords",
+      "scheduleTitle": "Schedule what is already written",
+      "scheduleDesc": "{count, plural, one {# draft is} other {# drafts are}} waiting in the pipeline.",
+      "scheduleCta": "Open calendar",
+      "momentumTitle": "Put something on the calendar",
+      "momentumDesc": "Nothing is scheduled to go out.",
+      "momentumCta": "Open pipeline"
     },
-    "queue": {
-      "label": "Queue",
-      "title": "Coming up",
-      "calendar": "Calendar",
-      "emptyAutopilotOn": "Nothing scheduled. Autopilot will fill this on its next run.",
-      "emptyAutopilotOff": "Nothing scheduled. Turn on Autopilot or schedule from the pipeline."
+    "today": {
+      "headline": "{count, plural, =0 {Nothing urgent this week.} one {One move worth making this week.} other {# moves worth making this week.}}",
+      "healthy": "Intelligence and pipeline are healthy. Let Autopilot run, or ideate by hand.",
+      "setupTag": "Setup · step {order, number} of {total, number}",
+      "credits": "{count, number} credits",
+      "moved": {
+        "title": "What moved",
+        "since": "last 7 days",
+        "empty": "Nothing has changed in the last week.",
+        "tagAutopilot": "Autopilot",
+        "tagPublished": "Published",
+        "tagCompetitors": "Competitors",
+        "autopilot": "Autopilot ran {when}: {scheduled, number} scheduled, {skipped, number} skipped.",
+        "published": "{count, plural, one {# post} other {# posts}} went out this week.",
+        "pending": "{count, plural, one {# competitor is} other {# competitors are}} waiting for your decision.",
+        "pendingCta": "Review them"
+      },
+      "shipping": {
+        "title": "Shipping",
+        "published": "Published",
+        "scheduled": "Scheduled",
+        "today": "today",
+        "calendar": "Calendar"
+      },
+      "pipe": {
+        "title": "In the pipe",
+        "drafting": "Drafting",
+        "ready": "Ready",
+        "scheduled": "Scheduled",
+        "published": "Published"
+      },
+      "loopLabel": "Setup stages"
     }
   }
 }

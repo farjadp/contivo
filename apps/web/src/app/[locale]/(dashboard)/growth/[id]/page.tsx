@@ -20,7 +20,6 @@ import {
   Sparkles,
   Tags,
   CalendarDays,
-  Lock,
   TrendingUp,
   AlertTriangle,
   BookOpen,
@@ -52,7 +51,9 @@ import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
+import { LoopRail } from './_components/LoopRail';
 import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { buildLoop, stageForTab, STAGES, type StageId } from '@/lib/workspace-loop';
 import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
 import { getNarrative } from '@/app/actions/narrative';
@@ -353,35 +354,30 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const tabItems = [
     {
       key: 'strategy',
-      group: 'intelligence',
       label: t('tabs.strategyLabel'),
       helper: t('tabs.strategyHelper', { count: initialBrandAssetsPayload?.summary?.asset_count || 0 }),
       icon: <Sparkles className="h-4 w-4" />,
     },
     {
       key: 'matrices',
-      group: 'intelligence',
       label: t('tabs.matricesLabel'),
       helper: t('tabs.matricesHelper', { count: initialMatrices?.charts?.length || 0 }),
       icon: <LineChart className="h-4 w-4" />,
     },
     {
       key: 'keywords',
-      group: 'intelligence',
       label: t('tabs.keywordsLabel'),
       helper: t('tabs.keywordsHelper', { count: initialKeywordPayload?.competitors?.length || 0 }),
       icon: <Tags className="h-4 w-4" />,
     },
     {
       key: 'narrative',
-      group: 'intelligence',
       label: t('tabs.narrativeLabel'),
       helper: t('tabs.narrativeHelper', { count: narrativeData?.narrative?.storylines?.length || 0 }),
       icon: <BookOpen className="h-4 w-4" />,
     },
     {
       key: 'offerings',
-      group: 'intelligence',
       label: t('tabs.offeringsLabel'),
       helper: t('tabs.offeringsHelper', {
         count: initialOfferingsPayload?.client_offerings?.offerings?.length || 0,
@@ -390,35 +386,30 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     },
     {
       key: 'seo',
-      group: 'intelligence',
       label: t('tabs.seoLabel'),
       helper: t('tabs.seoHelper', { count: seoIntelligence.keywordOpportunities.length }),
       icon: <TrendingUp className="h-4 w-4" />,
     },
     {
       key: 'ideation',
-      group: 'create',
       label: t('tabs.ideationLabel'),
       helper: t('tabs.ideationHelper'),
       icon: <Lightbulb className="h-4 w-4" />,
     },
     {
       key: 'pipeline',
-      group: 'create',
       label: t('tabs.pipelineLabel'),
       helper: t('tabs.pipelineHelper', { count: workspace.contentItems.length }),
       icon: <ListTodo className="h-4 w-4" />,
     },
     {
       key: 'calendar',
-      group: 'create',
       label: t('tabs.calendarLabel'),
       helper: t('tabs.calendarHelper'),
       icon: <CalendarDays className="h-4 w-4" />,
     },
     {
       key: 'autopilot',
-      group: 'automate',
       label: t('tabs.autopilotLabel'),
       helper: autopilotPolicy?.enabled
         ? t('tabs.autopilotHelperOn', { posts: autopilotPolicy.postsPerWeek })
@@ -427,7 +418,6 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     },
     {
       key: 'reports',
-      group: 'review',
       label: t('tabs.reportsLabel'),
       helper: t('tabs.reportsHelper', { count: reportEligibility.remainingReports }),
       icon: <FileText className="h-4 w-4" />,
@@ -436,7 +426,6 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       ? [
           {
             key: 'progress',
-            group: 'review',
             label: t('tabs.progressLabel'),
             helper: t('tabs.progressHelper', {
               before: progressReport.maturity.before_stage,
@@ -448,12 +437,13 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       : []),
   ];
 
-  const tabGroups = [
-    { key: 'intelligence', label: t('groupIntelligence') },
-    { key: 'create', label: t('groupCreate') },
-    { key: 'automate', label: t('groupAutomate') },
-    { key: 'review', label: t('groupReview') },
-  ] as const;
+
+  const loop = buildLoop(
+    journey,
+    gates,
+    tabItems.map((item) => item.key),
+    workspace.contentItems.length > 0,
+  );
 
   // Setup problems that used to be invisible: a Gemini outage during
   // extraction left the workspace looking like a site with no competitors,
@@ -471,10 +461,10 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         <div className="flex items-start gap-3 border border-amber-300 bg-amber-50 px-5 py-4">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
           <div className="min-w-0">
-            <p className="font-mono text-[10.5px] uppercase tracking-widest text-amber-800">
+            <p className="font-plexmono text-[10.5px] uppercase tracking-widest text-amber-800">
               {t('warningsTitle')}
             </p>
-            <ul className="mt-1.5 space-y-1 text-[13px] text-ink-800">
+            <ul className="mt-1.5 space-y-1 text-[13px] text-moss">
               {/* A known code becomes a sentence here, at the moment it is
                   read. Anything else is text stored by an older build and is
                   shown as it was written. */}
@@ -487,37 +477,37 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       )}
 
       {/* ── HEADER ─────────────────────────────────────────────── */}
-      <div className="border border-ink-200 bg-white">
+      <div className="border border-rule bg-chalk-raised">
         <div className="flex flex-col gap-6 p-6 md:p-8 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
             <Link
               href="/growth"
-              className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-widest text-ink-400 hover:text-ink-900"
+              className="inline-flex items-center gap-1.5 font-plexmono text-[11px] uppercase tracking-widest text-moss-muted hover:text-moss"
             >
               <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" /> {t('back')}
             </Link>
             <div className="mt-4 flex items-center gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-ink-950 font-display text-[16px] font-bold uppercase text-signal">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center bg-moss font-display text-[16px] font-bold uppercase text-saffron">
                 {workspace.name.substring(0, 2)}
               </div>
               <div className="min-w-0">
-                <h1 className="truncate font-display text-[26px] font-bold tracking-tight text-ink-900 sm:text-[32px]">
+                <h1 className="truncate font-display text-[26px] font-bold tracking-tight text-moss sm:text-[32px]">
                   {workspace.name}
                 </h1>
-                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-ink-600">
+                <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-moss-muted">
                   {workspace.websiteUrl && (
                     <a
                       href={workspace.websiteUrl.startsWith('http') ? workspace.websiteUrl : `https://${workspace.websiteUrl}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1.5 hover:text-ink-900"
+                      className="inline-flex items-center gap-1.5 hover:text-moss"
                     >
                       <ExternalLink className="h-3.5 w-3.5" />
                       <bdi>{workspace.websiteUrl.replace(/^https?:\/\//, '')}</bdi>
                     </a>
                   )}
                   {brand.industry && (
-                    <span className="font-mono text-[11px] uppercase tracking-widest text-ink-400">{brand.industry}</span>
+                    <span className="font-plexmono text-[11px] uppercase tracking-widest text-moss-muted">{brand.industry}</span>
                   )}
                 </div>
               </div>
@@ -529,8 +519,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }}
               className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
                 autopilotAgents.some((a) => a.enabled)
-                  ? 'bg-signal text-signal-ink hover:bg-ink-900 hover:text-white'
-                  : 'bg-ink-900 text-white hover:bg-ink-800'
+                  ? 'bg-saffron text-moss hover:bg-moss hover:text-chalk'
+                  : 'bg-moss text-chalk hover:bg-moss-700'
               }`}
             >
               <Bot className="h-4 w-4" />
@@ -540,7 +530,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             </Link>
             <Link
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
-              className="inline-flex items-center justify-center gap-2 border border-ink-200 px-4 py-2.5 text-[13px] font-medium text-ink-900 hover:border-ink-400"
+              className="inline-flex items-center justify-center gap-2 border border-rule px-4 py-2.5 text-[13px] font-medium text-moss hover:border-rule-strong"
             >
               <Sparkles className="h-4 w-4" />
               {t('ideateByHand')}
@@ -548,7 +538,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-px border-t border-ink-200 bg-ink-200 sm:grid-cols-3 lg:grid-cols-7">
+        <div className="grid grid-cols-2 gap-px border-t border-rule bg-rule sm:grid-cols-3 lg:grid-cols-7">
           <StatChip label={t('statCompetitors')} value={format.number(acceptedCompetitors)} />
           <StatChip label={t('statContent')} value={format.number(workspace.contentItems.length)} />
           <StatChip
@@ -568,7 +558,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
               minimumFractionDigits: 2,
               maximumFractionDigits: 4,
             })} />
-          <div className="flex items-center gap-2 bg-white px-4 py-3 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
+          <div className="flex items-center gap-2 bg-chalk-raised px-4 py-3 font-plexmono text-[10.5px] uppercase tracking-widest text-moss-muted">
             <Coins className="h-3.5 w-3.5 shrink-0" />
             {t('trackedNote')}
           </div>
@@ -578,55 +568,40 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
       <JourneyGuide workspaceId={workspace.id} journey={journey} />
 
-      {/* ── TABS ────────────────────────────────────────────────── */}
-      <div className="border-b border-ink-200">
-        {tabGroups.map((group) => {
-          const items = tabItems.filter((item) => item.group === group.key);
-          if (items.length === 0) return null;
-          return (
-            <div key={group.key} className="flex flex-wrap items-center gap-x-1 gap-y-0.5 py-1">
-              <span className="w-24 shrink-0 font-mono text-[10.5px] uppercase tracking-widest text-ink-400">
-                {group.label}
-              </span>
-              {items.map((item) => {
-                const isActive = activeTab === item.key;
-                const gate = gates[item.key];
-                return (
-                  <Link
-                    key={item.key}
-                    href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: item.key } }}
-                    title={
-                      gate
-                        ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) })
-                        : item.helper
-                    }
-                    className={`group relative flex items-center gap-2 px-3 py-2 text-[13px] transition-colors ${
-                      isActive
-                        ? 'font-semibold text-ink-900'
-                        : gate
-                          ? 'text-ink-300 hover:text-ink-600'
-                          : 'text-ink-600 hover:text-ink-900'
-                    }`}
-                  >
-                    <span className={isActive ? 'text-ink-900' : gate ? 'text-ink-300' : 'text-ink-400'}>
-                      {item.icon}
-                    </span>
-                    {item.label}
-                    {gate && <Lock className="h-3 w-3 text-ink-300" />}
-                    {item.key === 'autopilot' && autopilotPolicy?.enabled && (
-                      <span className="h-1.5 w-1.5 bg-signal" />
-                    )}
-                    <span
-                      aria-hidden
-                      className={`absolute inset-x-2 -bottom-px h-[2px] ${isActive ? 'bg-ink-900' : 'bg-transparent'}`}
-                    />
-                  </Link>
-                );
-              })}
-            </div>
-          );
+      {/* ── THE LOOP ────────────────────────────────────────────── */}
+      <LoopRail
+        workspaceId={workspace.id}
+        stages={loop}
+        activeStage={stageForTab(activeTab)}
+        activeTab={activeTab}
+        tabs={tabItems.map((item) => {
+          const gate = gates[item.key];
+          return {
+            key: item.key,
+            label: item.label,
+            title: gate ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) }) : item.helper,
+            icon: item.icon,
+            gated: Boolean(gate),
+            live: item.key === 'autopilot' && Boolean(autopilotPolicy?.enabled),
+          };
         })}
-      </div>
+        names={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.name`)])) as Record<StageId, string>}
+        numbers={
+          Object.fromEntries(loop.map((st) => [st.id, format.number(st.order, { minimumIntegerDigits: 2 })])) as Record<
+            StageId,
+            string
+          >
+        }
+        subs={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.sub`)])) as Record<StageId, string>}
+        stateLabels={{
+          done: t('loop.state.done'),
+          next: t('loop.state.next'),
+          open: t('loop.state.open'),
+          locked: t('loop.state.locked'),
+        }}
+        navLabel={t('loop.tabsLabel')}
+        stagesLabel={t('loop.label')}
+      />
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
       {gates[activeTab] && (
@@ -640,7 +615,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           {journey.next && (
             <Link
               href={journey.next.href as never}
-              className="inline-flex shrink-0 items-center gap-2 bg-amber-900 px-3.5 py-2 text-[12.5px] font-medium text-white hover:bg-amber-800"
+              className="inline-flex shrink-0 items-center gap-2 bg-amber-900 px-3.5 py-2 text-[12.5px] font-medium text-chalk hover:bg-amber-800"
             >
               {tj(journey.next.action.key, journey.next.action.values)}{' '}
               <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
@@ -649,7 +624,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
         </div>
       )}
 
-      <div className="min-h-[50vh] border border-ink-200 bg-white p-6 md:p-8">
+      <div className="min-h-[50vh]" data-capture="tab">
         {activeTab === 'strategy' && (
           <BrandMemoryTab
             workspace={workspace}
@@ -764,9 +739,9 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="bg-white px-4 py-3">
-      <p className="font-mono text-[10.5px] uppercase tracking-widest text-ink-400">{label}</p>
-      <p className="mt-1 font-display text-[18px] font-semibold text-ink-900">{value}</p>
+    <div className="bg-chalk-raised px-4 py-3">
+      <p className="font-plexmono text-[10.5px] uppercase tracking-widest text-moss-muted">{label}</p>
+      <p className="mt-1 font-display text-[18px] font-semibold text-moss">{value}</p>
     </div>
   );
 }

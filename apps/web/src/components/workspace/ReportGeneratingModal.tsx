@@ -128,11 +128,11 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
   return (
     // Full-screen backdrop — pointer-events-none on the backdrop so accidental
     // clicks outside don't close it (user must wait for the action to finish)
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-      <div className="w-full max-w-md mx-4 bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-moss/60 backdrop-blur-sm">
+      <div className="w-full max-w-md mx-4 bg-chalk-raised rounded-2xl shadow-2xl overflow-hidden">
 
         {/* ── Header ── */}
-        <div className="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] px-8 py-6 text-white">
+        <div className="bg-gradient-to-r from-rival to-rival px-8 py-6 text-chalk">
           <div className="flex items-center gap-3 mb-1">
             <FileText className="w-6 h-6 opacity-80" />
             <span className="text-sm font-semibold uppercase tracking-widest opacity-80">
@@ -149,14 +149,14 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
           {/* Progress bar */}
           <div>
             <div className="flex justify-between text-sm font-semibold mb-2">
-              <span className="text-slate-700">
+              <span className="text-moss">
                 {isDone ? t('complete') : t(`stages.${currentStage.labelKey}`)}
               </span>
-              <span className="text-[#1e3a8a]">
+              <span className="text-rival">
                 {t('percent', { value: format.number(progress) })}
               </span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className="w-full h-3 bg-chalk-sunk rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-300 ease-out"
                 style={{
@@ -170,7 +170,7 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
             </div>
             {/* Detail label under the bar */}
             {!isDone && !error && (
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-moss-muted mt-2">
                 {t.rich(`stages.${currentStage.detailKey}`, { bdi })}
               </p>
             )}
@@ -185,20 +185,20 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
               return (
                 <li key={stage.labelKey} className="flex items-center gap-3">
                   {done ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+                    <CheckCircle className="w-5 h-5 text-moss-700 shrink-0" />
                   ) : active ? (
-                    <Loader2 className="w-5 h-5 text-[#1e3a8a] animate-spin shrink-0" />
+                    <Loader2 className="w-5 h-5 text-rival animate-spin shrink-0" />
                   ) : (
                     // Upcoming step — faint circle placeholder
-                    <span className="w-5 h-5 rounded-full border-2 border-slate-200 shrink-0" />
+                    <span className="w-5 h-5 rounded-full border-2 border-rule shrink-0" />
                   )}
                   <span
                     className={`text-sm ${
                       done
-                        ? 'text-emerald-700 font-medium'
+                        ? 'text-moss-700 font-medium'
                         : active
-                          ? 'text-[#1e3a8a] font-semibold'
-                          : 'text-slate-400'
+                          ? 'text-rival font-semibold'
+                          : 'text-moss-muted'
                     }`}
                   >
                     {t(`stages.${stage.labelKey}`)}
@@ -217,7 +217,7 @@ export function ReportGeneratingModal({ isOpen, isDone, error }: ReportGeneratin
 
           {/* Done state */}
           {isDone && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-3 text-sm text-emerald-800 font-medium text-center">
+            <div className="bg-chalk-sunk border border-rule rounded-lg px-4 py-3 text-sm text-moss font-medium text-center">
               ✅ {t('done')}
             </div>
           )}

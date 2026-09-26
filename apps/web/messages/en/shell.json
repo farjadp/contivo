@@ -1,13 +1,12 @@
 {
   "shell": {
     "nav": {
-      "overview": "Overview",
-      "growth": "Growth Engine",
+      "overview": "Today",
+      "growth": "Workspaces",
       "connections": "Connections",
       "instant": "Instant Content",
       "settings": "Settings"
     },
-    "railBadge": "autopilot-ready build",
     "signOut": "Sign out",
     "header": {
       "signIn": "Sign in",
@@ -15,6 +14,8 @@
     },
     "credits": {
       "label": "{count, number} credits"
-    }
+    },
+    "navLabel": "Main",
+    "account": "Account"
   }
 }

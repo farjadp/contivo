@@ -82,7 +82,7 @@ export function SocialChannelsTab({
   return (
     <div>
       {/* Sub-tabs */}
-      <div className="flex gap-1 bg-gray-100 rounded-2xl p-1 mb-6 overflow-x-auto">
+      <div className="flex gap-1 bg-chalk-sunk rounded-2xl p-1 mb-6 overflow-x-auto">
         {TABS.map(({ id, key, Icon }) => (
           <button
             key={id}
@@ -90,8 +90,8 @@ export function SocialChannelsTab({
             className={cn(
               'flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all whitespace-nowrap flex-1 justify-center',
               activeTab === id
-                ? 'bg-white text-[#2B2DFF] shadow-sm'
-                : 'text-gray-500 hover:text-gray-700',
+                ? 'bg-chalk-raised text-moss-700 shadow-sm'
+                : 'text-moss-muted hover:text-moss',
             )}
           >
             <Icon className="w-3.5 h-3.5 shrink-0" />

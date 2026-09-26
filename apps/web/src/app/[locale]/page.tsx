@@ -1,77 +1,87 @@
 /**
- * Landing page — three acts: intake, refusal, output.
+ * Landing page — the Loop, drawn.
  *
- * The old page put a simulated terminal, a JSON card and a code block on a
- * near-black ground with one neon accent. Three of its four visuals were fake
- * developer chrome for a product that makes marketing. Everything shown here is
- * a capture of the running app, and the middle act — the refusal — gets the
- * whole viewport, because refusing is the part worth paying for.
+ * The site now speaks the app's own language (Chalk & Saffron) and is built on
+ * the app's own structure: six stages, walked in order. The hero hands over the
+ * only input the product takes and draws the loop beside it; the page then
+ * scrolls stage by stage, and stage 03 — the refusal — gets the full-bleed
+ * dark field, because refusing is the part worth paying for.
+ *
+ * Every picture is a capture of the running app. The moving parts
+ * (home-interactions.tsx) demonstrate behaviour; none of them invents results.
  */
 
 import { useTranslations } from 'next-intl';
 import Image from 'next/image';
+import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { ProductReel } from '@/components/marketing/product-reel';
 import { SiteNav } from '@/components/marketing/site-nav';
 import { UrlIntake } from '@/components/marketing/url-intake';
+import {
+  CadenceWeek,
+  IntakeSteps,
+  LoopRing,
+  Reveal,
+  RunLog,
+  TryTheLock,
+} from '@/components/marketing/home-interactions';
 
 /**
- * The one italic accent word each headline carries.
- *
- * Persian gets the same emphasis without the italic: `globals.css` forces
- * `font-style: normal` under [lang='fa'] because slanting Persian glyphs
- * breaks the joins that make the script readable, so on that side the accent
- * reads as a tone shift in weight and colour instead of a slope. Passing it as
- * rich text rather than splitting the sentence in JSX is what lets a
- * translator move the emphasised words to wherever the Persian sentence
- * actually wants them.
+ * The emphasised words of each headline: a saffron marker stroke that sweeps
+ * in under them. It replaces the old italic accent, and unlike italics it
+ * works in Persian, whose letter joins break when slanted.
  */
-const accent = (chunks: React.ReactNode) => (
-  <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">{chunks}</span>
+const accent = (chunks: ReactNode) => (
+  <span className="bg-[linear-gradient(#E3A21A,#E3A21A)] bg-no-repeat [background-position:0_88%] [background-size:100%_34%] motion-safe:animate-sweep">
+    {chunks}
+  </span>
 );
 
 export default function HomePage() {
   return (
-    <div className="theme-editorial min-h-screen bg-paper-warm font-sans text-carbon">
+    <div className="theme-chalk min-h-screen bg-chalk font-plex text-moss">
       <SiteNav />
-
-      <ActOne />
+      <Hero />
       <Reel />
-      <Intelligence />
-      <ActTwo />
-      <ActThree />
-      <Channels />
+      <Know />
+      <Watch />
+      <Think />
+      <MakeShip />
+      <Learn />
       <Close />
-
       <SiteFooter />
     </div>
   );
 }
 
-/* ─── Act I · Intake ─────────────────────────────────────────────────────── */
+/* ─── Hero ───────────────────────────────────────────────────────────────── */
 
-function ActOne() {
+function Hero() {
   const t = useTranslations('home');
 
   return (
-    <section className="relative overflow-hidden border-b border-carbon/10">
-      <PaperGrain />
-      <div className="relative mx-auto max-w-[92rem] px-6 pb-20 pt-16 md:px-12 md:pb-28 md:pt-24">
-        <h1 className="max-w-[19ch] font-display text-[clamp(3rem,8.4vw,7.5rem)] font-semibold leading-[0.92] tracking-[-0.045em]">
+    <section className="mx-auto grid max-w-[90rem] gap-14 px-5 pb-20 pt-10 md:px-16 md:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,40rem)] lg:gap-12">
+      <div className="flex flex-col gap-7">
+        <h1 className="font-display text-[clamp(2.6rem,6.4vw,5rem)] font-extrabold leading-[0.98] tracking-[-0.03em] motion-safe:animate-rise">
           {t.rich('actOne.headline', { accent })}
         </h1>
-
-        <div className="mt-12 grid gap-14 lg:grid-cols-[minmax(0,1fr)_23rem] lg:items-end">
+        <p className="max-w-[36rem] text-[clamp(1.05rem,1.4vw,1.2rem)] leading-[1.6] text-moss-muted motion-safe:animate-rise motion-safe:[animation-delay:120ms]">
+          {t('actOne.body')}
+        </p>
+        <div className="motion-safe:animate-rise motion-safe:[animation-delay:240ms]">
           <UrlIntake />
-
-          <p className="max-w-md text-[17px] leading-[1.65] text-carbon-80">
-            {t('actOne.body')}
-          </p>
         </div>
-
+        <div className="motion-safe:animate-rise motion-safe:[animation-delay:360ms]">
+          <IntakeSteps />
+        </div>
         <Evidence />
+      </div>
+
+      <div className="motion-safe:animate-fade-in lg:pt-4">
+        <LoopRing />
       </div>
     </section>
   );
@@ -85,9 +95,7 @@ function Evidence() {
   const t = useTranslations('home.actOne.evidence');
   /*
     The values are translated, not formatted: '5 of 9 kept' and '≈ 20 sec'
-    carry words as well as numbers, and Persian writes its digits ۰-۹. Running
-    them through a number formatter would localise the digits and leave the
-    words English.
+    carry words as well as numbers, and Persian writes its digits ۰-۹.
   */
   const rows: Array<[string, string]> = [
     [t('readTime'), t('readTimeValue')],
@@ -96,19 +104,20 @@ function Evidence() {
     [t('charts'), t('chartsValue')],
   ];
   return (
-    <dl className="mt-20 grid max-w-4xl grid-cols-2 gap-x-10 gap-y-8 border-t border-carbon/15 pt-8 md:grid-cols-4">
-      {rows.map(([k, v]) => (
-        <div key={k}>
-          <dt className="text-[13px] leading-snug text-carbon-60">{k}</dt>
-          <dd className="tnum mt-1.5 text-balance font-display text-[clamp(1.3rem,2.1vw,1.7rem)] font-medium leading-[1.15] tracking-[-0.03em]">
-            {v}
-          </dd>
-        </div>
-      ))}
-      <p className="col-span-2 text-[12.5px] leading-relaxed text-carbon-60 md:col-span-4">
-        {t('note')}
-      </p>
-    </dl>
+    <div className="motion-safe:animate-rise motion-safe:[animation-delay:480ms]">
+      <dl className="grid grid-cols-2 border-t border-moss md:grid-cols-4">
+        {rows.map(([k, v], i) => (
+          <div
+            key={k}
+            className={`flex flex-col-reverse gap-1 py-3.5 pe-4 ${i % 2 ? 'ps-4 border-s border-rule' : ''} ${i === 2 ? 'md:border-s md:ps-4' : ''}`}
+          >
+            <dt className="text-[13px] leading-snug text-moss-muted">{k}</dt>
+            <dd className="tnum font-plexmono text-[clamp(1.05rem,1.4vw,1.3rem)] font-medium leading-tight">{v}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 max-w-[40rem] text-[13px] leading-relaxed text-moss-muted">{t('note')}</p>
+    </div>
   );
 }
 
@@ -118,176 +127,177 @@ function Reel() {
   const t = useTranslations('home.reel');
 
   return (
-    <section className="border-b border-carbon/10 bg-paper-light">
-      <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-24">
-        <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-          <h2 className="max-w-[16ch] font-display text-[clamp(1.9rem,4vw,3.4rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
+    <section className="border-t border-moss bg-chalk-raised">
+      <Reveal className="mx-auto max-w-[90rem] px-5 py-16 md:px-16 md:py-20">
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          <h2 className="max-w-[16ch] font-display text-[clamp(1.9rem,3.6vw,3rem)] font-bold leading-[1.02] tracking-[-0.02em]">
             {t('headline')}
           </h2>
-          <p className="max-w-sm text-[15px] leading-relaxed text-carbon-80">
-            {t('body')}
-          </p>
+          <p className="max-w-sm text-[15px] leading-relaxed text-moss-muted">{t('body')}</p>
         </div>
-
         <ProductReel />
-      </div>
+      </Reveal>
     </section>
   );
 }
 
-/* ─── Intelligence ───────────────────────────────────────────────────────── */
+/* ─── Chapters ───────────────────────────────────────────────────────────── */
 
-function Intelligence() {
-  const t = useTranslations('home.intelligence');
-
-  return (
-    <section id="intelligence" className="border-b border-carbon/10">
-      <div className="mx-auto max-w-[92rem] px-6 py-20 md:px-12 md:py-28">
-        <h2 className="max-w-[20ch] font-display text-[clamp(2.1rem,5vw,4.2rem)] font-semibold leading-[1] tracking-[-0.04em]">
-          {t.rich('headline', { accent })}
-        </h2>
-
-        <div className="mt-16 grid gap-16 lg:grid-cols-2 lg:gap-20">
-          <Spread
-            n={t('brandTitle')}
-            body={t('brandBody')}
-            src="/marketing/brand-memory.webp"
-            alt={t('brandAlt')}
-            w={1800}
-            h={1212}
-          />
-          <Spread
-            n={t('marketTitle')}
-            body={t('marketBody')}
-            src="/marketing/market-map.webp"
-            alt={t('marketAlt')}
-            w={1800}
-            h={1074}
-          />
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Spread({
-  n,
-  body,
-  src,
-  alt,
-  w,
-  h,
+function Chapter({
+  id,
+  num,
+  label,
+  title,
+  children,
+  aside,
+  first,
 }: {
-  n: string;
-  body: string;
-  src: string;
-  alt: string;
-  w: number;
-  h: number;
+  id: string;
+  num: string;
+  label: string;
+  title: ReactNode;
+  children: ReactNode;
+  aside: ReactNode;
+  first?: boolean;
 }) {
   return (
-    <figure className="flex flex-col">
-      <h3 className="max-w-[18ch] font-display text-[clamp(1.5rem,2.6vw,2.1rem)] font-semibold leading-[1.08] tracking-[-0.035em]">
-        {n}
-      </h3>
-      <p className="mt-4 max-w-prose text-[15.5px] leading-[1.7] text-carbon-80">{body}</p>
-      <div className="mt-8 overflow-hidden border border-carbon/15 bg-paper-light">
-        <Image
-          src={src}
-          alt={alt}
-          width={w}
-          height={h}
-          className="h-auto w-full"
-          sizes="(min-width: 1024px) 44vw, 92vw"
-        />
+    <section
+      id={id}
+      aria-labelledby={`${id}-title`}
+      className={`scroll-mt-20 border-t ${first ? 'border-moss' : 'border-rule'}`}
+    >
+      <div className="mx-auto grid max-w-[90rem] gap-10 px-5 py-16 md:px-16 md:py-24 lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,38rem)] lg:gap-12">
+        <Reveal>
+          <span aria-hidden className="font-plexmono text-[clamp(2.5rem,4.4vw,4rem)] font-medium leading-none text-rule-strong">
+            {num}
+          </span>
+        </Reveal>
+        <Reveal delay={80} className="flex flex-col gap-4">
+          <span className="font-plexmono text-[13px] uppercase tracking-widest text-saffron-ink">{label}</span>
+          <h2 id={`${id}-title`} className="font-display text-[clamp(1.9rem,3.4vw,2.75rem)] font-bold leading-[1.05] tracking-[-0.02em]">
+            {title}
+          </h2>
+          {children}
+        </Reveal>
+        <Reveal delay={160}>{aside}</Reveal>
       </div>
+    </section>
+  );
+}
+
+function Shot({ src, alt, w, h, caption }: { src: string; alt: string; w: number; h: number; caption?: string }) {
+  return (
+    <figure className="flex flex-col gap-3">
+      <div className="overflow-hidden rounded-2xl border border-rule bg-chalk-raised transition-transform duration-500 ease-[cubic-bezier(.2,.7,.2,1)] hover:-translate-y-1">
+        <Image src={src} alt={alt} width={w} height={h} className="h-auto w-full" sizes="(min-width: 1024px) 38rem, 92vw" />
+      </div>
+      {caption && <figcaption className="text-[13px] text-moss-muted">{caption}</figcaption>}
     </figure>
   );
 }
 
-/* ─── Act II · Refusal ───────────────────────────────────────────────────── */
+function Know() {
+  const t = useTranslations('home');
+  return (
+    <Chapter
+      id="know"
+      num="01"
+      first
+      label={t('loop.stages.know.name')}
+      title={t('intelligence.brandTitle')}
+      aside={<Shot src="/marketing/brand-memory.webp" alt={t('intelligence.brandAlt')} w={1800} h={1212} />}
+    >
+      <p className="text-[17px] leading-[1.65] text-moss-muted">{t('intelligence.brandBody')}</p>
+    </Chapter>
+  );
+}
 
-function ActTwo() {
-  const t = useTranslations('home.actTwo');
+function Watch() {
+  const t = useTranslations('home');
+  return (
+    <Chapter
+      id="watch"
+      num="02"
+      label={t('loop.stages.watch.name')}
+      title={t('intelligence.marketTitle')}
+      aside={<Shot src="/marketing/market-map.webp" alt={t('intelligence.marketAlt')} w={1800} h={1074} />}
+    >
+      <p className="text-[17px] leading-[1.65] text-moss-muted">{t('intelligence.marketBody')}</p>
+      <p className="max-w-[34rem] font-display text-[clamp(1.2rem,1.8vw,1.45rem)] font-semibold leading-snug">
+        {t.rich('intelligence.headline', { accent })}
+      </p>
+    </Chapter>
+  );
+}
+
+/* ─── 03 · The refusal ───────────────────────────────────────────────────── */
+
+function Think() {
+  const t = useTranslations('home');
 
   return (
-    <section
-      id="how"
-      className="relative overflow-hidden bg-brick text-brick-ink"
-      // The generated ink texture multiplies over the exact brand red, so the
-      // net on-screen colour stays #C04C36 while the field gains its print grain.
-      style={{
-        backgroundImage: 'url(/marketing/tex-ink.webp)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundBlendMode: 'multiply',
-      }}
-    >
-      <div className="mx-auto max-w-[92rem] px-6 py-24 md:px-12 md:py-36">
-        <h2 className="max-w-[15ch] font-display text-[clamp(2.8rem,8vw,7rem)] font-semibold leading-[0.94] tracking-[-0.045em]">
-          {/* The accent on this field is ink-on-ink, so it takes the red
-              field's own foreground rather than the carbon one. */}
-          {t.rich('headline', {
-            accent: (chunks) => (
-              <span className="font-accent font-normal italic tracking-[-0.02em]">{chunks}</span>
-            ),
-          })}
-        </h2>
+    <section id="refusal" aria-labelledby="refusal-title" className="scroll-mt-16 bg-forest text-chalk">
+      <div className="mx-auto flex max-w-[90rem] flex-col gap-14 px-5 py-20 md:px-16 md:py-28">
+        <div className="grid gap-10 lg:grid-cols-[8rem_minmax(0,1fr)] lg:gap-12">
+          <span aria-hidden className="self-start font-plexmono text-[clamp(2.5rem,4.4vw,4rem)] font-medium leading-none text-saffron">
+            03
+          </span>
+          <Reveal className="flex flex-col gap-5">
+            <span className="font-plexmono text-[13px] uppercase tracking-widest text-saffron">{t('chapters.thinkLabel')}</span>
+            <h2 id="refusal-title" className="font-display text-[clamp(3rem,8.4vw,7rem)] font-extrabold leading-[0.95] tracking-[-0.035em]">
+              {t.rich('actTwo.headline', {
+                accent: (chunks) => <span className="text-saffron">{chunks}</span>,
+              })}
+            </h2>
+            <p className="max-w-[44rem] text-[clamp(1.05rem,1.5vw,1.25rem)] leading-[1.6] text-forest-muted">{t('actTwo.body')}</p>
+          </Reveal>
+        </div>
 
-        <p className="mt-10 max-w-2xl text-[clamp(1.05rem,1.6vw,1.35rem)] leading-[1.6] text-brick-ink">
-          {t('body')}
-        </p>
+        <div className="lg:ps-[10rem]">
+          <TryTheLock />
+        </div>
 
-        <figure className="mt-14">
-          <Image
-            src="/marketing/setup-chain.webp"
-            alt={t('chainAlt')}
-            width={1800}
-            height={400}
-            className="h-auto w-full border border-brick-ink/25"
-            sizes="(min-width: 768px) 88vw, 94vw"
-          />
-          <figcaption className="mt-3 text-[13px] text-brick-ink">
-            {t('chainCaption')}
-          </figcaption>
-        </figure>
+        <Reveal className="lg:ps-[10rem]">
+          <figure className="flex flex-col gap-3">
+            <Image
+              src="/marketing/setup-chain.webp"
+              alt={t('actTwo.chainAlt')}
+              width={1800}
+              height={400}
+              className="h-auto w-full rounded-xl border border-forest-line"
+              sizes="(min-width: 1024px) 80rem, 92vw"
+            />
+            <figcaption className="text-[13px] text-forest-muted">{t('actTwo.chainCaption')}</figcaption>
+          </figure>
+        </Reveal>
 
-        <div className="mt-20 grid gap-x-16 gap-y-12 border-t border-brick-ink/25 pt-12 md:grid-cols-2">
-          <Refusal
-            title={t('checksTitle')}
-            items={[
-              t('checks.limits'),
-              t('checks.scaffolding'),
-              t('checks.blocklist'),
-              t('checks.duplicates'),
-            ]}
-          />
-          <Refusal
-            title={t('judgeTitle')}
-            items={[
-              t('judge.scores'),
-              t('judge.strictest'),
-              t('judge.vetoes'),
-              t('judge.held'),
-            ]}
-          />
+        <div className="grid gap-12 md:grid-cols-2 lg:ps-[10rem]">
+          <Reveal>
+            <RefusalList
+              title={t('actTwo.checksTitle')}
+              items={[t('actTwo.checks.limits'), t('actTwo.checks.scaffolding'), t('actTwo.checks.blocklist'), t('actTwo.checks.duplicates')]}
+            />
+          </Reveal>
+          <Reveal delay={120}>
+            <RefusalList
+              title={t('actTwo.judgeTitle')}
+              items={[t('actTwo.judge.scores'), t('actTwo.judge.strictest'), t('actTwo.judge.vetoes'), t('actTwo.judge.held')]}
+            />
+          </Reveal>
         </div>
       </div>
     </section>
   );
 }
 
-function Refusal({ title, items }: { title: string; items: string[] }) {
+function RefusalList({ title, items }: { title: string; items: string[] }) {
   return (
-    <div>
-      <h3 className="font-display text-[clamp(1.3rem,2.2vw,1.75rem)] font-semibold leading-[1.1] tracking-[-0.03em]">
-        {title}
-      </h3>
-      <ul className="mt-6 space-y-4">
-        {items.map((t) => (
-          <li key={t} className="flex gap-4 text-[15.5px] leading-[1.6] text-brick-ink">
-            <span aria-hidden className="mt-[0.62em] h-px w-6 shrink-0 bg-brick-ink/50" />
-            <span>{t}</span>
+    <div className="flex flex-col gap-4">
+      <h3 className="font-display text-[clamp(1.3rem,2vw,1.65rem)] font-bold">{title}</h3>
+      <ul className="border-b border-forest-line">
+        {items.map((item) => (
+          <li key={item} className="border-t border-forest-line py-3 text-[16px] leading-relaxed">
+            {item}
           </li>
         ))}
       </ul>
@@ -295,97 +305,64 @@ function Refusal({ title, items }: { title: string; items: string[] }) {
   );
 }
 
-/* ─── Act III · Output ───────────────────────────────────────────────────── */
+/* ─── 04 · 05 ────────────────────────────────────────────────────────────── */
 
-function ActThree() {
-  const t = useTranslations('home.actThree');
-
+function MakeShip() {
+  const t = useTranslations('home');
+  const rows: Array<[string, string]> = [
+    [t('actThree.cadence'), t('actThree.cadenceValue')],
+    [t('actThree.channels'), t('actThree.channelsValue')],
+    [t('actThree.window'), t('actThree.windowValue')],
+    [t('actThree.steering'), t('actThree.steeringValue')],
+  ];
   return (
-    <section id="autopilot" className="border-b border-carbon/10 bg-paper-light">
-      <div className="mx-auto grid max-w-[92rem] gap-14 px-6 py-20 md:px-12 md:py-28 lg:grid-cols-[1fr_1.05fr] lg:items-center lg:gap-20">
-        <div>
-          <h2 className="max-w-[16ch] font-display text-[clamp(2.1rem,5vw,4.2rem)] font-semibold leading-[1] tracking-[-0.04em]">
-            {t.rich('headline', { accent })}
-          </h2>
-          <p className="mt-6 max-w-md text-[16.5px] leading-[1.7] text-carbon-80">
-            {t('body')}
-          </p>
-
-          <dl className="mt-12 divide-y divide-carbon/15 border-y border-carbon/15">
-            {(
-              [
-                [t('cadence'), t('cadenceValue')],
-                [t('channels'), t('channelsValue')],
-                [t('window'), t('windowValue')],
-                [t('steering'), t('steeringValue')],
-              ] as Array<[string, string]>
-            ).map(([k, v]) => (
-              <div key={k} className="grid grid-cols-[7.5rem_1fr] gap-6 py-4">
-                <dt className="text-[14px] text-carbon-60">{k}</dt>
-                <dd className="text-[15px] leading-snug">{v}</dd>
-              </div>
-            ))}
-          </dl>
+    <Chapter
+      id="ship"
+      num="04"
+      label={t('chapters.makeShip')}
+      title={t.rich('actThree.headline', { accent })}
+      aside={
+        <div className="flex flex-col gap-6">
+          <CadenceWeek />
+          <Shot src="/marketing/generated-post.webp" alt={t('actThree.postAlt')} w={1400} h={1114} caption={t('actThree.postCaption')} />
         </div>
-
-        <figure>
-          <div className="border border-carbon/15 bg-paper-warm">
-            <Image
-              src="/marketing/generated-post.webp"
-              alt={t('postAlt')}
-              width={1400}
-              height={1114}
-              className="h-auto w-full"
-              sizes="(min-width: 1024px) 48vw, 92vw"
-            />
+      }
+    >
+      <p className="text-[17px] leading-[1.65] text-moss-muted">{t('actThree.body')}</p>
+      <dl className="mt-2 grid grid-cols-[7.5rem_minmax(0,1fr)] border-b border-rule text-[15px]">
+        {rows.map(([k, v], i) => (
+          <div key={k} className="contents">
+            <dt className={`border-t py-3 font-plexmono text-[13px] text-moss-muted ${i === 0 ? 'border-moss' : 'border-rule'}`}>{k}</dt>
+            <dd className={`border-t py-3 ${i === 0 ? 'border-moss' : 'border-rule'}`}>{v}</dd>
           </div>
-          <figcaption className="mt-3 text-[12.5px] text-carbon-60">
-            {t('postCaption')}
-          </figcaption>
-        </figure>
-      </div>
-    </section>
+        ))}
+      </dl>
+    </Chapter>
   );
 }
 
-/* ─── Channels ───────────────────────────────────────────────────────────── */
+/* ─── 06 ─────────────────────────────────────────────────────────────────── */
 
-function Channels() {
-  const t = useTranslations('home.channels');
-
+function Learn() {
+  const t = useTranslations('home');
+  const steps: Array<[string, string]> = [
+    [t('channels.connect'), t('channels.connectBody')],
+    [t('channels.schedule'), t('channels.scheduleBody')],
+    [t('channels.publish'), t('channels.publishBody')],
+    [t('channels.record'), t('channels.recordBody')],
+  ];
   return (
-    <section id="channels" className="border-b border-carbon/10">
-      <div className="mx-auto max-w-[92rem] px-6 py-20 md:px-12 md:py-28">
-        <div className="grid gap-12 lg:grid-cols-[1.15fr_1fr] lg:gap-20">
-          <div>
-            <h2 className="max-w-[17ch] font-display text-[clamp(1.9rem,4.2vw,3.4rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
-              {t('headline')}
-            </h2>
-            <p className="mt-6 max-w-lg text-[16px] leading-[1.7] text-carbon-80">
-              {t('body')}
-            </p>
-          </div>
-
-          <ol className="divide-y divide-carbon/15 border-y border-carbon/15">
-            {(
-              [
-                [t('connect'), t('connectBody')],
-                [t('schedule'), t('scheduleBody')],
-                [t('publish'), t('publishBody')],
-                [t('record'), t('recordBody')],
-              ] as Array<[string, string]>
-            ).map(([k, v]) => (
-              <li key={k} className="grid grid-cols-[6.5rem_1fr] gap-6 py-5">
-                <span className="font-display text-[15px] font-semibold tracking-[-0.02em]">
-                  {k}
-                </span>
-                <span className="text-[15px] leading-relaxed text-carbon-80">{v}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      </div>
-    </section>
+    <Chapter id="learn" num="06" label={t('loop.stages.learn.name')} title={t('channels.headline')} aside={<RunLog />}>
+      <p className="text-[17px] leading-[1.65] text-moss-muted">{t('channels.body')}</p>
+      <ol className="mt-2 grid gap-0 border-t border-moss sm:grid-cols-2">
+        {steps.map(([k, v], i) => (
+          <li key={k} className={`flex flex-col gap-1.5 border-b border-rule py-4 ${i % 2 ? 'sm:border-s sm:ps-5' : 'sm:pe-5'}`}>
+            <strong className="text-[17px]">{k}</strong>
+            <span className="text-[15px] leading-relaxed text-moss-muted">{v}</span>
+          </li>
+        ))}
+      </ol>
+    </Chapter>
   );
 }
 
@@ -395,59 +372,29 @@ function Close() {
   const t = useTranslations('home.close');
 
   return (
-    <section className="bg-carbon text-paper-warm">
-      <div className="mx-auto max-w-[92rem] px-6 py-24 md:px-12 md:py-32">
-        <h2 className="max-w-[17ch] font-display text-[clamp(2.4rem,6.4vw,5.5rem)] font-semibold leading-[0.96] tracking-[-0.045em]">
-          {/* Carbon field, so the accent lifts off the paper tone instead. */}
-          {t.rich('headline', {
-            accent: (chunks) => (
-              <span className="font-accent font-normal italic tracking-[-0.02em] text-paper-warm/60">
-                {chunks}
-              </span>
-            ),
-          })}
-        </h2>
-        <p className="mt-8 max-w-xl text-[17px] leading-[1.65] text-paper-warm/75">
-          {t('body')}
-        </p>
-
-        <div className="mt-12 flex flex-wrap items-center gap-x-8 gap-y-4">
+    <section className="px-5 pb-16 md:px-16">
+      <Reveal className="mx-auto grid max-w-[90rem] gap-10 rounded-3xl bg-saffron px-6 py-14 text-moss md:px-16 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,32rem)] lg:items-end">
+        <div className="flex flex-col gap-5">
+          <h2 className="font-display text-[clamp(2.4rem,5.6vw,4.5rem)] font-extrabold leading-[1] tracking-[-0.03em]">
+            {t.rich('headline', { accent: (chunks) => <span className="underline decoration-moss decoration-[6px] underline-offset-[10px]">{chunks}</span> })}
+          </h2>
+          <p className="max-w-[38rem] text-[18px] leading-[1.6]">{t('body')}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
           <Link
             href="/sign-up"
-            className="group inline-flex items-center gap-4 bg-brick px-8 py-5 text-[15px] font-semibold tracking-[0.01em] text-brick-ink transition-colors duration-300 hover:bg-paper-warm hover:text-carbon"
+            className="group inline-flex h-14 items-center gap-3 rounded-xl bg-moss px-7 text-[16px] font-semibold text-chalk transition-transform duration-200 hover:-translate-y-0.5"
           >
             {t('cta')}
-            <span
-              aria-hidden
-              className="transition-transform duration-300 group-hover:translate-x-1.5 rtl:rotate-180"
-            >
+            <span aria-hidden className="transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180 rtl:group-hover:-translate-x-1">
               &rarr;
             </span>
           </Link>
-          <Link
-            href="/pricing"
-            className="text-[15px] text-paper-warm/70 underline decoration-paper-warm/30 underline-offset-[6px] transition-colors hover:text-paper-warm hover:decoration-brick"
-          >
+          <Link href="/pricing" className="text-[16px] font-semibold underline decoration-2 underline-offset-[6px]">
             {t('pricing')}
           </Link>
         </div>
-      </div>
+      </Reveal>
     </section>
-  );
-}
-
-/* ─── Pieces ─────────────────────────────────────────────────────────────── */
-
-/** Scanned paper grain over the cream ground, so the ground is a material. */
-function PaperGrain() {
-  return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 opacity-[0.55] mix-blend-multiply"
-      style={{
-        backgroundImage: 'url(/marketing/tex-paper.webp)',
-        backgroundSize: '620px',
-      }}
-    />
   );
 }

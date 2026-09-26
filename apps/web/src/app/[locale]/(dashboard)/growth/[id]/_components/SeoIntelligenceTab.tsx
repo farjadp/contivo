@@ -110,7 +110,7 @@ function serpCooldownHoursLeft(lastScan: Date): number {
 function difficultyColor(d: number): string {
   if (d >= 70) return 'bg-red-100 text-red-700';
   if (d >= 40) return 'bg-amber-100 text-amber-700';
-  return 'bg-emerald-100 text-emerald-700';
+  return 'bg-chalk-sunk text-moss-700';
 }
 
 function competitionKey(c: number): 'high' | 'medium' | 'low' {
@@ -122,7 +122,7 @@ function competitionKey(c: number): 'high' | 'medium' | 'low' {
 function competitionColor(c: number): string {
   if (c >= 0.7) return 'text-red-600 bg-red-50 border border-red-100';
   if (c >= 0.4) return 'text-amber-600 bg-amber-50 border border-amber-100';
-  return 'text-emerald-600 bg-emerald-50 border border-emerald-100';
+  return 'text-moss-700 bg-chalk-sunk border border-rule';
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -231,12 +231,12 @@ export function SeoIntelligenceTab({
     <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-600 text-white shadow">
+        <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-moss text-chalk shadow">
           <TrendingUp className="w-4 h-4" />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-[#121212]">{t('title')}</h2>
-          <p className="text-[11px] text-gray-500">{t.rich('subtitle', { bdi })}</p>
+          <h2 className="text-sm font-bold text-moss">{t('title')}</h2>
+          <p className="text-[11px] text-moss-muted">{t.rich('subtitle', { bdi })}</p>
         </div>
       </div>
 
@@ -249,8 +249,8 @@ export function SeoIntelligenceTab({
             onClick={() => setActiveTab(tab.key)}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
               activeTab === tab.key
-                ? 'border-[#121212] bg-[#121212] text-white'
-                : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                ? 'border-moss bg-moss text-chalk'
+                : 'border-rule bg-chalk-raised text-moss-muted hover:border-rule-strong'
             }`}
           >
             {tab.icon}
@@ -264,8 +264,8 @@ export function SeoIntelligenceTab({
         <div className="space-y-4">
           {/* Scan buttons for each accepted competitor */}
           {acceptedCompetitorDomains.length === 0 && domainsWithKeywords.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-center text-sm text-gray-500">
-              <AlertCircle className="w-5 h-5 mx-auto mb-2 text-gray-400" />
+            <div className="rounded-2xl border border-dashed border-rule-strong bg-chalk-raised p-8 text-center text-sm text-moss-muted">
+              <AlertCircle className="w-5 h-5 mx-auto mb-2 text-moss-muted" />
               {t('noCompetitors')}
             </div>
           ) : (
@@ -278,17 +278,17 @@ export function SeoIntelligenceTab({
                   const isScanning = scanningDomain === domain;
 
                   return (
-                    <div key={domain} className="rounded-xl border border-gray-200 bg-white p-4 flex flex-col gap-3">
+                    <div key={domain} className="rounded-xl border border-rule bg-chalk-raised p-4 flex flex-col gap-3">
                       <div className="flex items-center justify-between">
                         <div>
                           {/* Domains are raw data: never translated, always LTR. */}
-                          <p className="text-xs font-bold text-[#121212] truncate max-w-[160px]" dir="ltr">{domain}</p>
+                          <p className="text-xs font-bold text-moss truncate max-w-[160px]" dir="ltr">{domain}</p>
                           {rowCount > 0 ? (
-                            <p className="text-[11px] text-gray-500 mt-0.5">
+                            <p className="text-[11px] text-moss-muted mt-0.5">
                               {t('keywordsStored', { count: format.number(rowCount) })}
                             </p>
                           ) : (
-                            <p className="text-[11px] text-gray-400 mt-0.5">{t('notScanned')}</p>
+                            <p className="text-[11px] text-moss-muted mt-0.5">{t('notScanned')}</p>
                           )}
                         </div>
                         <button
@@ -296,8 +296,8 @@ export function SeoIntelligenceTab({
                           onClick={() => setSelectedDomain(domain)}
                           className={`text-[11px] font-semibold px-2 py-1 rounded-lg transition ${
                             selectedDomain === domain
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                              ? 'bg-moss text-chalk'
+                              : 'bg-chalk-sunk text-moss-muted hover:bg-chalk-sunk'
                           }`}
                         >
                           {selectedDomain === domain ? t('viewing') : t('view')}
@@ -305,7 +305,7 @@ export function SeoIntelligenceTab({
                       </div>
 
                       {lastScan ? (
-                        <p className="text-[11px] text-gray-500">
+                        <p className="text-[11px] text-moss-muted">
                           {t('lastScan', {
                             date: format.dateTime(new Date(lastScan), { dateStyle: 'medium' }),
                           })}
@@ -325,7 +325,7 @@ export function SeoIntelligenceTab({
                         type="button"
                         onClick={() => handleScanDomain(domain)}
                         disabled={isScanning || (daysLeft > 0 && !scanMessages[domain])}
-                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#121212] text-white px-3 py-2 text-xs font-bold transition hover:bg-black disabled:opacity-50"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-moss text-chalk px-3 py-2 text-xs font-bold transition hover:bg-moss disabled:opacity-50"
                       >
                         {isScanning ? (
                           <><Loader2 className="w-3 h-3 animate-spin" /> {t('scanning')}</>
@@ -342,38 +342,38 @@ export function SeoIntelligenceTab({
 
               {/* Keyword table for selected domain */}
               {selectedKeywords.length > 0 ? (
-                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                    <h3 className="text-xs font-bold text-[#121212]">
+                <div className="rounded-2xl border border-rule bg-chalk-raised overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-rule bg-chalk/50">
+                    <h3 className="text-xs font-bold text-moss">
                       {t('keywordsFrom')}{' '}
-                      <span className="text-indigo-600" dir="ltr">{selectedDomain}</span>
+                      <span className="text-moss-700" dir="ltr">{selectedDomain}</span>
                     </h3>
-                    <span className="text-[11px] text-gray-500">
+                    <span className="text-[11px] text-moss-muted">
                       {t('keywordCount', { count: format.number(selectedKeywords.length) })}
                     </span>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="min-w-full text-xs">
                       <thead>
-                        <tr className="border-b border-gray-100 bg-gray-50/30">
-                          <th className="px-4 py-2.5 text-start font-bold text-gray-600">{t('colKeyword')}</th>
-                          <th className="px-4 py-2.5 text-end font-bold text-gray-600">{t('colVolume')}</th>
-                          <th className="px-4 py-2.5 text-center font-bold text-gray-600">{t('colDifficulty')}</th>
-                          <th className="px-4 py-2.5 text-center font-bold text-gray-600">{t('colCompetition')}</th>
-                          <th className="px-4 py-2.5 text-center font-bold text-gray-600">{t('colRank')}</th>
+                        <tr className="border-b border-rule bg-chalk/30">
+                          <th className="px-4 py-2.5 text-start font-bold text-moss-muted">{t('colKeyword')}</th>
+                          <th className="px-4 py-2.5 text-end font-bold text-moss-muted">{t('colVolume')}</th>
+                          <th className="px-4 py-2.5 text-center font-bold text-moss-muted">{t('colDifficulty')}</th>
+                          <th className="px-4 py-2.5 text-center font-bold text-moss-muted">{t('colCompetition')}</th>
+                          <th className="px-4 py-2.5 text-center font-bold text-moss-muted">{t('colRank')}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {selectedKeywords.slice(0, 100).map((kw, idx) => (
                           <tr
                             key={kw.id}
-                            className={`border-b border-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                            className={`border-b border-rule ${idx % 2 === 0 ? 'bg-chalk-raised' : 'bg-chalk/30'}`}
                           >
-                            <td className="px-4 py-2.5 font-medium text-gray-800 max-w-[240px] truncate">
+                            <td className="px-4 py-2.5 font-medium text-moss max-w-[240px] truncate">
                               {/* Keywords are search data, never translated. */}
                               <bdi>{kw.keyword}</bdi>
                             </td>
-                            <td className="px-4 py-2.5 text-end font-semibold text-gray-700">
+                            <td className="px-4 py-2.5 text-end font-semibold text-moss">
                               {format.number(kw.searchVolume)}
                             </td>
                             <td className="px-4 py-2.5 text-center">
@@ -386,7 +386,7 @@ export function SeoIntelligenceTab({
                                 {t(`competition.${competitionKey(kw.competition)}`)}
                               </span>
                             </td>
-                            <td className="px-4 py-2.5 text-center text-gray-500 font-medium">
+                            <td className="px-4 py-2.5 text-center text-moss-muted font-medium">
                               {kw.rankingPosition === null
                                 ? t('empty')
                                 : format.number(kw.rankingPosition)}
@@ -396,7 +396,7 @@ export function SeoIntelligenceTab({
                       </tbody>
                     </table>
                     {selectedKeywords.length > 100 ? (
-                      <p className="px-4 py-3 text-[11px] text-gray-400">
+                      <p className="px-4 py-3 text-[11px] text-moss-muted">
                         {t('showingTop', {
                           shown: format.number(100),
                           total: format.number(selectedKeywords.length),
@@ -406,7 +406,7 @@ export function SeoIntelligenceTab({
                   </div>
                 </div>
               ) : selectedDomain ? (
-                <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-400">
+                <div className="rounded-2xl border border-dashed border-rule-strong p-6 text-center text-sm text-moss-muted">
                   {t.rich('noKeywordsFor', {
                     domain: selectedDomain,
                     d: (chunks) => (
@@ -428,12 +428,12 @@ export function SeoIntelligenceTab({
               type="button"
               onClick={handleComputeOpportunities}
               disabled={isComputingOpps}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
             >
               {isComputingOpps ? <Loader2 className="h-4 w-4 animate-spin" /> : <BarChart2 className="h-4 w-4" />}
               {t('computeOpportunities')}
             </button>
-            <p className="text-xs text-gray-500">{t('computeHelp')}</p>
+            <p className="text-xs text-moss-muted">{t('computeHelp')}</p>
           </div>
 
           {oppsMessage ? (
@@ -443,27 +443,27 @@ export function SeoIntelligenceTab({
           ) : null}
 
           {opportunities.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
+            <div className="rounded-2xl border border-dashed border-rule-strong p-8 text-center text-sm text-moss-muted">
               {t('noOpportunities')}
             </div>
           ) : (
-            <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50/50">
-                <h3 className="text-xs font-bold text-[#121212]">{t('topOpportunities')}</h3>
-                <span className="text-[11px] text-gray-500">
+            <div className="rounded-2xl border border-rule bg-chalk-raised overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3 border-b border-rule bg-chalk/50">
+                <h3 className="text-xs font-bold text-moss">{t('topOpportunities')}</h3>
+                <span className="text-[11px] text-moss-muted">
                   {t('gapsFound', { count: format.number(opportunities.length) })}
                 </span>
               </div>
               <div className="overflow-x-auto">
                 <table className="min-w-full text-xs">
                   <thead>
-                    <tr className="border-b border-gray-100 bg-gray-50/30">
-                      <th className="px-4 py-2.5 text-start font-bold text-gray-600">{t('colRow')}</th>
-                      <th className="px-4 py-2.5 text-start font-bold text-gray-600">{t('colKeyword')}</th>
-                      <th className="px-4 py-2.5 text-end font-bold text-gray-600">{t('colVolume')}</th>
-                      <th className="px-4 py-2.5 text-center font-bold text-gray-600">{t('colCompetition')}</th>
-                      <th className="px-4 py-2.5 text-start font-bold text-gray-600">{t('colScore')}</th>
-                      <th className="px-4 py-2.5 text-start font-bold text-gray-600">{t('colSource')}</th>
+                    <tr className="border-b border-rule bg-chalk/30">
+                      <th className="px-4 py-2.5 text-start font-bold text-moss-muted">{t('colRow')}</th>
+                      <th className="px-4 py-2.5 text-start font-bold text-moss-muted">{t('colKeyword')}</th>
+                      <th className="px-4 py-2.5 text-end font-bold text-moss-muted">{t('colVolume')}</th>
+                      <th className="px-4 py-2.5 text-center font-bold text-moss-muted">{t('colCompetition')}</th>
+                      <th className="px-4 py-2.5 text-start font-bold text-moss-muted">{t('colScore')}</th>
+                      <th className="px-4 py-2.5 text-start font-bold text-moss-muted">{t('colSource')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -474,23 +474,23 @@ export function SeoIntelligenceTab({
                       return (
                         <tr
                           key={opp.id}
-                          className={`border-b border-gray-50 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}
+                          className={`border-b border-rule ${idx % 2 === 0 ? 'bg-chalk-raised' : 'bg-chalk/30'}`}
                         >
-                          <td className="px-4 py-2.5 font-bold text-gray-400">{format.number(idx + 1)}</td>
-                          <td className="px-4 py-2.5 font-semibold text-gray-800 max-w-[240px]">
+                          <td className="px-4 py-2.5 font-bold text-moss-muted">{format.number(idx + 1)}</td>
+                          <td className="px-4 py-2.5 font-semibold text-moss max-w-[240px]">
                             <button
                               type="button"
                               onClick={() => {
                                 setSerpKeyword(opp.keyword);
                                 setActiveTab('serp_insights');
                               }}
-                              className="hover:text-indigo-600 transition-colors text-start"
+                              className="hover:text-moss-700 transition-colors text-start"
                               title={t('analyzeInSerp')}
                             >
                               <bdi>{opp.keyword}</bdi>
                             </button>
                           </td>
-                          <td className="px-4 py-2.5 text-end font-semibold text-gray-700">
+                          <td className="px-4 py-2.5 text-end font-semibold text-moss">
                             {format.number(opp.searchVolume)}
                           </td>
                           <td className="px-4 py-2.5 text-center">
@@ -500,13 +500,13 @@ export function SeoIntelligenceTab({
                           </td>
                           <td className="px-4 py-2.5 min-w-[120px]">
                             <div className="flex items-center gap-2">
-                              <div className="h-1.5 flex-1 rounded-full bg-gray-100 overflow-hidden">
+                              <div className="h-1.5 flex-1 rounded-full bg-chalk-sunk overflow-hidden">
                                 <div
-                                  className="h-full rounded-full bg-indigo-500 transition-all"
+                                  className="h-full rounded-full bg-moss transition-all"
                                   style={{ width: `${pct}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] font-bold text-gray-600 w-8 text-end">
+                              <span className="text-[10px] font-bold text-moss-muted w-8 text-end">
                                 {format.number(opp.opportunityScore, {
                                   minimumFractionDigits: 1,
                                   maximumFractionDigits: 1,
@@ -514,7 +514,7 @@ export function SeoIntelligenceTab({
                               </span>
                             </div>
                           </td>
-                          <td className="px-4 py-2.5 text-[11px] text-gray-400 max-w-[120px] truncate">
+                          <td className="px-4 py-2.5 text-[11px] text-moss-muted max-w-[120px] truncate">
                             <bdi>{opp.sourceCompetitor ?? t('empty')}</bdi>
                           </td>
                         </tr>
@@ -534,21 +534,21 @@ export function SeoIntelligenceTab({
           {/* Keyword input */}
           <div className="flex gap-2">
             <div className="relative flex-1">
-              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 w-4 h-4 text-moss-muted" />
               <input
                 type="text"
                 value={serpKeyword}
                 onChange={(e) => setSerpKeyword(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleAnalyzeSerp()}
                 placeholder={t('serpPlaceholder')}
-                className="w-full rounded-xl border border-gray-200 bg-white ps-9 pe-4 py-2.5 text-sm outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
+                className="w-full rounded-xl border border-rule bg-chalk-raised ps-9 pe-4 py-2.5 text-sm outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition"
               />
             </div>
             <button
               type="button"
               onClick={handleAnalyzeSerp}
               disabled={isAnalyzingSerp || !serpKeyword.trim()}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-indigo-700 disabled:opacity-60 shrink-0"
+              className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60 shrink-0"
             >
               {isAnalyzingSerp ? <Loader2 className="h-4 w-4 animate-spin" /> : <TrendingUp className="h-4 w-4" />}
               {t('analyze')}
@@ -562,7 +562,7 @@ export function SeoIntelligenceTab({
           ) : null}
 
           {serpAnalyses.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-gray-300 p-8 text-center text-sm text-gray-400">
+            <div className="rounded-2xl border border-dashed border-rule-strong p-8 text-center text-sm text-moss-muted">
               {t('noSerp')}
             </div>
           ) : (
@@ -572,20 +572,20 @@ export function SeoIntelligenceTab({
                 return (
                   <div
                     key={analysis.id}
-                    className="rounded-2xl border border-gray-200 bg-white overflow-hidden"
+                    className="rounded-2xl border border-rule bg-chalk-raised overflow-hidden"
                   >
                     <button
                       type="button"
                       onClick={() => setExpandedSerp(isExpanded ? null : analysis.id)}
-                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-gray-50/50 transition"
+                      className="flex w-full items-center justify-between px-4 py-3 hover:bg-chalk/50 transition"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-indigo-50">
-                          <Search className="w-3.5 h-3.5 text-indigo-600" />
+                        <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-chalk-sunk">
+                          <Search className="w-3.5 h-3.5 text-moss-700" />
                         </div>
                         <div className="text-start">
-                          <p className="text-sm font-bold text-[#121212]"><bdi>{analysis.keyword}</bdi></p>
-                          <p className="text-[11px] text-gray-400">
+                          <p className="text-sm font-bold text-moss"><bdi>{analysis.keyword}</bdi></p>
+                          <p className="text-[11px] text-moss-muted">
                             {t('analyzedOn', {
                               date: format.dateTime(new Date(analysis.createdAt), { dateStyle: 'medium' }),
                             })}
@@ -600,18 +600,18 @@ export function SeoIntelligenceTab({
                         </div>
                       </div>
                       {isExpanded ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
+                        <ChevronDown className="w-4 h-4 text-moss-muted" />
                       ) : (
                         /* A chevron that points along the reading direction
                            has to turn around when the reading direction does. */
-                        <ChevronRight className="w-4 h-4 text-gray-400 rtl:rotate-180" />
+                        <ChevronRight className="w-4 h-4 text-moss-muted rtl:rotate-180" />
                       )}
                     </button>
 
                     {isExpanded ? (
-                      <div className="border-t border-gray-100 px-4 py-4">
+                      <div className="border-t border-rule px-4 py-4">
                         <div className="prose prose-sm max-w-none">
-                          <pre dir="auto" className="whitespace-pre-wrap text-start text-xs leading-relaxed text-gray-800 font-sans">
+                          <pre dir="auto" className="whitespace-pre-wrap text-start text-xs leading-relaxed text-moss font-sans">
                             {analysis.analysis}
                           </pre>
                         </div>

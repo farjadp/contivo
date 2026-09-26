@@ -57,52 +57,27 @@
   }
 }
 
-@layer utilities {
-  .text-gradient {
-    background-image: linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-}
 
-/* ── Editorial world: browser surfaces ──────────────────────────────────────
+/* ── Chalk & Saffron: browser surfaces ─────────────────────────────────────
    Selection, caret, focus ring and scrollbar ship with browser defaults that
-   belong to no design system. On the marketing surface they are themed from
-   the palette so the parts we did not draw still read as ours. */
+   belong to no design system; site and app theme them from the palette. The
+   focus ring is moss, not saffron: saffron on chalk is under the 3:1 a focus
+   indicator needs. */
 @layer base {
-  .theme-editorial {
-    --carbon: #121212;
-    --paper-warm: #efece5;
-    --brick: #c04c36;
-    accent-color: var(--brick);
-    scrollbar-color: var(--brick) var(--paper-warm);
+  .theme-chalk {
+    scrollbar-color: #a9a89c #eeede6;
   }
-  .theme-editorial ::selection {
-    background: var(--brick);
-    color: #fdf2ee;
+  .theme-chalk ::selection {
+    background: #e3a21a;
+    color: #17201b;
   }
-  .theme-editorial :focus-visible {
-    outline: 2px solid var(--brick);
+  .theme-chalk :focus-visible {
+    outline: 2px solid #17201b;
     outline-offset: 3px;
-    border-radius: 1px;
   }
-  .theme-editorial input {
-    caret-color: var(--brick);
-  }
-  .theme-editorial ::-webkit-scrollbar {
-    width: 11px;
-    height: 11px;
-  }
-  .theme-editorial ::-webkit-scrollbar-track {
-    background: var(--paper-warm);
-  }
-  .theme-editorial ::-webkit-scrollbar-thumb {
-    background: #d6d3ca;
-    border: 3px solid var(--paper-warm);
-  }
-  .theme-editorial ::-webkit-scrollbar-thumb:hover {
-    background: var(--brick);
+  .theme-chalk input,
+  .theme-chalk textarea {
+    caret-color: #2f4a3a;
   }
   /* Real numbers in the evidence rows must not jitter between weights. */
   .tnum {
@@ -116,25 +91,25 @@
    footer and the sticky contents drop out and the ink blocks stay legible
    on white paper rather than burning a cartridge on a dark background. */
 @media print {
-  .theme-editorial {
+  .theme-chalk {
     background: #fff !important;
   }
-  .theme-editorial pre {
+  .theme-chalk pre {
     background: #f4f2ee !important;
     color: #121212 !important;
     border: 1px solid #d6d3ca !important;
     white-space: pre-wrap;
     word-break: break-word;
   }
-  .theme-editorial a {
+  .theme-chalk a {
     text-decoration: none;
   }
-  .theme-editorial h2,
-  .theme-editorial h3 {
+  .theme-chalk h2,
+  .theme-chalk h3 {
     break-after: avoid;
   }
-  .theme-editorial figure,
-  .theme-editorial table {
+  .theme-chalk figure,
+  .theme-chalk table {
     break-inside: avoid;
   }
 }
@@ -145,11 +120,10 @@
    what language forces — never the palette, the spacing scale or the forms. */
 @layer base {
   [lang='fa'] {
-    /* Vazirmatn carries body AND display. Bricolage and Bodoni have no Persian
+    /* Vazirmatn carries body AND display. Bricolage and Plex have no Persian
        glyphs at all, so leaving them in the stack means a silent fallback to
        whatever the OS has — Geeza Pro on macOS, DejaVu tofu on Linux. */
     --font-display: var(--font-vazir);
-    --font-accent: var(--font-vazir);
   }
 
   [lang='fa'] body {
@@ -180,8 +154,7 @@
   /* Faux italics slant the glyphs and destroy the joins the same way. Persian
      marks emphasis with weight and colour, never slope. */
   [lang='fa'] i,
-  [lang='fa'] em,
-  [lang='fa'] .font-accent {
+  [lang='fa'] em {
     font-style: normal;
   }
 
@@ -215,3 +188,30 @@
   hover. Tailwind's variant composes into the same transform instead of
   replacing it. Symmetric icons get neither.
 */
+
+/* ── Chalk & Saffron: the signed-in surface ─────────────────────────────────
+   AppShell carries .theme-chalk, so the shadcn-style variables (bg-primary,
+   text-muted-foreground, …) resolve to the new system inside the app while
+   the marketing site keeps its own. Values are the hexes in tailwind.config. */
+@layer base {
+  .theme-chalk {
+    --background: 53 19% 92%; /* chalk */
+    --foreground: 147 16% 11%; /* moss */
+    --card: 50 30% 96%; /* chalk-raised */
+    --card-foreground: 147 16% 11%;
+    --popover: 50 30% 96%;
+    --popover-foreground: 147 16% 11%;
+    --primary: 147 16% 11%;
+    --primary-foreground: 53 19% 92%;
+    --secondary: 54 15% 87%; /* chalk-sunk */
+    --secondary-foreground: 147 16% 11%;
+    --muted: 54 15% 87%;
+    --muted-foreground: 138 6% 31%; /* moss-muted, 7.4:1 on chalk */
+    --accent: 41 79% 50%; /* saffron */
+    --accent-foreground: 147 16% 11%;
+    --border: 55 12% 82%; /* rule */
+    --input: 55 12% 82%;
+    --ring: 41 79% 50%;
+    accent-color: #2f4a3a;
+  }
+}

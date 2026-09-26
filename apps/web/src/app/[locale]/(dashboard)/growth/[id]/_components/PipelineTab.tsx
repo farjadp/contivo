@@ -137,17 +137,17 @@ export function PipelineTab({
 
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white flex flex-col items-center justify-center p-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-        <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center mb-4 text-gray-400">
+      <div className="rounded-2xl border-2 border-dashed border-rule bg-chalk-raised flex flex-col items-center justify-center p-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="w-12 h-12 bg-chalk-sunk rounded-xl flex items-center justify-center mb-4 text-moss-muted">
            <FilePenLine className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-[#121212] mb-1">{t('empty.title')}</h2>
-        <p className="text-sm text-gray-500 max-w-sm mb-6 leading-relaxed">{t('empty.body')}</p>
+        <h2 className="text-lg font-bold text-moss mb-1">{t('empty.title')}</h2>
+        <p className="text-sm text-moss-muted max-w-sm mb-6 leading-relaxed">{t('empty.body')}</p>
         <Link
           href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
-          className="inline-flex items-center gap-2 bg-[#121212] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-black hover:scale-[1.02] transition-all"
+          className="inline-flex items-center gap-2 bg-moss text-chalk px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-moss hover:scale-[1.02] transition-all"
         >
-          <LightbulbIcon className="w-4 h-4 text-yellow-500" />
+          <LightbulbIcon className="w-4 h-4 text-saffron-ink" />
           {t('empty.cta')}
         </Link>
       </div>
@@ -428,41 +428,41 @@ function PipelineItemCard({
 
   return (
     <>
-     <div className="group relative flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:border-[#121212] transition-colors">
+     <div className="group relative flex flex-col rounded-2xl border border-rule bg-chalk-raised p-5 shadow-sm hover:border-moss transition-colors">
         <div className="flex items-start justify-between mb-3">
           <div className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold tracking-widest uppercase
-            ${currentItem.status === 'GENERATED' ? 'bg-emerald-50 text-emerald-600' 
-            : currentItem.status === 'SCHEDULED' ? 'bg-indigo-50 text-indigo-600'
-            : currentItem.status === 'READY' ? 'bg-blue-50 text-blue-600'
+            ${currentItem.status === 'GENERATED' ? 'bg-chalk-sunk text-moss-700' 
+            : currentItem.status === 'SCHEDULED' ? 'bg-chalk-sunk text-moss-700'
+            : currentItem.status === 'READY' ? 'bg-chalk-sunk text-rival'
             : 'bg-amber-50 text-amber-600'}`}>
             {statusLabel(t, currentItem.status)}
           </div>
-         <button className="text-gray-400 hover:text-[#121212] transition-colors">
+         <button className="text-moss-muted hover:text-moss transition-colors">
            <MoreHorizontal className="w-5 h-5" />
          </button>
        </div>
        
-       <h3 className="font-bold text-gray-900 leading-snug mb-2 line-clamp-2" title={item.topic}>
+       <h3 className="font-bold text-moss leading-snug mb-2 line-clamp-2" title={item.topic}>
           {item.topic}
        </h3>
        
        <div className="flex flex-wrap gap-2 mb-4 mt-auto">
-         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-500">
+         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-moss-muted">
            <FileText className="w-3.5 h-3.5" /> <bdi>{channelLabel(t, currentItem.channel)}</bdi>
          </span>
-         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600">
+         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-moss-muted">
            {t('pipeline.wordsTarget', { count: normalizedTargetWordCount })}
          </span>
        </div>
 
        {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
-          <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50/70 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-700 mb-1">{t('pipeline.previewLabel')}</p>
-            <p className="text-sm leading-relaxed text-gray-700 line-clamp-4 whitespace-pre-wrap">
+          <div className="mb-4 rounded-xl border border-rule bg-chalk-sunk/70 p-3">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-moss-700 mb-1">{t('pipeline.previewLabel')}</p>
+            <p className="text-sm leading-relaxed text-moss line-clamp-4 whitespace-pre-wrap">
               {String(currentItem.content || '').slice(0, 280)}
             </p>
             {currentItem.scheduledAtUtc ? (
-              <p className="mt-2 text-[11px] font-semibold text-indigo-700">
+              <p className="mt-2 text-[11px] font-semibold text-moss">
                 {t('pipeline.publishAt', {
                   date: format.dateTime(new Date(currentItem.scheduledAtUtc), { dateStyle: 'medium' }),
                   time: format.dateTime(new Date(currentItem.scheduledAtUtc), {
@@ -476,13 +476,13 @@ function PipelineItemCard({
         ) : null}
 
         {['DRAFT', 'GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
-          <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-3">
-            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-700">
+          <div className="mb-4 rounded-xl border border-rule bg-chalk p-3">
+            <p className="text-[11px] font-bold uppercase tracking-widest text-moss">
               {t('pipeline.quickSchedule.title')}
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <label className="space-y-1">
-                <span className="block text-[11px] font-semibold text-gray-500">{t('common.date')}</span>
+                <span className="block text-[11px] font-semibold text-moss-muted">{t('common.date')}</span>
                 <input
                   type="date"
                   value={publishDate}
@@ -490,11 +490,11 @@ function PipelineItemCard({
                     setPublishDate(event.target.value);
                     setHasCustomSchedule(true);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-rule bg-chalk-raised px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-saffron"
                 />
               </label>
               <label className="space-y-1">
-                <span className="block text-[11px] font-semibold text-gray-500">{t('common.time')}</span>
+                <span className="block text-[11px] font-semibold text-moss-muted">{t('common.time')}</span>
                 <input
                   type="time"
                   value={publishTime}
@@ -502,7 +502,7 @@ function PipelineItemCard({
                     setPublishTime(event.target.value);
                     setHasCustomSchedule(true);
                   }}
-                  className="w-full rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-lg border border-rule bg-chalk-raised px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-saffron"
                 />
               </label>
             </div>
@@ -513,7 +513,7 @@ function PipelineItemCard({
                   setPublishTimezone(event.target.value);
                   setHasCustomSchedule(true);
                 }}
-                className="h-8 flex-1 rounded-lg border border-gray-200 bg-white px-2 text-xs font-semibold text-gray-700 outline-none focus:ring-2 focus:ring-indigo-500"
+                className="h-8 flex-1 rounded-lg border border-rule bg-chalk-raised px-2 text-xs font-semibold text-moss outline-none focus:ring-2 focus:ring-saffron"
               >
                 <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
                 <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
@@ -524,13 +524,13 @@ function PipelineItemCard({
                   type="button"
                   onClick={handleQuickScheduleApply}
                   disabled={isScheduling || !publishDate || !publishTime}
-                  className="h-8 shrink-0 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white transition hover:bg-indigo-700 disabled:opacity-50"
+                  className="h-8 shrink-0 rounded-lg bg-moss px-3 text-xs font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-50"
                 >
                   {isScheduling ? t('pipeline.quickSchedule.saving') : t('pipeline.quickSchedule.publish')}
                 </button>
               ) : null}
             </div>
-            <p className="mt-2 text-[11px] text-gray-500">
+            <p className="mt-2 text-[11px] text-moss-muted">
               {t('pipeline.quickSchedule.note', { hours: defaultScheduleDelayHours })}{' '}
               {currentItem.status === 'DRAFT'
                 ? t('pipeline.quickSchedule.noteDraft')
@@ -540,26 +540,26 @@ function PipelineItemCard({
         ) : null}
         
         {currentItem.status === 'DRAFT' || currentItem.status === 'GENERATED' ? (
-          <div className="mb-4 rounded-xl border border-indigo-100 bg-indigo-50/40 p-3">
+          <div className="mb-4 rounded-xl border border-rule bg-chalk-sunk/40 p-3">
            <button
              type="button"
              onClick={() => setShowManualSource((value) => !value)}
              className="flex w-full items-center justify-between text-start"
            >
-             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-indigo-700">
+             <span className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-moss">
                <Paperclip className="h-3.5 w-3.5" />
                {currentItem.status === 'GENERATED'
                  ? t('pipeline.source.refineTitle')
                  : t('pipeline.source.useTitle')}
              </span>
-             <span className="text-xs font-semibold text-indigo-600">
+             <span className="text-xs font-semibold text-moss-700">
                {showManualSource ? t('pipeline.source.hide') : t('pipeline.source.addContext')}
              </span>
            </button>
 
            {showManualSource ? (
              <div className="mt-3 space-y-3">
-               <label className="flex items-center justify-between rounded-lg border border-indigo-100 bg-white px-3 py-2 text-xs font-semibold text-indigo-700">
+               <label className="flex items-center justify-between rounded-lg border border-rule bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss">
                  <span>
                    {t('pipeline.source.wordCount', {
                      platform: wordCountPlatformLabel(t, wordCountPlatform),
@@ -582,16 +582,16 @@ function PipelineItemCard({
                        ),
                      );
                    }}
-                   className="w-20 rounded-md border border-indigo-200 px-2 py-1 text-end text-xs font-bold text-indigo-700 outline-none"
+                   className="w-20 rounded-md border border-rule-strong px-2 py-1 text-end text-xs font-bold text-moss outline-none"
                  />
                </label>
                <textarea
                  value={manualSourceNotes}
                  onChange={(event) => setManualSourceNotes(event.target.value)}
                  placeholder={t('pipeline.source.placeholder')}
-                 className="h-24 w-full rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm text-gray-700 outline-none ring-indigo-500 focus:ring-2"
+                 className="h-24 w-full rounded-lg border border-rule bg-chalk-raised px-3 py-2 text-sm text-moss outline-none ring-saffron focus:ring-2"
                />
-               <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-indigo-200 bg-white px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-50">
+               <label className="flex cursor-pointer items-center justify-between rounded-lg border border-dashed border-rule-strong bg-chalk-raised px-3 py-2 text-xs font-semibold text-moss hover:bg-chalk-sunk">
                  <span>{t('common.attachFiles')}</span>
                  <span>{t('common.maxFiles', { count: MAX_MANUAL_SOURCE_FILES })}</span>
                  <input
@@ -603,7 +603,7 @@ function PipelineItemCard({
                  />
                </label>
                {isExtractingSourceFiles ? (
-                 <p className="text-xs font-medium text-indigo-600">{t('common.extracting')}</p>
+                 <p className="text-xs font-medium text-moss-700">{t('common.extracting')}</p>
                ) : null}
                {manualSourceError ? (
                  <p className="text-xs font-medium text-red-600">{manualSourceError}</p>
@@ -613,11 +613,11 @@ function PipelineItemCard({
                    {manualSourceFiles.map((file) => (
                      <div
                        key={`${file.name}-${file.size}`}
-                       className="flex items-center justify-between rounded-lg border border-indigo-100 bg-white px-3 py-2"
+                       className="flex items-center justify-between rounded-lg border border-rule bg-chalk-raised px-3 py-2"
                      >
                        <div className="min-w-0">
-                         <p className="truncate text-xs font-semibold text-gray-700">{file.name}</p>
-                         <p className="text-[11px] text-gray-500">
+                         <p className="truncate text-xs font-semibold text-moss">{file.name}</p>
+                         <p className="text-[11px] text-moss-muted">
                            {t('common.tokensApprox', {
                              count: Math.max(1, Math.round(file.extractedText.length / 4)),
                            })}
@@ -638,13 +638,13 @@ function PipelineItemCard({
                    ))}
                  </div>
                ) : null}
-               <p className="text-[11px] text-gray-500">{t('pipeline.source.note')}</p>
+               <p className="text-[11px] text-moss-muted">{t('pipeline.source.note')}</p>
              </div>
             ) : null}
           </div>
         ) : null}
 
-        <div className="pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-medium text-gray-500">
+        <div className="pt-4 border-t border-rule flex items-center justify-between text-xs font-medium text-moss-muted">
           <span className="flex items-center gap-1.5 object-bottom">
             <Calendar className="w-3.5 h-3.5" />
             {format.dateTime(new Date(currentItem.createdAt), { dateStyle: 'medium' })}
@@ -655,7 +655,7 @@ function PipelineItemCard({
               <button 
                 onClick={handleGenerate}
                 disabled={isGenerating || isExtractingSourceFiles}
-                className="text-indigo-600 disabled:opacity-50 hover:text-indigo-700 font-bold items-center inline-flex gap-1"
+                className="text-moss-700 disabled:opacity-50 hover:text-moss font-bold items-center inline-flex gap-1"
               >
                 {isGenerating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
                 {t('pipeline.actions.generate')}
@@ -667,14 +667,14 @@ function PipelineItemCard({
                 <button
                   type="button"
                   onClick={openEditorModal}
-                  className="text-gray-600 hover:text-gray-900 font-bold items-center inline-flex gap-1"
+                  className="text-moss-muted hover:text-moss font-bold items-center inline-flex gap-1"
                 >
                   {t('pipeline.actions.edit')}
                 </button>
                 {currentItem.status === 'GENERATED' ? (
                   <button
                     onClick={handleApprove}
-                    className="bg-[#121212] flex items-center gap-1.5 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-black transition-colors"
+                    className="bg-moss flex items-center gap-1.5 text-chalk px-3 py-1.5 rounded-lg font-bold hover:bg-moss transition-colors"
                   >
                     {t('pipeline.actions.approve')}
                   </button>
@@ -685,7 +685,7 @@ function PipelineItemCard({
             {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
               <button
                 onClick={openScheduleModal}
-                className="bg-indigo-600 flex items-center gap-1 text-white px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition"
+                className="bg-moss flex items-center gap-1 text-chalk px-3 py-1.5 rounded-lg font-bold hover:bg-moss-700 transition"
               >
                 <Send className="w-3.5 h-3.5 rtl:-scale-x-100" /> 
                 {currentItem.status === 'SCHEDULED'
@@ -697,16 +697,16 @@ function PipelineItemCard({
         </div>
      </div>
     {isPreviewOpen ? (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex w-full max-w-4xl flex-col rounded-3xl border border-gray-200 bg-white shadow-2xl overflow-hidden h-[90vh]">
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-5 bg-gray-50/50">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-moss/60 p-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex w-full max-w-4xl flex-col rounded-3xl border border-rule bg-chalk-raised shadow-2xl overflow-hidden h-[90vh]">
+          <div className="flex items-center justify-between border-b border-rule px-6 py-5 bg-chalk/50">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-[#121212]">{t('pipeline.editor.eyebrow')}</p>
-              <h4 className="text-lg font-bold text-gray-900 line-clamp-1 mt-0.5">{currentItem.topic}</h4>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-moss">{t('pipeline.editor.eyebrow')}</p>
+              <h4 className="text-lg font-bold text-moss line-clamp-1 mt-0.5">{currentItem.topic}</h4>
             </div>
             <button
               onClick={() => setIsPreviewOpen(false)}
-              className="rounded-full shrink-0 p-2 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-900"
+              className="rounded-full shrink-0 p-2 text-moss-muted transition-colors hover:bg-chalk-sunk hover:text-moss"
               aria-label={t('pipeline.editor.close')}
             >
               <X className="h-5 w-5" />
@@ -715,67 +715,67 @@ function PipelineItemCard({
           
           <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 flex flex-col h-full">
-              <label className="text-xs font-bold uppercase tracking-wider text-gray-600 mb-2">{t('pipeline.editor.draftLabel')}</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-moss-muted mb-2">{t('pipeline.editor.draftLabel')}</label>
               <textarea
                 value={editContentText}
                 onChange={(e) => setEditContentText(e.target.value)}
-                className="flex-1 min-h-[400px] w-full resize-none rounded-xl border border-gray-200 bg-white p-4 text-sm leading-relaxed text-gray-800 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all font-sans"
+                className="flex-1 min-h-[400px] w-full resize-none rounded-xl border border-rule bg-chalk-raised p-4 text-sm leading-relaxed text-moss outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition-all font-sans"
               />
             </div>
 
             <div className="flex flex-col gap-6">
-              <div className="rounded-2xl bg-indigo-50/50 border border-indigo-100 p-5">
-                <div className="flex items-center gap-2 mb-4 text-indigo-700">
+              <div className="rounded-2xl bg-chalk-sunk/50 border border-rule p-5">
+                <div className="flex items-center gap-2 mb-4 text-moss">
                   <Calendar className="w-5 h-5" />
                   <h3 className="font-bold">{t('pipeline.editor.scheduleTitle')}</h3>
                 </div>
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('pipeline.editor.dateOptional')}</label>
+                    <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('pipeline.editor.dateOptional')}</label>
                     <input 
                       type="date" 
                       value={publishDate}
                       onChange={e => setPublishDate(e.target.value)}
-                      className="w-full rounded-lg border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                      className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('pipeline.editor.timeOptional')}</label>
+                    <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('pipeline.editor.timeOptional')}</label>
                     <input 
                       type="time" 
                       value={publishTime}
                       onChange={e => setPublishTime(e.target.value)}
-                      className="w-full rounded-lg border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                      className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-gray-600 uppercase tracking-wider mb-1.5">{t('common.timezone')}</label>
+                    <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('common.timezone')}</label>
                     <select 
                       value={publishTimezone} 
                       onChange={e => setPublishTimezone(e.target.value)}
-                      className="w-full rounded-lg border-gray-200 bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                      className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     >
                       <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
                       <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
                       <option value="Europe/London">{t('timezones.Europe/London')}</option>
                     </select>
                   </div>
-                  <p className="text-[11px] text-gray-500 leading-tight">{t('pipeline.editor.blankNote')}</p>
+                  <p className="text-[11px] text-moss-muted leading-tight">{t('pipeline.editor.blankNote')}</p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 px-6 py-4 flex items-center justify-between bg-gray-50/50">
-           <div className="inline-flex items-center rounded-full bg-gray-200/60 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-[#121212]">
+          <div className="border-t border-rule px-6 py-4 flex items-center justify-between bg-chalk/50">
+           <div className="inline-flex items-center rounded-full bg-chalk-sunk/60 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss">
              <bdi>{channelLabel(t, currentItem.channel)}</bdi>
            </div>
            
            <div className="flex gap-2">
              <button
                 onClick={() => setIsPreviewOpen(false)}
-                className="px-4 py-2 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors"
+                className="px-4 py-2 text-sm font-bold text-moss-muted hover:text-moss transition-colors"
                 disabled={isSavingEdits}
               >
                 {t('common.cancel')}
@@ -783,7 +783,7 @@ function PipelineItemCard({
               <button
                 onClick={handleSaveEdits}
                 disabled={isSavingEdits}
-                className="bg-indigo-600 flex items-center gap-1.5 text-white px-5 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors disabled:opacity-60"
+                className="bg-moss flex items-center gap-1.5 text-chalk px-5 py-2 rounded-xl text-sm font-bold hover:bg-moss-700 transition-colors disabled:opacity-60"
               >
                 {isSavingEdits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 {t('pipeline.editor.save')}
@@ -795,54 +795,54 @@ function PipelineItemCard({
     ) : null}
 
     {isScheduleModalOpen ? (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 animate-in fade-in zoom-in-95 duration-200">
-        <div className="w-full max-w-md rounded-3xl border border-gray-200 bg-white shadow-2xl p-6 relative">
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-moss/60 p-4 animate-in fade-in zoom-in-95 duration-200">
+        <div className="w-full max-w-md rounded-3xl border border-rule bg-chalk-raised shadow-2xl p-6 relative">
           <button
             onClick={() => setIsScheduleModalOpen(false)}
-            className="absolute top-4 end-4 rounded-full p-2 bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+            className="absolute top-4 end-4 rounded-full p-2 bg-chalk text-moss-muted hover:bg-chalk-sunk hover:text-moss-muted transition"
           >
             <X className="h-4 w-4" />
           </button>
 
           <div className="mb-6">
-            <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center mb-4 text-indigo-600">
+            <div className="w-12 h-12 bg-chalk-sunk rounded-2xl flex items-center justify-center mb-4 text-moss-700">
               <Calendar className="w-6 h-6" />
             </div>
-            <h2 className="text-xl font-bold text-[#121212]">{t('pipeline.scheduleModal.title')}</h2>
-            <p className="text-sm text-gray-500 mt-1 line-clamp-1">{currentItem.topic}</p>
+            <h2 className="text-xl font-bold text-moss">{t('pipeline.scheduleModal.title')}</h2>
+            <p className="text-sm text-moss-muted mt-1 line-clamp-1">{currentItem.topic}</p>
           </div>
 
           <form onSubmit={handleScheduleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.date')}</label>
+                <label className="block text-xs font-bold text-moss uppercase tracking-wider mb-2">{t('common.date')}</label>
                 <input 
                   type="date" 
                   autoFocus
                   required
                   value={publishDate}
                   onChange={e => setPublishDate(e.target.value)}
-                  className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                  className="w-full rounded-xl border-rule bg-chalk focus:bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                 />
               </div>
               <div>
-                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.time')}</label>
+                 <label className="block text-xs font-bold text-moss uppercase tracking-wider mb-2">{t('common.time')}</label>
                  <input 
                   type="time" 
                   required
                   value={publishTime}
                   onChange={e => setPublishTime(e.target.value)}
-                  className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                  className="w-full rounded-xl border-rule bg-chalk focus:bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                 />
               </div>
             </div>
 
             <div>
-               <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">{t('common.timezone')}</label>
+               <label className="block text-xs font-bold text-moss uppercase tracking-wider mb-2">{t('common.timezone')}</label>
                <select 
                  value={publishTimezone} 
                  onChange={e => setPublishTimezone(e.target.value)}
-                 className="w-full rounded-xl border-gray-200 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-indigo-500 p-2.5 text-sm outline-none transition"
+                 className="w-full rounded-xl border-rule bg-chalk focus:bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                >
                  <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
                  <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
@@ -850,18 +850,18 @@ function PipelineItemCard({
                </select>
             </div>
 
-            <div className="pt-4 border-t border-gray-100 flex items-center justify-end gap-3 mt-6">
+            <div className="pt-4 border-t border-rule flex items-center justify-end gap-3 mt-6">
                <button 
                  type="button" 
                  onClick={() => setIsScheduleModalOpen(false)}
-                 className="px-4 py-2 rounded-xl text-sm font-bold text-gray-600 hover:bg-gray-100 transition"
+                 className="px-4 py-2 rounded-xl text-sm font-bold text-moss-muted hover:bg-chalk-sunk transition"
                >
                  {t('common.cancel')}
                </button>
                <button 
                  type="submit" 
                  disabled={isScheduling}
-                 className="bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition disabled:opacity-50"
+                 className="bg-moss hover:bg-moss-700 text-chalk flex items-center gap-2 px-6 py-2 rounded-xl text-sm font-bold transition disabled:opacity-50"
                >
                  {isScheduling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4 rtl:-scale-x-100" />}
                  {t('pipeline.scheduleModal.confirm')}

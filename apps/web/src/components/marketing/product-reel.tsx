@@ -52,7 +52,7 @@ export function ProductReel() {
       <div className="relative">
         <video
           ref={ref}
-          className="w-full border border-carbon/15 bg-paper-warm"
+          className="w-full rounded-2xl border border-rule bg-chalk"
           src="/marketing/contivo-reel.mp4"
           poster="/marketing/reel-poster.webp"
           muted
@@ -65,14 +65,14 @@ export function ProductReel() {
           type="button"
           onClick={toggle}
           aria-pressed={playing}
-          className="absolute bottom-4 right-4 bg-carbon/90 px-4 py-2.5 text-[13px] font-semibold text-paper-warm backdrop-blur-sm transition-colors duration-200 hover:bg-brick"
+          className="absolute bottom-4 end-4 h-11 rounded-full bg-moss/90 px-5 text-[13px] font-semibold text-chalk backdrop-blur-sm transition-colors duration-200 hover:bg-moss"
         >
           {playing ? t('pause') : t('play')}
         </button>
       </div>
-      <figcaption className="mt-3 text-[12.5px] text-carbon-60">
+      <figcaption className="mt-3 text-[12.5px] text-moss-muted">
         {t('caption')}
-        {reduced ? ' Paused because your system asks for reduced motion.' : ''}
+        {reduced ? ` ${t('reducedNote')}` : ''}
       </figcaption>
     </figure>
   );

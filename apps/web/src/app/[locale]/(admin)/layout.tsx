@@ -35,18 +35,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-screen w-full bg-[#F7F7F5]">
+    <div className="theme-chalk flex min-h-screen w-full bg-chalk font-plex text-moss">
       {/*
         The rail sits on the side the language starts from, so `border-e` and
         the logical padding below follow the reader rather than staying pinned
         to the physical left in Persian.
       */}
-      <aside className="hidden w-72 flex-shrink-0 border-e border-gray-200 bg-white md:block">
+      <aside className="hidden w-72 flex-shrink-0 border-e border-rule bg-chalk-raised md:block">
         <div className="sticky top-0 flex min-h-screen flex-col p-6">
           <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-500">{t('shell.eyebrow')}</p>
-            <h2 className="mt-3 text-2xl font-bold tracking-tight text-[#121212]">{t('shell.title')}</h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{t('shell.blurb')}</p>
+            <p className="font-plexmono text-[11px] font-medium uppercase tracking-[0.24em] text-moss-muted">{t('shell.eyebrow')}</p>
+            <h2 className="mt-3 font-display text-2xl font-bold tracking-tight text-moss">{t('shell.title')}</h2>
+            <p className="mt-2 text-sm leading-6 text-moss-muted">{t('shell.blurb')}</p>
           </div>
 
           <nav className="mt-8 space-y-2">
@@ -54,19 +54,19 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <Link
                 key={item.key}
                 href={item.href}
-                className="block rounded-xl border border-transparent px-4 py-3 text-start text-sm font-semibold text-slate-600 transition hover:border-gray-200 hover:bg-slate-50 hover:text-black"
+                className="block rounded-xl border border-transparent px-4 py-3 text-start text-sm font-semibold text-moss-muted transition hover:border-rule hover:bg-chalk hover:text-moss"
               >
                 {t(`nav.${item.key}`)}
               </Link>
             ))}
           </nav>
 
-          <div className="mt-auto border-t border-gray-100 pt-6">
-            <p className="px-4 text-xs font-medium text-slate-500">
+          <div className="mt-auto border-t border-rule pt-6">
+            <p className="px-4 text-xs font-medium text-moss-muted">
               <span dir="ltr">{user.email}</span>
-              <span className="ms-1 text-slate-400">({user.role})</span>
+              <span className="ms-1 text-moss-muted">({user.role})</span>
             </p>
-            <Link href="/" className="mt-3 flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-500 hover:text-black">
+            <Link href="/" className="mt-3 flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-moss-muted hover:text-moss">
               <span aria-hidden className="inline-block rtl:rotate-180">←</span>
               {t('shell.backToApp')}
             </Link>

@@ -50,17 +50,17 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
   return (
     <div>
       <div className="mb-5">
-        <h3 className="text-base font-bold text-[#121212]">{t('title')}</h3>
-        <p className="text-xs text-gray-500 mt-0.5">{t('subtitle')}</p>
+        <h3 className="text-base font-bold text-moss">{t('title')}</h3>
+        <p className="text-xs text-moss-muted mt-0.5">{t('subtitle')}</p>
       </div>
 
       {historyJobs.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 p-8 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-rule p-8 text-center">
           <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-3">
             <CheckCircle className="w-5 h-5 text-green-500" />
           </div>
-          <p className="text-sm font-semibold text-gray-700">{t('emptyTitle')}</p>
-          <p className="text-xs text-gray-400 mt-1">{t('emptyBody')}</p>
+          <p className="text-sm font-semibold text-moss">{t('emptyTitle')}</p>
+          <p className="text-xs text-moss-muted mt-1">{t('emptyBody')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -71,26 +71,26 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
             return (
               <div
                 key={job.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm"
               >
                 {/* Left: platform + time */}
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    isPublished ? 'bg-green-50' : isCancelled ? 'bg-gray-100' : 'bg-red-50'
+                    isPublished ? 'bg-green-50' : isCancelled ? 'bg-chalk-sunk' : 'bg-red-50'
                   }`}>
                     {isPublished ? (
                       <CheckCircle className="w-4.5 h-4.5 text-green-500" />
                     ) : isCancelled ? (
-                      <X className="w-4.5 h-4.5 text-gray-400" />
+                      <X className="w-4.5 h-4.5 text-moss-muted" />
                     ) : (
                       <XCircle className="w-4.5 h-4.5 text-red-500" />
                     )}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-[#121212]">
+                    <p className="text-sm font-bold text-moss">
                       {PLATFORM_LABELS[job.platform] ?? job.platform}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-moss-muted">
                       {/* Formatted through next-intl so the Persian side gets the
                           Persian calendar, Persian digits and Tehran time. */}
                       {isPublished && job.publishedAtUtc
@@ -116,7 +116,7 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                     isPublished
                       ? 'text-green-600 bg-green-50'
                       : isCancelled
-                      ? 'text-gray-400 bg-gray-100'
+                      ? 'text-moss-muted bg-chalk-sunk'
                       : 'text-red-600 bg-red-50'
                   }`}>
                     {isPublished
@@ -137,7 +137,7 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                       href={job.externalPostUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#2B2DFF] hover:underline"
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline"
                     >
                       {/* The glyph's arrow leaves the box toward the reading
                           edge, so it mirrors with the layout. */}

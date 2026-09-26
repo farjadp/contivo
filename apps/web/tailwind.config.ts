@@ -46,53 +46,38 @@ const config: Config = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
-        ink: {
-          950: '#07090C',
-          900: '#0B0F14',
-          800: '#121820',
-          700: '#1B232E',
-          600: '#2A3441',
-          400: '#5C6878',
-          300: '#8A96A6',
-          200: '#B7C0CC',
-          100: '#E6EAF0',
+        /* ── Chalk & Saffron: the signed-in system (redesign/loop). ──
+           One ground, one ink, one act-now accent. Saffron means "you" on a
+           chart and "do this" on a button; rival blue is always a competitor.
+           They differ in lightness as well as hue, so they survive greyscale. */
+        chalk: {
+          DEFAULT: '#EEEDE6',
+          raised: '#F8F7F2',
+          sunk: '#E2E1D8',
         },
-        signal: {
-          DEFAULT: '#3DFF8F',
-          dim: '#22B865',
-          ink: '#052A15',
+        moss: {
+          DEFAULT: '#17201B',
+          700: '#2F4A3A',
+          /* 6.7:1 on chalk, 7.3:1 on chalk-raised — secondary text, never lighter. */
+          muted: '#4A544D',
         },
-        paper: {
-          DEFAULT: '#F5F3EE',
-          2: '#ECE9E1',
-          /* The editorial world, shared with the onboarding screens. */
-          warm: '#EFECE5',
-          light: '#FDFCF8',
+        forest: {
+          DEFAULT: '#1E2E25',
+          line: '#3A4C41',
+          /* Secondary text on forest, 7:1. */
+          muted: '#B9C2B6',
         },
-        carbon: {
-          DEFAULT: '#121212',
-          80: '#3A3A38',
-          60: '#6B6B66',
-          40: '#9C9C95',
-          20: '#D6D3CA',
+        saffron: {
+          DEFAULT: '#E3A21A',
+          soft: '#F4DFA8',
+          /* Saffron-family text that passes 4.5:1 on chalk. */
+          ink: '#6B5410',
         },
-        brick: {
-          DEFAULT: '#C04C36',
-          deep: '#A63D29',
-          /* Lifted from #FDF2EE: body copy on the red field measured 4.42:1,
-             under the 4.5 floor. This clears it without touching the brand red. */
-          ink: '#FFF8F4',
+        rival: '#3D5F8A',
+        rule: {
+          DEFAULT: '#D5D4CA',
+          strong: '#A9A89C',
         },
-        brand: {
-          indigo: '#2B2DFF',
-          violet: '#7A5CFF',
-          midnight: '#0E0F1A',
-          cyan: '#00E5FF',
-          purple: '#B8A8FF',
-          light: '#F6F7FB',
-          gray: '#7C7F93',
-          dark: '#1F2235',
-        }
       },
       borderRadius: {
         lg: 'var(--radius)',
@@ -103,16 +88,41 @@ const config: Config = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
         heading: ['var(--font-sora)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         display: ['var(--font-display)', 'var(--font-inter)', 'system-ui', 'sans-serif'],
-        accent: ['var(--font-accent)', 'Georgia', 'serif'],
         /* The Persian face. Named so a component can ask for it explicitly;
            the [lang='fa'] rules in globals.css already redirect display and
            accent to it, so most code never needs to. */
         vazir: ['var(--font-vazir)', 'Segoe UI', 'Tahoma', 'sans-serif'],
-      },
-      backgroundImage: {
-        'brand-gradient': 'linear-gradient(to right, #2B2DFF, #7A5CFF, #00E5FF)',
+        /* Signed-in UI. Plex has no Persian glyphs, so Persian text falls
+           through to Vazirmatn per character instead of to the OS. */
+        plex: ['var(--font-plex)', 'var(--font-vazir)', 'system-ui', 'sans-serif'],
+        plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'ui-monospace', 'monospace'],
       },
       keyframes: {
+        /* Marketing site motion (Chalk & Saffron). Every one of these is
+           wrapped in motion-safe: at the call site. */
+        rise: {
+          from: { opacity: '0', transform: 'translateY(24px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
+        'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
+        pop: {
+          '0%': { opacity: '0', transform: 'scale(.4)' },
+          '70%': { transform: 'scale(1.12)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        sweep: { from: { backgroundSize: '0% 34%' }, to: { backgroundSize: '100% 34%' } },
+        draw: { from: { strokeDashoffset: '461' }, to: { strokeDashoffset: '0' } },
+        ripple: {
+          '0%': { transform: 'scale(1)', opacity: '.7' },
+          '100%': { transform: 'scale(1.9)', opacity: '0' },
+        },
+        shake: {
+          '0%, 100%': { transform: 'none' },
+          '20%': { transform: 'translateX(-10px) rotate(-2deg)' },
+          '40%': { transform: 'translateX(9px) rotate(2deg)' },
+          '60%': { transform: 'translateX(-6px)' },
+          '80%': { transform: 'translateX(4px)' },
+        },
         orbit: {
           '0%': { transform: 'rotate(0deg) translateX(40px) rotate(0deg)' },
           '100%': { transform: 'rotate(360deg) translateX(40px) rotate(-360deg)' },
@@ -127,6 +137,13 @@ const config: Config = {
         }
       },
       animation: {
+        rise: 'rise .9s cubic-bezier(.2,.7,.2,1) both',
+        'fade-in': 'fade-in .5s ease both',
+        pop: 'pop .55s cubic-bezier(.2,.7,.2,1) both',
+        sweep: 'sweep .8s .9s cubic-bezier(.2,.7,.2,1) both',
+        draw: 'draw 1.6s .5s cubic-bezier(.6,0,.2,1) both',
+        ripple: 'ripple 1.8s ease-out 2s infinite',
+        shake: 'shake .5s cubic-bezier(.36,.07,.19,.97)',
         orbit: 'orbit 20s linear infinite',
         'pulse-slow': 'pulse-slow 6s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         float: 'float 6s ease-in-out infinite',

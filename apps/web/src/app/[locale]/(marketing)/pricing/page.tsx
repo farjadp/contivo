@@ -1,16 +1,10 @@
 /**
  * Pricing.
  *
- * Was the last public page still on the dark "control room" system — which
- * also made the cream SiteNav sit invisibly on a near-black ground. Rebuilt in
- * the editorial world from apps/web/DESIGN.md. Every fact is unchanged: the
- * tiers, the numbers and the early-access notice all say exactly what they
- * said before, because billing still is not wired and the page must not
- * pretend otherwise.
- *
- * Plans are laid out as columns divided by rules rather than as cards. A
- * comparison genuinely needs parallel columns, but the card container is the
- * thing this world does not use, and the rules do the separating.
+ * Chalk & Saffron, like the rest of the site and the app. Every fact is
+ * unchanged: the tiers, the numbers and the early-access notice say exactly
+ * what they said before, because billing still is not wired and the page must
+ * not pretend otherwise. The plan worth recommending sits on the dark field.
  */
 
 import type { Metadata } from 'next';
@@ -21,6 +15,7 @@ import { Link } from '@/i18n/navigation';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
+import { Reveal } from '@/components/marketing/home-interactions';
 
 export async function generateMetadata({
   params,
@@ -39,7 +34,9 @@ export async function generateMetadata({
  * a sentence split across JSX.
  */
 const accent = (chunks: React.ReactNode) => (
-  <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">{chunks}</span>
+  <span className="bg-[linear-gradient(#E3A21A,#E3A21A)] bg-no-repeat [background-position:0_88%] [background-size:100%_34%] motion-safe:animate-sweep">
+    {chunks}
+  </span>
 );
 
 /*
@@ -77,137 +74,119 @@ export default function PricingPage() {
   const t = useTranslations('pricing');
 
   return (
-    <div className="theme-editorial min-h-screen bg-paper-warm font-sans text-carbon">
+    <div className="theme-chalk min-h-screen bg-chalk font-plex text-moss">
       <SiteNav />
 
-      <section className="border-b border-carbon/10">
-        <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-24">
-          <h1 className="max-w-[16ch] font-display text-[clamp(2.6rem,6.4vw,5.4rem)] font-semibold leading-[0.96] tracking-[-0.045em]">
-            {t.rich('headline', { accent })}
-          </h1>
-          <p className="mt-7 max-w-xl text-[17px] leading-[1.65] text-carbon-80">{t('intro')}</p>
-          <p className="mt-8 inline-block border-s-2 border-brick py-1 ps-4 text-[14px] leading-relaxed text-carbon-80">
-            {t('earlyAccess')}
-          </p>
-        </div>
+      <section className="mx-auto grid max-w-[90rem] gap-8 px-5 pb-10 pt-12 md:px-16 md:pt-16 lg:grid-cols-[minmax(0,1fr)_minmax(0,28rem)] lg:items-end">
+        <h1 className="font-display text-[clamp(2.4rem,5.6vw,4.5rem)] font-extrabold leading-[1] tracking-[-0.03em] motion-safe:animate-rise">
+          {t.rich('headline', { accent })}
+        </h1>
+        <p className="text-[17px] leading-[1.6] text-moss-muted motion-safe:animate-rise motion-safe:[animation-delay:120ms]">
+          {t('intro')}
+        </p>
       </section>
 
+      <div className="mx-auto max-w-[90rem] px-5 md:px-16">
+        <p className="rounded-xl border border-dashed border-rule-strong px-5 py-3.5 text-[15px] leading-relaxed">
+          {t('earlyAccess')}
+        </p>
+      </div>
+
       {/* Plans */}
-      <section className="border-b border-carbon/10 bg-paper-light">
-        <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-20">
-          <div className="grid gap-x-12 gap-y-14 md:grid-cols-3 md:divide-x md:divide-carbon/15">
-            {PLANS.map((p) => (
-              <div key={p.id} className="flex flex-col md:px-8 md:first:ps-0 md:last:pe-0">
-                <div className="flex items-baseline justify-between gap-3">
-                  <h2 className="font-display text-[clamp(1.5rem,2.4vw,2rem)] font-semibold tracking-[-0.03em]">
+      <section className="mx-auto grid max-w-[90rem] gap-5 px-5 py-10 md:grid-cols-3 md:px-16">
+        {PLANS.map((p, i) => (
+          <Reveal key={p.id} delay={i * 100} className="h-full">
+            <article
+              className={`flex h-full flex-col gap-5 rounded-2xl p-7 transition-transform duration-300 hover:-translate-y-1 ${
+                p.highlighted ? 'bg-forest text-chalk' : 'border border-rule bg-chalk-raised'
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h2 className="font-display text-[26px] font-bold">
                     <bdi>{t(`plans.${p.id}.name`)}</bdi>
                   </h2>
-                  {p.highlighted && (
-                    <span className="shrink-0 bg-brick px-2.5 py-1 text-[11px] font-semibold text-brick-ink">
-                      {t('mostUseful')}
-                    </span>
-                  )}
+                  <p className={`mt-1 text-[15px] ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>
+                    {t(`plans.${p.id}.tagline`)}
+                  </p>
                 </div>
-                <p className="mt-1.5 text-[14.5px] text-carbon-60">{t(`plans.${p.id}.tagline`)}</p>
-
-                <div className="mt-7 flex items-baseline gap-2.5">
-                  {/* The amount is a figure, not prose: it keeps its currency
-                      and its Latin digits on both sides, and `bdi` stops the
-                      Persian around it from reordering the "$". */}
-                  <bdi className="tnum font-display text-[clamp(2.6rem,4.4vw,3.4rem)] font-semibold leading-none tracking-[-0.045em]">
-                    {t(`plans.${p.id}.price`)}
-                  </bdi>
-                  <span className="text-[13px] leading-snug text-carbon-60">
-                    {t(`plans.${p.id}.period`)}
+                {p.highlighted && (
+                  <span className="shrink-0 rounded bg-saffron px-2 py-1 font-plexmono text-[11px] uppercase tracking-widest text-moss">
+                    {t('mostUseful')}
                   </span>
-                </div>
-
-                <ul className="mt-8 flex-1 space-y-3">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex gap-3.5 text-[15px] leading-[1.55] text-carbon-80">
-                      <span aria-hidden className="mt-[0.62em] h-px w-4 shrink-0 bg-brick" />
-                      <span>{t(`plans.${p.id}.features.${f}`)}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Link
-                  href={p.href}
-                  className={`group mt-10 inline-flex items-center justify-between gap-3 px-6 py-4 text-[14.5px] font-semibold transition-colors duration-300 ${
-                    p.highlighted
-                      ? 'bg-carbon text-paper-warm hover:bg-brick'
-                      : 'border border-carbon/25 text-carbon hover:border-carbon hover:bg-carbon hover:text-paper-warm'
-                  }`}
-                >
-                  {t(`plans.${p.id}.cta`)}
-                  <span
-                    aria-hidden
-                    className="transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180"
-                  >
-                    &rarr;
-                  </span>
-                </Link>
+                )}
               </div>
-            ))}
-          </div>
-        </div>
+
+              <div className="flex items-baseline gap-2.5">
+                {/* The amount is a figure, not prose: it keeps its currency
+                    and its Latin digits on both sides, and `bdi` stops the
+                    Persian around it from reordering the "$". */}
+                <bdi className="tnum font-plexmono text-[clamp(2.4rem,3.6vw,3rem)] font-medium leading-none">
+                  {t(`plans.${p.id}.price`)}
+                </bdi>
+                <span className={`text-[14px] leading-snug ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>
+                  {t(`plans.${p.id}.period`)}
+                </span>
+              </div>
+
+              <Link
+                href={p.href}
+                className={`inline-flex h-12 items-center justify-center rounded-xl text-[15px] font-semibold transition-colors duration-200 ${
+                  p.id === 'solo'
+                    ? 'bg-saffron text-moss hover:bg-saffron-soft'
+                    : p.highlighted
+                      ? 'bg-chalk text-moss hover:bg-chalk-sunk'
+                      : 'bg-moss text-chalk hover:bg-moss-700'
+                }`}
+              >
+                {t(`plans.${p.id}.cta`)}
+              </Link>
+
+              <ul className={`border-b text-[15px] ${p.highlighted ? 'border-forest-line' : 'border-rule'}`}>
+                {p.features.map((f) => (
+                  <li key={f} className={`border-t py-2.5 leading-snug ${p.highlighted ? 'border-forest-line' : 'border-rule'}`}>
+                    {t(`plans.${p.id}.features.${f}`)}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          </Reveal>
+        ))}
       </section>
 
       {/* Questions */}
-      <section className="border-b border-carbon/10">
-        <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-20">
-          <h2 className="max-w-[18ch] font-display text-[clamp(1.9rem,4vw,3rem)] font-semibold leading-[1.02] tracking-[-0.04em]">
-            {t('faqTitle')}
-          </h2>
-          <dl className="mt-10 divide-y divide-carbon/15 border-y border-carbon/15">
-            {FAQ.map((k) => (
-              <div key={k} className="grid gap-2 py-6 md:grid-cols-[22rem_1fr] md:gap-12">
-                <dt className="font-display text-[16.5px] font-semibold tracking-[-0.02em]">
-                  {t(`faq.${k}.q`)}
-                </dt>
-                <dd className="max-w-[62ch] text-[15.5px] leading-[1.7] text-carbon-80">
-                  {t(`faq.${k}.a`)}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+      <section className="mx-auto grid max-w-[90rem] gap-8 px-5 py-12 md:px-16 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-12">
+        <h2 className="font-display text-[clamp(1.9rem,3.4vw,2.6rem)] font-bold leading-[1.05]">{t('faqTitle')}</h2>
+        <dl className="border-b border-rule">
+          {FAQ.map((k, i) => (
+            <div key={k} className={`border-t py-5 ${i === 0 ? 'border-moss' : 'border-rule'}`}>
+              <dt className="text-[17px] font-semibold">{t(`faq.${k}.q`)}</dt>
+              <dd className="mt-1.5 max-w-[62ch] text-[15.5px] leading-[1.7] text-moss-muted">{t(`faq.${k}.a`)}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       {/* Close */}
-      <section className="bg-carbon text-paper-warm">
-        <div className="mx-auto max-w-[92rem] px-6 py-20 md:px-12 md:py-28">
-          <h2 className="max-w-[17ch] font-display text-[clamp(2.2rem,5.4vw,4.4rem)] font-semibold leading-[0.98] tracking-[-0.045em]">
-            {/* Carbon field, so the accent lifts off the paper tone instead. */}
+      <section className="px-5 pb-16 md:px-16">
+        <Reveal className="mx-auto flex max-w-[90rem] flex-col gap-8 rounded-3xl bg-saffron px-6 py-14 text-moss md:px-16 md:py-16">
+          <h2 className="max-w-[18ch] font-display text-[clamp(2.2rem,4.8vw,3.8rem)] font-extrabold leading-[1] tracking-[-0.03em]">
             {t.rich('closeHeadline', {
-              accent: (chunks) => (
-                <span className="font-accent font-normal italic tracking-[-0.02em] text-paper-warm/60">
-                  {chunks}
-                </span>
-              ),
+              accent: (chunks) => <span className="underline decoration-moss decoration-[6px] underline-offset-[10px]">{chunks}</span>,
             })}
           </h2>
-          <div className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-4">
             <Link
               href="/sign-up"
-              className="group inline-flex items-center gap-4 bg-brick px-8 py-5 text-[15px] font-semibold text-brick-ink transition-colors duration-300 hover:bg-paper-warm hover:text-carbon"
+              className="inline-flex h-14 items-center rounded-xl bg-moss px-7 text-[16px] font-semibold text-chalk transition-transform duration-200 hover:-translate-y-0.5"
             >
               {t('closeCta')}
-              <span
-                aria-hidden
-                className="transition-transform duration-300 group-hover:translate-x-1.5 rtl:rotate-180"
-              >
-                &rarr;
-              </span>
             </Link>
-            <Link
-              href="/docs/site-api"
-              className="text-[15px] text-paper-warm/70 underline decoration-paper-warm/30 underline-offset-[6px] transition-colors hover:text-paper-warm hover:decoration-brick"
-            >
+            <Link href="/docs/site-api" className="text-[16px] font-semibold underline decoration-2 underline-offset-[6px]">
               {t('closeDocs')}
             </Link>
           </div>
-        </div>
+        </Reveal>
       </section>
 
       <SiteFooter />

@@ -1,130 +1,119 @@
-# Design
+# Design — Chalk & Saffron
 
-Written at finish, from the built marketing surface — not as a rulebook decided
-in advance. It describes what shipped on 1 Sep 2026 and what a later change
+Written from the built product, not decided in advance. It describes what
+shipped on the `redesign/loop` branch (26 Sep 2026) and what a later change
 should stay consistent with.
 
-Scope note: this documents the **marketing surface** (`/`, and the nav and footer
-it shares). The signed-in app still runs the older "control room" system — dark
-ink surfaces, signal green, mono labels — and the two are deliberately not yet
-reconciled. Bringing the app across is Mission #42 in Contivo Mission Control.
+Scope: **one system for everything a visitor or user sees** — the marketing
+site (`/`, `/pricing`, `/docs/site-api`), sign-in and sign-up, and the
+signed-in app. The admin console still runs its own gray/indigo look and is not
+covered here. The previous marketing system (paper, carbon, brick, Bodoni
+italic) and the previous app system (ink, signal green) are both retired; their
+tokens no longer exist.
 
-## The world
+## The idea: the Loop
 
-Warm printed paper and carbon ink, with one brick red that is allowed to own a
-whole viewport. It is an editorial system: hairline rules, square corners,
-generous whitespace, and type doing the structural work that cards usually do.
+Contivo is a dependency chain: it cannot write until it knows the brand and the
+market. The whole product is organised as that chain, six stages walked in
+order — **Know → Watch → Think → Make → Ship → Learn**.
 
-It was chosen because it already existed — the onboarding and workspace-creation
-screens were built in it — and because the surface it replaced (near-black,
-neon-green accent, simulated terminal) was rejected by the user as generic AI
-design. The replacement earns the palette by committing it at page scale rather
-than rendering its softest version.
+- In the app, the workspace is the loop (`lib/workspace-loop.ts` maps the old
+  tabs onto stages; `LoopRail` draws it). Stage state is read from
+  `workspace-journey.ts`, never invented.
+- The home screen ("Today") is the loop plus three moves for the week.
+- The marketing site is the loop walked as a page, chapter by chapter, and
+  stage 03 — the refusal — owns a full-bleed dark field.
 
 ## Color
 
 | Token | Value | Role |
 |---|---|---|
-| `paper-warm` | `#EFECE5` | The page ground. Body background. |
-| `paper-light` | `#FDFCF8` | Alternating section ground, and image mats. |
-| `carbon` | `#121212` | All primary text. The closing section's ground. |
-| `carbon-80` | `#3A3A38` | Body copy on paper. |
-| `carbon-60` | `#6B6B66` | Secondary text, captions, the italic accent word. |
-| `carbon-40` | `#9C9C95` | Placeholders and the `https://` prefix. |
-| `carbon-20` | `#D6D3CA` | Scrollbar thumb. |
-| `brick` | `#C04C36` | The refusal act's full-bleed field; hover state on every dark button; focus ring; selection. |
-| `brick-deep` | `#A63D29` | Error text on paper. |
-| `brick-ink` | `#FFF8F4` | All text on the brick field. |
+| `chalk` | `#EEEDE6` | Ground, everywhere. |
+| `chalk-raised` | `#F8F7F2` | Cards, inputs, image mats. |
+| `chalk-sunk` | `#E2E1D8` | Tracks, chips, empty day cells. |
+| `moss` | `#17201B` | All primary text; dark buttons; active nav. |
+| `moss-700` | `#2F4A3A` | Hover on dark buttons; "done"/"published". |
+| `moss-muted` | `#4A544D` | Secondary text. |
+| `forest` | `#1E2E25` | The refusal field; "What moved"; Founder plan. |
+| `forest-muted` / `forest-line` | `#B9C2B6` / `#3A4C41` | Secondary text and rules on forest. |
+| `saffron` | `#E3A21A` | **You** on a chart, **act** on a button, **now** on the loop. Nothing else. |
+| `saffron-soft` / `saffron-ink` | `#F4DFA8` / `#6B5410` | Saffron hover; saffron-family text on chalk. |
+| `rival` | `#3D5F8A` | Every competitor, on every chart. |
+| `rule` / `rule-strong` | `#D5D4CA` / `#A9A89C` | Hairlines; dashed "ahead" states. |
 
-Strategy: **Committed** — the brick is not an accent, it carries an entire
-viewport as a printed ink field. Rules on paper are `carbon/10`–`carbon/15`;
-rules on brick are `brick-ink/25`.
+Red, amber and green stay only as status colours (error, warning, success).
 
-**`brick-ink` is `#FFF8F4`, not `#FDF2EE`.** The warmer value measured 4.42:1
-against `#C04C36` — under the 4.5 floor. Do not warm it back up, and do not
-introduce opacity steps on text over the brick field: every step costs contrast
-that field cannot spare. Secondary text there is differentiated by size and
-weight only. Measured after the build: body, list items and captions all read
-4.62:1 on a ground sampling exactly `rgb(192, 76, 54)`.
+Measured contrast (WCAG):
+
+| Pair | Ratio |
+|---|---|
+| moss on chalk | 14.21 |
+| moss-muted on chalk / chalk-raised / chalk-sunk | 6.71 / 7.34 / 6.00 |
+| moss on saffron (every saffron button) | 7.51 |
+| saffron-ink on chalk | 6.17 |
+| chalk on forest / forest-muted on forest | 12.15 / 7.78 |
+| saffron on forest / on moss | 6.42 / 7.51 |
+| rival on chalk | 5.59 |
+| **saffron on chalk** | **1.89 — never use saffron as text or a focus ring on chalk** |
+
+Charts: you are saffron with a moss outline; rivals are rival blue and their
+kinds differ by **fill**, not hue — direct solid, indirect hollow, aspirational
+moss — so the chart survives greyscale and colour blindness.
 
 ## Type
 
-- **Display — Bricolage Grotesque** (`font-display`, variable `opsz`). Headlines,
-  the intake field, evidence numbers, button labels, footer column heads.
-  Chosen for character at poster scale; a UI sans enlarged is not a display voice.
-- **Accent — Bodoni Moda italic** (`font-accent`). Exactly one word per headline,
-  in `carbon-60`. This gesture is inherited from the onboarding screens; before
-  this work those used the browser's default serif, which is not a choice.
-- **Body — Inter** (`font-sans`).
-- Tracking runs `-0.045em` at display sizes up to `-0.02em` at small ones.
-  Display never exceeds `7.5rem`. Body measure stays inside 65–75ch.
-- `.tnum` (tabular numerals) on any figure a reader might compare.
+- **Display — Bricolage Grotesque** (`font-display`): headlines, the wordmark.
+- **UI and body — IBM Plex Sans** (`font-plex`).
+- **Numbers, stage labels, meta — IBM Plex Mono** (`font-plexmono`).
+- **Persian — Vazirmatn** for everything; Plex has no Persian glyphs and falls
+  through to it per character.
+- Emphasis is a **saffron marker stroke** under the words (sweeps in on load),
+  never italics — italics break Persian letter joins.
+- The wordmark is `contivo`, lowercase, beside a saffron diamond.
 
-Faces deliberately avoided: the AI-default editorial serifs (Fraunces, Playfair,
-Cormorant, Newsreader and company), and Inter-as-display.
+## Rules
 
-## Composition
-
-Three acts, in this order, and the order is the argument:
-
-1. **Intake** — cream, full bleed. A display sentence, then the product's only
-   input at `clamp(1.5rem, 2.9vw, 2.5rem)` on a 2px rule that turns brick on
-   focus, then real cost and token counters from a live workspace.
-2. **Refusal** — the brick field, full bleed, "It will not write *yet*." at up to
-   7rem, over a real screenshot of the locked setup chain.
-3. **Output** — paper again, with a real generated post at full legibility.
-
-Between and after: the reel, the intelligence spread, channels, and a carbon
-close. Sections alternate `paper-warm` and `paper-light`, separated by
-`border-carbon/10`, so the brick and carbon fields land as events.
-
-## Rules the surface holds to
-
-- **No cards.** Structure comes from rules, spacing and type scale. No nested
-  containers, no same-size icon-heading-text grids.
-- **No eyebrows or kickers**, no `01 / 02 / 03` section numbers, no uppercase
-  mono micro-labels. The onboarding screens still use these; do not copy them
-  forward.
-- **No gradients anywhere**, in text or as surface.
-- **Square corners.** No `border-radius` on the marketing surface.
-- **Every product image is a real capture** of the running app, at 2×, with its
-  provenance in a `.webp.json` sidecar. Generated imagery is confined to
-  material — the ink and paper textures — and never depicts the product, a
-  person, or a claim.
-- **No invented proof.** No customers, testimonials, logos, metrics or outcome
-  claims exist, and the page says so twice rather than implying otherwise.
+- **Real product, real numbers.** Every product image is a capture of the
+  running app with a provenance sidecar. No customers, testimonials or outcome
+  claims exist, and the site says so. Examples (the run log) are labelled.
+- **One level of card.** Tabs no longer sit in a bordered box; do not nest
+  cards inside cards.
+- **No gradients** as surface or text. The purple-blue brand gradient is gone.
+- **Touch targets ≥ 44px**; phones get a bottom tab bar in the app.
+- **RTL through logical properties** (`ms-`, `pe-`, `start-`). The loop plot is
+  the one deliberate LTR island: it runs clockwise in both languages. Persian
+  weeks start on Saturday; digits are Persian.
 
 ## Motion
 
-One authored moment, not scattered effects: the intake rule turning brick on
-focus, and the arrow on each button translating on hover. Both are
-`duration-300`. The reel is the only autoplaying motion, and it pauses itself
-under `prefers-reduced-motion` and always carries a visible play/pause control.
+Every movement demonstrates behaviour; none decorates. All of it is
+`motion-safe:` and every timer checks `prefers-reduced-motion`, so the page
+stills into a complete picture.
+
+| Where | What it shows |
+|---|---|
+| Hero loop | The arc draws itself, stages pop in, Think ripples; stages auto-cycle until picked. |
+| Intake | Four real steps of a read tick through; invalid input shakes with the real error. |
+| The refusal | "Make it write a post now" — each press shakes the lock and escalates the refusal. |
+| Cadence | 1–14 posts a week redistribute across the reader's week. |
+| Run log | Example lines type in, including a judge veto; Replay. |
+| Chapters | Rise into view once, on scroll. Content is visible without JS. |
 
 ## Browser surfaces
 
-Themed on `.theme-editorial` rather than left to the browser: selection
-(brick on `brick-ink`), caret, focus ring (2px brick, 3px offset), and the
-scrollbar. This is the cheapest signal that a page was built rather than
-assembled.
+`.theme-chalk` (on the app shell and every marketing page) themes selection
+(saffron behind moss), caret (moss-700), focus ring (2px moss, 3px offset) and
+the scrollbar, and scopes the shadcn variables (`--primary`, `--muted`,
+`--ring`…) to this palette.
 
 ## Assets
 
-Everything ships from `public/marketing/`, about 1.1 MB total.
-
-- `brand-memory.webp`, `market-map.webp`, `setup-chain.webp`,
-  `generated-post.webp` — Puppeteer captures at 1440×900 / DPR 2 from an example
-  workspace built from `posthog.com`.
-- `contivo-reel.mp4` — 12 s, 1280×800, H.264, **no audio track**, built with
-  ffmpeg from four of those captures. `reel-poster.webp` is its first frame.
-- `tex-ink.webp`, `tex-paper.webp` — gpt-image-1. The ink texture is
-  multiply-blended over the `brick` token so the net on-screen value stays
-  `#C04C36`; verify by sampling, not by eye, after any change.
-
-## Known gap
-
-The reel and the generated-post capture both show inner app UI that has not been
-redesigned yet — a purple "Rescrape Website" button in one, and a purple-to-cyan
-gradient card border in the other, which was cropped off. They are honest
-captures, so they stay; they will stop clashing when the app moves onto this
-system.
+`public/marketing/`: `brand-memory.webp`, `market-map.webp`, `setup-chain.webp`,
+`generated-post.webp` (Puppeteer, 1440×900 at DPR 2), `contivo-reel.mp4` (12 s,
+1280×800, H.264, no audio) and `reel-poster.webp`, all captured on 26 Sep 2026
+from the founder's own workspace for farjadp.info on this design. Each has a
+`.webp.json` provenance sidecar. Re-shoot with
+`pnpm --filter @contivo/web capture:marketing <workspaceId>`: it opens Chrome,
+waits for a person to sign in, and writes every file at the sizes the page
+declares. Alt text and captions describe what the captures show — update them
+when the captures change.

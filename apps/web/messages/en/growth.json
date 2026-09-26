@@ -1,14 +1,14 @@
 {
   "growth": {
     "index": {
-      "metaTitle": "Growth Engine",
-      "title": "Growth Engine",
+      "metaTitle": "Workspaces",
+      "title": "Workspaces",
       "subtitle": "Your AI-powered strategy workspaces. Each row includes direct entry to every internal module with a quick explanation.",
       "newWorkspace": "New Workspace",
       "rowHint": "Each workspace is shown as one row. From inside that row you can go straight into any of its tabs.",
       "empty": {
         "title": "No workspaces yet",
-        "body": "Create your first Growth Engine workspace. Tell us about your brand and we'll build a tailored content strategy in seconds.",
+        "body": "Create your first workspace. Tell us about your brand and we'll build a tailored content strategy in seconds.",
         "cta": "Initialize Workspace"
       },
       "statusActive": "Active",
@@ -124,10 +124,6 @@
       "statAiTokens": "AI tokens",
       "statEstCost": "Est. cost",
       "trackedNote": "tracked modules only",
-      "groupIntelligence": "Intelligence",
-      "groupCreate": "Create",
-      "groupAutomate": "Automate",
-      "groupReview": "Review",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Brand Memory",
@@ -158,6 +154,40 @@
       },
       "warnings": {
         "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices."
+      },
+      "loop": {
+        "label": "Workspace stages",
+        "tabsLabel": "Stage sections",
+        "state": {
+          "done": "done",
+          "next": "next up",
+          "open": "open",
+          "locked": "locked"
+        },
+        "know": {
+          "name": "Know",
+          "sub": "Brand & offer"
+        },
+        "watch": {
+          "name": "Watch",
+          "sub": "Market"
+        },
+        "think": {
+          "name": "Think",
+          "sub": "Position & ideas"
+        },
+        "make": {
+          "name": "Make",
+          "sub": "Pipeline"
+        },
+        "ship": {
+          "name": "Ship",
+          "sub": "Calendar & autopilot"
+        },
+        "learn": {
+          "name": "Learn",
+          "sub": "Reports"
+        }
       }
     }
   }

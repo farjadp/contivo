@@ -163,7 +163,7 @@ export function InstantForm() {
           disabled={isLoading || topic.trim().length < 3}
           className={cn(
             'w-full rounded-xl py-3.5 text-sm font-bold transition-all duration-300',
-            'bg-brand-gradient text-white hover:opacity-90 shadow-md shadow-brand-indigo/20',
+            'bg-moss text-chalk hover:bg-moss-700',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             'flex items-center justify-center gap-2',
           )}

@@ -59,12 +59,12 @@ function H3({ children }: { children: React.ReactNode }) {
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mt-3 max-w-[68ch] text-[15.5px] leading-[1.7] text-carbon-80">{children}</p>;
+  return <p className="mt-3 max-w-[68ch] text-[15.5px] leading-[1.7] text-moss-muted">{children}</p>;
 }
 
 function Code({ children }: { children: React.ReactNode }) {
   return (
-    <code className="rounded-sm bg-carbon/[0.06] px-1.5 py-0.5 font-mono text-[13px] text-carbon">
+    <code className="rounded-sm bg-moss/[0.06] px-1.5 py-0.5 font-mono text-[13px] text-moss">
       {children}
     </code>
   );
@@ -73,10 +73,10 @@ function Code({ children }: { children: React.ReactNode }) {
 function Block({ children, label }: { children: string; label?: string }) {
   return (
     <figure className="mt-4">
-      {label && <figcaption className="mb-1.5 text-[12.5px] text-carbon-60">{label}</figcaption>}
+      {label && <figcaption className="mb-1.5 text-[12.5px] text-moss-muted">{label}</figcaption>}
       <pre
         dir="ltr"
-        className="overflow-x-auto border border-carbon/15 bg-carbon p-4 text-left text-[12.5px] leading-relaxed text-paper-warm"
+        className="overflow-x-auto border border-moss/15 bg-moss p-4 text-left text-[12.5px] leading-relaxed text-chalk"
       >
         <code>{children}</code>
       </pre>
@@ -89,9 +89,9 @@ function Table({ rows, head }: { rows: Array<[string, string, string]>; head: [s
     <div className="mt-5 overflow-x-auto">
       <table className="w-full min-w-[34rem] border-collapse text-start">
         <thead>
-          <tr className="border-b border-carbon/20">
+          <tr className="border-b border-moss/20">
             {head.map((h, i) => (
-              <th key={i} className="py-2.5 pe-6 text-[12px] font-semibold uppercase tracking-wide text-carbon-60">
+              <th key={i} className="py-2.5 pe-6 text-[12px] font-semibold uppercase tracking-wide text-moss-muted">
                 {h}
               </th>
             ))}
@@ -99,14 +99,14 @@ function Table({ rows, head }: { rows: Array<[string, string, string]>; head: [s
         </thead>
         <tbody>
           {rows.map(([a, b, c]) => (
-            <tr key={a} className="border-b border-carbon/10 align-top">
-              <td className="py-3 pe-6 font-mono text-[13px] text-carbon">
+            <tr key={a} className="border-b border-moss/10 align-top">
+              <td className="py-3 pe-6 font-mono text-[13px] text-moss">
                 <bdi>{a}</bdi>
               </td>
-              <td className="py-3 pe-6 font-mono text-[12.5px] text-carbon-60">
+              <td className="py-3 pe-6 font-mono text-[12.5px] text-moss-muted">
                 <bdi>{b}</bdi>
               </td>
-              <td className="py-3 text-[14px] leading-relaxed text-carbon-80">{c}</td>
+              <td className="py-3 text-[14px] leading-relaxed text-moss-muted">{c}</td>
             </tr>
           ))}
         </tbody>
@@ -137,20 +137,20 @@ export default function SiteApiDocsPage() {
   const code = (chunks: React.ReactNode) => <Code>{chunks}</Code>;
 
   return (
-    <div className="theme-editorial min-h-screen bg-paper-warm font-sans text-carbon">
+    <div className="theme-chalk font-plex min-h-screen bg-chalk font-sans text-moss">
       <div className="print:hidden">
         <SiteNav />
       </div>
 
-      <header className="border-b border-carbon/10">
+      <header className="border-b border-moss/10">
         <div className="mx-auto max-w-[92rem] px-6 py-16 md:px-12 md:py-20">
           <h1 className="max-w-[20ch] font-display text-[clamp(2.4rem,6vw,4.6rem)] font-semibold leading-[0.98] tracking-[-0.045em]">
             {t('title')}
           </h1>
-          <p className="mt-6 max-w-[62ch] text-[17px] leading-[1.65] text-carbon-80">
+          <p className="mt-6 max-w-[62ch] text-[17px] leading-[1.65] text-moss-muted">
             {t.rich('lede', { code })}
           </p>
-          <p className="mt-4 text-[13px] text-carbon-60">
+          <p className="mt-4 text-[13px] text-moss-muted">
             {t('baseLabel')} <Code>{APP_URL}</Code> · {t('readOnly')} · JSON
           </p>
         </div>
@@ -159,15 +159,15 @@ export default function SiteApiDocsPage() {
       <div className="mx-auto max-w-[92rem] gap-16 px-6 py-16 md:px-12 lg:grid lg:grid-cols-[15rem_minmax(0,1fr)]">
         {/* Contents */}
         <nav aria-label={t('contents')} className="mb-12 lg:sticky lg:top-24 lg:mb-0 lg:self-start print:hidden">
-          <p className="text-[12px] font-semibold uppercase tracking-wide text-carbon-60">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-moss-muted">
             {t('contents')}
           </p>
-          <ul className="mt-4 space-y-2.5 border-s border-carbon/15 ps-4">
+          <ul className="mt-4 space-y-2.5 border-s border-moss/15 ps-4">
             {TOC.map((id) => (
               <li key={id}>
                 <a
                   href={`#${id}`}
-                  className="text-[14px] text-carbon-80 underline decoration-transparent underline-offset-4 transition-colors hover:text-carbon hover:decoration-brick"
+                  className="text-[14px] text-moss-muted underline decoration-transparent underline-offset-4 transition-colors hover:text-moss hover:decoration-saffron"
                 >
                   {t(`toc.${id}`)}
                 </a>
@@ -189,7 +189,7 @@ export default function SiteApiDocsPage() {
               link: (chunks) => (
                 <Link
                   href="/connections"
-                  className="underline decoration-carbon/30 underline-offset-4 hover:decoration-brick"
+                  className="underline decoration-moss/30 underline-offset-4 hover:decoration-saffron"
                 >
                   {chunks}
                 </Link>
@@ -199,7 +199,7 @@ export default function SiteApiDocsPage() {
           <Block label={t('auth.blockLabel')}>{`Authorization: Bearer ctv_your_site_key`}</Block>
           <P>
             {t.rich('auth.p2', {
-              strong: (chunks) => <strong className="font-semibold text-carbon">{chunks}</strong>,
+              strong: (chunks) => <strong className="font-semibold text-moss">{chunks}</strong>,
               em: (chunks) => <em>{chunks}</em>,
             })}
           </P>
@@ -377,8 +377,8 @@ $posts = json_decode(wp_remote_retrieve_body($response), true)['posts'];`}</Bloc
           />
           <P>{t('limits.p1')}</P>
 
-          <hr className="mt-16 border-carbon/15" />
-          <p className="mt-6 text-[13.5px] leading-relaxed text-carbon-60">{t('footerNote')}</p>
+          <hr className="mt-16 border-moss/15" />
+          <p className="mt-6 text-[13.5px] leading-relaxed text-moss-muted">{t('footerNote')}</p>
         </main>
       </div>
 

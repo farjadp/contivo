@@ -77,18 +77,18 @@ export default async function ConnectionsPage({ searchParams }: Props) {
     <div className="max-w-5xl mx-auto space-y-8 pt-8 px-4">
       {/* ─── Header ────────────────────────────────────────────────────── */}
       <div>
-        <h1 className="text-3xl font-bold tracking-tight text-[#121212]">{t('title')}</h1>
-        <p className="text-gray-500 mt-2 text-sm">{t('subtitle')}</p>
+        <h1 className="text-3xl font-bold tracking-tight text-moss">{t('title')}</h1>
+        <p className="text-moss-muted mt-2 text-sm">{t('subtitle')}</p>
       </div>
 
       {/* ─── No workspace yet ───────────────────────────────────────────── */}
       {!workspace && (
         <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6">
-          <h2 className="text-base font-bold text-[#121212]">{t('noWorkspace.title')}</h2>
+          <h2 className="text-base font-bold text-moss">{t('noWorkspace.title')}</h2>
           <p className="text-sm text-amber-800 mt-1">{t('noWorkspace.body')}</p>
           <Link
             href="/growth/new"
-            className="inline-block mt-4 rounded-xl bg-[#121212] text-white text-sm font-semibold px-4 py-2"
+            className="inline-block mt-4 rounded-xl bg-moss text-chalk text-sm font-semibold px-4 py-2"
           >
             {t('noWorkspace.cta')}
           </Link>
@@ -98,7 +98,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       {/* ─── Workspace switcher (only when there is a choice) ───────────── */}
       {workspaces.length > 1 && (
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+          <span className="text-xs font-bold uppercase tracking-wide text-moss-muted">
             {t('workspaceLabel')}
           </span>
           {workspaces.map((w) => (
@@ -108,8 +108,8 @@ export default async function ConnectionsPage({ searchParams }: Props) {
               className={cn(
                 'px-3 py-1.5 rounded-full text-xs font-semibold border',
                 w.id === workspaceId
-                  ? 'bg-[#121212] text-white border-[#121212]'
-                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300',
+                  ? 'bg-moss text-chalk border-moss'
+                  : 'bg-chalk-raised text-moss-muted border-rule hover:border-rule-strong',
               )}
             >
               {w.name}
@@ -124,7 +124,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
         visitor out of /fa on the first click. The locale-aware Link keeps the
         prefix and the workspace selection.
       */}
-      <div className="flex gap-1 p-1 bg-gray-100 rounded-2xl w-fit">
+      <div className="flex gap-1 p-1 bg-chalk-sunk rounded-2xl w-fit">
         {(
           [
             { id: 'social', label: t('tabs.social'), Icon: Share2 },
@@ -140,8 +140,8 @@ export default async function ConnectionsPage({ searchParams }: Props) {
             className={cn(
               'flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all',
               activeMainTab === id
-                ? 'bg-white text-[#2B2DFF] shadow-sm'
-                : 'text-gray-500 hover:text-gray-700',
+                ? 'bg-chalk-raised text-moss-700 shadow-sm'
+                : 'text-moss-muted hover:text-moss',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -151,7 +151,7 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       </div>
 
       {/* ─── Tab content ────────────────────────────────────────────────── */}
-      <div className="rounded-3xl border border-gray-200 bg-white shadow-sm p-6">
+      <div className="rounded-3xl border border-rule bg-chalk-raised shadow-sm p-6">
         {activeMainTab === 'social' ? (
           <SocialChannelsTab
             accounts={connections}

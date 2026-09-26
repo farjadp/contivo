@@ -102,25 +102,25 @@ export function NarrativeTab({
   return (
     <div className="space-y-10">
       <header className="max-w-3xl">
-        <h2 className="font-display text-[22px] font-bold text-ink-900">{t('title')}</h2>
-        <p className="mt-2 text-[14px] leading-relaxed text-ink-600">{t('subtitle')}</p>
+        <h2 className="font-display text-[22px] font-bold text-moss">{t('title')}</h2>
+        <p className="mt-2 text-[14px] leading-relaxed text-moss-muted">{t('subtitle')}</p>
       </header>
 
       {error && (
         <div className="flex items-start gap-3 border border-amber-300 bg-amber-50 px-5 py-4">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
-          <p className="text-[13.5px] text-ink-800">{error}</p>
+          <p className="text-[13.5px] text-moss">{error}</p>
         </div>
       )}
 
       {/* ── Step 1 · The change ─────────────────────────────────── */}
-      <section className="border border-ink-200 bg-white p-6">
+      <section className="border border-rule bg-chalk-raised p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h3 className="font-display text-[17px] font-semibold text-ink-900">
+          <h3 className="font-display text-[17px] font-semibold text-moss">
             {t('change.heading')}
           </h3>
           {narrative?.change && (
-            <span className="text-[12px] text-ink-500">
+            <span className="text-[12px] text-moss-muted">
               {narrative.changeSource === 'HUMAN'
                 ? t('change.sourceHuman')
                 : narrative.changeSource === 'EDITED'
@@ -129,22 +129,22 @@ export function NarrativeTab({
             </span>
           )}
         </div>
-        <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-600">
+        <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-moss-muted">
           {t('change.help')}
         </p>
 
         {options.length > 0 && (
           <ul className="mt-5 space-y-3">
             {options.map((o, i) => (
-              <li key={i} className="border border-ink-200 p-4">
-                <p className="text-[14.5px] leading-relaxed text-ink-900">{o.change}</p>
+              <li key={i} className="border border-rule p-4">
+                <p className="text-[14.5px] leading-relaxed text-moss">{o.change}</p>
                 {o.rationale && (
-                  <p className="mt-2 text-[13px] leading-relaxed text-ink-600">{o.rationale}</p>
+                  <p className="mt-2 text-[13px] leading-relaxed text-moss-muted">{o.rationale}</p>
                 )}
                 {o.evidence.length > 0 && (
                   <ul className="mt-2 space-y-1">
                     {o.evidence.map((e, j) => (
-                      <li key={j} className="text-[12px] leading-relaxed text-ink-500">
+                      <li key={j} className="text-[12px] leading-relaxed text-moss-muted">
                         · {e}
                       </li>
                     ))}
@@ -167,13 +167,13 @@ export function NarrativeTab({
                       })
                     }
                     disabled={pending}
-                    className="inline-flex items-center gap-1.5 bg-ink-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-ink-800 disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 bg-moss px-3 py-1.5 text-[12.5px] font-medium text-chalk hover:bg-moss-700 disabled:opacity-50"
                   >
                     <Check className="h-3.5 w-3.5" /> {t('change.useThis')}
                   </button>
                   <button
                     onClick={() => setDraftChange(o.change)}
-                    className="inline-flex items-center gap-1.5 border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
+                    className="inline-flex items-center gap-1.5 border border-rule-strong px-3 py-1.5 text-[12.5px] text-moss-muted hover:border-rule-strong"
                   >
                     <Pencil className="h-3.5 w-3.5" /> {t('change.editIt')}
                   </button>
@@ -184,7 +184,7 @@ export function NarrativeTab({
         )}
 
         <div className="mt-5">
-          <label htmlFor="change" className="text-[12.5px] font-medium text-ink-700">
+          <label htmlFor="change" className="text-[12.5px] font-medium text-moss-muted">
             {options.length > 0 ? t('change.labelOwn') : t('change.label')}
           </label>
           <textarea
@@ -193,7 +193,7 @@ export function NarrativeTab({
             value={draftChange}
             onChange={(e) => setDraftChange(e.target.value)}
             placeholder={t('change.placeholder')}
-            className="mt-2 w-full resize-y border border-ink-300 bg-white px-3 py-2.5 text-[14px] text-ink-900 outline-none focus:border-ink-900"
+            className="mt-2 w-full resize-y border border-rule-strong bg-chalk-raised px-3 py-2.5 text-[14px] text-moss outline-none focus:border-moss"
           />
           <div className="mt-3 flex flex-wrap gap-2">
             <button
@@ -212,7 +212,7 @@ export function NarrativeTab({
                 })
               }
               disabled={pending || draftChange.trim().length < 10}
-              className="inline-flex items-center gap-2 bg-ink-900 px-4 py-2 text-[13px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
+              className="inline-flex items-center gap-2 bg-moss px-4 py-2 text-[13px] font-medium text-chalk hover:bg-moss-700 disabled:opacity-40"
             >
               {busy === 'save-change' ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
               {t('change.save')}
@@ -226,7 +226,7 @@ export function NarrativeTab({
                 })
               }
               disabled={pending}
-              className="inline-flex items-center gap-2 border border-ink-300 px-4 py-2 text-[13px] text-ink-700 hover:border-ink-500 disabled:opacity-40"
+              className="inline-flex items-center gap-2 border border-rule-strong px-4 py-2 text-[13px] text-moss-muted hover:border-rule-strong disabled:opacity-40"
             >
               {busy === 'propose' ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -243,13 +243,13 @@ export function NarrativeTab({
       <EvidenceSection workspaceId={workspaceId} evidence={evidence} run={run} pending={pending} />
 
       {/* ── Step 3 · Storylines ─────────────────────────────────── */}
-      <section className="border border-ink-200 bg-white p-6">
+      <section className="border border-rule bg-chalk-raised p-6">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h3 className="font-display text-[17px] font-semibold text-ink-900">
+          <h3 className="font-display text-[17px] font-semibold text-moss">
             {t('storylines.heading')}
           </h3>
           {narrative?.generatedBy && (
-            <span className="text-[12px] text-ink-500">
+            <span className="text-[12px] text-moss-muted">
               {/* The model name is a product name: it stays Latin and is
                   isolated so the Persian around it keeps its own direction. */}
               {t.rich('storylines.draftedBy', {
@@ -261,7 +261,7 @@ export function NarrativeTab({
         </div>
 
         {storylines.length === 0 ? (
-          <p className="mt-2 text-[13.5px] text-ink-600">
+          <p className="mt-2 text-[13.5px] text-moss-muted">
             {narrative?.change ? t('storylines.emptyDrafted') : t('storylines.emptyNoChange')}
           </p>
         ) : (
@@ -282,7 +282,7 @@ export function NarrativeTab({
         <button
           onClick={() => run('storylines', () => generateStorylines(workspaceId))}
           disabled={pending || !narrative?.change}
-          className="mt-6 inline-flex items-center gap-2 bg-ink-900 px-4 py-2.5 text-[13px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
+          className="mt-6 inline-flex items-center gap-2 bg-moss px-4 py-2.5 text-[13px] font-medium text-chalk hover:bg-moss-700 disabled:opacity-40"
         >
           {busy === 'storylines' ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -292,7 +292,7 @@ export function NarrativeTab({
           {storylines.length ? t('storylines.draftAgain') : t('storylines.draft')}
         </button>
         {storylines.length > 0 && (
-          <p className="mt-2 text-[12px] text-ink-500">{t('storylines.redraftWarning')}</p>
+          <p className="mt-2 text-[12px] text-moss-muted">{t('storylines.redraftWarning')}</p>
         )}
       </section>
     </div>
@@ -331,25 +331,25 @@ function EvidenceSection({
       : k;
 
   return (
-    <section className="border border-ink-200 bg-white p-6">
-      <h3 className="font-display text-[17px] font-semibold text-ink-900">{t('heading')}</h3>
-      <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-ink-600">{t('help')}</p>
+    <section className="border border-rule bg-chalk-raised p-6">
+      <h3 className="font-display text-[17px] font-semibold text-moss">{t('heading')}</h3>
+      <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-moss-muted">{t('help')}</p>
 
       {evidence.length > 0 && (
-        <ul className="mt-5 divide-y divide-ink-200 border-y border-ink-200">
+        <ul className="mt-5 divide-y divide-rule border-y border-rule">
           {evidence.map((e) => (
             <li key={e.id} className="flex items-start justify-between gap-4 py-3">
               <div className="min-w-0">
-                <p className="text-[11.5px] uppercase tracking-wide text-ink-500">
+                <p className="text-[11.5px] uppercase tracking-wide text-moss-muted">
                   {kindLabel(e.kind)}
                 </p>
-                <p className="mt-0.5 text-[14px] text-ink-900">{e.value}</p>
+                <p className="mt-0.5 text-[14px] text-moss">{e.value}</p>
               </div>
               <button
                 onClick={() => run('del', () => deleteEvidence(workspaceId, e.id))}
                 disabled={pending}
                 aria-label={t('remove')}
-                className="shrink-0 p-1.5 text-ink-400 hover:text-ink-900 disabled:opacity-40"
+                className="shrink-0 p-1.5 text-moss-muted hover:text-moss disabled:opacity-40"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -360,14 +360,14 @@ function EvidenceSection({
 
       <div className="mt-5 flex flex-wrap items-end gap-3">
         <div>
-          <label htmlFor="ekind" className="text-[12.5px] font-medium text-ink-700">
+          <label htmlFor="ekind" className="text-[12.5px] font-medium text-moss-muted">
             {t('typeLabel')}
           </label>
           <select
             id="ekind"
             value={kind}
             onChange={(e) => setKind(e.target.value)}
-            className="mt-1.5 block border border-ink-300 bg-white px-3 py-2 text-[13.5px] text-ink-900 outline-none focus:border-ink-900"
+            className="mt-1.5 block border border-rule-strong bg-chalk-raised px-3 py-2 text-[13.5px] text-moss outline-none focus:border-moss"
           >
             {EVIDENCE_KINDS.map((k) => (
               <option key={k} value={k}>
@@ -377,7 +377,7 @@ function EvidenceSection({
           </select>
         </div>
         <div className="min-w-[16rem] flex-1">
-          <label htmlFor="evalue" className="text-[12.5px] font-medium text-ink-700">
+          <label htmlFor="evalue" className="text-[12.5px] font-medium text-moss-muted">
             {t('valueLabel')}
           </label>
           <input
@@ -385,7 +385,7 @@ function EvidenceSection({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             placeholder={t('valuePlaceholder')}
-            className="mt-1.5 w-full border border-ink-300 bg-white px-3 py-2 text-[13.5px] text-ink-900 outline-none focus:border-ink-900"
+            className="mt-1.5 w-full border border-rule-strong bg-chalk-raised px-3 py-2 text-[13.5px] text-moss outline-none focus:border-moss"
           />
         </div>
         <button
@@ -397,7 +397,7 @@ function EvidenceSection({
             })
           }
           disabled={pending || value.trim().length < 2}
-          className="border border-ink-300 px-4 py-2 text-[13px] text-ink-700 hover:border-ink-500 disabled:opacity-40"
+          className="border border-rule-strong px-4 py-2 text-[13px] text-moss-muted hover:border-rule-strong disabled:opacity-40"
         >
           {t('add')}
         </button>
@@ -427,24 +427,24 @@ function StorylineCard({
   const refs = asArray(storyline.sourceRefs);
 
   return (
-    <li className="border border-ink-200 p-5">
+    <li className="border border-rule p-5">
       <div className="flex items-start justify-between gap-4">
-        <span className="mt-1 shrink-0 text-[12px] text-ink-400">{order}</span>
+        <span className="mt-1 shrink-0 text-[12px] text-moss-muted">{order}</span>
         <div className="min-w-0 flex-1">
           {editing ? (
             <textarea
               rows={2}
               value={claim}
               onChange={(e) => setClaim(e.target.value)}
-              className="w-full resize-y border border-ink-300 px-3 py-2 text-[15px] text-ink-900 outline-none focus:border-ink-900"
+              className="w-full resize-y border border-rule-strong px-3 py-2 text-[15px] text-moss outline-none focus:border-moss"
             />
           ) : (
-            <p className="text-[15.5px] font-medium leading-snug text-ink-900">{storyline.claim}</p>
+            <p className="text-[15.5px] font-medium leading-snug text-moss">{storyline.claim}</p>
           )}
 
           {storyline.audience && (
-            <p className="mt-2 text-[13px] text-ink-600">
-              <span className="text-ink-400">{t('for')}</span> {storyline.audience}
+            <p className="mt-2 text-[13px] text-moss-muted">
+              <span className="text-moss-muted">{t('for')}</span> {storyline.audience}
             </p>
           )}
 
@@ -456,8 +456,8 @@ function StorylineCard({
           </dl>
 
           {refs.length > 0 && (
-            <p className="mt-4 border-t border-ink-200 pt-3 text-[12px] leading-relaxed text-ink-500">
-              <span className="text-ink-400">{t('builtFrom')}</span>{' '}
+            <p className="mt-4 border-t border-rule pt-3 text-[12px] leading-relaxed text-moss-muted">
+              <span className="text-moss-muted">{t('builtFrom')}</span>{' '}
               {/* Source references are stored identifiers, not prose. */}
               <bdi>{refs.join(' · ')}</bdi>
             </p>
@@ -475,7 +475,7 @@ function StorylineCard({
                     })
                   }
                   disabled={pending}
-                  className="bg-ink-900 px-3 py-1.5 text-[12.5px] font-medium text-white hover:bg-ink-800 disabled:opacity-40"
+                  className="bg-moss px-3 py-1.5 text-[12.5px] font-medium text-chalk hover:bg-moss-700 disabled:opacity-40"
                 >
                   {t('save')}
                 </button>
@@ -484,7 +484,7 @@ function StorylineCard({
                     setClaim(storyline.claim);
                     setEditing(false);
                   }}
-                  className="border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
+                  className="border border-rule-strong px-3 py-1.5 text-[12.5px] text-moss-muted hover:border-rule-strong"
                 >
                   {t('cancel')}
                 </button>
@@ -492,7 +492,7 @@ function StorylineCard({
             ) : (
               <button
                 onClick={() => setEditing(true)}
-                className="inline-flex items-center gap-1.5 border border-ink-300 px-3 py-1.5 text-[12.5px] text-ink-700 hover:border-ink-500"
+                className="inline-flex items-center gap-1.5 border border-rule-strong px-3 py-1.5 text-[12.5px] text-moss-muted hover:border-rule-strong"
               >
                 <Pencil className="h-3.5 w-3.5" /> {t('editClaim')}
               </button>
@@ -507,8 +507,8 @@ function StorylineCard({
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-[11.5px] uppercase tracking-wide text-ink-500">{label}</dt>
-      <dd className="mt-0.5 text-[13.5px] leading-relaxed text-ink-800">{value}</dd>
+      <dt className="text-[11.5px] uppercase tracking-wide text-moss-muted">{label}</dt>
+      <dd className="mt-0.5 text-[13.5px] leading-relaxed text-moss">{value}</dd>
     </div>
   );
 }

@@ -36,32 +36,32 @@ export function AuthShell({
   const t = useTranslations('auth');
 
   return (
-    <div className="theme-editorial flex min-h-screen w-full flex-col bg-paper-warm font-sans text-carbon lg:flex-row">
+    <div className="theme-chalk font-plex flex min-h-screen w-full flex-col bg-chalk font-sans text-moss lg:flex-row">
       {/* Left: who you are about to be */}
-      <div className="flex w-full flex-col justify-between border-b border-carbon/10 bg-paper-warm p-8 md:p-12 lg:w-[45%] lg:border-b-0 lg:border-e xl:p-20">
+      <div className="flex w-full flex-col justify-between border-b border-moss/10 bg-chalk p-8 md:p-12 lg:w-[45%] lg:border-b-0 lg:border-e xl:p-20">
         <Link href="/" className="flex items-center gap-3">
-          <span aria-hidden className="inline-block h-4 w-4 bg-brick" />
+          <span aria-hidden className="inline-block h-3.5 w-3.5 rotate-45 bg-saffron" />
           {/* The wordmark stays Latin in both languages; `bdi` keeps the
               surrounding Persian from reordering it. */}
           <bdi className="font-display text-2xl font-semibold tracking-[-0.035em]">Contivo</bdi>
         </Link>
 
         <div className="mt-16 lg:mt-0">
-          <p className="text-[13px] font-medium text-carbon-60">{eyebrow}</p>
+          <p className="text-[13px] font-medium text-moss-muted">{eyebrow}</p>
           <h1 className="mt-4 max-w-[14ch] font-display text-[clamp(2.6rem,5.2vw,4.4rem)] font-semibold leading-[0.96] tracking-[-0.045em]">
             {title}
           </h1>
-          <p className="mt-7 max-w-sm text-[16.5px] leading-[1.65] text-carbon-80">{blurb}</p>
+          <p className="mt-7 max-w-sm text-[16.5px] leading-[1.65] text-moss-muted">{blurb}</p>
         </div>
 
-        <p className="mt-16 hidden text-[13px] text-carbon-60 lg:block">{t('note')}</p>
+        <p className="mt-16 hidden text-[13px] text-moss-muted lg:block">{t('note')}</p>
       </div>
 
       {/* Right: the form */}
-      <div className="flex w-full flex-col justify-center bg-paper-light p-8 md:p-12 lg:w-[55%] xl:p-24">
+      <div className="flex w-full flex-col justify-center bg-chalk-raised p-8 md:p-12 lg:w-[55%] xl:p-24">
         <div className="mx-auto w-full max-w-md">
           {children}
-          <div className="mt-10 border-t border-carbon/15 pt-6 text-[14.5px] text-carbon-80">
+          <div className="mt-10 border-t border-moss/15 pt-6 text-[14.5px] text-moss-muted">
             {footer}
           </div>
         </div>
@@ -73,13 +73,13 @@ export function AuthShell({
 /** The italic word inside an auth headline, passed to `t.rich`. */
 export function authAccent(chunks: React.ReactNode) {
   return (
-    <span className="font-accent font-normal italic tracking-[-0.02em] text-carbon-60">
+    <span className="font-display font-extrabold tracking-[-0.02em] text-moss-muted">
       {chunks}
     </span>
   );
 }
 
-/** A field in the editorial world: a rule that turns brick on focus, no box. */
+/** A field: a rule that turns saffron on focus, no box. */
 export function AuthField({
   id,
   label,
@@ -99,7 +99,7 @@ export function AuthField({
     <div>
       <label
         htmlFor={id}
-        className="block text-[12.5px] font-semibold uppercase tracking-wide text-carbon-60"
+        className="block text-[12.5px] font-semibold uppercase tracking-wide text-moss-muted"
       >
         {label}
       </label>
@@ -110,7 +110,7 @@ export function AuthField({
         required={required}
         autoComplete={autoComplete}
         placeholder={placeholder}
-        className="mt-2 w-full border-0 border-b-2 border-carbon/25 bg-transparent px-0 py-3 font-display text-[20px] tracking-[-0.02em] text-carbon outline-none transition-colors duration-300 placeholder:text-carbon-40 focus:border-brick"
+        className="mt-2 w-full border-0 border-b-2 border-moss/25 bg-transparent px-0 py-3 font-display text-[20px] tracking-[-0.02em] text-moss outline-none transition-colors duration-300 placeholder:text-moss-muted focus:border-saffron"
       />
     </div>
   );

@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint && node scripts/check-i18n.mjs",
     "typecheck": "next typegen && tsc --noEmit",
-    "check:i18n": "node scripts/check-i18n.mjs"
+    "check:i18n": "node scripts/check-i18n.mjs",
+    "capture:marketing": "node scripts/capture-marketing.mjs"
   },
   "dependencies": {
     "@contivo/api": "workspace:*",

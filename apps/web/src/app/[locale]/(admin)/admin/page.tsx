@@ -87,10 +87,10 @@ function getStatusTone(status: string): string {
   if (['FAILED', 'ERROR', 'PAST_DUE'].includes(status)) return 'text-red-700 bg-red-50 border-red-200';
   if (['PENDING', 'RUNNING', 'CRAWLING', 'ANALYZING'].includes(status)) return 'text-amber-700 bg-amber-50 border-amber-200';
   if (['SCHEDULED', 'PUBLISHED', 'READY', 'ACTIVE', 'TRIALING', 'healthy'].includes(status)) {
-    return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+    return 'text-moss-700 bg-chalk-sunk border-rule';
   }
   if (['warning'].includes(status)) return 'text-amber-700 bg-amber-50 border-amber-200';
-  return 'text-gray-700 bg-gray-50 border-gray-200';
+  return 'text-moss bg-chalk border-rule';
 }
 
 export default async function AdminDashboardPage({ searchParams }: Props) {
@@ -133,11 +133,11 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
     <div className="mx-auto flex max-w-[1440px] flex-col gap-8">
       <AdminHero user={user} overview={overview} integrations={integrations} />
 
-      <div className="rounded-[2rem] border border-slate-200/60 bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-[2rem] border border-rule/60 bg-chalk-raised p-6 shadow-sm sm:p-8">
         <div className="mb-8 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-black tracking-tight text-[#121212]">{t(`sections.${section}.label`)}</h2>
-            <p className="mt-2 text-sm font-medium text-slate-500">{t(`sections.${section}.description`)}</p>
+            <h2 className="text-2xl font-black tracking-tight text-moss">{t(`sections.${section}.label`)}</h2>
+            <p className="mt-2 text-sm font-medium text-moss-muted">{t(`sections.${section}.description`)}</p>
           </div>
         </div>
 
@@ -249,32 +249,21 @@ function AdminHero({
 
   return (
     <>
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] p-8 shadow-2xl ring-1 ring-white/10 sm:p-12">
-        <div className="absolute -start-20 -top-20 h-96 w-96 rounded-full bg-indigo-500/20 blur-[100px] pointer-events-none" />
-        <div className="absolute -bottom-20 -end-20 h-96 w-96 rounded-full bg-emerald-500/10 blur-[100px] pointer-events-none" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:24px_24px] [mask-image:radial-gradient(ellipse_60%_60%_at_50%_50%,#000_70%,transparent_100%)] pointer-events-none" />
-
+      <div className="relative overflow-hidden rounded-3xl bg-forest p-8 text-chalk sm:p-12">
         <div className="relative flex flex-col gap-10 xl:flex-row xl:items-end xl:justify-between">
           <div className="max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/5 px-4 py-1.5 backdrop-blur-md">
-               <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(52,211,153,0.8)]" />
-               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-300">{t('hero.badge')}</p>
+            <div className="mb-6 inline-flex items-center gap-2.5 rounded-full border border-forest-line px-4 py-1.5">
+              <span aria-hidden className="h-2 w-2 rotate-45 bg-saffron" />
+              <p className="font-plexmono text-[11px] uppercase tracking-[0.2em] text-forest-muted">{t('hero.badge')}</p>
             </div>
-            <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl lg:text-6xl">{t('hero.title')}</h1>
-            <p className="mt-6 text-lg leading-relaxed text-slate-400">{t('hero.body')}</p>
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex -space-x-2">
-                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-indigo-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-indigo-500" /></div>
-                <div className="h-8 w-8 rounded-full border-2 border-[#0a0a0a] bg-emerald-500/20 flex items-center justify-center"><div className="h-3 w-3 rounded-full bg-emerald-500" /></div>
-                <div className="h-8 w-8 flex items-center justify-center rounded-full border-2 border-[#0a0a0a] bg-white/10 text-[10px] font-bold text-white">+2</div>
-              </div>
-              <p className="text-sm font-medium text-slate-400">
-                {t.rich('hero.session', {
-                  email: user?.email || t('hero.unknownUser'),
-                  b: (chunks) => <bdi className="font-bold text-white">{chunks}</bdi>,
-                })}
-              </p>
-            </div>
+            <h1 className="font-display text-4xl font-extrabold tracking-tight text-chalk md:text-5xl lg:text-6xl">{t('hero.title')}</h1>
+            <p className="mt-6 text-lg leading-relaxed text-forest-muted">{t('hero.body')}</p>
+            <p className="mt-8 text-sm font-medium text-forest-muted">
+              {t.rich('hero.session', {
+                email: user?.email || t('hero.unknownUser'),
+                b: (chunks) => <bdi className="font-bold text-chalk">{chunks}</bdi>,
+              })}
+            </p>
           </div>
           <div className="grid w-full grid-cols-2 gap-4 sm:grid-cols-4 xl:w-auto">
             <DarkMetricCard label={t('hero.users')} value={fmt.number(overview.metrics.totalUsers)} />
@@ -464,12 +453,12 @@ function OverviewSection({
               overview.recentFailedJobs.slice(0, 4).map((job: any) => (
                 <div key={job.id} className="rounded-3xl border border-red-100 bg-red-50/70 p-5 transition-colors hover:bg-red-50">
                   <div className="flex items-center justify-between gap-3">
-                    <p className="text-sm font-bold text-[#121212]" dir="ltr">{job.type}</p>
-                    <span className="rounded-full border border-red-200 bg-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700 shadow-sm">
+                    <p className="text-sm font-bold text-moss" dir="ltr">{job.type}</p>
+                    <span className="rounded-full border border-red-200 bg-chalk-raised px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-red-700 shadow-sm">
                       {job.status}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs font-semibold text-slate-500">
+                  <p className="mt-2 text-xs font-semibold text-moss-muted">
                     <bdi>{job.user.email}</bdi> {job.workspace?.name ? <>• <bdi>{job.workspace.name}</bdi></> : null} • {fmt.dateTime(job.updatedAt)}
                   </p>
                   <p className="mt-3 text-xs font-medium text-red-700">{job.errorMessage || t('overview.unknownError')}</p>
@@ -543,29 +532,29 @@ function UsersSection({
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-5">
+      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-rule/60 bg-chalk-raised p-5 shadow-sm lg:grid-cols-5">
         <input type="hidden" name="section" value="users" />
-        <input name="q" defaultValue={filters.q} placeholder={t('users.searchPlaceholder')} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
-        <select name="plan" defaultValue={filters.plan} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <input name="q" defaultValue={filters.q} placeholder={t('users.searchPlaceholder')} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss" />
+        <select name="plan" defaultValue={filters.plan} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allPlans')}</option>
           {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="role" defaultValue={filters.role} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="role" defaultValue={filters.role} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allRoles')}</option>
           {USER_ROLE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="status" defaultValue={filters.status} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allStatuses')}</option>
           {USER_ACCOUNT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
+        <button className="rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('common.applyFilters')}</button>
       </form>
 
       <Panel title={t('users.panelTitle')} subtitle={t('users.panelSubtitle')}>
         <div className="overflow-x-auto">
           <table className="w-full text-start text-sm">
             <thead>
-              <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+              <tr className="border-b border-rule uppercase tracking-widest text-moss-muted">
                 <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colUser')}</th>
                 <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colPlanRole')}</th>
                 <th className="px-4 py-4 text-start text-[10px] font-bold">{t('users.colStatus')}</th>
@@ -574,15 +563,15 @@ function UsersSection({
                 <th className="px-4 py-4 text-start text-[10px] font-bold w-[340px]">{t('users.colActions')}</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100/80">
+            <tbody className="divide-y divide-rule/80">
               {rows.map((row) => (
-                <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+                <tr key={row.id} className="align-top transition-colors hover:bg-chalk/50">
                   <td className="px-4 py-4">
-                    <Link href={{ pathname: '/admin/users/[userId]', params: { userId: row.id } }} className="font-bold text-[#121212] hover:underline">
+                    <Link href={{ pathname: '/admin/users/[userId]', params: { userId: row.id } }} className="font-bold text-moss hover:underline">
                       {row.name || t('users.unnamedUser')}
                     </Link>
-                    <p className="text-xs text-gray-500"><bdi>{row.email}</bdi></p>
-                    <p className="mt-1 text-[11px] text-gray-400" dir="ltr">{row.id}</p>
+                    <p className="text-xs text-moss-muted"><bdi>{row.email}</bdi></p>
+                    <p className="mt-1 text-[11px] text-moss-muted" dir="ltr">{row.id}</p>
                   </td>
                   <td className="px-4 py-4">
                     <div className="space-y-2">
@@ -592,10 +581,10 @@ function UsersSection({
                       <span className={`ms-2 inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.role)}`}>
                         {row.role}
                       </span>
-                      <p className="text-xs font-medium text-slate-500">
+                      <p className="text-xs font-medium text-moss-muted">
                         {t.rich('users.subscription', {
                           status: row.subscription?.status || t('users.noSubscription'),
-                          b: (chunks) => <span className="text-[#121212]">{chunks}</span>,
+                          b: (chunks) => <span className="text-moss">{chunks}</span>,
                         })}
                       </p>
                     </div>
@@ -610,30 +599,30 @@ function UsersSection({
                       ) : null}
                     </div>
                   </td>
-                  <td className="px-4 py-4 text-xs font-medium text-slate-600 space-y-1">
+                  <td className="px-4 py-4 text-xs font-medium text-moss-muted space-y-1">
                     <p>{t.rich('users.usageWorkspaces', { count: fmt.number(row._count.workspaces), b: boldValue })}</p>
                     <p>{t.rich('users.usageContentItems', { count: fmt.number(row._count.contentItems), b: boldValue })}</p>
                     <p>{t.rich('users.usageCredits', { count: fmt.number(Number(row.creditBalance || 0)), b: boldValue })}</p>
                     <p>{t.rich('users.usageAiCost', { value: fmt.usd(Number(row.totalAiCost || 0)), b: boldValue })}</p>
                   </td>
-                  <td className="px-4 py-4 text-xs font-medium text-slate-600">{fmt.dateTime(row.lastActiveAt)}</td>
+                  <td className="px-4 py-4 text-xs font-medium text-moss-muted">{fmt.dateTime(row.lastActiveAt)}</td>
                   <td className="px-4 py-4">
                     <div className="flex flex-col gap-3">
-                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
+                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-rule/60 bg-chalk-raised p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
-                        <select name="plan" defaultValue={row.plan} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
+                        <select name="plan" defaultValue={row.plan} className="w-full flex-1 rounded-xl border border-rule bg-chalk px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-moss focus:bg-chalk-raised text-moss">
                           {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">{t('users.setPlan')}</button>
+                        <button className="shrink-0 rounded-xl bg-moss px-3 py-1.5 text-[11px] font-bold text-chalk transition-colors hover:bg-moss">{t('users.setPlan')}</button>
                       </form>
-                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
+                      <form action={updateUserAccess} className="flex gap-2 rounded-2xl border border-rule/60 bg-chalk-raised p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
-                        <select name="role" defaultValue={row.role} className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-[#121212] focus:bg-white text-slate-700">
+                        <select name="role" defaultValue={row.role} className="w-full flex-1 rounded-xl border border-rule bg-chalk px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-moss focus:bg-chalk-raised text-moss">
                           {USER_ROLE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
                         </select>
-                        <button className="shrink-0 rounded-xl bg-[#121212] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-slate-800">{t('users.setRole')}</button>
+                        <button className="shrink-0 rounded-xl bg-moss px-3 py-1.5 text-[11px] font-bold text-chalk transition-colors hover:bg-moss">{t('users.setRole')}</button>
                       </form>
-                      <form action={manageUserLifecycle} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-white p-3 shadow-sm">
+                      <form action={manageUserLifecycle} className="flex flex-col gap-2 rounded-2xl border border-rule/60 bg-chalk-raised p-3 shadow-sm">
                         <input type="hidden" name="userId" value={row.id} />
                         <input type="hidden" name="actionType" value={row.accountStatus === 'SUSPENDED' ? 'REACTIVATE' : 'SUSPEND'} />
                         {row.accountStatus !== 'SUSPENDED' ? (
@@ -641,18 +630,18 @@ function UsersSection({
                             <input
                               name="reason"
                               placeholder={t('users.suspensionReason')}
-                              className="w-full flex-1 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-red-500 focus:bg-white"
+                              className="w-full flex-1 rounded-xl border border-rule bg-chalk px-2.5 py-1.5 text-xs font-semibold outline-none focus:border-red-500 focus:bg-chalk-raised"
                             />
-                            <button className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-red-700">
+                            <button className="shrink-0 rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-chalk transition-colors hover:bg-red-700">
                               {t('users.suspend')}
                             </button>
                           </div>
                         ) : (
                           <div className="flex gap-2 items-center justify-between">
-                            <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-1.5 text-[10px] font-bold text-emerald-700 w-full text-center">
+                            <p className="rounded-xl border border-rule/60 bg-chalk-sunk px-2.5 py-1.5 text-[10px] font-bold text-moss-700 w-full text-center">
                               {t('users.accountSuspended')}
                             </p>
-                            <button className="shrink-0 rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-emerald-700">
+                            <button className="shrink-0 rounded-xl bg-moss px-3 py-1.5 text-[11px] font-bold text-chalk transition-colors hover:bg-moss">
                               {t('users.reactivate')}
                             </button>
                           </div>
@@ -691,28 +680,28 @@ function WorkspacesSection({
   return (
     <div className="space-y-4">
       <StatusBanner status={status} />
-      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
+      <form action={formAction} className="grid gap-4 rounded-[2rem] border border-rule/60 bg-chalk-raised p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="workspaces" />
-        <input name="q" defaultValue={filters.q} placeholder={t('workspaces.searchPlaceholder')} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black" />
-        <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <input name="q" defaultValue={filters.q} placeholder={t('workspaces.searchPlaceholder')} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss" />
+        <select name="status" defaultValue={filters.status} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allStatuses')}</option>
           {WORKSPACE_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="ownerId" defaultValue={filters.ownerId} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="ownerId" defaultValue={filters.ownerId} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allOwners')}</option>
           {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
+        <button className="rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('common.applyFilters')}</button>
       </form>
 
       <Panel title={t('workspaces.panelTitle')} subtitle={t('workspaces.panelSubtitle')}>
         <div className="space-y-4">
           {rows.map((row: any) => (
-            <div key={row.id} className="relative overflow-hidden rounded-3xl border border-slate-200/60 bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+            <div key={row.id} className="relative overflow-hidden rounded-3xl border border-rule/60 bg-chalk-raised p-6 shadow-sm transition-shadow hover:shadow-md">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
                   <div className="flex items-center gap-3">
-                    <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: row.id } }} className="text-xl font-black tracking-tight text-[#121212] hover:underline">
+                    <Link href={{ pathname: '/admin/workspaces/[workspaceId]', params: { workspaceId: row.id } }} className="text-xl font-black tracking-tight text-moss hover:underline">
                       {row.name}
                     </Link>
                     <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
@@ -724,14 +713,14 @@ function WorkspacesSection({
                       </span>
                     ) : null}
                   </div>
-                  <p className="mt-2 text-sm font-medium text-slate-500">
+                  <p className="mt-2 text-sm font-medium text-moss-muted">
                     {row.websiteUrl ? <bdi>{row.websiteUrl}</bdi> : t('common.noWebsiteUrl')}
                   </p>
-                  <p className="mt-2 text-xs font-semibold text-slate-400">
+                  <p className="mt-2 text-xs font-semibold text-moss-muted">
                     {t('workspaces.ownerLine', { email: row.user.email, date: fmt.dateTime(row.createdAt) })}
                   </p>
                 </div>
-                <div className="grid gap-3 text-xs text-slate-600 sm:grid-cols-3">
+                <div className="grid gap-3 text-xs text-moss-muted sm:grid-cols-3">
                   <InfoPill label={t('workspaces.competitors')} value={fmt.number(row._count.competitors)} />
                   <InfoPill label={t('workspaces.contentItems')} value={fmt.number(row._count.contentItems)} />
                   <InfoPill label={t('workspaces.strategyRuns')} value={fmt.number(row._count.strategyRuns)} />
@@ -739,45 +728,45 @@ function WorkspacesSection({
               </div>
 
               <div className="mt-6 grid gap-4 lg:grid-cols-4">
-                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-rule/60 bg-chalk p-4 transition-colors hover:border-rule-strong">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="REANALYZE" />
-                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">{t('workspaces.forceReanalysis')}</button>
+                  <button className="mt-auto w-full rounded-xl bg-moss px-3 py-2.5 text-xs font-bold text-chalk hover:bg-moss">{t('workspaces.forceReanalysis')}</button>
                 </form>
 
-                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-rule/60 bg-chalk p-4 transition-colors hover:border-rule-strong">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value={row.archiveState?.isArchived ? 'RESTORE' : 'ARCHIVE'} />
                   {!row.archiveState?.isArchived ? (
                     <input
                       name="reason"
                       placeholder={t('workspaces.archiveReason')}
-                      className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]"
+                      className="w-full flex-1 rounded-xl border border-rule bg-chalk-raised px-2.5 py-2 text-xs outline-none focus:border-moss"
                     />
                   ) : (
-                    <p className="rounded-xl border border-emerald-200/60 bg-emerald-50 px-2.5 py-2 text-[11px] font-bold text-emerald-700">
+                    <p className="rounded-xl border border-rule/60 bg-chalk-sunk px-2.5 py-2 text-[11px] font-bold text-moss-700">
                       {t('workspaces.workspaceArchived')}
                     </p>
                   )}
-                  <button className={`mt-auto w-full rounded-xl px-3 py-2.5 text-xs font-bold text-white transition-opacity hover:opacity-90 ${row.archiveState?.isArchived ? 'bg-emerald-600' : 'bg-amber-600'}`}>
+                  <button className={`mt-auto w-full rounded-xl px-3 py-2.5 text-xs font-bold text-chalk transition-opacity hover:opacity-90 ${row.archiveState?.isArchived ? 'bg-moss' : 'bg-amber-600'}`}>
                     {row.archiveState?.isArchived ? t('workspaces.restoreWorkspace') : t('workspaces.archiveWorkspace')}
                   </button>
                 </form>
 
-                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 transition-colors hover:border-slate-300">
+                <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-rule/60 bg-chalk p-4 transition-colors hover:border-rule-strong">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="TRANSFER" />
-                  <select name="targetUserId" defaultValue="" className="w-full flex-1 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs outline-none focus:border-[#121212]">
+                  <select name="targetUserId" defaultValue="" className="w-full flex-1 rounded-xl border border-rule bg-chalk-raised px-2.5 py-2 text-xs outline-none focus:border-moss">
                     <option value="">{t('workspaces.transferOwnerTo')}</option>
                     {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
                   </select>
-                  <button className="mt-auto w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-bold text-white hover:bg-slate-800">{t('workspaces.transferOwner')}</button>
+                  <button className="mt-auto w-full rounded-xl bg-moss px-3 py-2.5 text-xs font-bold text-chalk hover:bg-moss">{t('workspaces.transferOwner')}</button>
                 </form>
 
                 <form action={manageWorkspace} className="flex flex-col gap-2 rounded-2xl border border-red-200/60 bg-red-50 p-4 transition-colors hover:border-red-300">
                   <input type="hidden" name="workspaceId" value={row.id} />
                   <input type="hidden" name="actionType" value="DELETE" />
-                  <button className="mt-auto w-full rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-white hover:bg-red-700">{t('workspaces.deleteWorkspace')}</button>
+                  <button className="mt-auto w-full rounded-xl bg-red-600 px-3 py-2.5 text-xs font-bold text-chalk hover:bg-red-700">{t('workspaces.deleteWorkspace')}</button>
                 </form>
               </div>
             </div>
@@ -816,38 +805,38 @@ function AiSection({
         <Panel title={t('ai.controlTitle')} subtitle={t('ai.controlSubtitle')}>
           <form action={updateAiControls} className="grid gap-4">
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">{t('ai.geminiPrimaryModel')}</span>
+              <span className="block text-sm font-medium text-moss">{t('ai.geminiPrimaryModel')}</span>
               <input
                 name="geminiModel"
                 dir="ltr"
                 defaultValue={settingsState.geminiModel}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
+                className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">{t('ai.openAiFallbackModel')}</span>
+              <span className="block text-sm font-medium text-moss">{t('ai.openAiFallbackModel')}</span>
               <input
                 name="openAiFallbackModel"
                 dir="ltr"
                 defaultValue={settingsState.openAiFallbackModel}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
+                className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss"
                 required
               />
             </label>
             <label className="space-y-2">
-              <span className="block text-sm font-medium text-[#121212]">{t('ai.geminiCooldownSeconds')}</span>
+              <span className="block text-sm font-medium text-moss">{t('ai.geminiCooldownSeconds')}</span>
               <input
                 type="number"
                 name="geminiCooldownSeconds"
                 min={GEMINI_COOLDOWN_SECONDS_MIN}
                 max={GEMINI_COOLDOWN_SECONDS_MAX}
                 defaultValue={settingsState.geminiCooldownSeconds}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black"
+                className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss"
                 required
               />
             </label>
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('ai.saveControls')}</button>
+            <button className="inline-flex w-fit rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('ai.saveControls')}</button>
           </form>
         </Panel>
 
@@ -883,22 +872,22 @@ function SettingsSection({
           <input type="hidden" name="redirectTo" value="/admin" />
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <Field label={t('settings.competitiveLandscapeLimit')}>
-              <input type="number" name="competitiveLandscapeLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.competitiveLandscapeLimit} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+              <input type="number" name="competitiveLandscapeLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.competitiveLandscapeLimit} className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
             </Field>
             <Field label={t('settings.brandMemoryLimit')}>
-              <input type="number" name="brandMemoryLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.brandMemoryLimit} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+              <input type="number" name="brandMemoryLimit" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.brandMemoryLimit} className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
             </Field>
             <Field label={t('settings.ideationMaxContentCount')}>
-              <input type="number" name="ideationMaxContentCount" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.ideationMaxContentCount} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+              <input type="number" name="ideationMaxContentCount" min={PLATFORM_LIMIT_MIN} max={PLATFORM_LIMIT_MAX} defaultValue={settingsState.ideationMaxContentCount} className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
             </Field>
             <Field label={t('settings.defaultScheduleDelayHours')}>
-              <input type="number" name="defaultScheduleDelayHours" min={SCHEDULE_DELAY_HOURS_MIN} max={SCHEDULE_DELAY_HOURS_MAX} defaultValue={settingsState.defaultScheduleDelayHours} className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
+              <input type="number" name="defaultScheduleDelayHours" min={SCHEDULE_DELAY_HOURS_MIN} max={SCHEDULE_DELAY_HOURS_MAX} defaultValue={settingsState.defaultScheduleDelayHours} className="w-full rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
             </Field>
           </div>
 
-          <div className="rounded-2xl border border-gray-200 bg-slate-50 p-4">
-            <p className="text-sm font-bold text-[#121212]">{t('settings.wordCountRules')}</p>
-            <p className="mt-1 text-xs text-slate-500">
+          <div className="rounded-2xl border border-rule bg-chalk p-4">
+            <p className="text-sm font-bold text-moss">{t('settings.wordCountRules')}</p>
+            <p className="mt-1 text-xs text-moss-muted">
               {t('settings.wordCountRange', {
                 min: fmt.number(WORD_COUNT_LIMIT_ABSOLUTE_MIN),
                 max: fmt.number(WORD_COUNT_LIMIT_ABSOLUTE_MAX),
@@ -906,19 +895,19 @@ function SettingsSection({
             </p>
             <div className="mt-4 grid gap-3 lg:grid-cols-2">
               {WORD_COUNT_PLATFORMS.map((platform) => (
-                <div key={platform} className="rounded-xl border border-gray-200 bg-white p-3">
+                <div key={platform} className="rounded-xl border border-rule bg-chalk-raised p-3">
                   {/* Platform names are brands; they stay Latin in both languages. */}
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-600">{t(`platforms.${platform}`)}</p>
+                  <p className="text-xs font-bold uppercase tracking-wider text-moss-muted">{t(`platforms.${platform}`)}</p>
                   <div className="mt-2 grid grid-cols-2 gap-2">
-                    <input type="number" name={`wordMin_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].min} className="rounded-lg border border-gray-300 px-2 py-2 text-sm outline-none focus:border-black" />
-                    <input type="number" name={`wordMax_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].max} className="rounded-lg border border-gray-300 px-2 py-2 text-sm outline-none focus:border-black" />
+                    <input type="number" name={`wordMin_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].min} className="rounded-lg border border-rule-strong px-2 py-2 text-sm outline-none focus:border-moss" />
+                    <input type="number" name={`wordMax_${platform}`} min={WORD_COUNT_LIMIT_ABSOLUTE_MIN} max={WORD_COUNT_LIMIT_ABSOLUTE_MAX} defaultValue={settingsState.wordCountLimits[platform].max} className="rounded-lg border border-rule-strong px-2 py-2 text-sm outline-none focus:border-moss" />
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('settings.save')}</button>
+          <button className="inline-flex w-fit rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('settings.save')}</button>
         </form>
       </Panel>
     </div>
@@ -962,35 +951,35 @@ function CreditsSection({
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title={t('credits.manualTitle')} subtitle={t('credits.manualSubtitle')}>
           <form action={adjustCredits} className="grid gap-3">
-            <select name="userId" defaultValue="" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required>
+            <select name="userId" defaultValue="" className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" required>
               <option value="">{t('common.selectUser')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
-            <select name="adjustmentType" defaultValue="TOP_UP" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
+            <select name="adjustmentType" defaultValue="TOP_UP" className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss">
               <option value="TOP_UP">{t('credits.topUp')}</option>
               <option value="REFUND">{t('credits.refund')}</option>
               <option value="ALLOCATE">{t('credits.allocate')}</option>
               <option value="DEDUCT">{t('credits.deduct')}</option>
             </select>
-            <input type="number" name="amount" min={1} placeholder={t('credits.amount')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required />
-            <textarea name="note" placeholder={t('credits.note')} className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.applyAdjustment')}</button>
+            <input type="number" name="amount" min={1} placeholder={t('credits.amount')} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" required />
+            <textarea name="note" placeholder={t('credits.note')} className="min-h-[90px] rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
+            <button className="inline-flex w-fit rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('credits.applyAdjustment')}</button>
           </form>
         </Panel>
 
         <Panel title={t('credits.ledgerTitle')} subtitle={t('credits.ledgerSubtitle')}>
-          <form action={formAction} className="mb-4 grid gap-3 rounded-2xl border border-gray-200 bg-slate-50 p-3 md:grid-cols-[1fr_auto]">
+          <form action={formAction} className="mb-4 grid gap-3 rounded-2xl border border-rule bg-chalk p-3 md:grid-cols-[1fr_auto]">
             <input type="hidden" name="section" value="credits" />
-            <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
+            <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss">
               <option value="">{t('common.allUsers')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
-            <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.filterLedger')}</button>
+            <button className="rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('credits.filterLedger')}</button>
           </form>
           <div className="max-h-[520px] overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-start text-xs uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-rule text-start text-xs uppercase tracking-wider text-moss-muted">
                   <th className="px-3 py-3 text-start">{t('credits.colUser')}</th>
                   <th className="px-3 py-3 text-start">{t('credits.colType')}</th>
                   <th className="px-3 py-3 text-start">{t('credits.colFeature')}</th>
@@ -1001,14 +990,14 @@ function CreditsSection({
               </thead>
               <tbody>
                 {rows.map((row: any) => (
-                  <tr key={row.id} className="border-b border-gray-100">
+                  <tr key={row.id} className="border-b border-rule">
                     <td className="px-3 py-3">
-                      <p className="font-medium text-[#121212]"><bdi>{row.user.email}</bdi></p>
-                      <p className="text-xs text-gray-400" dir="ltr">{row.userId}</p>
+                      <p className="font-medium text-moss"><bdi>{row.user.email}</bdi></p>
+                      <p className="text-xs text-moss-muted" dir="ltr">{row.userId}</p>
                     </td>
                     <td className="px-3 py-3 text-xs">{row.type}</td>
                     <td className="px-3 py-3 text-xs">{row.feature}</td>
-                    <td className={`px-3 py-3 font-bold ${row.amount < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{fmt.number(row.amount)}</td>
+                    <td className={`px-3 py-3 font-bold ${row.amount < 0 ? 'text-red-600' : 'text-moss-700'}`}>{fmt.number(row.amount)}</td>
                     <td className="px-3 py-3 text-xs">{fmt.number(row.balanceAfter)}</td>
                     <td className="px-3 py-3 text-xs">{fmt.dateTime(row.createdAt)}</td>
                   </tr>
@@ -1022,22 +1011,22 @@ function CreditsSection({
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title={t('credits.billingTitle')} subtitle={t('credits.billingSubtitle')}>
           <form action={manageBilling} className="grid gap-3">
-            <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" required>
+            <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" required>
               <option value="">{t('common.selectUser')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>
-            <select name="actionType" defaultValue="SYNC_STRIPE" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
+            <select name="actionType" defaultValue="SYNC_STRIPE" className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss">
               <option value="SYNC_STRIPE">{t('credits.syncStripe')}</option>
               <option value="GRANT_TRIAL">{t('credits.grantTrial')}</option>
               <option value="APPLY_PROMO">{t('credits.applyPromo')}</option>
             </select>
-            <select name="plan" defaultValue="STARTER" className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black">
+            <select name="plan" defaultValue="STARTER" className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss">
               {USER_PLAN_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
             </select>
-            <input type="number" name="trialDays" min={1} max={90} defaultValue={14} placeholder={t('credits.trialDays')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <input type="number" name="promoCredits" min={1} placeholder={t('credits.promoCredits')} className="rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <textarea name="note" placeholder={t('credits.billingNote')} className="min-h-[90px] rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:border-black" />
-            <button className="inline-flex w-fit rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('credits.runBillingAction')}</button>
+            <input type="number" name="trialDays" min={1} max={90} defaultValue={14} placeholder={t('credits.trialDays')} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
+            <input type="number" name="promoCredits" min={1} placeholder={t('credits.promoCredits')} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
+            <textarea name="note" placeholder={t('credits.billingNote')} className="min-h-[90px] rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" />
+            <button className="inline-flex w-fit rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('credits.runBillingAction')}</button>
           </form>
         </Panel>
 
@@ -1045,7 +1034,7 @@ function CreditsSection({
           <div className="max-h-[520px] overflow-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-200 text-start text-xs uppercase tracking-wider text-gray-500">
+                <tr className="border-b border-rule text-start text-xs uppercase tracking-wider text-moss-muted">
                   <th className="px-3 py-3 text-start">{t('credits.colUser')}</th>
                   <th className="px-3 py-3 text-start">{t('credits.colPlan')}</th>
                   <th className="px-3 py-3 text-start">{t('credits.colStatus')}</th>
@@ -1054,10 +1043,10 @@ function CreditsSection({
               </thead>
               <tbody>
                 {subscriptions.map((row) => (
-                  <tr key={row.id} className="border-b border-gray-100">
+                  <tr key={row.id} className="border-b border-rule">
                     <td className="px-3 py-3">
-                      <p className="font-medium text-[#121212]"><bdi>{row.user.email}</bdi></p>
-                      <p className="text-xs text-gray-400" dir="ltr">{row.stripeSubscriptionId || row.stripeCustomerId}</p>
+                      <p className="font-medium text-moss"><bdi>{row.user.email}</bdi></p>
+                      <p className="text-xs text-moss-muted" dir="ltr">{row.stripeSubscriptionId || row.stripeCustomerId}</p>
                     </td>
                     <td className="px-3 py-3 text-xs">{row.plan}</td>
                     <td className="px-3 py-3"><span className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>{row.status}</span></td>
@@ -1092,33 +1081,33 @@ function ContentSection({
 
   return (
     <Panel title={t('content.panelTitle')} subtitle={t('content.panelSubtitle')}>
-      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-4">
+      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-rule/60 bg-chalk-raised p-5 shadow-sm lg:grid-cols-4">
         <input type="hidden" name="section" value="content" />
         <input
           name="q"
           defaultValue={filters.q}
           placeholder={t('content.searchPlaceholder')}
-          className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black"
+          className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss"
         />
-        <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="status" defaultValue={filters.status} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allStatuses')}</option>
           {CONTENT_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="channel" defaultValue={filters.channel} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="channel" defaultValue={filters.channel} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allChannels')}</option>
           {CONTENT_CHANNEL_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="workspaceId" defaultValue={filters.workspaceId} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="workspaceId" defaultValue={filters.workspaceId} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allWorkspaces')}</option>
           {workspaceOptions.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800 lg:col-span-4">{t('common.applyFilters')}</button>
+        <button className="rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss lg:col-span-4">{t('common.applyFilters')}</button>
       </form>
 
       <div className="overflow-x-auto">
         <table className="w-full text-start text-sm">
           <thead>
-            <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+            <tr className="border-b border-rule uppercase tracking-widest text-moss-muted">
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colTopic')}</th>
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colWorkspace')}</th>
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colPlatform')}</th>
@@ -1128,25 +1117,25 @@ function ContentSection({
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('content.colGenerated')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100/80">
+          <tbody className="divide-y divide-rule/80">
             {rows.map((row: any) => (
-              <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+              <tr key={row.id} className="align-top transition-colors hover:bg-chalk/50">
                 <td className="px-4 py-4">
-                  <Link href={{ pathname: '/admin/content/[contentId]', params: { contentId: row.id } }} className="font-bold text-[#121212] hover:underline">
+                  <Link href={{ pathname: '/admin/content/[contentId]', params: { contentId: row.id } }} className="font-bold text-moss hover:underline">
                     {row.topic}
                   </Link>
-                  <p className="mt-1 line-clamp-2 text-xs font-medium text-slate-500">{row.content}</p>
+                  <p className="mt-1 line-clamp-2 text-xs font-medium text-moss-muted">{row.content}</p>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.workspace?.name || '-'}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{row.channel}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{row.workspace?.name || '-'}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{row.channel}</td>
                 <td className="px-4 py-4">
                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
                     {row.status}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.number(row.wordCount)}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.dateTime(row.scheduledAtUtc)}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.dateTime(row.createdAt)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{fmt.number(row.wordCount)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{fmt.dateTime(row.scheduledAtUtc)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{fmt.dateTime(row.createdAt)}</td>
               </tr>
             ))}
           </tbody>
@@ -1174,23 +1163,23 @@ function JobsSection({
   return (
     <Panel title={t('jobs.panelTitle')} subtitle={t('jobs.panelSubtitle')}>
       <StatusBanner status={status} />
-      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-slate-200/60 bg-white p-5 shadow-sm lg:grid-cols-3">
+      <form action={formAction} className="mb-6 grid gap-4 rounded-[2rem] border border-rule/60 bg-chalk-raised p-5 shadow-sm lg:grid-cols-3">
         <input type="hidden" name="section" value="jobs" />
-        <select name="status" defaultValue={filters.status} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="status" defaultValue={filters.status} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allStatuses')}</option>
           {JOB_STATUS_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <select name="type" defaultValue={filters.type} className="rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm outline-none focus:border-black">
+        <select name="type" defaultValue={filters.type} className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-2 text-sm outline-none focus:border-moss">
           <option value="ALL">{t('common.allJobTypes')}</option>
           {JOB_TYPE_OPTIONS.map((item) => <option key={item} value={item}>{item}</option>)}
         </select>
-        <button className="rounded-xl bg-[#121212] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-slate-800">{t('common.applyFilters')}</button>
+        <button className="rounded-xl bg-moss px-4 py-2 text-sm font-bold text-chalk transition-colors hover:bg-moss">{t('common.applyFilters')}</button>
       </form>
 
       <div className="overflow-x-auto">
         <table className="w-full text-start text-sm">
           <thead>
-            <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+            <tr className="border-b border-rule uppercase tracking-widest text-moss-muted">
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colJob')}</th>
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colUserWorkspace')}</th>
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colStatus')}</th>
@@ -1200,31 +1189,31 @@ function JobsSection({
               <th className="px-4 py-4 text-start text-[10px] font-bold">{t('jobs.colActions')}</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100/80">
+          <tbody className="divide-y divide-rule/80">
             {rows.map((row: any) => (
-              <tr key={row.id} className="align-top transition-colors hover:bg-slate-50/50">
+              <tr key={row.id} className="align-top transition-colors hover:bg-chalk/50">
                 <td className="px-4 py-4">
-                  <p className="font-bold text-[#121212]" dir="ltr">{row.type}</p>
-                  <p className="text-[10px] font-mono font-medium text-slate-400" dir="ltr">{row.id}</p>
+                  <p className="font-bold text-moss" dir="ltr">{row.type}</p>
+                  <p className="text-[10px] font-plexmono font-medium text-moss-muted" dir="ltr">{row.id}</p>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">
-                  <p className="text-[#121212]"><bdi>{row.user.email}</bdi></p>
-                  <p className="text-slate-500">{row.workspace?.name || '-'}</p>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">
+                  <p className="text-moss"><bdi>{row.user.email}</bdi></p>
+                  <p className="text-moss-muted">{row.workspace?.name || '-'}</p>
                 </td>
                 <td className="px-4 py-4">
                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(row.status)}`}>
                     {row.status}
                   </span>
                 </td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.number(row.creditsCost)}</td>
-                <td className="px-4 py-4 text-xs font-semibold text-slate-600">{fmt.duration(row.durationMs)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{fmt.number(row.creditsCost)}</td>
+                <td className="px-4 py-4 text-xs font-semibold text-moss-muted">{fmt.duration(row.durationMs)}</td>
                 <td className="px-4 py-4 text-xs font-medium text-red-600 max-w-xs truncate">{row.errorMessage || '-'}</td>
                 <td className="px-4 py-4">
                   <div className="flex flex-wrap gap-2">
                     <form action={manageJob}>
                       <input type="hidden" name="jobId" value={row.id} />
                       <input type="hidden" name="actionType" value="RETRY" />
-                      <button className="rounded-xl border border-slate-300 bg-white px-3 py-1.5 text-[11px] font-bold text-[#121212] shadow-sm transition-colors hover:bg-slate-50">
+                      <button className="rounded-xl border border-rule-strong bg-chalk-raised px-3 py-1.5 text-[11px] font-bold text-moss shadow-sm transition-colors hover:bg-chalk">
                         {t('jobs.retry')}
                       </button>
                     </form>
@@ -1232,7 +1221,7 @@ function JobsSection({
                       <form action={manageJob}>
                         <input type="hidden" name="jobId" value={row.id} />
                         <input type="hidden" name="actionType" value="CANCEL" />
-                        <button className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition-opacity hover:opacity-90">
+                        <button className="rounded-xl bg-red-600 px-3 py-1.5 text-[11px] font-bold text-chalk shadow-sm transition-opacity hover:opacity-90">
                           {t('jobs.cancel')}
                         </button>
                       </form>
@@ -1353,14 +1342,14 @@ function IntegrationsSection({
 }
 
 /** Shared bold-value wrapper for the rich usage strings. */
-const boldValue = (chunks: React.ReactNode) => <span className="font-bold text-[#121212]">{chunks}</span>;
+const boldValue = (chunks: React.ReactNode) => <span className="font-bold text-moss">{chunks}</span>;
 
 function StatusBanner({ status }: { status: string }) {
   const t = useTranslations('admin');
   if (!status) return null;
   const tone =
     status === 'saved'
-      ? 'border-emerald-200/60 bg-emerald-50 text-emerald-700'
+      ? 'border-rule/60 bg-chalk-sunk text-moss-700'
       : status === 'failed'
         ? 'border-red-200/60 bg-red-50 text-red-700'
         : 'border-amber-200/60 bg-amber-50 text-amber-700';
@@ -1389,22 +1378,22 @@ function MetricCard({
     <div
       className={`group relative flex flex-col justify-between overflow-hidden rounded-[2rem] border p-6 sm:p-8 transition-all duration-500 hover:-translate-y-1 hover:shadow-xl ${
         emphasis
-          ? 'border-emerald-200/60 bg-emerald-50/10'
-          : 'border-slate-200/60 bg-white shadow-sm'
+          ? 'border-rule/60 bg-chalk-sunk/10'
+          : 'border-rule/60 bg-chalk-raised shadow-sm'
       }`}
     >
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:16px_16px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
       {emphasis && (
-        <div className="absolute -end-6 -top-6 h-32 w-32 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-700 group-hover:scale-125 pointer-events-none" />
+        <div className="absolute -end-6 -top-6 h-32 w-32 rounded-full bg-saffron/20 blur-2xl transition-transform duration-700 group-hover:scale-125 pointer-events-none" />
       )}
       <div className="relative z-10">
-        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${emphasis ? 'text-emerald-700' : 'text-slate-400'}`}>{label}</p>
-        <p className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-[#121212]">{value}</p>
+        <p className={`text-[10px] font-bold uppercase tracking-[0.2em] ${emphasis ? 'text-moss-700' : 'text-moss-muted'}`}>{label}</p>
+        <p className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-moss">{value}</p>
       </div>
       {helper && (
-        <div className="relative z-10 mt-8 flex items-center gap-2 border-t border-slate-100/80 pt-5">
-          <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${emphasis ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]' : 'bg-slate-300'}`} />
-          <p className="text-xs font-semibold text-slate-500">{helper}</p>
+        <div className="relative z-10 mt-8 flex items-center gap-2 border-t border-rule/80 pt-5">
+          <div className={`h-1.5 w-1.5 shrink-0 rounded-full ${emphasis ? 'bg-saffron' : 'bg-rule-strong'}`} />
+          <p className="text-xs font-semibold text-moss-muted">{helper}</p>
         </div>
       )}
     </div>
@@ -1421,18 +1410,18 @@ function HealthCard({
   description: string;
 }) {
   const isHealthy = status === 'healthy';
-  const toneBg = isHealthy ? 'bg-emerald-50/50 hover:bg-emerald-50/80' : 'bg-red-50/50 hover:bg-red-50/80';
-  const toneBorder = isHealthy ? 'border-emerald-200/60' : 'border-red-200/60';
+  const toneBg = isHealthy ? 'bg-chalk-sunk/50 hover:bg-chalk-sunk/80' : 'bg-red-50/50 hover:bg-red-50/80';
+  const toneBorder = isHealthy ? 'border-rule/60' : 'border-red-200/60';
 
   return (
     <div className={`flex flex-col justify-between rounded-3xl border ${toneBorder} ${toneBg} p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-md`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-bold text-[#121212]">{title}</p>
+        <p className="text-sm font-bold text-moss">{title}</p>
         <span className={`inline-flex rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusTone(status)}`}>
           {status}
         </span>
       </div>
-      <p className="mt-4 text-xs font-medium leading-relaxed text-slate-600">{description}</p>
+      <p className="mt-4 text-xs font-medium leading-relaxed text-moss-muted">{description}</p>
     </div>
   );
 }
@@ -1447,10 +1436,10 @@ function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-slate-200/60 bg-white shadow-sm transition-shadow hover:shadow-md">
-      <div className="border-b border-slate-100 px-6 py-5 sm:px-8">
-        <p className="text-lg font-bold text-[#121212]">{title}</p>
-        <p className="mt-1 text-sm font-medium text-slate-500">{subtitle}</p>
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-rule/60 bg-chalk-raised shadow-sm transition-shadow hover:shadow-md">
+      <div className="border-b border-rule px-6 py-5 sm:px-8">
+        <p className="text-lg font-bold text-moss">{title}</p>
+        <p className="mt-1 text-sm font-medium text-moss-muted">{subtitle}</p>
       </div>
       <div className="flex flex-1 flex-col p-6 sm:p-8">{children}</div>
     </div>
@@ -1458,30 +1447,27 @@ function Panel({
 }
 
 function EmptyState({ text }: { text: string }) {
-  return <p className="text-sm text-slate-500">{text}</p>;
+  return <p className="text-sm text-moss-muted">{text}</p>;
 }
 
 function InfoPill({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between rounded-2xl border border-slate-200/60 bg-slate-50 px-5 py-4 transition-colors hover:bg-slate-100">
-      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-500">{label}</p>
-      <p className="text-xl font-black tracking-tight text-[#121212]">{value}</p>
+    <div className="flex items-center justify-between rounded-2xl border border-rule/60 bg-chalk px-5 py-4 transition-colors hover:bg-chalk-sunk">
+      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-moss-muted">{label}</p>
+      <p className="text-xl font-black tracking-tight text-moss">{value}</p>
     </div>
   );
 }
 
 function DarkMetricCard({ label, value, emphasis }: { label: string; value: string; emphasis?: boolean }) {
   return (
-    <div className={`group relative flex flex-col justify-between overflow-hidden rounded-3xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl ${
-      emphasis ? 'border-emerald-500/30 bg-emerald-500/10 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : 'border-white/10 bg-white/5 backdrop-blur-md'
-    }`}>
-      {emphasis && (
-        <div className="absolute -end-6 -top-6 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl transition-transform duration-500 group-hover:scale-110 pointer-events-none" />
-      )}
-      <div className="relative z-10">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">{label}</p>
-        <p className={`mt-3 text-2xl sm:text-3xl font-black tracking-tight ${emphasis ? 'text-emerald-400' : 'text-white'}`}>{value}</p>
-      </div>
+    <div
+      className={`flex flex-col justify-between rounded-2xl border p-6 ${
+        emphasis ? 'border-saffron bg-moss' : 'border-forest-line'
+      }`}
+    >
+      <p className="font-plexmono text-[11px] uppercase tracking-[0.2em] text-forest-muted">{label}</p>
+      <p className={`mt-3 font-plexmono text-2xl font-medium sm:text-3xl ${emphasis ? 'text-saffron' : 'text-chalk'}`}>{value}</p>
     </div>
   );
 }
@@ -1489,7 +1475,7 @@ function DarkMetricCard({ label, value, emphasis }: { label: string; value: stri
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="space-y-2">
-      <span className="block text-sm font-medium text-[#121212]">{label}</span>
+      <span className="block text-sm font-medium text-moss">{label}</span>
       {children}
     </label>
   );
@@ -1510,17 +1496,17 @@ function SimpleTable({
     <div className="overflow-x-auto">
       <table className="w-full text-start text-sm">
         <thead>
-          <tr className="border-b border-slate-100 uppercase tracking-widest text-slate-400">
+          <tr className="border-b border-rule uppercase tracking-widest text-moss-muted">
             {headers.map((header) => (
               <th key={header} className="px-4 py-4 text-start text-[10px] font-bold">{header}</th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100/80">
+        <tbody className="divide-y divide-rule/80">
           {rows.map((row, index) => (
-            <tr key={`${row[0]}-${index}`} className="transition-colors hover:bg-slate-50/50">
+            <tr key={`${row[0]}-${index}`} className="transition-colors hover:bg-chalk/50">
               {row.map((cell, cellIndex) => (
-                <td key={`${row[0]}-${cellIndex}`} className={`px-4 py-4 text-sm ${cellIndex === 0 ? 'font-semibold text-[#121212]' : 'text-slate-600'}`}>{cell}</td>
+                <td key={`${row[0]}-${cellIndex}`} className={`px-4 py-4 text-sm ${cellIndex === 0 ? 'font-semibold text-moss' : 'text-moss-muted'}`}>{cell}</td>
               ))}
             </tr>
           ))}
@@ -1544,14 +1530,14 @@ function LogList({
   return (
     <div className="max-h-[560px] space-y-4 overflow-auto pe-2">
       {rows.map((row) => (
-        <div key={row.id} className="relative overflow-hidden rounded-2xl border border-slate-200/60 bg-slate-50 p-5 transition-colors hover:border-slate-300">
+        <div key={row.id} className="relative overflow-hidden rounded-2xl border border-rule/60 bg-chalk p-5 transition-colors hover:border-rule-strong">
           <div className="flex items-center justify-between gap-4">
             {/* Event codes are stored values; they stay Latin and read LTR. */}
-            <p className="text-sm font-black tracking-tight text-[#121212]" dir="ltr">{row.action}</p>
-            <p className="shrink-0 text-[11px] font-medium text-slate-400">{fmt.dateTime(row.createdAt)}</p>
+            <p className="text-sm font-black tracking-tight text-moss" dir="ltr">{row.action}</p>
+            <p className="shrink-0 text-[11px] font-medium text-moss-muted">{fmt.dateTime(row.createdAt)}</p>
           </div>
-          <p className="mt-1 text-xs font-semibold text-slate-500">{row.workspaceName || t('common.platformLevel')}</p>
-          <pre dir="ltr" className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-slate-200/40 bg-white p-4 text-start text-[11px] leading-relaxed text-slate-600 shadow-sm">
+          <p className="mt-1 text-xs font-semibold text-moss-muted">{row.workspaceName || t('common.platformLevel')}</p>
+          <pre dir="ltr" className="mt-4 overflow-x-auto whitespace-pre-wrap rounded-xl border border-rule/40 bg-chalk-raised p-4 text-start text-[11px] leading-relaxed text-moss-muted shadow-sm">
             {JSON.stringify(row.detail, null, 2)}
           </pre>
         </div>

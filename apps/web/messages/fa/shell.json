@@ -1,13 +1,12 @@
 {
   "shell": {
     "nav": {
-      "overview": "نمای کلی",
-      "growth": "موتور رشد",
+      "overview": "امروز",
+      "growth": "فضاهای کاری",
       "connections": "اتصال‌ها",
       "instant": "محتوای فوری",
       "settings": "تنظیمات"
     },
-    "railBadge": "نسخهٔ آمادهٔ اتوپایلت",
     "signOut": "خروج",
     "header": {
       "signIn": "ورود",
@@ -15,6 +14,8 @@
     },
     "credits": {
       "label": "{count, number} اعتبار"
-    }
+    },
+    "navLabel": "ناوبری اصلی",
+    "account": "حساب"
   }
 }
