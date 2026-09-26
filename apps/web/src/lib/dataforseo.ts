@@ -129,7 +129,12 @@ async function dataForSeoPost<T = unknown>(
 
 /**
  * Fetch top N keywords for a given competitor domain.
- * Uses the DataForSEO Labs - domain_keywords/live endpoint.
+ * Uses the DataForSEO Labs - ranked_keywords/live endpoint.
+ *
+ * The path used to be `domain_keywords/live`, which DataForSEO does not have:
+ * every live call came back 404, and the old catch block turned that 404 into
+ * generated keywords. `ranked_keywords` is the endpoint whose response this
+ * function has always parsed (`keyword_data` plus `ranked_serp_element`).
  *
  * @param domain  Plain domain, e.g. "hubspot.com"
  * @param limit   Maximum rows to retrieve (default 200)
@@ -152,13 +157,15 @@ export async function fetchDomainKeywords(
       language_code: 'en',
       limit,
       order_by: ['keyword_data.keyword_info.search_volume,desc'],
+      // Own organic positions only; paid placements are not what we compare on.
+      item_types: ['organic'],
     },
   ];
 
   // No try/catch: a DataForSEOError propagates so the caller can tell the user
   // that the lookup failed. Swallowing it here is what produced silent mocks.
   const data: any = await dataForSeoPost(
-    '/v3/dataforseo_labs/google/domain_keywords/live',
+    '/v3/dataforseo_labs/google/ranked_keywords/live',
     payload,
   );
 
