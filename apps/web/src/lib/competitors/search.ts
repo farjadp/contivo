@@ -34,7 +34,7 @@ export function mergeQueryResults(
   results: QueryHarvestResult[],
   exclude: Set<string>,
 ): Candidate[] {
-  // Domain -> per-query flags, built up query by query.
+  // Domain -> per-query flags, built up across two passes (see below).
   const byDomain = new Map<
     string,
     { queriesSeen: Set<string>; evidence: EvidenceItem[] }
@@ -49,21 +49,13 @@ export function mergeQueryResults(
     return entry;
   };
 
-  // Only a domain that has appeared in at least one citation, ever, is
-  // allowed to exist as a candidate. Track that separately from
-  // queriesSeen (which also counts source-only appearances) so a
-  // source-only domain can never sneak in.
-  const hasCitation = new Set<string>();
-
+  // Pass 1: fold every query's citations into byDomain first, regardless of
+  // query order. A domain can only exist here because a citation put it
+  // there — this is the one and only place an entry is created.
   for (const result of results) {
-    const citationDomainsThisQuery = new Set<string>();
-
     for (const citation of result.citations) {
       const domain = normalizeCandidateDomain(citation.url);
       if (!domain || exclude.has(domain)) continue;
-
-      hasCitation.add(domain);
-      citationDomainsThisQuery.add(domain);
 
       const entry = ensure(domain);
       entry.queriesSeen.add(result.query);
@@ -77,22 +69,26 @@ export function mergeQueryResults(
         });
       }
     }
+  }
 
+  // Pass 2: now that every citation-produced domain exists in byDomain
+  // regardless of which query cited it, raise frequency from the raw
+  // source lists. Query order no longer matters — a domain cited only in
+  // a *later* query still gets credit for a *source-only* appearance in
+  // an earlier one, because we only look at byDomain's final state here,
+  // not at what had been seen so far when each query was processed.
+  for (const result of results) {
     for (const sourceUrl of result.sourceUrls) {
       const domain = normalizeCandidateDomain(sourceUrl);
       if (!domain || exclude.has(domain)) continue;
-      if (citationDomainsThisQuery.has(domain)) continue; // already counted this query
       if (!byDomain.has(domain)) continue; // sources never create a candidate
 
-      // A domain a citation produced in some other query — this query's
-      // appearance in the raw source list only raises its frequency.
-      ensure(domain).queriesSeen.add(result.query);
+      byDomain.get(domain)!.queriesSeen.add(result.query);
     }
   }
 
   const candidates: Candidate[] = [];
   for (const [domain, entry] of byDomain) {
-    if (!hasCitation.has(domain)) continue; // defensive; should already be excluded above
     candidates.push({
       domain,
       frequency: entry.queriesSeen.size,
@@ -250,8 +246,11 @@ export async function harvestFromSerp(
   // returns fabricated keywords and SERP rows when they are missing, so this
   // source stays off until that is fixed. Returning nothing is the honest
   // answer; returning mock data would poison discovery.
+  // Unlike a failed or skipped HTTP call, this stub never attempts a
+  // request in either branch — zero is a known fact here, not an unread
+  // usage figure, so it must not be reported as `null` ("unknown").
   if (!hasDataForSeoCredentials()) {
-    return { candidates: [], tokens: null, errors: [] };
+    return { candidates: [], tokens: 0, errors: [] };
   }
-  return { candidates: [], tokens: null, errors: ['SERP source not implemented yet'] };
+  return { candidates: [], tokens: 0, errors: ['SERP source not implemented yet'] };
 }
