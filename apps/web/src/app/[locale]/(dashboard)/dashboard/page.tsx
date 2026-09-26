@@ -142,7 +142,7 @@ export default async function DashboardPage() {
           orderBy: { createdAt: 'desc' },
         },
         competitors: {
-          select: { id: true, userDecision: true },
+          select: { id: true, userDecision: true, source: true },
         },
         _count: { select: { keywordOpportunities: true } },
       },
@@ -174,7 +174,11 @@ export default async function DashboardPage() {
 
   const counts = countStatuses(workspace.contentItems);
   const accepted = workspace.competitors.filter((c: any) => c.userDecision === 'ACCEPTED').length;
-  const pendingCompetitors = workspace.competitors.filter((c: any) => !c.userDecision).length;
+  // Same rule as the competitor map: undecided is stored as 'PENDING', and an
+  // AI-found competitor with no decision yet is pending too.
+  const pendingCompetitors = workspace.competitors.filter(
+    (c: any) => c.userDecision === 'PENDING' || (!c.userDecision && c.source === 'AI'),
+  ).length;
 
   const report = buildWorkspaceProgressReport({
     workspace: {
