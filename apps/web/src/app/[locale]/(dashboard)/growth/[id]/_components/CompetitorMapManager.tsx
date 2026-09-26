@@ -161,9 +161,10 @@ function computeCompetitorPoint(item: CompetitorItem): { x: number; y: number; d
 }
 
 function getTypeStyles(type?: string | null): string {
-  if (type === 'DIRECT') return 'bg-rose-500 border-rose-200';
-  if (type === 'INDIRECT') return 'bg-amber-400 border-amber-200';
-  return 'bg-emerald-400 border-emerald-200';
+  // Rival blue for every competitor, told apart by fill (see the matrix tab).
+  if (type === 'DIRECT') return 'bg-rival border-rival';
+  if (type === 'INDIRECT') return 'bg-chalk-raised border-rival';
+  return 'bg-moss-700 border-moss-700';
 }
 
 export function CompetitorMapManager({
@@ -435,15 +436,15 @@ export function CompetitorMapManager({
   return (
     <div className="space-y-5">
       {hasUnsavedChanges && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3">
-          <p className="text-sm text-emerald-900">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-saffron bg-saffron-soft/50 px-4 py-3">
+          <p className="text-sm text-moss">
             <span className="font-bold">{t('unsavedTitle')}</span> {t('unsavedBody')}
           </p>
           <button
             type="button"
             onClick={saveEdits}
             disabled={isSaving}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-3.5 py-2 text-sm font-bold text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-saffron px-3.5 py-2 text-sm font-bold text-moss hover:bg-saffron-soft disabled:opacity-60"
           >
             {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {t('saveNow')}
@@ -456,9 +457,9 @@ export function CompetitorMapManager({
           type="button"
           onClick={runAiDiscovery}
           disabled={isDiscovering || discoveryMeta.remainingRuns <= 0}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
         >
-          {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-emerald-400" />}
+          {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
           {t('discover')}
         </button>
 
@@ -468,21 +469,21 @@ export function CompetitorMapManager({
           disabled={isSaving}
           className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60 ${
             hasUnsavedChanges
-              ? 'bg-emerald-600 text-white hover:bg-emerald-700'
-              : 'border border-gray-300 bg-white text-[#121212] hover:bg-gray-50'
+              ? 'bg-saffron text-moss hover:bg-saffron-soft'
+              : 'border border-rule-strong bg-chalk-raised text-moss hover:bg-chalk'
           }`}
         >
           {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {hasUnsavedChanges ? t('saveTextEdits') : t('savedLabel')}
         </button>
 
-        <span className="text-xs font-semibold text-gray-500">
+        <span className="text-xs font-semibold text-moss-muted">
           {t('counts', {
             active: format.number(visibleCompetitors.length),
             accepted: format.number(acceptedCount),
           })}
         </span>
-        <span className="text-xs font-semibold text-indigo-600">
+        <span className="text-xs font-semibold text-moss-700">
           {t('runs', {
             used: format.number(discoveryMeta.usedRuns),
             max: format.number(discoveryMeta.maxRuns),
@@ -506,20 +507,20 @@ export function CompetitorMapManager({
       */}
       <div
         dir="ltr"
-        className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-gray-200 bg-gray-50/50 rounded-tr-lg rounded-bl-lg overflow-visible"
+        className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-rule bg-chalk/50 rounded-tr-lg rounded-bl-lg overflow-visible"
       >
-        <span className="absolute -left-14 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+        <span className="absolute -left-14 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
           {t('axisSophistication')}
         </span>
-        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-gray-400 uppercase tracking-widest whitespace-nowrap">
+        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
           {t('axisAudience')}
         </span>
 
         <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-          <div className="h-8 w-8 rounded-full bg-indigo-600 border-4 border-indigo-200 shadow-xl z-20 flex items-center justify-center">
-            <Target className="w-4 h-4 text-white" />
+          <div className="h-8 w-8 rounded-full bg-saffron border-2 border-moss shadow-xl z-20 flex items-center justify-center">
+            <Target className="w-4 h-4 text-moss" />
           </div>
-          <span className="mt-2 text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded shadow-sm">
+          <span className="mt-2 text-xs font-bold text-moss bg-chalk-sunk border border-rule px-2 py-0.5 rounded shadow-sm">
             {t('yourBrand')}
           </span>
         </div>
@@ -536,7 +537,7 @@ export function CompetitorMapManager({
               }}
             >
               <div className={`h-4 w-4 rounded-full border-2 shadow-sm z-10 transition-transform group-hover:scale-150 ${getTypeStyles(competitor.type)}`} />
-              <span className="mt-1.5 text-[10px] font-bold text-gray-700 bg-white border border-gray-200 px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
+              <span className="mt-1.5 text-[10px] font-bold text-moss bg-chalk-raised border border-rule px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
                 {/* Competitor names are data, never translated. */}
                 <bdi>{competitor.name}</bdi>
               </span>
@@ -545,37 +546,37 @@ export function CompetitorMapManager({
         })}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-6 text-xs font-semibold text-gray-500">
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-rose-500 border border-rose-200" /> {t('legend.direct')}</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-amber-400 border border-amber-200" /> {t('legend.indirect')}</div>
-        <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full bg-emerald-400 border border-emerald-200" /> {t('legend.aspirational')}</div>
+      <div className="flex flex-wrap items-center justify-center gap-6 pt-6 text-xs font-semibold text-moss-muted">
+        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('DIRECT')}`} /> {t('legend.direct')}</div>
+        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('INDIRECT')}`} /> {t('legend.indirect')}</div>
+        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('ASPIRATIONAL')}`} /> {t('legend.aspirational')}</div>
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">
+      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">
           {t('topTitle')}
         </h4>
         {topCompetitors.length === 0 ? (
-          <p className="text-sm text-gray-500">{t('topEmpty')}</p>
+          <p className="text-sm text-moss-muted">{t('topEmpty')}</p>
         ) : (
           <div className="space-y-2">
             {topCompetitors.map((competitor, index) => (
               <div
                 key={competitor.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2"
+                className="flex items-center justify-between gap-3 rounded-lg border border-rule bg-chalk px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-sm font-semibold text-[#121212] truncate">
+                  <p className="text-sm font-semibold text-moss truncate">
                     {format.number(index + 1)}. <bdi>{competitor.name}</bdi>
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
+                  <p className="text-xs text-moss-muted truncate">
                     <bdi>{competitor.domain || t('noDomain')}</bdi>
                     {competitor.type
                       ? ` · ${t(`types.${competitor.type as 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL'}`)}`
                       : ''}
                   </p>
                 </div>
-                <span className="shrink-0 text-xs text-gray-500">
+                <span className="shrink-0 text-xs text-moss-muted">
                   {t('scorePair', {
                     audience: format.number(Math.round(competitor.point.x)),
                     sophistication: format.number(Math.round(100 - competitor.point.y)),
@@ -587,28 +588,28 @@ export function CompetitorMapManager({
         )}
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">{t('addTitle')}</h4>
+      <div className="rounded-2xl border border-rule bg-chalk p-4">
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('addTitle')}</h4>
         <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
           <input
             type="text"
             value={manualName}
             onChange={(event) => setManualName(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#121212] focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
             placeholder={t('manualNamePlaceholder')}
           />
           <input
             type="text"
             value={manualDomain}
             onChange={(event) => setManualDomain(event.target.value)}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-[#121212] focus:border-indigo-500 focus:outline-none"
+            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
             placeholder={t('manualDomainPlaceholder')}
             dir="ltr"
           />
           <button
             type="button"
             onClick={addManualCompetitor}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-4 py-2 text-sm font-bold text-[#121212] border border-gray-300 hover:bg-gray-100"
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-chalk-raised px-4 py-2 text-sm font-bold text-moss border border-rule-strong hover:bg-chalk-sunk"
           >
             <Plus className="h-4 w-4" />
             {t('add')}
@@ -618,20 +619,20 @@ export function CompetitorMapManager({
 
       <div className="grid gap-3 md:grid-cols-2">
         {competitors.map((competitor) => (
-          <div key={competitor.id} className="rounded-xl border border-gray-200 bg-white p-4 space-y-3">
+          <div key={competitor.id} className="rounded-xl border border-rule bg-chalk-raised p-4 space-y-3">
             <div className="grid gap-2 sm:grid-cols-2">
               <input
                 type="text"
                 value={competitor.name}
                 onChange={(event) => updateCompetitor(competitor.id, { name: event.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
                 placeholder={t('namePlaceholder')}
               />
               <input
                 type="text"
                 value={competitor.domain || ''}
                 onChange={(event) => updateCompetitor(competitor.id, { domain: event.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
                 placeholder={t('domainPlaceholder')}
                 dir="ltr"
               />
@@ -641,7 +642,7 @@ export function CompetitorMapManager({
               <select
                 value={competitor.type || 'DIRECT'}
                 onChange={(event) => updateCompetitor(competitor.id, { type: event.target.value })}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
               >
                 <option value="DIRECT">{t('types.DIRECT')}</option>
                 <option value="INDIRECT">{t('types.INDIRECT')}</option>
@@ -656,19 +657,19 @@ export function CompetitorMapManager({
             </div>
 
             {competitor.description ? (
-              <p className="rounded-md border border-gray-100 bg-gray-50 px-3 py-2 text-xs leading-relaxed text-gray-600">
+              <p className="rounded-md border border-rule bg-chalk px-3 py-2 text-xs leading-relaxed text-moss-muted">
                 {competitor.description}
               </p>
             ) : null}
             {(competitor.category || competitor.audienceGuess) && (
               <div className="flex flex-wrap gap-2">
                 {competitor.category ? (
-                  <span className="rounded-full border border-indigo-100 bg-indigo-50 px-2.5 py-1 text-[11px] font-semibold text-indigo-700">
+                  <span className="rounded-full border border-rule bg-chalk-sunk px-2.5 py-1 text-[11px] font-semibold text-moss">
                     {competitor.category}
                   </span>
                 ) : null}
                 {competitor.audienceGuess ? (
-                  <span className="rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-[11px] font-semibold text-gray-600">
+                  <span className="rounded-full border border-rule bg-chalk px-2.5 py-1 text-[11px] font-semibold text-moss-muted">
                     {competitor.audienceGuess}
                   </span>
                 ) : null}
@@ -678,21 +679,21 @@ export function CompetitorMapManager({
         ))}
       </div>
 
-      <div className="rounded-2xl border border-gray-200 bg-white p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-[#121212]">{t('archiveTitle')}</h4>
+      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('archiveTitle')}</h4>
         {discoveryArchive.length === 0 ? (
-          <p className="text-sm text-gray-500">{t('archiveEmpty')}</p>
+          <p className="text-sm text-moss-muted">{t('archiveEmpty')}</p>
         ) : (
           <div className="space-y-2">
             {discoveryArchive.map((run) => (
-              <div key={run.id} className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
-                <div className="text-sm font-medium text-[#121212]">
+              <div key={run.id} className="flex items-center justify-between gap-4 rounded-lg border border-rule bg-chalk px-3 py-2">
+                <div className="text-sm font-medium text-moss">
                   {t('archiveRun', {
                     number: format.number(run.runNumber),
                     count: format.number(run.discoveredCount),
                   })}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-moss-muted">
                   {format.dateTime(new Date(run.createdAt), {
                     dateStyle: 'medium',
                     timeStyle: 'short',
@@ -718,8 +719,8 @@ function DecisionButtons({
 }) {
   const t = useTranslations('tabsB.competitorMap');
   const options: Array<{ key: 'ACCEPTED' | 'REJECTED'; label: string; on: string }> = [
-    { key: 'ACCEPTED', label: t('accept'), on: 'bg-emerald-600 text-white border-emerald-600' },
-    { key: 'REJECTED', label: t('reject'), on: 'bg-red-600 text-white border-red-600' },
+    { key: 'ACCEPTED', label: t('accept'), on: 'bg-moss text-chalk border-moss' },
+    { key: 'REJECTED', label: t('reject'), on: 'bg-red-600 text-chalk border-red-600' },
   ];
 
   return (
@@ -734,7 +735,7 @@ function DecisionButtons({
             // Clicking the active choice clears it back to undecided.
             onClick={() => onChange(active ? 'PENDING' : o.key)}
             className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${
-              active ? o.on : 'border-gray-300 bg-white text-gray-600 hover:bg-gray-50'
+              active ? o.on : 'border-rule-strong bg-chalk-raised text-moss-muted hover:bg-chalk'
             }`}
           >
             {active && <Check className="h-3.5 w-3.5" />}
@@ -743,11 +744,11 @@ function DecisionButtons({
         );
       })}
       {saving ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" />
+        <Loader2 className="h-3.5 w-3.5 animate-spin text-moss-muted" />
       ) : value === 'PENDING' ? (
-        <span className="text-xs text-gray-400">{t('undecided')}</span>
+        <span className="text-xs text-moss-muted">{t('undecided')}</span>
       ) : (
-        <span className="text-xs text-emerald-600">{t('decisionSaved')}</span>
+        <span className="text-xs text-moss-700">{t('decisionSaved')}</span>
       )}
     </div>
   );

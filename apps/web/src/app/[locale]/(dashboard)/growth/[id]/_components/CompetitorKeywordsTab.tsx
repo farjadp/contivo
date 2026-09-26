@@ -143,9 +143,9 @@ export function CompetitorKeywordsTab({
           type="button"
           onClick={generate}
           disabled={isGenerating}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-black disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-xl bg-[#121212] px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss disabled:opacity-60"
         >
-          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-emerald-400" />}
+          {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
           {t('analyze')}
         </button>
 
@@ -153,7 +153,7 @@ export function CompetitorKeywordsTab({
           <select
             value={selectedDomain}
             onChange={(event) => setSelectedDomain(event.target.value)}
-            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-black focus:outline-none"
+            className="rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm focus:border-moss focus:outline-none"
             dir="ltr"
           >
             {payload.competitors.map((competitor) => (
@@ -171,10 +171,10 @@ export function CompetitorKeywordsTab({
 
       {payload?.token_usage ? (
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('lastRunTokens')}</p>
+          <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('lastRunTokens')}</p>
             {payload.token_usage.last_run ? (
-              <div className="mt-2 space-y-1 text-sm text-gray-700">
+              <div className="mt-2 space-y-1 text-sm text-moss">
                 <p>
                   {t('prompt')}{' '}
                   <span className="font-semibold">{format.number(payload.token_usage.last_run.prompt_tokens)}</span>
@@ -187,7 +187,7 @@ export function CompetitorKeywordsTab({
                   {t('total')}{' '}
                   <span className="font-semibold">{format.number(payload.token_usage.last_run.total_tokens)}</span>
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-moss-muted">
                   {t.rich('modelLine', {
                     model: payload.token_usage.last_run.model,
                     date: format.dateTime(new Date(payload.token_usage.last_run.created_at), {
@@ -199,12 +199,12 @@ export function CompetitorKeywordsTab({
                 </p>
               </div>
             ) : (
-              <p className="mt-2 text-sm text-gray-500">{t('noTokenData')}</p>
+              <p className="mt-2 text-sm text-moss-muted">{t('noTokenData')}</p>
             )}
           </div>
-          <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-gray-500">{t('lifetimeTokens')}</p>
-            <div className="mt-2 space-y-1 text-sm text-gray-700">
+          <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
+            <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('lifetimeTokens')}</p>
+            <div className="mt-2 space-y-1 text-sm text-moss">
               <p>
                 {t('runs')} <span className="font-semibold">{format.number(payload.token_usage.runs)}</span>
               </p>
@@ -233,7 +233,7 @@ export function CompetitorKeywordsTab({
       ) : null}
 
       {!payload || payload.competitors.length === 0 || !selectedCompetitor ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-8 text-sm text-gray-500">
+        <div className="rounded-2xl border border-dashed border-rule-strong bg-chalk-raised p-8 text-sm text-moss-muted">
           {t('empty')}
         </div>
       ) : (
@@ -246,8 +246,8 @@ export function CompetitorKeywordsTab({
                 onClick={() => setSection(key)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition ${
                   section === key
-                    ? 'border-[#121212] bg-[#121212] text-white'
-                    : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    ? 'border-[#121212] bg-[#121212] text-chalk'
+                    : 'border-rule bg-chalk-raised text-moss-muted hover:border-rule-strong'
                 }`}
               >
                 {t(`sections.${key}`)}
@@ -257,28 +257,28 @@ export function CompetitorKeywordsTab({
 
           {section === 'top_keywords' ? (
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('primary')}</h3>
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('primary')}</h3>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedCompetitor.primary_keywords.map((keyword) => (
-                    <span key={keyword} className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                    <span key={keyword} className="rounded-full border border-rule bg-chalk-sunk px-3 py-1 text-xs font-semibold text-moss">
                       <bdi>{keyword}</bdi>
                     </span>
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('secondary')}</h3>
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('secondary')}</h3>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedCompetitor.secondary_keywords.map((keyword) => (
-                    <span key={keyword} className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                    <span key={keyword} className="rounded-full border border-rule bg-chalk px-3 py-1 text-xs font-semibold text-moss">
                       <bdi>{keyword}</bdi>
                     </span>
                   ))}
                 </div>
               </div>
-              <div className="md:col-span-2 rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('intentTitle')}</h3>
+              <div className="md:col-span-2 rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('intentTitle')}</h3>
                 <div className="mt-3 grid gap-3 sm:grid-cols-4">
                   <IntentCard
                     label={t('intent.informational')}
@@ -312,16 +312,16 @@ export function CompetitorKeywordsTab({
           {section === 'clusters' ? (
             <div className="grid gap-3 md:grid-cols-2">
               {selectedCompetitor.keyword_clusters.length === 0 ? (
-                <div className="rounded-xl border border-gray-200 bg-white p-4 text-sm text-gray-500">
+                <div className="rounded-xl border border-rule bg-chalk-raised p-4 text-sm text-moss-muted">
                   {t('noClusters')}
                 </div>
               ) : (
                 selectedCompetitor.keyword_clusters.map((cluster) => (
-                  <div key={cluster.cluster} className="rounded-xl border border-gray-200 bg-white p-4">
-                    <h3 className="text-sm font-bold text-[#121212]"><bdi>{cluster.cluster}</bdi></h3>
+                  <div key={cluster.cluster} className="rounded-xl border border-rule bg-chalk-raised p-4">
+                    <h3 className="text-sm font-bold text-moss"><bdi>{cluster.cluster}</bdi></h3>
                     <div className="mt-3 flex flex-wrap gap-2">
                       {cluster.keywords.map((keyword) => (
-                        <span key={`${cluster.cluster}:${keyword}`} className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                        <span key={`${cluster.cluster}:${keyword}`} className="rounded-full border border-rule bg-chalk px-3 py-1 text-xs font-semibold text-moss">
                           <bdi>{keyword}</bdi>
                         </span>
                       ))}
@@ -334,48 +334,48 @@ export function CompetitorKeywordsTab({
 
           {section === 'strategy' ? (
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('contentStrategy')}</h3>
-                <p className="mt-2 text-sm text-gray-700">
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('contentStrategy')}</h3>
+                <p className="mt-2 text-sm text-moss">
                   <span className="font-semibold">{t('mainGoal')}</span>{' '}
                   {selectedCompetitor.content_strategy.main_goal || t('na')}
                 </p>
-                <p className="mt-1 text-sm text-gray-700">
+                <p className="mt-1 text-sm text-moss">
                   <span className="font-semibold">{t('contentFocus')}</span>{' '}
                   {selectedCompetitor.content_strategy.content_focus || t('na')}
                 </p>
-                <p className="mt-1 text-sm text-gray-700">
+                <p className="mt-1 text-sm text-moss">
                   <span className="font-semibold">{t('publishingStyle')}</span>{' '}
                   {selectedCompetitor.content_strategy.publishing_style || t('na')}
                 </p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedCompetitor.content_strategy.secondary_goals.map((goal) => (
-                    <span key={goal} className="rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                    <span key={goal} className="rounded-full border border-rule bg-chalk-sunk px-3 py-1 text-xs font-semibold text-moss-700">
                       <bdi>{goal}</bdi>
                     </span>
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('themes')}</h3>
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('themes')}</h3>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {selectedCompetitor.strategy_signals.content_themes.map((theme) => (
-                    <span key={theme} className="rounded-full border border-indigo-100 bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700">
+                    <span key={theme} className="rounded-full border border-rule bg-chalk-sunk px-3 py-1 text-xs font-semibold text-moss">
                       <bdi>{theme}</bdi>
                     </span>
                   ))}
                 </div>
-                <h4 className="mt-4 text-xs font-bold uppercase tracking-widest text-gray-500">{t('formats')}</h4>
+                <h4 className="mt-4 text-xs font-bold uppercase tracking-widest text-moss-muted">{t('formats')}</h4>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {selectedCompetitor.strategy_signals.content_formats.map((format) => (
-                    <span key={format} className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+                    <span key={format} className="rounded-full border border-rule bg-chalk px-3 py-1 text-xs font-semibold text-moss">
                       <bdi>{format}</bdi>
                     </span>
                   ))}
                 </div>
               </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('funnelTitle')}</h3>
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('funnelTitle')}</h3>
                 <FunnelBlock
                   label={t('funnel.top')}
                   emptyLabel={t('noSignals')}
@@ -392,9 +392,9 @@ export function CompetitorKeywordsTab({
                   items={selectedCompetitor.strategy_signals.funnel_distribution.bottom_of_funnel}
                 />
               </div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('strengthVsWeakness')}</h3>
-                <p className="mt-2 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('strengthVsWeakness')}</h3>
+                <p className="mt-2 rounded-md border border-rule bg-chalk-sunk px-3 py-2 text-sm text-moss">
                   <span className="font-semibold">{t('strength')}</span>{' '}
                   {selectedCompetitor.strategy_signals.strategic_strength || t('na')}
                 </p>
@@ -415,30 +415,30 @@ export function CompetitorKeywordsTab({
             <div className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2">
                 {payload.content_gaps.map((gap) => (
-                  <div key={`${gap.topic}:${gap.competitor_weakness}`} className="rounded-xl border border-gray-200 bg-white p-4">
-                    <h3 className="text-sm font-bold text-[#121212]"><bdi>{gap.topic}</bdi></h3>
-                    <p className="mt-2 text-sm text-gray-700">
+                  <div key={`${gap.topic}:${gap.competitor_weakness}`} className="rounded-xl border border-rule bg-chalk-raised p-4">
+                    <h3 className="text-sm font-bold text-moss"><bdi>{gap.topic}</bdi></h3>
+                    <p className="mt-2 text-sm text-moss">
                       <span className="font-semibold">{t('gapWeakness')}</span> {gap.competitor_weakness}
                     </p>
-                    <p className="mt-1 text-sm text-gray-700">
+                    <p className="mt-1 text-sm text-moss">
                       <span className="font-semibold">{t('gapImportance')}</span> {gap.audience_importance}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-[#121212]">{t('heatmapTitle')}</h3>
+              <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
+                <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('heatmapTitle')}</h3>
                 <div className="mt-3 overflow-x-auto">
                   <table className="min-w-full border-collapse text-xs">
                     <thead>
                       <tr>
-                        <th className="border border-gray-200 bg-gray-50 px-3 py-2 text-start font-bold text-gray-600">
+                        <th className="border border-rule bg-chalk px-3 py-2 text-start font-bold text-moss-muted">
                           {t('keywordColumn')}
                         </th>
                         {/* Domains are raw data: kept Latin and LTR. */}
                         {payload.keyword_heatmap.competitor_domains.map((domain) => (
-                          <th key={domain} dir="ltr" className="border border-gray-200 bg-gray-50 px-3 py-2 text-center font-bold text-gray-600">
+                          <th key={domain} dir="ltr" className="border border-rule bg-chalk px-3 py-2 text-center font-bold text-moss-muted">
                             {domain}
                           </th>
                         ))}
@@ -447,11 +447,11 @@ export function CompetitorKeywordsTab({
                     <tbody>
                       {payload.keyword_heatmap.rows.map((row) => (
                         <tr key={row.keyword}>
-                          <td className="border border-gray-200 px-3 py-2 font-medium text-gray-800">
+                          <td className="border border-rule px-3 py-2 font-medium text-moss">
                             <bdi>{row.keyword}</bdi>
                           </td>
                           {payload.keyword_heatmap.competitor_domains.map((domain) => (
-                            <td key={`${row.keyword}:${domain}`} className="border border-gray-200 px-3 py-2 text-center">
+                            <td key={`${row.keyword}:${domain}`} className="border border-rule px-3 py-2 text-center">
                               {row.coverage[domain] ? '✔' : '✖'}
                             </td>
                           ))}
@@ -471,9 +471,9 @@ export function CompetitorKeywordsTab({
 
 function IntentCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-3">
-      <p className="text-[11px] uppercase tracking-widest text-gray-500">{label}</p>
-      <p className="mt-1 text-sm font-bold text-[#121212]">{value}</p>
+    <div className="rounded-lg border border-rule bg-chalk px-3 py-3">
+      <p className="text-[11px] uppercase tracking-widest text-moss-muted">{label}</p>
+      <p className="mt-1 text-sm font-bold text-moss">{value}</p>
     </div>
   );
 }
@@ -489,13 +489,13 @@ function FunnelBlock({
 }) {
   return (
     <div className="mt-3">
-      <p className="text-[11px] uppercase tracking-widest text-gray-500">{label}</p>
+      <p className="text-[11px] uppercase tracking-widest text-moss-muted">{label}</p>
       {items.length === 0 ? (
-        <p className="mt-1 text-sm text-gray-400">{emptyLabel}</p>
+        <p className="mt-1 text-sm text-moss-muted">{emptyLabel}</p>
       ) : (
         <div className="mt-1 flex flex-wrap gap-2">
           {items.map((item) => (
-            <span key={`${label}:${item}`} className="rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700">
+            <span key={`${label}:${item}`} className="rounded-full border border-rule bg-chalk px-3 py-1 text-xs font-semibold text-moss">
               <bdi>{item}</bdi>
             </span>
           ))}
