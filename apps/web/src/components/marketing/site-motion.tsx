@@ -233,3 +233,51 @@ export function ScrollLine({ className }: { className?: string }) {
     </div>
   );
 }
+
+// ─── The footer wordmark ─────────────────────────────────────────────────────
+
+/**
+ * The brand name set very large, each letter rising out of a clipped line the
+ * first time it scrolls into view. The server renders it in place, so without
+ * JavaScript or with reduced motion it is simply there.
+ */
+export function Wordmark({ text, className }: { text: string; className?: string }) {
+  const ref = useRef<HTMLParagraphElement>(null);
+  const [state, setState] = useState<'static' | 'hidden' | 'shown'>('static');
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (el.getBoundingClientRect().top < window.innerHeight) return;
+    setState('hidden');
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setState('shown');
+          io.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <p ref={ref} dir="ltr" aria-label={text} className={cn('flex overflow-hidden', className)}>
+      {[...text].map((ch, i) => (
+        <span
+          key={i}
+          aria-hidden
+          style={state === 'shown' ? { transitionDelay: `${i * 55}ms` } : undefined}
+          className={cn(
+            'inline-block transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)]',
+            state === 'hidden' ? 'translate-y-[105%]' : 'translate-y-0',
+          )}
+        >
+          {ch}
+        </span>
+      ))}
+    </p>
+  );
+}

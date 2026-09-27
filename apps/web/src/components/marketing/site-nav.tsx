@@ -20,7 +20,7 @@ export function SiteNav() {
   const t = useTranslations('nav');
 
   return (
-    <header className="sticky top-0 z-40 border-b border-rule bg-chalk/92 backdrop-blur-sm">
+    <header className="sticky top-0 z-40 border-b border-rule bg-chalk/[.92] backdrop-blur-sm">
       <div className="mx-auto flex h-16 max-w-[92rem] items-center justify-between px-6 md:px-12">
         <Link href="/" className="flex items-center gap-3">
           {/* The saffron diamond the app's own top bar carries. */}

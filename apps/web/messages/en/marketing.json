@@ -234,17 +234,18 @@
     "pricing": "Pricing",
     "publishesTitle": "Publishes to",
     "ownSite": "Your own website",
-    "socialCluster": "Instagram · TikTok · Facebook — soon",
     "accountTitle": "Account",
     "signIn": "Sign in",
     "createWorkspace": "Create a workspace",
     "copyright": "© {year} Contivo",
-    "standBehind": "Nothing goes out that the quality gate would not stand behind.",
     "companyTitle": "Company",
     "about": "About",
     "contact": "Contact",
-    "legalTitle": "Legal",
     "privacy": "Privacy",
-    "terms": "Terms"
+    "terms": "Terms",
+    "socialSoon": "Instagram · TikTok · Facebook",
+    "soon": "Soon",
+    "writeTo": "Write to a person",
+    "navLabel": "Site"
   }
 }
