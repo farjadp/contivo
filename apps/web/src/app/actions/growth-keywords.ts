@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
 import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { collectSiteSignals, type SiteSignals } from '@/lib/competitors/site-signals';
 
 type TokenUsageRun = {
   model: string;
@@ -101,10 +102,6 @@ function normalizeDomain(value: string | null | undefined): string {
   return withoutProtocol.split('/')[0]?.toLowerCase().trim() || '';
 }
 
-function sanitizeText(input: string): string {
-  return input.replace(/\s+/g, ' ').trim();
-}
-
 function stripCodeFences(value: string): string {
   return value
     .trim()
@@ -179,100 +176,17 @@ function appendTokenUsage(
   };
 }
 
-function decodeHtmlEntities(input: string): string {
-  return input
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>');
-}
-
-function extractPageSignals(html: string): string[] {
-  const lines: string[] = [];
-
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
-  if (title) lines.push(sanitizeText(decodeHtmlEntities(title)));
-
-  const description =
-    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1] ||
-    html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1];
-  if (description) lines.push(sanitizeText(decodeHtmlEntities(description)));
-
-  const headingRegex = /<(h1|h2|h3|a)[^>]*>([\s\S]*?)<\/\1>/gi;
-  let headingMatch: RegExpExecArray | null = headingRegex.exec(html);
-  while (headingMatch) {
-    const text = sanitizeText(
-      decodeHtmlEntities(String(headingMatch[2] || '').replace(/<[^>]+>/g, ' ')),
-    );
-    if (text.length >= 12) lines.push(text);
-    headingMatch = headingRegex.exec(html);
-    if (lines.length > 220) break;
-  }
-
-  const unique = new Set<string>();
-  const filtered: string[] = [];
-  for (const line of lines) {
-    const normalized = line.toLowerCase();
-    if (!line || normalized.length < 8) continue;
-    if (unique.has(normalized)) continue;
-    unique.add(normalized);
-    filtered.push(line);
-    if (filtered.length >= 180) break;
-  }
-
-  return filtered;
-}
-
-async function fetchHtml(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(6000),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    });
-
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
-async function collectCompetitorSignals(domain: string): Promise<{
-  domain: string;
-  pages_scanned: string[];
-  evidence: string;
-}> {
-  const normalizedDomain = normalizeDomain(domain);
-  const paths = ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'];
-  const scanned: string[] = [];
-  const evidenceLines: string[] = [];
-
-  for (const path of paths) {
-    const url = `https://${normalizedDomain}${path}`;
-    const html = await fetchHtml(url);
-    if (!html) continue;
-
-    const lines = extractPageSignals(html);
-    if (lines.length === 0) continue;
-    scanned.push(path);
-    evidenceLines.push(...lines.slice(0, 55));
-    if (evidenceLines.length >= 320) break;
-  }
-
-  const compact = evidenceLines.join('\n').slice(0, 12000);
-  return {
-    domain: normalizedDomain,
-    pages_scanned: scanned,
-    evidence: compact,
-  };
+/**
+ * Reads a competitor's site through the hardened client in
+ * `@/lib/competitors/site-signals` (pinned DNS with a private-address
+ * blocklist, per-hop redirect checks, capped bodies, bounded parsing).
+ */
+async function collectCompetitorSignals(domain: string): Promise<SiteSignals> {
+  return collectSiteSignals(normalizeDomain(domain), {
+    paths: ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'],
+    linesPerPage: 55,
+    maxLines: 320,
+  });
 }
 
 function pickCompetitors(workspace: any): {
