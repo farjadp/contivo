@@ -238,6 +238,13 @@ export function readTokenUsage(data: unknown): number | null {
   return typeof raw === 'number' && Number.isFinite(raw) ? raw : null;
 }
 
+/**
+ * Wall-clock bound on the query-generation call. Without it only undici's
+ * default 300 s header and body timeouts bound a hung call, which on Railway
+ * (no platform kill) could carry a run past the reaper.
+ */
+export const QUERY_REQUEST_TIMEOUT_MS = 60_000;
+
 export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number | null }> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -249,6 +256,7 @@ export async function generateQueries(brief: BrandBrief): Promise<{ queries: str
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
+    signal: AbortSignal.timeout(QUERY_REQUEST_TIMEOUT_MS),
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,

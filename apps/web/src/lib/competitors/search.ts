@@ -142,6 +142,13 @@ function extractQueryHarvest(query: string, data: unknown): QueryHarvestResult {
   return { query, citations, sourceUrls };
 }
 
+/**
+ * Wall-clock bound on one web-search call. Live searches took 17-98 s, so
+ * this leaves headroom while still ending a hung call long before the
+ * reaper; without it only undici's default 300 s timeouts applied.
+ */
+export const SEARCH_REQUEST_TIMEOUT_MS = 150_000;
+
 async function runOneQuery(
   query: string,
   market: TargetMarket,
@@ -150,6 +157,7 @@ async function runOneQuery(
   try {
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
+      signal: AbortSignal.timeout(SEARCH_REQUEST_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,

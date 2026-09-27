@@ -302,7 +302,7 @@ describe('runDiscoveryPipeline', () => {
     searchMock.harvestFromWebSearch.mockResolvedValue({ candidates: [], tokens: 5, errors: [] });
     searchMock.harvestFromSerp.mockResolvedValue({ candidates: [], tokens: 0, errors: [] });
     judgeMock.enrichCandidates.mockResolvedValue({ enriched: [], skipped: 0, budgetExceeded: false });
-    judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 20 });
+    judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 20, errors: [], batches: 0, failedBatches: 0 });
     scoringMock.rankAndKeep.mockReturnValue([]);
 
     prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun());
@@ -315,7 +315,9 @@ describe('runDiscoveryPipeline', () => {
     prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.competitor.update.mockImplementation((args: unknown) => Promise.resolve({ op: 'update', args }));
     prismaMock.competitor.create.mockImplementation((args: unknown) => Promise.resolve({ op: 'create', args }));
-    prismaMock.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
+    // SAVE is an interactive transaction; the mock hands the callback the
+    // same mocked client, so writes made through `tx` land on prismaMock.
+    prismaMock.$transaction.mockImplementation(async (fn: (tx: typeof prismaMock) => Promise<unknown>) => fn(prismaMock));
   });
 
   it('does nothing when the run is no longer PENDING (e.g. startCompetitorDiscovery already marked it FAILED after a dispatch error)', async () => {
@@ -337,6 +339,7 @@ describe('runDiscoveryPipeline', () => {
     // Nothing past the claim ran: no stage was set, nothing was saved, and
     // no FAILED/DONE/EMPTY write happened either — the row is left exactly
     // as whatever already changed it out of PENDING.
+    expect(prismaMock.discoveryRun.updateMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.discoveryRun.update).not.toHaveBeenCalled();
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
@@ -346,7 +349,7 @@ describe('runDiscoveryPipeline', () => {
 
     await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
 
-    const failedCall = findCallByStatus(prismaMock.discoveryRun.update, 'FAILED');
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
     expect(failedCall).toBeTruthy();
     expect(failedCall!.data.error).toBe('judge exploded');
     expect(failedCall!.data.finishedAt).toBeInstanceOf(Date);
@@ -360,9 +363,9 @@ describe('runDiscoveryPipeline', () => {
     // write that advances `stage` to 'SEARCH' fails) — a real "mid-SEARCH"
     // failure that isn't swallowed by the Promise.allSettled around the
     // two harvest calls, since it happens before either of them run.
-    prismaMock.discoveryRun.update.mockImplementation((args: { data: Record<string, unknown> }) => {
+    prismaMock.discoveryRun.updateMany.mockImplementation((args: { data: Record<string, unknown> }) => {
       if (args.data.stage === 'SEARCH') throw new Error('lost DB connection advancing to SEARCH');
-      return Promise.resolve({});
+      return Promise.resolve({ count: 1 });
     });
 
     await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
@@ -414,11 +417,12 @@ describe('runDiscoveryPipeline', () => {
     await runDiscoveryPipeline('run1');
 
     expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
-    expect(prismaMock.$transaction.mock.calls[0][0]).toHaveLength(2);
+    expect(typeof prismaMock.$transaction.mock.calls[0][0]).toBe('function');
     expect(prismaMock.competitor.create).toHaveBeenCalledTimes(2);
 
-    const doneCall = findCallByStatus(prismaMock.discoveryRun.update, 'DONE');
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE');
     expect(doneCall!.data.savedCount).toBe(2);
+    expect((doneCall as unknown as { where: unknown }).where).toEqual({ id: 'run1', status: 'RUNNING' });
   });
 
   it('leaves savedCount untouched (never a stale nonzero value) when the SAVE transaction itself fails outright', async () => {
@@ -430,12 +434,11 @@ describe('runDiscoveryPipeline', () => {
 
     await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
 
-    // The transaction is offered every write bundled together, never one
-    // write at a time outside a transaction.
+    // Every write runs inside the one transaction, never outside it.
     expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
-    expect(prismaMock.$transaction.mock.calls[0][0]).toHaveLength(2);
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
 
-    const failedCall = findCallByStatus(prismaMock.discoveryRun.update, 'FAILED');
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
     expect(failedCall).toBeTruthy();
     expect(failedCall!.data.error).toContain('DB connection lost mid-save');
     // This is the property the transaction fix exists for: since the
@@ -444,6 +447,7 @@ describe('runDiscoveryPipeline', () => {
     // the row's savedCount stays at whatever it already was (0), matching
     // the real, unwritten state.
     expect(failedCall!.data).not.toHaveProperty('savedCount');
+    expect((failedCall!.data.sourceStats as Record<string, unknown>).save).toBeUndefined();
   });
 
   it('rounds confidence to three decimals before writing', async () => {
@@ -462,8 +466,8 @@ describe('runDiscoveryPipeline', () => {
 
     await runDiscoveryPipeline('run1');
 
-    const doneCall = findCallByStatus(prismaMock.discoveryRun.update, 'DONE') ??
-      findCallByStatus(prismaMock.discoveryRun.update, 'EMPTY');
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE') ??
+      findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY');
     expect(doneCall).toBeTruthy();
     const sourceStats = doneCall!.data.sourceStats as Record<string, unknown>;
     expect(sourceStats.tokensIncomplete).toBe(true);
@@ -562,6 +566,157 @@ describe('runDiscoveryPipeline', () => {
       expect(exclude.has('coded-reject.com')).toBe(true);
     }
   });
+  // -------------------------------------------------------------------------
+  // I2: after the claim, every write applies only while the run is RUNNING.
+  // -------------------------------------------------------------------------
+
+  /** The claim and every write before `stage` succeed; from the `stage` write on, the run is no longer RUNNING (reaped). */
+  function reapAtStage(stage: string) {
+    let reaped = false;
+    prismaMock.discoveryRun.updateMany.mockImplementation((args: { where: Record<string, unknown>; data: Record<string, unknown> }) => {
+      if (args.where.status === 'PENDING') return Promise.resolve({ count: 1 }); // the claim
+      if (args.data.stage === stage) reaped = true;
+      return Promise.resolve({ count: reaped ? 0 : 1 });
+    });
+  }
+
+  it('guards every stage write on status RUNNING', async () => {
+    await runDiscoveryPipeline('run1');
+
+    const stageCalls = prismaMock.discoveryRun.updateMany.mock.calls.filter((c: any[]) => 'stage' in c[0].data);
+    expect(stageCalls.map((c: any[]) => c[0].data.stage)).toEqual(['QUERIES', 'SEARCH', 'ENRICH', 'JUDGE', 'SAVE']);
+    for (const [args] of stageCalls) expect(args.where).toEqual({ id: 'run1', status: 'RUNNING' });
+    expect(prismaMock.discoveryRun.update).not.toHaveBeenCalled();
+  });
+
+  it('stops dead, saving and charging nothing, when the run was reaped mid-run (stage write finds it no longer RUNNING)', async () => {
+    scoringMock.rankAndKeep.mockReturnValue([scoredCandidate({ domain: 'new1.com' })]);
+    reapAtStage('JUDGE');
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    expect(judgeMock.judgeCandidates).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
+    // No DONE, no EMPTY, and no FAILED over the reaper's TIMED_OUT either.
+    for (const status of ['DONE', 'EMPTY', 'FAILED']) {
+      expect(findCallByStatus(prismaMock.discoveryRun.updateMany, status)).toBeUndefined();
+    }
+    expect(activityLogMock.writeActivityLog).not.toHaveBeenCalled();
+  });
+
+  it('writes no competitor when the run stops being RUNNING between JUDGE and the SAVE commit', async () => {
+    scoringMock.rankAndKeep.mockReturnValue([
+      scoredCandidate({ domain: 'new1.com' }),
+      scoredCandidate({ domain: 'new2.com' }),
+    ]);
+    // Stage writes succeed; the transaction's guarded DONE write finds nothing.
+    prismaMock.discoveryRun.updateMany.mockImplementation((args: { where: Record<string, unknown>; data: Record<string, unknown> }) =>
+      Promise.resolve({ count: args.data.status === 'DONE' || args.data.status === 'FAILED' ? 0 : 1 }),
+    );
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE') as unknown as { where: unknown };
+    expect(doneCall.where).toEqual({ id: 'run1', status: 'RUNNING' });
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.update).not.toHaveBeenCalled();
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED')).toBeUndefined();
+    expect(activityLogMock.writeActivityLog).not.toHaveBeenCalled();
+  });
+
+  it('guards its own FAILED write too, so it never overwrites a run something else already finished', async () => {
+    judgeMock.judgeCandidates.mockRejectedValue(new Error('judge exploded'));
+
+    await runDiscoveryPipeline('run1');
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED') as unknown as {
+      where: Record<string, unknown>;
+    };
+    expect(failedCall.where).toEqual({ id: 'run1', status: { in: ['PENDING', 'RUNNING'] } });
+  });
+
+  it('redacts and caps the error text it stores (M9)', async () => {
+    judgeMock.judgeCandidates.mockRejectedValue(new Error(`boom sk-abcdefghijklmnop ${'x'.repeat(2000)}`));
+
+    await runDiscoveryPipeline('run1');
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).not.toContain('sk-abcdefghijklmnop');
+    expect(failedCall!.data.error).toContain('[redacted]');
+    expect(failedCall!.data.error.length).toBeLessThanOrEqual(501);
+  });
+
+  it('never rewrites name or type on an existing competitor (M11)', async () => {
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(
+      baseRun({
+        workspace: {
+          id: 'ws1',
+          name: 'Acme',
+          websiteUrl: null,
+          brandSummary: null,
+          targetCountry: null,
+          targetLanguage: 'en',
+          competitors: [{ id: 'comp1', name: 'User Name', domain: 'existing.com', type: 'INDIRECT', evidence: [] }],
+        },
+      }),
+    );
+    scoringMock.rankAndKeep.mockReturnValue([scoredCandidate({ domain: 'existing.com', name: 'Model Name', type: 'DIRECT' })]);
+
+    await runDiscoveryPipeline('run1');
+
+    const [{ data }] = prismaMock.competitor.update.mock.calls[0];
+    expect(data).not.toHaveProperty('name');
+    expect(data).not.toHaveProperty('type');
+  });
+
+  // -------------------------------------------------------------------------
+  // I5: a judge outage is FAILED with a stored error, never EMPTY.
+  // -------------------------------------------------------------------------
+
+  it('ends FAILED (not EMPTY) with a JUDGE_UNAVAILABLE error when every judge batch failed', async () => {
+    judgeMock.enrichCandidates.mockResolvedValue({
+      enriched: [scoredCandidate({ domain: 'a.com' })],
+      skipped: 0,
+      budgetExceeded: false,
+    });
+    judgeMock.judgeCandidates.mockResolvedValue({
+      judged: [],
+      tokens: null,
+      errors: ['Judge batch failed: 429 Rate limit reached'],
+      batches: 1,
+      failedBatches: 1,
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY')).toBeUndefined();
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toMatch(/^JUDGE_UNAVAILABLE: Judge batch failed: 429/);
+    const stats = failedCall!.data.sourceStats as Record<string, any>;
+    expect(stats.judge).toMatchObject({ batches: 1, failedBatches: 1 });
+    expect(stats.errors).toEqual(expect.arrayContaining(['Judge batch failed: 429 Rate limit reached']));
+  });
+
+  it('records a partial judge failure in sourceStats and still finishes with what was judged', async () => {
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [scoredCandidate()], skipped: 0, budgetExceeded: false });
+    judgeMock.judgeCandidates.mockResolvedValue({
+      judged: [scoredCandidate({ domain: 'kept.com' })],
+      tokens: 10,
+      errors: ['Judge batch failed: 500 boom'],
+      batches: 2,
+      failedBatches: 1,
+    });
+    scoringMock.rankAndKeep.mockReturnValue([scoredCandidate({ domain: 'kept.com' })]);
+
+    await runDiscoveryPipeline('run1');
+
+    const doneCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE');
+    const stats = doneCall!.data.sourceStats as Record<string, any>;
+    expect(stats.judge).toMatchObject({ batches: 2, failedBatches: 1 });
+    expect(stats.errors).toEqual(['Judge batch failed: 500 boom']);
+    expect(stats.save).toEqual({ saved: 1 });
+  });
 });
 
 describe('reapStaleRuns', () => {
@@ -582,6 +737,8 @@ describe('reapStaleRuns', () => {
     expect(prismaMock.discoveryRun.updateMany).toHaveBeenCalledTimes(1);
     const [{ where, data }] = prismaMock.discoveryRun.updateMany.mock.calls[0];
     expect(where.id.in).toEqual(['stale-1']);
+    // Guarded on status too: a run whose SAVE committed in the meantime keeps DONE.
+    expect(where.status).toEqual({ in: ['PENDING', 'RUNNING'] });
     expect(data.status).toBe('FAILED');
     expect(data.error).toBe('TIMED_OUT');
   });

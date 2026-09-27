@@ -396,18 +396,47 @@ type SiteEvidenceResult = {
   htmlLang: string | null;
 };
 
-export async function collectWebsiteEvidence(domain: string): Promise<SiteEvidenceResult> {
+/** Paths a discovery candidate's site is read from, in order. */
+export const DISCOVERY_EVIDENCE_PATHS = ['/', '/about', '/services', '/solutions', '/products', '/pricing', '/blog'];
+
+/**
+ * Hard cap on one candidate's site evidence, in characters, matching the
+ * downstream collectors (`site-signals.ts`). Without it a page of many long
+ * block tags could put ~280k characters of one candidate into a judge
+ * prompt (20 lines per page x 7 pages x up to 2,000 characters a line),
+ * which any page that gets cited could do on purpose.
+ */
+export const MAX_SITE_EVIDENCE_CHARS = 12_000;
+
+export type CollectEvidenceOptions = {
+  /** Paths to read, in order. Defaults to DISCOVERY_EVIDENCE_PATHS. */
+  paths?: string[];
+  /**
+   * Wall-clock deadline (in `now()` units). Checked before every path, so a
+   * candidate started just before the enrich budget ran out stops after the
+   * page it is on instead of running its whole path loop past the budget.
+   */
+  deadline?: number;
+  now?: () => number;
+};
+
+export async function collectWebsiteEvidence(
+  domain: string,
+  options: CollectEvidenceOptions = {},
+): Promise<SiteEvidenceResult> {
   const normalizedDomain = normalizeDomain(domain);
   if (!normalizedDomain) {
     return { domain: '', pages: [], evidence: '', htmlLang: null };
   }
 
-  const paths = ['/', '/about', '/services', '/solutions', '/products', '/pricing', '/blog'];
+  const paths = options.paths ?? DISCOVERY_EVIDENCE_PATHS;
+  const now = options.now ?? Date.now;
   const pages: Array<{ url: string; title: string | null }> = [];
   const evidenceLines: string[] = [];
   let htmlLang: string | null = null;
 
   for (const path of paths) {
+    if (options.deadline !== undefined && now() >= options.deadline) break;
     const response = await fetchHtmlForDomain(normalizedDomain, path);
     if (!response) continue;
 
@@ -428,7 +457,7 @@ export async function collectWebsiteEvidence(domain: string): Promise<SiteEviden
   return {
     domain: normalizedDomain,
     pages,
-    evidence: evidenceLines.slice(0, 140).join('\n'),
+    evidence: evidenceLines.slice(0, 140).join('\n').slice(0, MAX_SITE_EVIDENCE_CHARS),
     htmlLang,
   };
 }
@@ -489,7 +518,7 @@ export function buildEnrichedCandidate(
     ...candidate,
     evidence: [...candidate.evidence, ...siteEvidenceItems],
     siteTitle,
-    siteEvidence: site.evidence,
+    siteEvidence: site.evidence.slice(0, MAX_SITE_EVIDENCE_CHARS),
     pageLanguage,
   };
 }
@@ -548,13 +577,15 @@ function chunk<T>(items: T[], size: number): T[][] {
  * Overall wall-clock budget for the enrich stage, in milliseconds. Each
  * fetch already has its own `FETCH_TIMEOUT_MS` deadline, but with up to
  * `MAX_ENRICHED` candidates, several paths scanned per candidate, and
- * redirect hops on each, the worst case comfortably exceeds the background
- * route's `maxDuration`. Vercel kills the function at that point and the
- * run sits RUNNING until a reaper marks it FAILED — honest, but a long
- * silent wait for the user. This budget stops the stage from ever getting
- * that far: once it is spent, no new fetch is started, in-flight ones are
- * left to hit their own per-fetch deadline, and the run proceeds with
- * whatever was already enriched.
+ * redirect hops on each, the unbounded worst case runs for many minutes.
+ * Production is Railway, a long-lived process: nothing kills the work at
+ * the route's `maxDuration`, so without this budget a slow stage would run
+ * on until the reaper (`STALE_RUN_MINUTES`) failed the run under it. Once
+ * the budget is spent, no new candidate starts and no candidate already
+ * running starts another path (the deadline is checked before each one);
+ * only the fetch already in flight finishes, bounded by its own
+ * `FETCH_TIMEOUT_MS` per redirect hop. The run proceeds with whatever was
+ * already enriched.
  */
 export const ENRICH_BUDGET_MS = 90_000;
 
@@ -568,7 +599,7 @@ export type EnrichResult = {
 
 export async function enrichCandidates(
   candidates: Candidate[],
-  options: { budgetMs?: number; now?: () => number } = {},
+  options: { budgetMs?: number; now?: () => number; paths?: string[] } = {},
 ): Promise<EnrichResult> {
   const top = pickTopCandidates(candidates, MAX_ENRICHED);
   const now = options.now ?? Date.now;
@@ -586,7 +617,7 @@ export async function enrichCandidates(
       skipped += 1;
       return null;
     }
-    const site = await collectWebsiteEvidence(candidate.domain);
+    const site = await collectWebsiteEvidence(candidate.domain, { deadline, now, paths: options.paths });
     return buildEnrichedCandidate(candidate, site);
   });
 
@@ -661,6 +692,32 @@ export function mapCertaintyToConfidence(value: unknown): number | null {
   return null;
 }
 
+/**
+ * Length caps on the judge's free-text output. These fields are written by
+ * a model reading hostile pages, and they flow on into the matrices,
+ * keywords and offerings prompts (and from there into Autopilot content), so
+ * a page must not be able to make the judge echo a wall of text into them.
+ *
+ * Enforced in code, on parse (`capJudgeText`), not as `maxLength` in
+ * JUDGE_SCHEMA: OpenAI's strict structured-output mode has not accepted
+ * `maxLength` on strings, and a schema it rejects would fail every judge
+ * batch and so every discovery run. That cannot be verified here without a
+ * live OpenAI call, so the limits are stated to the model in each field's
+ * `description` and enforced by truncation after parsing, which holds
+ * whatever the model does.
+ */
+export const JUDGE_NAME_MAX_CHARS = 120;
+export const JUDGE_DESCRIPTION_MAX_CHARS = 600;
+export const JUDGE_POSITIONING_MAX_CHARS = 400;
+export const JUDGE_REASON_MAX_CHARS = 600;
+export const JUDGE_KEY_FEATURE_MAX_CHARS = 120;
+export const JUDGE_MAX_KEY_FEATURES = 8;
+
+export function capJudgeText(value: string, maxChars: number): string {
+  const trimmed = value.trim();
+  return trimmed.length > maxChars ? trimmed.slice(0, maxChars).trimEnd() : trimmed;
+}
+
 const JUDGE_SCHEMA = {
   type: 'object',
   properties: {
@@ -670,7 +727,7 @@ const JUDGE_SCHEMA = {
         type: 'object',
         properties: {
           domain: { type: 'string' },
-          name: { type: 'string' },
+          name: { type: 'string', description: `The company's name, at most ${JUDGE_NAME_MAX_CHARS} characters.` },
           isCompetitor: { type: 'boolean' },
           labels: { type: 'array', items: { type: 'string', enum: ['SEO', 'BUSINESS'] } },
           type: { type: 'string', enum: ['DIRECT', 'INDIRECT', 'ASPIRATIONAL'] },
@@ -681,10 +738,14 @@ const JUDGE_SCHEMA = {
             description:
               'How well the evidence pins down the isCompetitor call, not enthusiasm about the company. "certain": the evidence explicitly and unambiguously settles the call, either way. "likely": a reasonable inference from what the site says. "unsure": the evidence is thin or ambiguous. A confident rejection is also "certain".',
           },
-          reason: { type: 'string' },
-          positioning: { type: 'string' },
-          keyFeatures: { type: 'array', items: { type: 'string' } },
-          description: { type: 'string' },
+          reason: { type: 'string', description: `At most ${JUDGE_REASON_MAX_CHARS} characters.` },
+          positioning: { type: 'string', description: `At most ${JUDGE_POSITIONING_MAX_CHARS} characters.` },
+          keyFeatures: {
+            type: 'array',
+            description: `At most ${JUDGE_MAX_KEY_FEATURES} items, each at most ${JUDGE_KEY_FEATURE_MAX_CHARS} characters.`,
+            items: { type: 'string' },
+          },
+          description: { type: 'string', description: `At most ${JUDGE_DESCRIPTION_MAX_CHARS} characters.` },
         },
         required: [
           'domain',
@@ -880,6 +941,13 @@ export function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]):
 
 type BatchOutcome = { judged: JudgedCandidate[]; tokens: number | null } | { error: string };
 
+/**
+ * Wall-clock bound on one judge call. Without it only undici's default 300 s
+ * header and body timeouts bound a hung call, which on Railway (no platform
+ * kill) could carry a run past the reaper.
+ */
+export const JUDGE_REQUEST_TIMEOUT_MS = 90_000;
+
 async function runOneBatch(
   brief: BrandBrief,
   batch: EnrichedCandidate[],
@@ -889,6 +957,7 @@ async function runOneBatch(
   try {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
+      signal: AbortSignal.timeout(JUDGE_REQUEST_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
@@ -956,18 +1025,26 @@ async function runOneBatch(
 
       judged.push({
         ...candidate,
-        name: typeof record.name === 'string' && record.name.trim() ? record.name.trim() : candidate.domain,
+        name:
+          typeof record.name === 'string' && record.name.trim()
+            ? capJudgeText(record.name, JUDGE_NAME_MAX_CHARS)
+            : candidate.domain,
         isCompetitor,
         labels,
         type: normalizeJudgedType(record.type),
         scaleMatch: Boolean(record.scaleMatch),
         judgeConfidence,
-        reason: typeof record.reason === 'string' ? record.reason : '',
-        positioning: typeof record.positioning === 'string' ? record.positioning : null,
+        reason: typeof record.reason === 'string' ? capJudgeText(record.reason, JUDGE_REASON_MAX_CHARS) : '',
+        positioning:
+          typeof record.positioning === 'string' ? capJudgeText(record.positioning, JUDGE_POSITIONING_MAX_CHARS) : null,
         keyFeatures: Array.isArray(record.keyFeatures)
-          ? record.keyFeatures.filter((feature): feature is string => typeof feature === 'string')
+          ? record.keyFeatures
+              .filter((feature): feature is string => typeof feature === 'string' && feature.trim().length > 0)
+              .slice(0, JUDGE_MAX_KEY_FEATURES)
+              .map((feature) => capJudgeText(feature, JUDGE_KEY_FEATURE_MAX_CHARS))
           : [],
-        description: typeof record.description === 'string' ? record.description : '',
+        description:
+          typeof record.description === 'string' ? capJudgeText(record.description, JUDGE_DESCRIPTION_MAX_CHARS) : '',
       });
     }
 
@@ -977,11 +1054,17 @@ async function runOneBatch(
   }
 }
 
-export async function judgeCandidates(
-  brief: BrandBrief,
-  candidates: EnrichedCandidate[],
-): Promise<{ judged: JudgedCandidate[]; tokens: number | null }> {
-  if (candidates.length === 0) return { judged: [], tokens: 0 };
+export type JudgeResult = {
+  judged: JudgedCandidate[];
+  tokens: number | null;
+  /** One sanitized message per failed batch. */
+  errors: string[];
+  batches: number;
+  failedBatches: number;
+};
+
+export async function judgeCandidates(brief: BrandBrief, candidates: EnrichedCandidate[]): Promise<JudgeResult> {
+  if (candidates.length === 0) return { judged: [], tokens: 0, errors: [], batches: 0, failedBatches: 0 };
 
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -993,6 +1076,7 @@ export async function judgeCandidates(
   const outcomes = await runWithConcurrency(batches, JUDGE_CONCURRENCY, (batch) => runOneBatch(brief, batch, apiKey, model));
 
   const judged: JudgedCandidate[] = [];
+  const errors: string[] = [];
   let tokenSum: number | null = null;
   let sawReadableUsage = false;
 
@@ -1000,10 +1084,13 @@ export async function judgeCandidates(
     if ('error' in outcome) {
       // Per-batch isolation, following ./search's pattern: one bad batch
       // drops its candidates from the result rather than failing the run
-      // or approving them by default. Logged because a judge batch costs
-      // real money and real candidates — losing it silently would leave no
-      // trace beyond a suspiciously low token count.
+      // or approving them by default. The error is returned, not just
+      // logged: the pipeline records it in sourceStats, and when EVERY
+      // batch failed it ends the run FAILED. Otherwise a judge outage (a
+      // 429, a bad model name) would end the run EMPTY and tell the user to
+      // change a market that was never the problem.
       console.error('Judge batch dropped:', outcome.error);
+      errors.push(sanitizeUpstreamText(outcome.error) ?? 'Judge batch failed');
       continue;
     }
     judged.push(...outcome.judged);
@@ -1014,5 +1101,5 @@ export async function judgeCandidates(
   }
 
   const tokens = sawReadableUsage ? tokenSum : null;
-  return { judged, tokens };
+  return { judged, tokens, errors, batches: batches.length, failedBatches: errors.length };
 }

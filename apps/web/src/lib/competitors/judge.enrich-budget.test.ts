@@ -17,7 +17,8 @@ vi.mock('./network-guard', () => ({
   isHostnameSafeToFetch: async () => true,
 }));
 
-const { enrichCandidates, ENRICH_BUDGET_MS } = await import('./judge');
+const { collectWebsiteEvidence, DISCOVERY_EVIDENCE_PATHS, enrichCandidates, ENRICH_BUDGET_MS, MAX_SITE_EVIDENCE_CHARS } =
+  await import('./judge');
 
 function makeCandidates(domain: string, count: number): Candidate[] {
   return Array.from({ length: count }, () => ({
@@ -129,5 +130,74 @@ describe('enrichCandidates: overall wall-clock budget', () => {
     expect(result.budgetExceeded).toBe(true);
     expect(result.skipped).toBe(2);
     expect(result.enriched).toEqual([]);
+  });
+});
+
+describe('collectWebsiteEvidence: per-path deadline and evidence cap', () => {
+  const servers: http.Server[] = [];
+
+  afterEach(async () => {
+    await Promise.all(servers.splice(0).map(closeServer));
+  });
+
+  function startCountingServer(body: string, delayMs: number): Promise<{ server: http.Server; port: number; hits: string[] }> {
+    const hits: string[] = [];
+    const server = http.createServer((req, res) => {
+      hits.push(req.url ?? '');
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(body);
+      }, delayMs);
+    });
+    return new Promise((resolve) => {
+      server.listen(0, '127.0.0.1', () => {
+        resolve({ server, port: (server.address() as AddressInfo).port, hits });
+      });
+    });
+  }
+
+  it('stops before the next path once the deadline has passed, instead of running every path', async () => {
+    const { server, port, hits } = await startCountingServer(
+      '<html><title>Page title here</title><body><h1>Some heading text</h1></body></html>',
+      0,
+    );
+    servers.push(server);
+
+    // A clock that jumps past the deadline after the first path is read.
+    let t = 0;
+    const now = () => t;
+    const pending = collectWebsiteEvidence(`127.0.0.1:${port}`, { deadline: 10, now });
+    // Advance the clock as soon as the first request lands.
+    const timer = setInterval(() => {
+      if (hits.length >= 1) t = 100;
+    }, 1);
+    const result = await pending;
+    clearInterval(timer);
+
+    expect(DISCOVERY_EVIDENCE_PATHS.length).toBeGreaterThan(1);
+    expect(hits).toEqual(['/']);
+    expect(result.pages).toHaveLength(1);
+  });
+
+  it('reads nothing at all when the deadline is already past', async () => {
+    const { server, port, hits } = await startCountingServer('<html><title>x title</title></html>', 0);
+    servers.push(server);
+
+    const result = await collectWebsiteEvidence(`127.0.0.1:${port}`, { deadline: 0, now: () => 1 });
+
+    expect(hits).toEqual([]);
+    expect(result.pages).toEqual([]);
+  });
+
+  it(`caps one candidate's evidence at ${MAX_SITE_EVIDENCE_CHARS} characters however long the pages are`, async () => {
+    const longLine = (i: number) => `<p>${'evidence '.repeat(200)} line ${i}</p>`;
+    const body = `<html><body>${Array.from({ length: 30 }, (_, i) => longLine(i)).join('')}</body></html>`;
+    const { server, port } = await startCountingServer(body, 0);
+    servers.push(server);
+
+    const result = await collectWebsiteEvidence(`127.0.0.1:${port}`);
+
+    expect(result.pages.length).toBeGreaterThan(1);
+    expect(result.evidence.length).toBe(MAX_SITE_EVIDENCE_CHARS);
   });
 });

@@ -68,7 +68,15 @@ export type SourceStats = {
     /** How many candidates were never started because the budget was already spent. */
     skipped?: number;
   };
-  judge?: { input: number; judged: number; kept: number; tokens: number | null };
+  judge?: {
+    input: number;
+    judged: number;
+    kept: number;
+    tokens: number | null;
+    /** How many judge batches ran, and how many of them failed (present only when at least one failed). */
+    batches?: number;
+    failedBatches?: number;
+  };
   save?: { saved: number };
   /**
    * Batch/harvest failure messages. These originate upstream (`./judge`,

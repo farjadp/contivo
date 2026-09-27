@@ -8,6 +8,8 @@ import { buildBrandBrief, generateQueries } from './queries';
 import { harvestFromSerp, harvestFromWebSearch } from './search';
 import { enrichCandidates, judgeCandidates } from './judge';
 import { rankAndKeep } from './scoring';
+import { sanitizeUpstreamText } from './redact';
+import { RUN_ERROR, withRunErrorCode } from './run-errors';
 import type { Candidate, EvidenceItem, ScoredCandidate, SourceHarvestStats, SourceStats } from './types';
 
 /**
@@ -147,6 +149,30 @@ function normalizeStoredDomain(domain: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Status-guarded writes
+// ---------------------------------------------------------------------------
+
+/**
+ * Thrown when a write finds the run no longer RUNNING: the reaper timed it
+ * out, or something else already finished it. The pipeline stops on the
+ * spot and writes nothing more, so a run the user was told had failed (and
+ * was not charged for) can never come back as DONE, save rows, or consume
+ * quota — and a second run started after the reap never races this one.
+ */
+export class RunNoLongerActiveError extends Error {
+  constructor(runId: string) {
+    super(`Discovery run ${runId} is no longer RUNNING; stopping without further writes`);
+    this.name = 'RunNoLongerActiveError';
+  }
+}
+
+/** Every post-claim write goes through here: it applies only while the run is still RUNNING. */
+async function updateWhileRunning(runId: string, data: Prisma.DiscoveryRunUpdateManyMutationInput): Promise<void> {
+  const { count } = await prisma.discoveryRun.updateMany({ where: { id: runId, status: 'RUNNING' }, data });
+  if (count === 0) throw new RunNoLongerActiveError(runId);
+}
+
+// ---------------------------------------------------------------------------
 // runDiscoveryPipeline
 // ---------------------------------------------------------------------------
 
@@ -204,7 +230,7 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     tokens.add(queryTokens);
     sourceStats.queries = { count: queries.length, tokens: queryTokens };
 
-    await prisma.discoveryRun.update({ where: { id: runId }, data: { queries } });
+    await updateWhileRunning(runId, { queries });
 
     // --- SEARCH ---------------------------------------------------------
     await setStage(runId, 'SEARCH');
@@ -271,10 +297,27 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
 
     // --- JUDGE ------------------------------------------------------------
     await setStage(runId, 'JUDGE');
-    const { judged, tokens: judgeTokens } = await judgeCandidates(brief, enriched);
+    const judgeResult = await judgeCandidates(brief, enriched);
+    const { judged, tokens: judgeTokens } = judgeResult;
     tokens.add(judgeTokens);
+    runErrors.push(...judgeResult.errors);
     const kept: ScoredCandidate[] = rankAndKeep(judged, brief.market);
-    sourceStats.judge = { input: enriched.length, judged: judged.length, kept: kept.length, tokens: judgeTokens };
+    sourceStats.judge = {
+      input: enriched.length,
+      judged: judged.length,
+      kept: kept.length,
+      tokens: judgeTokens,
+      ...(judgeResult.failedBatches > 0
+        ? { batches: judgeResult.batches, failedBatches: judgeResult.failedBatches }
+        : {}),
+    };
+    // Every batch failed: nothing was assessed, so "no competitors found"
+    // (EMPTY) would be a lie that sends the user off to change their market.
+    // End FAILED (uncharged) with the cause stored instead. A partial failure
+    // carries on with what was judged; its errors are in sourceStats.
+    if (judgeResult.batches > 0 && judgeResult.failedBatches === judgeResult.batches) {
+      throw new Error(withRunErrorCode(RUN_ERROR.JUDGE_UNAVAILABLE, judgeResult.errors[0]));
+    }
 
     // --- SAVE ---------------------------------------------------------
     await setStage(runId, 'SAVE');
@@ -285,71 +328,19 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
         .map((c) => [normalizeStoredDomain(c.domain as string), c]),
     );
 
-    // Every write is prepared first (no `await` yet — these are pending
-    // Prisma operations, not yet sent) and only then run together inside
-    // `$transaction`. Ten rows is small and short-lived, and all-or-nothing
-    // is the only honest semantic here: if write N+1 of a plain sequential
-    // loop threw, the outer catch would record `FAILED` with `savedCount`
-    // defaulting to 0 while up to N real rows had already been persisted —
-    // the run row would lie about what happened. With a transaction, either
-    // every kept candidate lands and `savedCount` is set to match, or none
-    // of them do and `savedCount` is never touched (staying at its true
-    // value of 0, since nothing was actually written).
-    const operations = kept.map((candidate) => {
-      const existing = existingByDomain.get(candidate.domain);
-      const existingEvidence = existing ? parseStoredEvidence(existing.evidence) : [];
-      const evidence = reconcileEvidence(existingEvidence, candidate.evidence);
-      // Round before writing so the database stops holding
-      // floating-point noise like 0.9500000000000001 for a number that
-      // is shown to a user.
-      const confidence = Math.round(candidate.finalConfidence * 1000) / 1000;
+    // SAVE is one interactive transaction whose FIRST statement is the
+    // status-guarded final write (RUNNING -> DONE/EMPTY). If the run is no
+    // longer RUNNING — reaped as TIMED_OUT, or failed by anything else —
+    // that write matches no row, the transaction throws before a single
+    // competitor is written, and nothing is saved or charged. If it is still
+    // RUNNING, the row lock that write takes holds off the reaper (whose own
+    // write is guarded on PENDING/RUNNING and so finds nothing to do once
+    // this commits). All-or-nothing still holds: if competitor write N+1
+    // fails, the status change and the first N writes roll back together
+    // and the run lands FAILED with savedCount untouched at 0.
+    const savedCount = kept.length;
+    const finalStatus = savedCount > 0 ? 'DONE' : 'EMPTY';
 
-      if (existing) {
-        return prisma.competitor.update({
-          where: { id: existing.id },
-          data: {
-            name: candidate.name,
-            domain: candidate.domain,
-            description: candidate.description || null,
-            type: candidate.type,
-            confidence,
-            labels: candidate.labels,
-            sources: candidate.sources,
-            evidence,
-            positioning: candidate.positioning,
-            keyFeatures: candidate.keyFeatures,
-            discoveryRunId: runId,
-            // userDecision is never written here — a user's decision is sacred.
-          },
-        });
-      }
-
-      return prisma.competitor.create({
-        data: {
-          workspaceId: workspace.id,
-          name: candidate.name,
-          domain: candidate.domain,
-          description: candidate.description || null,
-          type: candidate.type,
-          confidence,
-          labels: candidate.labels,
-          sources: candidate.sources,
-          evidence,
-          positioning: candidate.positioning,
-          keyFeatures: candidate.keyFeatures,
-          source: 'AI',
-          userDecision: 'PENDING',
-          discoveryRunId: runId,
-        },
-      });
-    });
-
-    if (operations.length > 0) {
-      await prisma.$transaction(operations);
-    }
-    const savedCount = operations.length;
-
-    sourceStats.save = { saved: savedCount };
     if (runErrors.length > 0) sourceStats.errors = runErrors;
 
     const tokensTotal = tokens.value;
@@ -364,15 +355,73 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     if (tokens.incomplete) sourceStats.tokensIncomplete = true;
     if (tokensTotal === null) sourceStats.tokensUnknown = true;
 
-    await prisma.discoveryRun.update({
-      where: { id: runId },
-      data: {
-        status: savedCount > 0 ? 'DONE' : 'EMPTY',
-        finishedAt: new Date(),
-        savedCount,
-        tokensUsed: tokensTotal ?? 0,
-        sourceStats: sourceStats as Prisma.InputJsonValue,
-      },
+    // `save` goes only into the stats this transaction commits: if it rolls
+    // back, the FAILED write in the catch must not claim anything was saved.
+    const finalStats: SourceStats = { ...sourceStats, save: { saved: savedCount } };
+
+    await prisma.$transaction(async (tx) => {
+      const finished = await tx.discoveryRun.updateMany({
+        where: { id: runId, status: 'RUNNING' },
+        data: {
+          status: finalStatus,
+          finishedAt: new Date(),
+          savedCount,
+          tokensUsed: tokensTotal ?? 0,
+          sourceStats: finalStats as Prisma.InputJsonValue,
+        },
+      });
+      if (finished.count === 0) throw new RunNoLongerActiveError(runId);
+
+      for (const candidate of kept) {
+        const existing = existingByDomain.get(candidate.domain);
+        const existingEvidence = existing ? parseStoredEvidence(existing.evidence) : [];
+        const evidence = reconcileEvidence(existingEvidence, candidate.evidence);
+        // Round before writing so the database stops holding
+        // floating-point noise like 0.9500000000000001 for a number that
+        // is shown to a user.
+        const confidence = Math.round(candidate.finalConfidence * 1000) / 1000;
+
+        if (existing) {
+          await tx.competitor.update({
+            where: { id: existing.id },
+            data: {
+              // `name` and `type` are never rewritten on an existing row:
+              // users edit `type`, and the name they already know should
+              // not change under them. userDecision is never written here
+              // either — a user's decision is sacred.
+              domain: candidate.domain,
+              description: candidate.description || null,
+              confidence,
+              labels: candidate.labels,
+              sources: candidate.sources,
+              evidence,
+              positioning: candidate.positioning,
+              keyFeatures: candidate.keyFeatures,
+              discoveryRunId: runId,
+            },
+          });
+          continue;
+        }
+
+        await tx.competitor.create({
+          data: {
+            workspaceId: workspace.id,
+            name: candidate.name,
+            domain: candidate.domain,
+            description: candidate.description || null,
+            type: candidate.type,
+            confidence,
+            labels: candidate.labels,
+            sources: candidate.sources,
+            evidence,
+            positioning: candidate.positioning,
+            keyFeatures: candidate.keyFeatures,
+            source: 'AI',
+            userDecision: 'PENDING',
+            discoveryRunId: runId,
+          },
+        });
+      }
     });
 
     await writeActivityLog({
@@ -381,16 +430,28 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
       action: 'COMPETITOR_DISCOVERY_RUN',
       detail: {
         runId,
-        status: savedCount > 0 ? 'DONE' : 'EMPTY',
+        status: finalStatus,
         savedCount,
         tokensUsed: tokensTotal,
       },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
+    if (error instanceof RunNoLongerActiveError) {
+      // Something else already finished this run (usually the reaper).
+      // Whatever it recorded stands; this call writes nothing more.
+      console.warn('runDiscoveryPipeline:', error.message);
+      return;
+    }
+
+    // Redacted and capped on write, like every other DiscoveryRun.error
+    // write site (see redact.ts): the raw message can echo upstream text.
+    const message =
+      sanitizeUpstreamText(error instanceof Error ? error.message : String(error)) ?? 'Discovery run failed';
     try {
-      await prisma.discoveryRun.update({
-        where: { id: runId },
+      // Guarded like every other write: a run already finished by
+      // something else (reaped, or dispatch-failed) keeps its own record.
+      const failed = await prisma.discoveryRun.updateMany({
+        where: { id: runId, status: { in: ['PENDING', 'RUNNING'] } },
         data: {
           status: 'FAILED',
           error: message,
@@ -400,7 +461,7 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
         },
       });
 
-      if (run) {
+      if (run && failed.count > 0) {
         await writeActivityLog({
           userId: run.userId,
           workspaceId: run.workspace.id,
@@ -426,7 +487,7 @@ function loadRun(runId: string) {
 }
 
 function setStage(runId: string, stage: Stage) {
-  return prisma.discoveryRun.update({ where: { id: runId }, data: { stage } });
+  return updateWhileRunning(runId, { stage });
 }
 
 // ---------------------------------------------------------------------------
@@ -450,8 +511,10 @@ export async function reapStaleRuns(workspaceId: string): Promise<void> {
   const staleIds = inFlight.filter((run) => isStaleRun(run, now, STALE_RUN_MINUTES)).map((run) => run.id);
   if (staleIds.length === 0) return;
 
+  // Guarded on status as well as id: a run that finished between the read
+  // above and this write (its SAVE transaction committed) keeps its result.
   await prisma.discoveryRun.updateMany({
-    where: { id: { in: staleIds } },
-    data: { status: 'FAILED', error: 'TIMED_OUT', finishedAt: now },
+    where: { id: { in: staleIds }, status: { in: ['PENDING', 'RUNNING'] } },
+    data: { status: 'FAILED', error: RUN_ERROR.TIMED_OUT, finishedAt: now },
   });
 }
