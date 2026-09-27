@@ -184,7 +184,7 @@
         "save": "Save",
         "cancel": "Cancel",
         "saveFailed": "Could not save the market.",
-        "lockedWhileRunning": "You can change this once the current search finishes."
+        "lockedWhileRunning": "You can change the country and language once the current search finishes."
       },
       "run": {
         "find": "Find competitors",
@@ -194,7 +194,6 @@
         "startFailed": "Could not start the search.",
         "starting": "Getting the search ready",
         "leaveNote": "You don't need to stay on this page. The search keeps going, and the results will be here when you come back.",
-        "queryCount": "{count, plural, one {# search query written} other {# search queries written}}",
         "stages": {
           "QUERIES": "Writing search queries",
           "SEARCH": "Searching the web",
@@ -205,10 +204,10 @@
         "stageDone": "done",
         "stageCurrent": "in progress",
         "done": "{count, plural, one {Found # likely competitor.} other {Found # likely competitors.}} Review each one and its evidence below.",
-        "skippedSites": "Time ran out before {count, plural, one {# site} other {# sites}} could be read, so they were left out.",
+        "skippedSites": "Time ran out before {count, plural, one {# site} other {# sites}} could be read, so they are not in the results.",
         "emptyTitle": "No competitors this time",
-        "emptyDetail": "We ran {count, plural, one {# search} other {# searches}} in {language} for {country}, and none of the results held up once we checked the evidence.",
-        "emptyDetailNoCount": "We searched in {language} for {country}, and none of the results held up once we checked the evidence.",
+        "emptyDetail": "We searched with {count, plural, one {# query} other {# queries}} in {language} for {country}, but none of the results had enough evidence behind them.",
+        "emptyDetailNoCount": "We searched in {language} for {country}, but none of the results had enough evidence behind them.",
         "notCharged": "This search was not counted against your limit.",
         "nextStepsIntro": "Before the next search, you can do one of two things:",
         "nextChangeMarket": "Change the country or language",
@@ -217,13 +216,14 @@
         "failedTitle": "The search did not finish",
         "failedNotCharged": "It was not counted against your limit, so you can try again.",
         "failedDetail": "Error details:",
-        "pollStopped": "This page stopped checking on the search. Reload to see where it is."
+        "pollStopped": "This page stopped checking on the search. Reload to see where it is.",
+        "queriesTitle": "Search queries"
       },
       "queue": {
         "title": "Waiting for your review",
         "empty": "Nothing to review right now. Competitors a search finds will appear here.",
-        "accept": "Accept",
-        "reject": "Reject",
+        "accept": "Add to competitors",
+        "reject": "Set aside",
         "typeLabel": "Type",
         "why": "Why was this suggested?",
         "queries": "Searches that found it",
@@ -252,44 +252,42 @@
       },
       "undo": {
         "accepted": "<b>{name}</b> is now one of your competitors.",
-        "rejected": "<b>{name}</b> was set aside.",
-        "reasonPrompt": "Optional: tell us why, and the next search will take it into account.",
+        "rejected": "<b>{name}</b> was set aside and won't be suggested again.",
+        "reasonPrompt": "If you like, say why:",
         "reasonSaved": "Reason saved.",
         "undo": "Undo",
         "dismiss": "Dismiss",
-        "undoFailed": "Could not undo that. Please try again."
+        "undoFailed": "Could not undo that. Please try again.",
+        "removed": "<b>{name}</b> was taken off your list and won't be suggested again."
       },
       "reasons": {
-        "NOT_A_COMPETITOR": "Not a competitor",
-        "WRONG_SCALE": "Not our size",
-        "DUPLICATE": "Duplicate",
-        "ALREADY_KNOWN": "We already knew it"
+        "DIFFERENT_MARKET": "Different market",
+        "TOO_BIG": "Too big",
+        "DIFFERENT_PRODUCT": "Different product",
+        "NOT_A_COMPANY": "Not a company"
       },
       "list": {
         "title": "Your competitors",
-        "empty": "No competitors yet. Accept one from the review list, or add one you know.",
+        "empty": "No competitors on your list yet. Add one from the suggestions, or enter one you know.",
         "addedByYou": "Added by you",
-        "remove": "Remove",
-        "removeConfirm": "Remove for good?",
-        "removeYes": "Remove",
-        "removeNo": "Keep",
+        "remove": "Remove from list",
         "removeFailed": "Could not remove it. Please try again.",
         "setAside": "Set aside",
         "backToReview": "Back to review"
       },
       "add": {
         "title": "Add a competitor you know",
-        "hint": "Enter their website. We read the site and check how close a match it is, but it is saved either way.",
+        "hint": "Enter their website. We read the site and check how close it is to your business. Whatever the result, the competitor is added to your list.",
         "placeholder": "competitor.com",
         "button": "Add",
         "added": "<b>{name}</b> was added.",
-        "warning": "Saved, with a note:",
+        "warning": "Please note:",
         "failed": "Could not add this competitor."
       },
       "history": {
         "title": "Past searches",
         "empty": "No searches yet.",
-        "found": "{count, plural, one {# found} other {# found}}",
+        "found": "{count, number} found",
         "notCharged": "Not counted",
         "legacy": "Earlier search",
         "status": {
@@ -298,8 +296,12 @@
           "DONE": "Finished",
           "EMPTY": "Nothing found",
           "FAILED": "Did not finish"
-        }
-      }
+        },
+        "accepted": "{count, number} accepted",
+        "queries": "{count, plural, one {# query} other {# queries}}",
+        "market": "{country}, {language}"
+      },
+      "signedOut": "You have been signed out. Sign in again to see your competitors."
     }
   }
 }

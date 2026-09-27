@@ -48,7 +48,7 @@ export function DomainLink({ domain }: { domain: string | null }) {
   const t = useTranslations('growth.competitors');
   if (!domain) return <span className="text-xs text-moss-muted">{t('noDomain')}</span>;
   const text = (
-    <bdi dir="ltr" className="truncate">
+    <bdi dir="ltr" className="block min-w-0 truncate">
       {domain}
     </bdi>
   );

@@ -35,6 +35,7 @@ const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMoc
         deleteMany: vi.fn(),
         findMany: vi.fn(),
         create: vi.fn(),
+        groupBy: vi.fn(),
       },
     },
     sessionMock: { getSession: vi.fn() },
@@ -81,6 +82,12 @@ import {
   updateCompetitorType,
   updateTargetMarket,
 } from './growth-competitors';
+
+/** Narrows getDiscoveryStatus's result, failing the test on the error branch. */
+function asStatus<T extends object>(result: T | { error: string }): T {
+  if ('error' in result) throw new Error(`unexpected error: ${result.error}`);
+  return result as T;
+}
 
 const SESSION = { userId: 'user-1', email: 'user1@example.com', role: 'USER' as const };
 
@@ -146,10 +153,11 @@ describe('ownership: a workspace belonging to another user', () => {
     expect(prismaMock.competitor.updateMany).not.toHaveBeenCalled();
   });
 
-  it('removeCompetitor returns the not-found error and deletes nothing', async () => {
+  it('removeCompetitor returns the not-found error and changes nothing', async () => {
     const result = await removeCompetitor('ws-not-mine', 'comp-1');
 
     expect(result).toEqual({ error: 'workspaceNotFound' });
+    expect(prismaMock.competitor.updateMany).not.toHaveBeenCalled();
     expect(prismaMock.competitor.deleteMany).not.toHaveBeenCalled();
   });
 
@@ -168,7 +176,7 @@ describe('ownership: a workspace belonging to another user', () => {
   });
 
   it('getDiscoveryStatus returns the same empty shape as a workspace that does not exist at all', async () => {
-    const result = await getDiscoveryStatus('ws-not-mine');
+    const result = asStatus(await getDiscoveryStatus('ws-not-mine'));
 
     expect(result.run).toBeNull();
     expect(result.competitors).toEqual([]);
@@ -179,6 +187,44 @@ describe('ownership: a workspace belonging to another user', () => {
   it('listDiscoveryRuns returns an empty list rather than an error', async () => {
     const result = await listDiscoveryRuns('ws-not-mine');
     expect(result).toEqual([]);
+  });
+
+  it('never reads another workspace\'s runs, queries, market or competitor counts', async () => {
+    const statusResult = await getDiscoveryStatus('ws-not-mine');
+    const historyResult = await listDiscoveryRuns('ws-not-mine');
+
+    expect(statusResult).toEqual({
+      run: null,
+      meta: { usedRuns: 0, remainingRuns: 0, maxRuns: 3 },
+      competitors: [],
+    });
+    expect(historyResult).toEqual([]);
+    expect(prismaMock.discoveryRun.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.discoveryRun.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.findMany).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.groupBy).not.toHaveBeenCalled();
+  });
+
+  it('getDiscoveryStatus returns an identical result for a workspace id that does not exist', async () => {
+    const notMine = await getDiscoveryStatus('ws-not-mine');
+    const missing = await getDiscoveryStatus('ws-does-not-exist');
+    expect(missing).toEqual(notMine);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Session: a lost session is reported, not disguised as an empty workspace
+// ---------------------------------------------------------------------------
+
+describe('no session', () => {
+  it('getDiscoveryStatus returns the not-authenticated error and reads nothing', async () => {
+    sessionMock.getSession.mockResolvedValue(null);
+
+    const result = await getDiscoveryStatus('ws-1');
+
+    expect(result).toEqual({ error: 'notAuthenticated' });
+    expect(prismaMock.workspace.findFirst).not.toHaveBeenCalled();
+    expect(prismaMock.discoveryRun.findFirst).not.toHaveBeenCalled();
   });
 });
 
@@ -218,14 +264,15 @@ describe('ownership: a competitor id from another workspace', () => {
     });
   });
 
-  it('removeCompetitor deletes no row when it is not in this workspace', async () => {
-    prismaMock.competitor.deleteMany.mockResolvedValue({ count: 0 });
+  it('removeCompetitor changes no row when it is not in this workspace', async () => {
+    prismaMock.competitor.updateMany.mockResolvedValue({ count: 0 });
 
     const result = await removeCompetitor('ws-1', 'someone-elses-competitor');
 
     expect(result).toEqual({ error: 'competitorNotFound' });
-    expect(prismaMock.competitor.deleteMany).toHaveBeenCalledWith({
+    expect(prismaMock.competitor.updateMany).toHaveBeenCalledWith({
       where: { id: 'someone-elses-competitor', workspaceId: 'ws-1' },
+      data: { userDecision: 'REJECTED', rejectionReason: null },
     });
   });
 });
@@ -256,13 +303,23 @@ describe('allowlist validation', () => {
   it('setCompetitorDecision accepts a rejectionReason from the fixed set', async () => {
     prismaMock.competitor.updateMany.mockResolvedValue({ count: 1 });
 
-    const result = await setCompetitorDecision('ws-1', 'comp-1', 'REJECTED', 'DUPLICATE');
+    for (const reason of ['DIFFERENT_MARKET', 'TOO_BIG', 'DIFFERENT_PRODUCT', 'NOT_A_COMPANY']) {
+      const result = await setCompetitorDecision('ws-1', 'comp-1', 'REJECTED', reason);
 
-    expect(result).toEqual({ success: true });
-    expect(prismaMock.competitor.updateMany).toHaveBeenCalledWith({
-      where: { id: 'comp-1', workspaceId: 'ws-1' },
-      data: { userDecision: 'REJECTED', rejectionReason: 'DUPLICATE' },
-    });
+      expect(result).toEqual({ success: true });
+      expect(prismaMock.competitor.updateMany).toHaveBeenLastCalledWith({
+        where: { id: 'comp-1', workspaceId: 'ws-1' },
+        data: { userDecision: 'REJECTED', rejectionReason: reason },
+      });
+    }
+  });
+
+  it('setCompetitorDecision rejects the retired reason codes, including the free catch-all OTHER', async () => {
+    for (const reason of ['OTHER', 'NOT_A_COMPETITOR', 'WRONG_SCALE', 'DUPLICATE', 'ALREADY_KNOWN']) {
+      const result = await setCompetitorDecision('ws-1', 'comp-1', 'REJECTED', reason);
+      expect(result).toEqual({ error: 'competitorPayloadInvalid' });
+    }
+    expect(prismaMock.competitor.updateMany).not.toHaveBeenCalled();
   });
 
   it('updateCompetitorType rejects a type outside {DIRECT, INDIRECT, ASPIRATIONAL}', async () => {
@@ -440,7 +497,7 @@ describe('discovery quota', () => {
     prismaMock.discoveryRun.count.mockResolvedValue(2); // 2 DONE runs
     activityLogMock.getWorkspaceDiscoveryStats.mockResolvedValue({ usedRuns: 5, remainingRuns: 5 }); // 5 legacy rows
 
-    const status = await getDiscoveryStatus('ws-1');
+    const status = asStatus(await getDiscoveryStatus('ws-1'));
 
     expect(status.meta).toEqual({ usedRuns: 7, remainingRuns: 3, maxRuns: 10 });
     // The count query itself only ever asks for DONE — a FAILED, EMPTY,
@@ -457,7 +514,7 @@ describe('discovery quota', () => {
     prismaMock.discoveryRun.count.mockResolvedValue(0);
     activityLogMock.getWorkspaceDiscoveryStats.mockResolvedValue({ usedRuns: 0, remainingRuns: 10 });
 
-    const status = await getDiscoveryStatus('ws-1');
+    const status = asStatus(await getDiscoveryStatus('ws-1'));
 
     expect(status.meta.usedRuns).toBe(0);
   });
@@ -585,5 +642,135 @@ describe('addManualCompetitor', () => {
     await addManualCompetitor('ws-1', 'somesite.com');
 
     expect(prismaMock.discoveryRun.create).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// removeCompetitor: rejects, never deletes
+// ---------------------------------------------------------------------------
+
+describe('removeCompetitor', () => {
+  beforeEach(() => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+  });
+
+  it('marks the row REJECTED instead of deleting it, so the next run keeps excluding its domain', async () => {
+    prismaMock.competitor.updateMany.mockResolvedValue({ count: 1 });
+
+    const result = await removeCompetitor('ws-1', 'comp-1');
+
+    expect(result).toEqual({ success: true });
+    expect(prismaMock.competitor.updateMany).toHaveBeenCalledWith({
+      where: { id: 'comp-1', workspaceId: 'ws-1' },
+      data: { userDecision: 'REJECTED', rejectionReason: null },
+    });
+    expect(prismaMock.competitor.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Run details: market, queries, per-run counts
+// ---------------------------------------------------------------------------
+
+function runRow(overrides: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: 'run-1',
+    workspaceId: 'ws-1',
+    status: 'DONE',
+    stage: 'SAVE',
+    market: { country: 'IR', language: 'fa' },
+    queries: ['نرم‌افزار حسابداری', '  crm for clinics  '],
+    sourceStats: { queries: { count: 2, tokens: 10 } },
+    savedCount: 3,
+    tokensUsed: 100,
+    error: null,
+    startedAt: new Date('2026-09-27T10:00:00Z'),
+    finishedAt: new Date('2026-09-27T10:05:00Z'),
+    ...overrides,
+  };
+}
+
+describe('getDiscoveryStatus run details', () => {
+  beforeEach(() => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+    prismaMock.competitor.findMany.mockResolvedValue([]);
+  });
+
+  it('returns the run\'s own market snapshot and its queries as trimmed strings', async () => {
+    prismaMock.discoveryRun.findFirst.mockResolvedValue(runRow());
+
+    const result = asStatus(await getDiscoveryStatus('ws-1'));
+    expect(result.run?.market).toEqual({ country: 'IR', language: 'fa' });
+    expect(result.run?.queries).toEqual(['نرم‌افزار حسابداری', 'crm for clinics']);
+    expect(prismaMock.discoveryRun.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'ws-1' } }),
+    );
+    expect(prismaMock.competitor.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { workspaceId: 'ws-1' } }),
+    );
+  });
+
+  it('drops malformed queries and markets instead of passing them through', async () => {
+    prismaMock.discoveryRun.findFirst.mockResolvedValue(
+      runRow({
+        market: { country: 'Iran; DROP TABLE', language: 'de' },
+        queries: ['ok', 42, null, { evil: true }, '   ', 'x'.repeat(500)],
+      }),
+    );
+
+    const result = asStatus(await getDiscoveryStatus('ws-1'));
+    expect(result.run?.market).toBeNull();
+    expect(result.run?.queries).toHaveLength(2);
+    expect(result.run?.queries[0]).toBe('ok');
+    expect(result.run?.queries[1].length).toBeLessThanOrEqual(201);
+  });
+
+  it('returns no queries while the run has not written any yet', async () => {
+    prismaMock.discoveryRun.findFirst.mockResolvedValue(runRow({ status: 'RUNNING', queries: null }));
+
+    const result = asStatus(await getDiscoveryStatus('ws-1'));
+    expect(result.run?.queries).toEqual([]);
+  });
+});
+
+describe('listDiscoveryRuns run details', () => {
+  beforeEach(() => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+  });
+
+  it('returns market, query count and found/accepted counts per run, counted within this workspace only', async () => {
+    prismaMock.discoveryRun.findMany.mockResolvedValue([
+      runRow(),
+      runRow({ id: 'run-2', status: 'EMPTY', queries: null, sourceStats: { queries: { count: 9, tokens: null } }, market: { country: null, language: 'en' } }),
+      runRow({ id: 'run-3', status: 'FAILED', queries: null, sourceStats: null }),
+    ]);
+    prismaMock.competitor.groupBy.mockResolvedValue([
+      { discoveryRunId: 'run-1', userDecision: 'ACCEPTED', _count: { _all: 2 } },
+      { discoveryRunId: 'run-1', userDecision: 'PENDING', _count: { _all: 1 } },
+      { discoveryRunId: 'run-1', userDecision: 'REJECTED', _count: { _all: 1 } },
+    ]);
+
+    const result = await listDiscoveryRuns('ws-1');
+
+    expect(prismaMock.discoveryRun.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { workspaceId: 'ws-1' } }));
+    expect(prismaMock.competitor.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { workspaceId: 'ws-1', discoveryRunId: { in: ['run-1', 'run-2', 'run-3'] } },
+      }),
+    );
+    expect(result.map(({ id, market, queryCount, foundCount, acceptedCount }) => ({ id, market, queryCount, foundCount, acceptedCount }))).toEqual([
+      { id: 'run-1', market: { country: 'IR', language: 'fa' }, queryCount: 2, foundCount: 4, acceptedCount: 2 },
+      { id: 'run-2', market: { country: null, language: 'en' }, queryCount: 9, foundCount: 0, acceptedCount: 0 },
+      { id: 'run-3', market: { country: 'IR', language: 'fa' }, queryCount: null, foundCount: 0, acceptedCount: 0 },
+    ]);
+  });
+
+  it('does not query competitor counts when the workspace has no runs', async () => {
+    prismaMock.discoveryRun.findMany.mockResolvedValue([]);
+
+    const result = await listDiscoveryRuns('ws-1');
+
+    expect(result).toEqual([]);
+    expect(prismaMock.competitor.groupBy).not.toHaveBeenCalled();
   });
 });

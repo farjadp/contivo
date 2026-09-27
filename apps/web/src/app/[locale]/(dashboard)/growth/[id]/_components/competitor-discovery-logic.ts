@@ -5,7 +5,7 @@
  * `@/app/actions/growth-competitors` and hand the results to these helpers.
  */
 
-import type { EvidenceItem, SourceStats } from '@/lib/competitors/types';
+import type { EvidenceItem, SourceStats, TargetMarket } from '@/lib/competitors/types';
 
 export const POLL_INTERVAL_MS = 3000;
 
@@ -26,12 +26,14 @@ export function isKnownStage(stage: string | null | undefined): stage is Discove
 }
 
 /**
- * The rejection reasons offered as chips. They must be a subset of
- * `REJECTION_REASONS` in the actions file, which rejects anything else.
- * `OTHER` is left out on purpose: it tells the next run nothing that
- * skipping the reason doesn't.
+ * The rejection reasons offered as chips: exactly `REJECTION_REASONS` in the
+ * actions file (spec §4), which refuses anything else.
  */
-export const REJECTION_REASON_CHIPS = ['NOT_A_COMPETITOR', 'WRONG_SCALE', 'DUPLICATE', 'ALREADY_KNOWN'] as const;
+export const REJECTION_REASON_CHIPS = ['DIFFERENT_MARKET', 'TOO_BIG', 'DIFFERENT_PRODUCT', 'NOT_A_COMPANY'] as const;
+
+export function isRejectionReasonChip(value: string | null | undefined): value is RejectionReasonChip {
+  return typeof value === 'string' && (REJECTION_REASON_CHIPS as readonly string[]).includes(value);
+}
 export type RejectionReasonChip = (typeof REJECTION_REASON_CHIPS)[number];
 
 export function isRunActive(status: string | null | undefined): boolean {
@@ -54,12 +56,13 @@ export function shouldKeepPolling(
 
 export type RunOutcome =
   | { kind: 'none' }
-  | { kind: 'active'; stage: DiscoveryStage | null; queryCount: number | null }
+  | { kind: 'active'; stage: DiscoveryStage | null; queries: string[] }
   | { kind: 'done'; saved: number; skippedSites: number }
-  | { kind: 'empty'; queryCount: number | null; skippedSites: number }
+  | { kind: 'empty'; queryCount: number | null; skippedSites: number; market: TargetMarket | null }
   | { kind: 'failed'; error: string | null };
 
-function queryCountOf(stats: SourceStats | null): number | null {
+function queryCountOf(queries: string[] | undefined, stats: SourceStats | null): number | null {
+  if (queries && queries.length > 0) return queries.length;
   const count = stats?.queries?.count;
   return typeof count === 'number' && Number.isFinite(count) && count >= 0 ? count : null;
 }
@@ -74,7 +77,15 @@ function skippedSitesOf(stats: SourceStats | null): number {
 
 /** Maps the latest run to the message the run panel shows. */
 export function runOutcome(
-  run: { status: string; stage: string | null; savedCount: number; error: string | null; sourceStats: SourceStats | null } | null,
+  run: {
+    status: string;
+    stage: string | null;
+    savedCount: number;
+    error: string | null;
+    sourceStats: SourceStats | null;
+    queries?: string[];
+    market?: TargetMarket | null;
+  } | null,
 ): RunOutcome {
   if (!run) return { kind: 'none' };
   switch (run.status) {
@@ -83,12 +94,17 @@ export function runOutcome(
       return {
         kind: 'active',
         stage: isKnownStage(run.stage) ? run.stage : null,
-        queryCount: queryCountOf(run.sourceStats),
+        queries: run.queries ?? [],
       };
     case 'DONE':
       return { kind: 'done', saved: run.savedCount, skippedSites: skippedSitesOf(run.sourceStats) };
     case 'EMPTY':
-      return { kind: 'empty', queryCount: queryCountOf(run.sourceStats), skippedSites: skippedSitesOf(run.sourceStats) };
+      return {
+        kind: 'empty',
+        queryCount: queryCountOf(run.queries, run.sourceStats),
+        skippedSites: skippedSitesOf(run.sourceStats),
+        market: run.market ?? null,
+      };
     case 'FAILED':
       return { kind: 'failed', error: run.error && run.error.trim() ? run.error.trim() : null };
     default:
@@ -195,4 +211,31 @@ export function mergeCompetitors<T extends { id: string }>(server: T[], local: T
   if (inFlightIds.size === 0) return server;
   const localById = new Map(local.map((item) => [item.id, item]));
   return server.map((item) => (inFlightIds.has(item.id) ? localById.get(item.id) ?? item : item));
+}
+
+/**
+ * Whether the page's accepted list changes, which is what the rest of the
+ * workspace page (the journey guide's counts) reads after a refresh.
+ */
+export function changesAcceptedSet(previous: string, next: string): boolean {
+  return (previous === 'ACCEPTED') !== (next === 'ACCEPTED');
+}
+
+/**
+ * A status response is stale for competitor rows when a write finished
+ * after the request was sent: the server may have answered with the row as
+ * it was before that write. `writeSeqAtRequest` is the completed-write
+ * counter when the request was sent; `writeSeqNow` is its value on arrival.
+ */
+export function isStaleForRows(writeSeqAtRequest: number, writeSeqNow: number): boolean {
+  return writeSeqNow !== writeSeqAtRequest;
+}
+
+/** A localized country or language name, falling back to the code itself. */
+export function displayName(locale: string, type: 'region' | 'language', code: string): string {
+  try {
+    return new Intl.DisplayNames([locale], { type }).of(code) ?? code;
+  } catch {
+    return code;
+  }
 }

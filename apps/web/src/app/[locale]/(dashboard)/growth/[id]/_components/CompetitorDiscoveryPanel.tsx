@@ -7,7 +7,7 @@ import { Check, Circle, Loader2, Sparkles } from 'lucide-react';
 import { updateTargetMarket } from '@/app/actions/growth-competitors';
 import type { DiscoveryMeta, RunView } from '@/app/actions/growth-competitors';
 import { ErrorNote, WarningNote } from './CompetitorBits';
-import { STAGE_ORDER, runOutcome, stageIndex } from './competitor-discovery-logic';
+import { STAGE_ORDER, displayName, runOutcome, stageIndex } from './competitor-discovery-logic';
 
 export type TargetMarketView = { country: string | null; language: 'fa' | 'en' };
 
@@ -19,20 +19,11 @@ export type TargetMarketView = { country: string | null; language: 'fa' | 'en' }
  */
 const COUNTRY_CHOICES = ['IR', 'US', 'CA', 'GB', 'DE', 'FR', 'NL', 'SE', 'TR', 'AE', 'AU', 'IN'];
 
-function displayName(locale: string, type: 'region' | 'language', code: string): string {
-  try {
-    return new Intl.DisplayNames([locale], { type }).of(code) ?? code;
-  } catch {
-    return code;
-  }
-}
-
 export function CompetitorDiscoveryPanel({
   workspaceId,
   meta,
   run,
   market,
-  runMarket,
   starting,
   startError,
   pollStopped,
@@ -45,8 +36,6 @@ export function CompetitorDiscoveryPanel({
   meta: DiscoveryMeta;
   run: RunView | null;
   market: TargetMarketView;
-  /** The market the latest run searched — used for what an EMPTY result says was searched. */
-  runMarket: TargetMarketView;
   starting: boolean;
   startError: string | null;
   pollStopped: boolean;
@@ -70,8 +59,14 @@ export function CompetitorDiscoveryPanel({
 
   const countryName = market.country ? displayName(locale, 'region', market.country) : t('market.everywhere');
   const languageName = displayName(locale, 'language', market.language);
-  const runCountryName = runMarket.country ? displayName(locale, 'region', runMarket.country) : t('market.everywhere');
-  const runLanguageName = displayName(locale, 'language', runMarket.language);
+  // What an EMPTY result says was searched comes from the run's own market
+  // snapshot, not the workspace's current market, which may have changed
+  // since. Only a run too old to carry a snapshot falls back to the current one.
+  const searchedMarket = (outcome.kind === 'empty' ? outcome.market : null) ?? market;
+  const runCountryName = searchedMarket.country
+    ? displayName(locale, 'region', searchedMarket.country)
+    : t('market.everywhere');
+  const runLanguageName = displayName(locale, 'language', searchedMarket.language);
 
   const countryOptions = useMemo(() => {
     const codes = new Set(COUNTRY_CHOICES);
@@ -239,8 +234,21 @@ export function CompetitorDiscoveryPanel({
             })}
           </ol>
           {currentStage < 0 ? <p className="text-sm text-moss-muted">{t('run.starting')}</p> : null}
-          {outcome.queryCount != null ? (
-            <p className="text-xs text-moss-muted">{t('run.queryCount', { count: outcome.queryCount })}</p>
+          {outcome.queries.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-moss-muted">{t('run.queriesTitle')}</p>
+              <ul className="flex flex-wrap gap-2">
+                {outcome.queries.map((query, index) => (
+                  <li
+                    key={`${index}-${query}`}
+                    dir="auto"
+                    className="rounded-full border border-rule bg-chalk-raised px-2.5 py-0.5 text-xs text-moss"
+                  >
+                    {query}
+                  </li>
+                ))}
+              </ul>
+            </div>
           ) : null}
           <p className="text-xs text-moss-muted">{t('run.leaveNote')}</p>
           {pollStopped ? <WarningNote>{t('run.pollStopped')}</WarningNote> : null}

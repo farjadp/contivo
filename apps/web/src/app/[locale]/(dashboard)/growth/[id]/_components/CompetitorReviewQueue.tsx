@@ -17,14 +17,21 @@ import {
 export type LastDecision = {
   id: string;
   name: string;
-  decision: 'ACCEPTED' | 'REJECTED';
+  /** What just happened: accepted or set aside from the queue, or removed from the accepted list. */
+  kind: 'ACCEPTED' | 'REJECTED' | 'REMOVED';
+  /** The decision Undo restores. */
+  previous: 'PENDING' | 'ACCEPTED';
   reason: RejectionReasonChip | null;
   busy: boolean;
 };
 
 const bold = (chunks: ReactNode) => <bdi className="font-bold">{chunks}</bdi>;
 
-/** The undo strip shown after an accept or reject. A reject also offers the optional reason chips. */
+/**
+ * The undo strip shown after an accept, a reject or a removal. A reject or
+ * removal also offers the optional reason chips. Only the message is a live
+ * region; the buttons around it are not re-announced on every change.
+ */
 export function DecisionUndoBar({
   last,
   onUndo,
@@ -38,12 +45,14 @@ export function DecisionUndoBar({
 }) {
   const t = useTranslations('growth.competitors');
   return (
-    <div role="status" aria-live="polite" className="space-y-3 rounded-xl border border-rule-strong bg-chalk-sunk px-4 py-3">
+    <div className="space-y-3 rounded-xl border border-rule-strong bg-chalk-sunk px-4 py-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <p className="min-w-0 flex-1 text-sm text-moss">
-          {last.decision === 'ACCEPTED'
+        <p role="status" aria-live="polite" className="min-w-0 flex-1 text-sm text-moss">
+          {last.kind === 'ACCEPTED'
             ? t.rich('undo.accepted', { name: last.name, b: bold })
-            : t.rich('undo.rejected', { name: last.name, b: bold })}
+            : last.kind === 'REMOVED'
+              ? t.rich('undo.removed', { name: last.name, b: bold })
+              : t.rich('undo.rejected', { name: last.name, b: bold })}
         </p>
         <button
           type="button"
@@ -63,9 +72,11 @@ export function DecisionUndoBar({
           <X aria-hidden className="h-4 w-4" />
         </button>
       </div>
-      {last.decision === 'REJECTED' ? (
+      {last.kind !== 'ACCEPTED' ? (
         <div className="space-y-2">
-          <p className="text-xs text-moss-muted">{last.reason ? t('undo.reasonSaved') : t('undo.reasonPrompt')}</p>
+          <p className="text-xs text-moss-muted" aria-live="polite">
+            {last.reason ? t('undo.reasonSaved') : t('undo.reasonPrompt')}
+          </p>
           <div className="flex flex-wrap gap-2">
             {REJECTION_REASON_CHIPS.map((reason) => {
               const chosen = last.reason === reason;
@@ -186,7 +197,7 @@ function ReviewCard({
       </div>
 
       {competitor.description ? (
-        <p dir="auto" className="mt-3 text-sm leading-relaxed text-moss">
+        <p dir="auto" className="mt-3 line-clamp-2 text-sm leading-relaxed text-moss">
           {competitor.description}
         </p>
       ) : null}

@@ -84,13 +84,15 @@ function isCompetitorType(value: unknown): value is CompetitorType {
 }
 
 /**
- * `rejectionReason` feeds `buildBrandBrief`, which puts it in front of a
- * model on the next run (`queries.ts`'s "rejected competitors" section). A
- * free-text reason here would be a prompt-injection channel from the
- * browser straight into that prompt, so it is a closed set like every other
- * enum-ish field, not a caption the user can type.
+ * `rejectionReason` is carried into `buildBrandBrief`'s
+ * `rejectedCompetitors`, the brief every later run is built from. A
+ * free-text reason there would be a prompt-injection channel from the
+ * browser into any prompt that renders the brief, so it is a closed set
+ * like every other enum-ish field, not a caption the user can type. The
+ * set is the spec's (§4): each value names a way a suggestion can fail to
+ * be a competitor, with no catch-all `OTHER`.
  */
-const REJECTION_REASONS = ['NOT_A_COMPETITOR', 'WRONG_SCALE', 'DUPLICATE', 'ALREADY_KNOWN', 'OTHER'] as const;
+const REJECTION_REASONS = ['DIFFERENT_MARKET', 'TOO_BIG', 'DIFFERENT_PRODUCT', 'NOT_A_COMPANY'] as const;
 type RejectionReason = (typeof REJECTION_REASONS)[number];
 function isRejectionReason(value: unknown): value is RejectionReason {
   return typeof value === 'string' && (REJECTION_REASONS as readonly string[]).includes(value);
@@ -164,6 +166,10 @@ export type RunView = {
   tokensUsed: number;
   error: string | null;
   sourceStats: SourceStats | null;
+  /** The market this run searched — the snapshot taken when it started, not the workspace's current one. */
+  market: TargetMarket | null;
+  /** The search queries this run generated. Model-written text: render it as plain text only. */
+  queries: string[];
   startedAt: string;
   finishedAt: string | null;
 };
@@ -175,6 +181,12 @@ export type RunHistoryItem = {
   savedCount: number;
   tokensUsed: number;
   error: string | null;
+  market: TargetMarket | null;
+  /** How many queries the run generated, or null when it never got that far. */
+  queryCount: number | null;
+  /** Competitors this run saved that are still attached to it, by current decision. */
+  foundCount: number;
+  acceptedCount: number;
   startedAt: string;
   finishedAt: string | null;
 };
@@ -230,6 +242,42 @@ function toCompetitorView(row: CompetitorRow): CompetitorView {
   };
 }
 
+const MAX_QUERIES_SHOWN = 30;
+const MAX_QUERY_LENGTH = 200;
+
+/**
+ * `DiscoveryRun.queries` is a JSON column the pipeline fills with the
+ * model's query list. Read it defensively: only strings, trimmed, bounded in
+ * count and length, so a malformed or oversized value cannot reach the UI.
+ */
+function parseStoredQueries(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  const out: string[] = [];
+  for (const item of value) {
+    if (typeof item !== 'string') continue;
+    const query = item.trim();
+    if (!query) continue;
+    out.push(query.length > MAX_QUERY_LENGTH ? `${query.slice(0, MAX_QUERY_LENGTH)}…` : query);
+    if (out.length >= MAX_QUERIES_SHOWN) break;
+  }
+  return out;
+}
+
+/** `DiscoveryRun.market` snapshot, validated to the same shape `updateTargetMarket` accepts. */
+function parseStoredMarket(value: unknown): TargetMarket | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as { country?: unknown; language?: unknown };
+  const country = typeof record.country === 'string' && COUNTRY_CODE_RE.test(record.country) ? record.country : null;
+  if (!isLanguage(record.language)) return null;
+  return { country, language: record.language };
+}
+
+function storedQueryCount(queries: unknown, sourceStats: unknown): number | null {
+  if (Array.isArray(queries)) return queries.filter((q) => typeof q === 'string' && q.trim()).length;
+  const count = (sourceStats as SourceStats | null)?.queries?.count;
+  return typeof count === 'number' && Number.isFinite(count) && count >= 0 ? count : null;
+}
+
 function toRunView(run: {
   id: string;
   status: string;
@@ -238,6 +286,8 @@ function toRunView(run: {
   tokensUsed: number;
   error: string | null;
   sourceStats: unknown;
+  market: unknown;
+  queries: unknown;
   startedAt: Date;
   finishedAt: Date | null;
 }): RunView {
@@ -249,6 +299,8 @@ function toRunView(run: {
     tokensUsed: run.tokensUsed,
     error: sanitizeUpstreamText(run.error),
     sourceStats: sanitizeSourceStats(run.sourceStats),
+    market: parseStoredMarket(run.market),
+    queries: parseStoredQueries(run.queries),
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
   };
@@ -395,17 +447,22 @@ export async function startCompetitorDiscovery(
 // getDiscoveryStatus
 // ---------------------------------------------------------------------------
 
-export async function getDiscoveryStatus(
-  workspaceId: string,
-): Promise<{ run: RunView | null; meta: DiscoveryMeta; competitors: CompetitorView[] }> {
-  const empty = async (): Promise<{ run: RunView | null; meta: DiscoveryMeta; competitors: CompetitorView[] }> => ({
+export type DiscoveryStatus = { run: RunView | null; meta: DiscoveryMeta; competitors: CompetitorView[] };
+
+export async function getDiscoveryStatus(workspaceId: string): Promise<DiscoveryStatus | { error: string }> {
+  const empty = async (): Promise<DiscoveryStatus> => ({
     run: null,
     meta: { usedRuns: 0, remainingRuns: 0, maxRuns: await getMaxDiscoveryRuns() },
     competitors: [],
   });
 
+  // A lost session is reported as such, so the UI does not show it as "no
+  // competitors, quota spent". This reveals only the caller's own session
+  // state — nothing about any workspace — so the not-yours / not-found
+  // parity below is unaffected.
   const session = await getSession();
-  if (!session || !workspaceId) return empty();
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return empty();
 
   const workspace = await prisma.workspace.findFirst({
     where: { id: workspaceId, userId: session.userId },
@@ -531,7 +588,14 @@ export async function removeCompetitor(
   });
   if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-  const { count } = await prisma.competitor.deleteMany({ where: { id: competitorId, workspaceId } });
+  // "Remove" rejects rather than deletes. A deleted row takes its domain
+  // out of the exclude set the next run is built with, so the same company
+  // would come straight back as a new suggestion; a REJECTED row keeps it
+  // out for good, and can still be moved back to review.
+  const { count } = await prisma.competitor.updateMany({
+    where: { id: competitorId, workspaceId },
+    data: { userDecision: 'REJECTED', rejectionReason: null },
+  });
   if (count === 0) return { error: await actionError('competitorNotFound') };
 
   await writeActivityLog({
@@ -600,6 +664,26 @@ export async function listDiscoveryRuns(workspaceId: string): Promise<RunHistory
     take: 20,
   });
 
+  // Found / accepted per run, counted from the competitor rows each run
+  // saved. Scoped by workspaceId as well as the run ids, so a run id that
+  // somehow belonged elsewhere could never pull another workspace's rows.
+  const counts = new Map<string, { found: number; accepted: number }>();
+  if (runs.length > 0) {
+    const grouped = await prisma.competitor.groupBy({
+      by: ['discoveryRunId', 'userDecision'],
+      where: { workspaceId, discoveryRunId: { in: runs.map((run) => run.id) } },
+      _count: { _all: true },
+    });
+    for (const row of grouped) {
+      if (!row.discoveryRunId) continue;
+      const entry = counts.get(row.discoveryRunId) ?? { found: 0, accepted: 0 };
+      const n = row._count._all;
+      entry.found += n;
+      if (row.userDecision === 'ACCEPTED') entry.accepted += n;
+      counts.set(row.discoveryRunId, entry);
+    }
+  }
+
   return runs.map((run) => ({
     id: run.id,
     status: run.status,
@@ -607,6 +691,10 @@ export async function listDiscoveryRuns(workspaceId: string): Promise<RunHistory
     savedCount: run.savedCount,
     tokensUsed: run.tokensUsed,
     error: sanitizeUpstreamText(run.error),
+    market: parseStoredMarket(run.market),
+    queryCount: storedQueryCount(run.queries, run.sourceStats),
+    foundCount: counts.get(run.id)?.found ?? 0,
+    acceptedCount: counts.get(run.id)?.accepted ?? 0,
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
   }));

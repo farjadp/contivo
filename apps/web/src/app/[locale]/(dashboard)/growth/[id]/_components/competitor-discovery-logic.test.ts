@@ -6,7 +6,10 @@ import {
   REJECTION_REASON_CHIPS,
   domainHref,
   evidenceQueries,
+  changesAcceptedSet,
+  isRejectionReasonChip,
   isRunActive,
+  isStaleForRows,
   mergeCompetitors,
   runOutcome,
   safeExternalHref,
@@ -63,17 +66,17 @@ describe('runOutcome', () => {
     expect(runOutcome({ ...base, status: 'WEIRD' })).toEqual({ kind: 'none' });
   });
 
-  it('reports the current stage and the query count while active', () => {
+  it('reports the current stage and the queries while active', () => {
     expect(
-      runOutcome({ ...base, status: 'RUNNING', stage: 'SEARCH', sourceStats: { queries: { count: 12, tokens: 10 } } }),
-    ).toEqual({ kind: 'active', stage: 'SEARCH', queryCount: 12 });
+      runOutcome({ ...base, status: 'RUNNING', stage: 'SEARCH', queries: ['a', 'b'], sourceStats: { queries: { count: 2, tokens: 10 } } }),
+    ).toEqual({ kind: 'active', stage: 'SEARCH', queries: ['a', 'b'] });
   });
 
   it('drops a stage it does not know instead of showing the raw enum', () => {
     expect(runOutcome({ ...base, status: 'RUNNING', stage: 'SOMETHING' })).toEqual({
       kind: 'active',
       stage: null,
-      queryCount: null,
+      queries: [],
     });
   });
 
@@ -94,16 +97,19 @@ describe('runOutcome', () => {
     ).toEqual({ kind: 'done', saved: 1, skippedSites: 0 });
   });
 
-  it('says how many queries an EMPTY run actually ran', () => {
-    expect(runOutcome({ ...base, status: 'EMPTY', sourceStats: { queries: { count: 9, tokens: null } } })).toEqual({
+  it('says how many queries an EMPTY run used, and the market the run itself searched', () => {
+    const market = { country: 'IR', language: 'fa' as const };
+    expect(runOutcome({ ...base, status: 'EMPTY', market, sourceStats: { queries: { count: 9, tokens: null } } })).toEqual({
       kind: 'empty',
       queryCount: 9,
       skippedSites: 0,
+      market,
     });
+    expect(runOutcome({ ...base, status: 'EMPTY', market, queries: ['a', 'b', 'c'] })).toMatchObject({ queryCount: 3 });
   });
 
-  it('leaves the query count unknown on EMPTY when the queries stage never recorded it', () => {
-    expect(runOutcome({ ...base, status: 'EMPTY' })).toEqual({ kind: 'empty', queryCount: null, skippedSites: 0 });
+  it('leaves the query count and market unknown on EMPTY when the run never recorded them', () => {
+    expect(runOutcome({ ...base, status: 'EMPTY' })).toEqual({ kind: 'empty', queryCount: null, skippedSites: 0, market: null });
   });
 
   it('carries the error text on FAILED, and null for a blank one', () => {
@@ -235,6 +241,30 @@ describe('REJECTION_REASON_CHIPS', () => {
     expect(match).not.toBeNull();
     const allowed = [...(match?.[1] ?? '').matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
     for (const chip of REJECTION_REASON_CHIPS) expect(allowed).toContain(chip);
-    expect(REJECTION_REASON_CHIPS).toHaveLength(4);
+    expect([...REJECTION_REASON_CHIPS].sort()).toEqual([...allowed].sort());
+  });
+
+  it('recognises only its own codes', () => {
+    expect(isRejectionReasonChip('TOO_BIG')).toBe(true);
+    expect(isRejectionReasonChip('OTHER')).toBe(false);
+    expect(isRejectionReasonChip(null)).toBe(false);
+  });
+});
+
+describe('changesAcceptedSet', () => {
+  it('is true only when a decision moves into or out of ACCEPTED', () => {
+    expect(changesAcceptedSet('PENDING', 'ACCEPTED')).toBe(true);
+    expect(changesAcceptedSet('ACCEPTED', 'REJECTED')).toBe(true);
+    expect(changesAcceptedSet('ACCEPTED', 'PENDING')).toBe(true);
+    expect(changesAcceptedSet('PENDING', 'REJECTED')).toBe(false);
+    expect(changesAcceptedSet('REJECTED', 'REJECTED')).toBe(false);
+    expect(changesAcceptedSet('REJECTED', 'PENDING')).toBe(false);
+  });
+});
+
+describe('isStaleForRows', () => {
+  it('flags a response when any write completed while it was in flight', () => {
+    expect(isStaleForRows(3, 3)).toBe(false);
+    expect(isStaleForRows(3, 4)).toBe(true);
   });
 });

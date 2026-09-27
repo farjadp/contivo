@@ -17,6 +17,7 @@ import {
 import type {
   CompetitorView,
   DiscoveryMeta,
+  DiscoveryStatus,
   RunHistoryItem,
   RunView,
 } from '@/app/actions/growth-competitors';
@@ -27,14 +28,14 @@ import { CompetitorList, ManualCompetitorForm, RunHistory, type LegacyRun } from
 import { CompetitorReviewQueue, DecisionUndoBar, type LastDecision } from './CompetitorReviewQueue';
 import {
   POLL_INTERVAL_MS,
+  changesAcceptedSet,
   isRunActive,
+  isStaleForRows,
   mergeCompetitors,
   shouldKeepPolling,
   sortByConfidence,
   type RejectionReasonChip,
 } from './competitor-discovery-logic';
-
-type DiscoveryStatus = Awaited<ReturnType<typeof getDiscoveryStatus>>;
 
 /**
  * The competitors section of the Growth workspace: a run panel, a review
@@ -74,13 +75,7 @@ export function CompetitorMapManager({
   const [competitors, setCompetitors] = useState<CompetitorView[]>([]);
   const [history, setHistory] = useState<RunHistoryItem[]>([]);
   const [market, setMarket] = useState<TargetMarketView>(initialMarket);
-  // The market the latest run searched, as far as this page knows: the
-  // saved market when the page loaded, then whatever was saved when a run
-  // was started here. Editing the market afterwards must not rewrite what
-  // an EMPTY result says was searched. (RunView does not expose the run's
-  // own market snapshot, so a market changed in another session before
-  // this page loaded is not reflected.)
-  const [runMarket, setRunMarket] = useState<TargetMarketView>(initialMarket);
+  const [signedOut, setSignedOut] = useState(false);
 
   const [starting, setStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
@@ -102,6 +97,13 @@ export function CompetitorMapManager({
   // copy of these rather than flipping them back to what the server had a
   // moment ago. A ref, not state: the poll callback reads it asynchronously.
   const inFlightRef = useRef<Set<string>>(new Set());
+  // Counts writes that have finished. A status request remembers the value
+  // when it is sent; if it changed by the time the answer arrives, a write
+  // completed in between and the answer's rows may predate it.
+  const writeSeqRef = useRef(0);
+  const noteWriteDone = () => {
+    writeSeqRef.current += 1;
+  };
   const runRef = useRef<RunView | null>(null);
   const mountedRef = useRef(true);
   useEffect(() => {
@@ -130,12 +132,12 @@ export function CompetitorMapManager({
   }, [workspaceId]);
 
   const applyStatus = useCallback(
-    (status: DiscoveryStatus) => {
+    (status: DiscoveryStatus, applyRows: boolean) => {
       const wasActive = isRunActive(runRef.current?.status);
       runRef.current = status.run;
       setRun(status.run);
       setMeta(status.meta);
-      setCompetitors((prev) => mergeCompetitors(status.competitors, prev, inFlightRef.current));
+      if (applyRows) setCompetitors((prev) => mergeCompetitors(status.competitors, prev, inFlightRef.current));
       if (wasActive && !isRunActive(status.run?.status)) {
         // A run just finished while this page was watching it.
         void refreshHistory();
@@ -145,19 +147,39 @@ export function CompetitorMapManager({
     [refreshHistory],
   );
 
+  /**
+   * Fetches and applies the discovery status. Returns false when the session
+   * is gone. Rows from an answer that a completed write may have overtaken
+   * are dropped; if no poll is coming to correct them, fetch again.
+   */
+  const fetchStatus = useCallback(async (): Promise<boolean> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const seqAtRequest = writeSeqRef.current;
+      const status = await getDiscoveryStatus(workspaceId);
+      if (!mountedRef.current) return true;
+      if ('error' in status) {
+        setSignedOut(true);
+        return false;
+      }
+      const stale = isStaleForRows(seqAtRequest, writeSeqRef.current);
+      applyStatus(status, !stale);
+      if (!stale || isRunActive(status.run?.status)) return true;
+    }
+    return true;
+  }, [workspaceId, applyStatus]);
+
   const load = useCallback(async () => {
     setLoadState('loading');
     try {
-      const [status, runs] = await Promise.all([getDiscoveryStatus(workspaceId), listDiscoveryRuns(workspaceId)]);
-      if (!mountedRef.current) return;
-      applyStatus(status);
+      const [ok, runs] = await Promise.all([fetchStatus(), listDiscoveryRuns(workspaceId)]);
+      if (!mountedRef.current || !ok) return;
       setHistory(runs);
       setLoadState('ready');
     } catch (error) {
       console.error(error);
       if (mountedRef.current) setLoadState('error');
     }
-  }, [workspaceId, applyStatus]);
+  }, [workspaceId, fetchStatus]);
 
   useEffect(() => {
     void load();
@@ -182,8 +204,9 @@ export function CompetitorMapManager({
       }
       inFlight = true;
       try {
-        const status = await getDiscoveryStatus(workspaceId);
-        if (!cancelled) applyStatus(status);
+        if (cancelled) return;
+        const ok = await fetchStatus();
+        if (!ok) window.clearInterval(timer);
       } catch (error) {
         // One failed poll is not the end of the run; the next tick retries.
         console.error(error);
@@ -195,7 +218,7 @@ export function CompetitorMapManager({
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [runActive, runId, workspaceId, applyStatus]);
+  }, [runActive, runId, fetchStatus]);
 
   const startRun = async () => {
     setStarting(true);
@@ -207,16 +230,13 @@ export function CompetitorMapManager({
         setStartError(started.error);
         // A dispatch failure leaves a FAILED run behind; show it.
         try {
-          const status = await getDiscoveryStatus(workspaceId);
-          if (mountedRef.current) applyStatus(status);
+          await fetchStatus();
         } catch (error) {
           console.error(error);
         }
         return;
       }
-      setRunMarket(market);
-      const status = await getDiscoveryStatus(workspaceId);
-      if (mountedRef.current) applyStatus(status);
+      await fetchStatus();
       void refreshHistory();
     } catch (error) {
       console.error(error);
@@ -247,6 +267,9 @@ export function CompetitorMapManager({
         setActionError(result.error);
         return false;
       }
+      // Only a change to the accepted set affects the rest of the page (the
+      // journey guide's counts); anything else would re-run it for nothing.
+      if (changesAcceptedSet(previous.userDecision, decision)) router.refresh();
       return true;
     } catch (error) {
       console.error(error);
@@ -254,15 +277,17 @@ export function CompetitorMapManager({
       setActionError(t('queue.decisionFailed'));
       return false;
     } finally {
+      noteWriteDone();
       inFlightRef.current.delete(competitor.id);
       removeFrom(setSavingDecisionIds, competitor.id);
-      router.refresh();
     }
   };
 
   const decide = async (competitor: CompetitorView, decision: 'ACCEPTED' | 'REJECTED') => {
     const saved = await saveDecision(competitor, decision);
-    if (saved) setLastDecision({ id: competitor.id, name: competitor.name, decision, reason: null, busy: false });
+    if (saved) {
+      setLastDecision({ id: competitor.id, name: competitor.name, kind: decision, previous: 'PENDING', reason: null, busy: false });
+    }
   };
 
   const undo = async () => {
@@ -273,7 +298,7 @@ export function CompetitorMapManager({
       return;
     }
     setLastDecision({ ...lastDecision, busy: true });
-    const saved = await saveDecision(competitor, 'PENDING');
+    const saved = await saveDecision(competitor, lastDecision.previous);
     if (saved) setLastDecision(null);
     else {
       setLastDecision({ ...lastDecision, busy: false });
@@ -282,7 +307,7 @@ export function CompetitorMapManager({
   };
 
   const chooseReason = async (reason: RejectionReasonChip) => {
-    if (!lastDecision || lastDecision.decision !== 'REJECTED') return;
+    if (!lastDecision || lastDecision.kind === 'ACCEPTED') return;
     const competitor = competitors.find((item) => item.id === lastDecision.id);
     if (!competitor) return;
     setLastDecision({ ...lastDecision, busy: true });
@@ -312,14 +337,16 @@ export function CompetitorMapManager({
       patchLocal(competitor.id, { type: previous });
       setActionError(t('queue.typeSaveFailed'));
     } finally {
+      noteWriteDone();
       inFlightRef.current.delete(competitor.id);
       removeFrom(setSavingTypeIds, competitor.id);
-      router.refresh();
     }
   };
 
+  /** Takes a competitor off the accepted list. The server sets it aside (REJECTED); it is not deleted. */
   const remove = async (competitor: CompetitorView) => {
     setActionError(null);
+    inFlightRef.current.add(competitor.id);
     addTo(setRemovingIds, competitor.id);
     try {
       const result = await removeCompetitor(workspaceId, competitor.id);
@@ -327,13 +354,15 @@ export function CompetitorMapManager({
         setActionError(result.error);
         return;
       }
-      setCompetitors((prev) => prev.filter((item) => item.id !== competitor.id));
-      if (lastDecision?.id === competitor.id) setLastDecision(null);
+      patchLocal(competitor.id, { userDecision: 'REJECTED', rejectionReason: null });
+      setLastDecision({ id: competitor.id, name: competitor.name, kind: 'REMOVED', previous: 'ACCEPTED', reason: null, busy: false });
       router.refresh();
     } catch (error) {
       console.error(error);
       setActionError(t('list.removeFailed'));
     } finally {
+      noteWriteDone();
+      inFlightRef.current.delete(competitor.id);
       removeFrom(setRemovingIds, competitor.id);
     }
   };
@@ -359,6 +388,7 @@ export function CompetitorMapManager({
       setAddError(t('add.failed'));
       return false;
     } finally {
+      noteWriteDone();
       setAdding(false);
     }
   };
@@ -376,6 +406,10 @@ export function CompetitorMapManager({
   );
   const accepted = useMemo(() => competitors.filter((item) => item.userDecision === 'ACCEPTED'), [competitors]);
   const rejected = useMemo(() => competitors.filter((item) => item.userDecision === 'REJECTED'), [competitors]);
+
+  if (signedOut) {
+    return <ErrorNote>{t('signedOut')}</ErrorNote>;
+  }
 
   if (loadState === 'loading') {
     return (
@@ -408,7 +442,6 @@ export function CompetitorMapManager({
         meta={meta}
         run={run}
         market={market}
-        runMarket={runMarket}
         starting={starting}
         startError={startError}
         pollStopped={pollStopped}
@@ -420,6 +453,15 @@ export function CompetitorMapManager({
 
       {actionError ? <ErrorNote>{actionError}</ErrorNote> : null}
 
+      {lastDecision ? (
+        <DecisionUndoBar
+          last={lastDecision}
+          onUndo={() => void undo()}
+          onReason={(reason) => void chooseReason(reason)}
+          onDismiss={() => setLastDecision(null)}
+        />
+      ) : null}
+
       <section className="space-y-3">
         <h3 className="text-sm font-bold text-moss">
           {t('queue.title')}
@@ -429,14 +471,6 @@ export function CompetitorMapManager({
             </span>
           ) : null}
         </h3>
-        {lastDecision ? (
-          <DecisionUndoBar
-            last={lastDecision}
-            onUndo={() => void undo()}
-            onReason={(reason) => void chooseReason(reason)}
-            onDismiss={() => setLastDecision(null)}
-          />
-        ) : null}
         <CompetitorReviewQueue
           competitors={pending}
           savingDecisionIds={savingDecisionIds}

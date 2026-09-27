@@ -2,12 +2,13 @@
 
 import { forwardRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
-import { ChevronDown, Loader2, Plus, Trash2, Undo2 } from 'lucide-react';
+import { useFormatter, useLocale, useTranslations } from 'next-intl';
+import { ChevronDown, Loader2, MinusCircle, Plus, Undo2 } from 'lucide-react';
 
 import type { CompetitorView, RunHistoryItem } from '@/app/actions/growth-competitors';
 import type { CompetitorType } from '@/lib/competitors/types';
 import { DomainLink, ErrorNote, TypeSelect, WarningNote } from './CompetitorBits';
+import { displayName, isRejectionReasonChip } from './competitor-discovery-logic';
 
 export type LegacyRun = {
   id: string;
@@ -47,7 +48,6 @@ export function CompetitorList({
 }) {
   const t = useTranslations('growth.competitors');
   const format = useFormatter();
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   return (
     <div className="space-y-4">
@@ -56,7 +56,6 @@ export function CompetitorList({
       ) : (
         <ul className="divide-y divide-rule rounded-xl border border-rule bg-chalk">
           {accepted.map((competitor) => {
-            const confirming = confirmingId === competitor.id;
             const removing = removingIds.has(competitor.id);
             return (
               <li key={competitor.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
@@ -77,39 +76,18 @@ export function CompetitorList({
                   saving={savingTypeIds.has(competitor.id)}
                   onChange={(type) => onType(competitor, type)}
                 />
-                {confirming ? (
-                  <span className="inline-flex items-center gap-2">
-                    <span className="text-xs font-semibold text-moss">{t('list.removeConfirm')}</span>
-                    <button
-                      type="button"
-                      disabled={removing}
-                      onClick={() => {
-                        onRemove(competitor);
-                        setConfirmingId(null);
-                      }}
-                      className="rounded-lg bg-red-700 px-2.5 py-1 text-xs font-bold text-chalk transition hover:bg-red-800 disabled:opacity-60"
-                    >
-                      {t('list.removeYes')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfirmingId(null)}
-                      className="rounded-lg border border-rule-strong bg-chalk-raised px-2.5 py-1 text-xs font-semibold text-moss transition hover:bg-chalk-sunk"
-                    >
-                      {t('list.removeNo')}
-                    </button>
-                  </span>
-                ) : (
-                  <button
-                    type="button"
-                    disabled={removing}
-                    onClick={() => setConfirmingId(competitor.id)}
-                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-moss-muted transition hover:bg-chalk-sunk hover:text-moss disabled:opacity-60"
-                  >
-                    {removing ? <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" /> : <Trash2 aria-hidden className="h-3.5 w-3.5" />}
-                    {t('list.remove')}
-                  </button>
-                )}
+                {/* Removing sets the competitor aside (REJECTED) rather than
+                    deleting it, so it is never suggested again; the undo
+                    strip that follows says so and can bring it back. */}
+                <button
+                  type="button"
+                  disabled={removing}
+                  onClick={() => onRemove(competitor)}
+                  className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-moss-muted transition hover:bg-chalk-sunk hover:text-moss disabled:opacity-60"
+                >
+                  {removing ? <Loader2 aria-hidden className="h-3.5 w-3.5 animate-spin" /> : <MinusCircle aria-hidden className="h-3.5 w-3.5" />}
+                  {t('list.remove')}
+                </button>
               </li>
             );
           })}
@@ -130,15 +108,15 @@ export function CompetitorList({
           <ul className="divide-y divide-rule border-t border-rule">
             {rejected.map((competitor) => {
               const reason = competitor.rejectionReason;
-              const reasonKnown =
-                reason === 'NOT_A_COMPETITOR' || reason === 'WRONG_SCALE' || reason === 'DUPLICATE' || reason === 'ALREADY_KNOWN';
               return (
                 <li key={competitor.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 py-2.5">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm text-moss">
                       <bdi>{competitor.name}</bdi>
                     </p>
-                    {reasonKnown ? <p className="text-[11px] text-moss-muted">{t(`reasons.${reason}`)}</p> : null}
+                    {isRejectionReasonChip(reason) ? (
+                      <p className="text-[11px] text-moss-muted">{t(`reasons.${reason}`)}</p>
+                    ) : null}
                   </div>
                   <button
                     type="button"
@@ -237,6 +215,7 @@ export const ManualCompetitorForm = forwardRef<
 export function RunHistory({ runs, legacy }: { runs: RunHistoryItem[]; legacy: LegacyRun[] }) {
   const t = useTranslations('growth.competitors');
   const format = useFormatter();
+  const locale = useLocale();
   const total = runs.length + legacy.length;
 
   const when = (value: string | Date) => {
@@ -259,14 +238,33 @@ export function RunHistory({ runs, legacy }: { runs: RunHistoryItem[]; legacy: L
           {runs.map((run) => {
             const status = historyStatus(run.status);
             const notCharged = run.status === 'EMPTY' || run.status === 'FAILED';
+            const details: string[] = [];
+            if (run.market) {
+              details.push(
+                t('history.market', {
+                  country: run.market.country
+                    ? displayName(locale, 'region', run.market.country)
+                    : t('market.everywhere'),
+                  language: displayName(locale, 'language', run.market.language),
+                }),
+              );
+            }
+            if (run.queryCount != null) details.push(t('history.queries', { count: run.queryCount }));
+            if (run.status === 'DONE') {
+              details.push(t('history.found', { count: run.foundCount }));
+              details.push(t('history.accepted', { count: run.acceptedCount }));
+            }
+            if (notCharged) details.push(t('history.notCharged'));
             return (
               <li key={run.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2.5 text-sm">
                 <span className="text-moss">
                   {status ? t(`history.status.${status}`) : null}
-                  {run.status === 'DONE' ? (
-                    <span className="text-moss-muted"> · {t('history.found', { count: run.savedCount })}</span>
-                  ) : null}
-                  {notCharged ? <span className="text-moss-muted"> · {t('history.notCharged')}</span> : null}
+                  {details.map((detail) => (
+                    <span key={detail} className="text-moss-muted">
+                      {' · '}
+                      {detail}
+                    </span>
+                  ))}
                 </span>
                 <span className="text-xs text-moss-muted">{when(run.startedAt)}</span>
               </li>
