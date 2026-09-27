@@ -3,6 +3,19 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
+ * NOTE: migration `20260926000000_competitor_discovery` is now the source
+ * of truth for this index — a fresh database (or `prisma migrate deploy`
+ * in production) gets it from that migration file, not from running this
+ * script. This script still exists for a database that already has the
+ * `discovery_runs` table from a `db push` done before that migration was
+ * written (this repo's local dev database, at the time this note was
+ * added) but was never baselined onto it — running this script there is
+ * equivalent to what the migration's own `CREATE UNIQUE INDEX IF NOT
+ * EXISTS` statement would do, so it does not conflict with later running
+ * `prisma migrate resolve --applied 20260926000000_competitor_discovery`
+ * (or, on a database that runs the migration for real, `migrate deploy`)
+ * on the same database.
+ *
  * Adds a partial unique index enforcing "at most one PENDING/RUNNING
  * DiscoveryRun per workspace" at the database level.
  *

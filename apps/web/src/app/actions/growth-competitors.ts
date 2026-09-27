@@ -329,14 +329,28 @@ export async function startCompetitorDiscovery(
     });
   } catch (error) {
     // `discovery_runs_one_active_per_workspace` (a partial unique index —
-    // see prisma/add-discovery-run-active-constraint.ts, since Prisma's
-    // schema language cannot express "unique where status IN (...)")
-    // enforces at the database level what the `active` check above only
-    // checks-then-acts on. Two concurrent calls can both pass that check
-    // before either has created its row; the constraint is what actually
-    // stops a second PENDING/RUNNING row from ever being written, and this
-    // catch is what makes the two agree on the error the caller sees.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+    // see prisma/add-discovery-run-active-constraint.ts and its migration,
+    // since Prisma's schema language cannot express "unique where status
+    // IN (...)") enforces at the database level what the `active` check
+    // above only checks-then-acts on. Two concurrent calls can both pass
+    // that check before either has created its row; the constraint is what
+    // actually stops a second PENDING/RUNNING row from ever being written,
+    // and this catch is what makes the two agree on the error the caller
+    // sees.
+    //
+    // Narrowed to this specific constraint via `error.meta.target` (Prisma
+    // reports the column list a P2002 came from — `["workspaceId"]` for
+    // this one, verified directly against the local database) rather than
+    // catching every P2002 on this model: DiscoveryRun has no other unique
+    // constraint, so this is airtight today, but a bare `code === 'P2002'`
+    // would silently start reporting "already running" for an unrelated
+    // future unique violation on this table too.
+    const isActiveRunConflict =
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === 'P2002' &&
+      Array.isArray(error.meta?.target) &&
+      (error.meta.target as unknown[]).includes('workspaceId');
+    if (isActiveRunConflict) {
       return { error: await actionError('discoveryAlreadyRunning') };
     }
     throw error;

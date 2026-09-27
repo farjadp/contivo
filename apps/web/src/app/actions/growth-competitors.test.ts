@@ -377,12 +377,15 @@ describe('startCompetitorDiscovery', () => {
     // Simulates two concurrent calls both passing the `active` findFirst
     // check before either has written its row: the partial unique index
     // (discovery_runs_one_active_per_workspace) is what actually stops the
-    // second create, surfaced by Prisma as a P2002.
+    // second create, surfaced by Prisma as a P2002 whose `meta.target`
+    // names the `workspaceId` column — verified directly against the real
+    // local database (see the fix-round report), not assumed.
     const { Prisma } = await import('@prisma/client');
     prismaMock.discoveryRun.create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
         code: 'P2002',
         clientVersion: '5.22.0',
+        meta: { modelName: 'DiscoveryRun', target: ['workspaceId'] },
       }),
     );
 
@@ -402,6 +405,22 @@ describe('startCompetitorDiscovery', () => {
     );
 
     await expect(startCompetitorDiscovery('ws-1')).rejects.toThrow('Some other failure');
+  });
+
+  it('re-throws a P2002 on this model that is not the active-run constraint, rather than reporting discoveryAlreadyRunning for it', async () => {
+    // A P2002 whose target does not name workspaceId is some other unique
+    // violation entirely (DiscoveryRun has none today, but this proves the
+    // catch does not swallow every P2002 indiscriminately).
+    const { Prisma } = await import('@prisma/client');
+    prismaMock.discoveryRun.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '5.22.0',
+        meta: { modelName: 'DiscoveryRun', target: ['id'] },
+      }),
+    );
+
+    await expect(startCompetitorDiscovery('ws-1')).rejects.toThrow('Unique constraint failed');
   });
 });
 

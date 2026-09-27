@@ -108,13 +108,31 @@ describe('triggerBackgroundRun', () => {
   });
 
   it('never puts CRON_SECRET in the returned error text', async () => {
-    // Unset case: the error string must name the env var, not its value
-    // (there is no value yet, but this guards against a future edit that
-    // starts interpolating `secret` into the message).
+    const realSecret = 'super-secret-cron-value-should-never-leak';
+    process.env.CRON_SECRET = realSecret;
     process.env.WEB_APP_URL = 'https://app.example.com';
+    (fetch as ReturnType<typeof vi.fn>).mockResolvedValue(new Response(null, { status: 500 }));
 
     const result = await triggerBackgroundRun('/api/growth/discovery/run', { runId: 'r1' });
 
-    expect('error' in result ? result.error : '').not.toContain('undefined');
+    expect('error' in result ? result.error : '').not.toContain(realSecret);
+  });
+
+  it('scrubs a Bearer-shaped secret out of the error text even if a thrown error happened to echo it', async () => {
+    // A plain fetch failure (DNS, connection refused, timeout) has never
+    // been observed to echo a request header back, but this proves the
+    // sanitizer that's actually wired in here would catch it if one ever
+    // did — the same reason judge.ts/search.ts/queries.ts sanitize their
+    // upstream error text at the write site, not only on display.
+    const realSecret = 'super-secret-cron-value-should-never-leak';
+    process.env.CRON_SECRET = realSecret;
+    process.env.WEB_APP_URL = 'https://app.example.com';
+    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error(`connect failed while sending Authorization: Bearer ${realSecret}`),
+    );
+
+    const result = await triggerBackgroundRun('/api/growth/discovery/run', { runId: 'r1' });
+
+    expect('error' in result ? result.error : '').not.toContain(realSecret);
   });
 });

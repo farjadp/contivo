@@ -24,7 +24,20 @@
  * mark the row `FAILED` itself on a `{ ok: false }` result, so the failure
  * is visible immediately instead of ten minutes later.
  */
+import { sanitizeUpstreamText } from '@/lib/competitors/redact';
+
 export type BackgroundRunResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * The route this call hits returns 202 almost immediately (it hands the
+ * actual work to `after()`) — this is a bound on that one HTTP round trip,
+ * not on the job it triggers. Without it, a route that hangs (a bad
+ * deploy, a port pointed at nothing, a proxy stuck mid-handshake) would
+ * hang this call too, and since `startCompetitorDiscovery` now `await`s
+ * this result, that would hang the server action — and the request behind
+ * it — indefinitely.
+ */
+const TRIGGER_TIMEOUT_MS = 10_000;
 
 /**
  * `WEB_APP_URL` is the explicit, deploy-time value (set in production per
@@ -59,6 +72,7 @@ export async function triggerBackgroundRun(path: string, body: Record<string, un
   try {
     const res = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
+      signal: AbortSignal.timeout(TRIGGER_TIMEOUT_MS),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${secret}`,
@@ -72,6 +86,13 @@ export async function triggerBackgroundRun(path: string, body: Record<string, un
 
     return { ok: true };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : 'Request to the background route failed' };
+    const message = error instanceof Error ? error.message : 'Request to the background route failed';
+    // `sanitizeUpstreamText` here is defence in depth: a plain network
+    // error from `fetch` (DNS failure, connection refused, timeout) has
+    // never been observed to echo back a request header, but this is the
+    // one place the secret this call sent is closest to whatever comes
+    // back, and this result can end up in `DiscoveryRun.error` — shown in
+    // the UI — via `startCompetitorDiscovery`'s dispatch-failure handling.
+    return { ok: false, error: sanitizeUpstreamText(message) ?? 'Request to the background route failed' };
   }
 }

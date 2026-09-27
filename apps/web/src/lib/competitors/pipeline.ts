@@ -161,7 +161,21 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     run = await loadRun(runId);
     if (!run) return; // no such run — nothing this call can do or report
 
-    await prisma.discoveryRun.update({ where: { id: runId }, data: { status: 'RUNNING' } });
+    // Scoped to `status: 'PENDING'` rather than a bare `where: { id }`:
+    // `startCompetitorDiscovery` can mark this same row FAILED (e.g. when
+    // the trigger that led to this call couldn't be dispatched at all — a
+    // race is possible between that write and this one reaching the
+    // route). A `count` of 0 means the row is no longer PENDING for some
+    // reason — already FAILED, already reaped as stale, or (in principle)
+    // already RUNNING from a second dispatch — and this call must not run
+    // the pipeline over it: doing so would let a run the action already
+    // recorded as failed flip back to RUNNING and finish DONE, consuming
+    // quota for a run the user was already told did not start.
+    const claimed = await prisma.discoveryRun.updateMany({
+      where: { id: runId, status: 'PENDING' },
+      data: { status: 'RUNNING' },
+    });
+    if (claimed.count === 0) return;
 
     const workspace = run.workspace;
     const allCompetitors = workspace.competitors;

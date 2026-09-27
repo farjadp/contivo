@@ -308,10 +308,37 @@ describe('runDiscoveryPipeline', () => {
     prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun());
     prismaMock.discoveryRun.update.mockResolvedValue({});
     prismaMock.discoveryRun.findMany.mockResolvedValue([]);
-    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 0 });
+    // The PENDING -> RUNNING claim at the top of runDiscoveryPipeline
+    // succeeds by default, so every existing test in this block still
+    // exercises the pipeline; the one test that cares about the
+    // already-not-PENDING bail-out overrides this to `{ count: 0 }` itself.
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 1 });
     prismaMock.competitor.update.mockImplementation((args: unknown) => Promise.resolve({ op: 'update', args }));
     prismaMock.competitor.create.mockImplementation((args: unknown) => Promise.resolve({ op: 'create', args }));
     prismaMock.$transaction.mockImplementation((ops: Promise<unknown>[]) => Promise.all(ops));
+  });
+
+  it('does nothing when the run is no longer PENDING (e.g. startCompetitorDiscovery already marked it FAILED after a dispatch error)', async () => {
+    // The claim is `updateMany({ where: { id, status: 'PENDING' } })`, not
+    // an unconditional `update` — a row already moved out of PENDING by
+    // something else (the dispatch-failure path in
+    // startCompetitorDiscovery, or reapStaleRuns) must not be picked back
+    // up and run to DONE, which would both contradict what the action
+    // already told the user and consume quota for a run that "failed"
+    // according to the row the user was shown.
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 0 });
+
+    await expect(runDiscoveryPipeline('run1')).resolves.toBeUndefined();
+
+    expect(prismaMock.discoveryRun.updateMany).toHaveBeenCalledWith({
+      where: { id: 'run1', status: 'PENDING' },
+      data: { status: 'RUNNING' },
+    });
+    // Nothing past the claim ran: no stage was set, nothing was saved, and
+    // no FAILED/DONE/EMPTY write happened either — the row is left exactly
+    // as whatever already changed it out of PENDING.
+    expect(prismaMock.discoveryRun.update).not.toHaveBeenCalled();
+    expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
   it('never throws to its caller, and lands the run FAILED with the error recorded, when JUDGE rejects mid-run', async () => {
