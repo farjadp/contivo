@@ -10,6 +10,7 @@ import { locales } from '@/i18n/routing';
  */
 const PAGES: ReadonlyArray<{ path: string; priority: number; modified?: Date }> = [
   { path: '', priority: 1 },
+  { path: '/features', priority: 0.8 },
   { path: '/pricing', priority: 0.8 },
   { path: '/about', priority: 0.6 },
   { path: '/contact', priority: 0.5 },

@@ -13,6 +13,7 @@ const LINKS = [
   { href: { pathname: '/', hash: 'know' }, key: 'intelligence' },
   { href: { pathname: '/', hash: 'refusal' }, key: 'refusal' },
   { href: { pathname: '/', hash: 'ship' }, key: 'autopilot' },
+  { href: { pathname: '/features' }, key: 'features' },
   { href: { pathname: '/pricing' }, key: 'pricing' },
 ] as const;
 

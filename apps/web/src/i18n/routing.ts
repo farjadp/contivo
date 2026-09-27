@@ -56,6 +56,7 @@ export const routing = defineRouting({
     '/': '/',
     '/pricing': '/pricing',
     '/docs/site-api': '/docs/site-api',
+    '/features': '/features',
     '/about': '/about',
     '/contact': '/contact',
     '/privacy': '/privacy',

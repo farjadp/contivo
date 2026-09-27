@@ -9,7 +9,8 @@
     "autopilot": "اتوپایلت",
     "pricing": "تعرفه‌ها",
     "signIn": "ورود",
-    "startFree": "شروع رایگان"
+    "startFree": "شروع رایگان",
+    "features": "امکانات"
   },
   "localeSwitcher": {
     "label": "زبان",
@@ -246,6 +247,7 @@
     "socialSoon": "اینستاگرام · تیک‌تاک · فیسبوک",
     "soon": "به‌زودی",
     "writeTo": "نامه‌تان را یک آدم می‌خواند",
-    "navLabel": "نقشهٔ سایت"
+    "navLabel": "نقشهٔ سایت",
+    "features": "امکانات"
   }
 }

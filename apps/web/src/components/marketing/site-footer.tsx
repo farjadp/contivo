@@ -34,6 +34,7 @@ export function SiteFooter() {
         { href: { pathname: '/', hash: 'know' }, label: t('intelligence') },
         { href: { pathname: '/', hash: 'refusal' }, label: t('qualityGate') },
         { href: { pathname: '/', hash: 'ship' }, label: t('autopilot') },
+        { href: { pathname: '/features' }, label: t('features') },
         { href: { pathname: '/pricing' }, label: t('pricing') },
       ],
     },

@@ -20,6 +20,7 @@ export function GlobalHeader() {
     '/settings',
     '/pricing',
     '/docs',
+    '/features',
     '/privacy',
     '/terms',
     '/contact',

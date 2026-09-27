@@ -281,3 +281,79 @@ export function Wordmark({ text, className }: { text: string; className?: string
     </p>
   );
 }
+
+// ─── Section tabs with scroll-spy ────────────────────────────────────────────
+
+export type SectionTab = { id: string; label: string; num: string };
+
+/**
+ * A row of anchors that sticks under the nav and marks the section in view.
+ * The same reading-line rule as the contents rail: the active section is the
+ * last one whose top has passed a third of the way down the screen. On a
+ * phone the row scrolls sideways and keeps the active tab in view.
+ */
+export function SectionTabs({ items, label }: { items: SectionTab[]; label: string }) {
+  const [active, setActive] = useState<string | null>(null);
+  const row = useRef<HTMLUListElement>(null);
+
+  useEffect(() => {
+    const sections = items
+      .map((i) => document.getElementById(i.id))
+      .filter((el): el is HTMLElement => Boolean(el));
+    if (!sections.length) return;
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const line = window.innerHeight * 0.33;
+      let current: string | null = null;
+      for (const s of sections) {
+        if (s.getBoundingClientRect().top <= line) current = s.id;
+      }
+      setActive(current);
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [items]);
+
+  useEffect(() => {
+    if (!active) return;
+    const el = row.current?.querySelector<HTMLElement>(`[data-tab="${active}"]`);
+    el?.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+  }, [active]);
+
+  return (
+    <nav aria-label={label} className="sticky top-16 z-30 border-b border-rule bg-chalk/[.94] backdrop-blur-sm">
+      <ul ref={row} className="mx-auto flex max-w-[90rem] gap-1.5 overflow-x-auto px-5 py-3 [scrollbar-width:none] md:px-16">
+        {items.map((item) => {
+          const on = item.id === active;
+          return (
+            <li key={item.id} data-tab={item.id} className="shrink-0">
+              <a
+                href={`#${item.id}`}
+                aria-current={on ? 'location' : undefined}
+                className={cn(
+                  'inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-[14px] font-medium transition-colors duration-300',
+                  on ? 'bg-moss text-chalk' : 'text-moss-muted hover:bg-chalk-sunk hover:text-moss',
+                )}
+              >
+                <span className={cn('tnum font-plexmono text-[12px]', on ? 'text-saffron' : 'text-saffron-ink')}>
+                  {item.num}
+                </span>
+                {item.label}
+              </a>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}

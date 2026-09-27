@@ -23,6 +23,7 @@ const NAMESPACES = [
   'pricing',
   'legal',
   'company',
+  'features',
   'auth',
   'onboarding',
   'shell',

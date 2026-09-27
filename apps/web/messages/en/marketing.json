@@ -9,7 +9,8 @@
     "autopilot": "Autopilot",
     "pricing": "Pricing",
     "signIn": "Sign in",
-    "startFree": "Start free"
+    "startFree": "Start free",
+    "features": "Features"
   },
   "localeSwitcher": {
     "label": "Language",
@@ -246,6 +247,7 @@
     "socialSoon": "Instagram · TikTok · Facebook",
     "soon": "Soon",
     "writeTo": "Write to a person",
-    "navLabel": "Site"
+    "navLabel": "Site",
+    "features": "Features"
   }
 }
