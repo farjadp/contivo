@@ -189,7 +189,7 @@
       "run": {
         "find": "Find competitors",
         "quota": "{remaining, number} of {max, number} searches left",
-        "quotaSpent": "You have used all {max, number} searches for this workspace.",
+        "quotaSpent": "{max, plural, =1 {You have used this workspace's one search.} other {You have used all # searches for this workspace.}}",
         "onlyDoneCounts": "A search only counts when it finds something.",
         "startFailed": "Could not start the search.",
         "starting": "Getting the search ready",
@@ -204,7 +204,7 @@
         "stageDone": "done",
         "stageCurrent": "in progress",
         "done": "{count, plural, one {Found # likely competitor.} other {Found # likely competitors.}} Review each one and its evidence below.",
-        "skippedSites": "Time ran out before {count, plural, one {# site} other {# sites}} could be read, so they are not in the results.",
+        "skippedSites": "{count, plural, one {Time ran out before # site could be read, so it is not in the results.} other {Time ran out before # sites could be read, so they are not in the results.}}",
         "emptyTitle": "No competitors this time",
         "emptyDetail": "We searched with {count, plural, one {# query} other {# queries}} in {language} for {country}, but none of the results had enough evidence behind them.",
         "emptyDetailNoCount": "We searched in {language} for {country}, but none of the results had enough evidence behind them.",
@@ -271,7 +271,7 @@
         "empty": "No competitors on your list yet. Add one from the suggestions, or enter one you know.",
         "addedByYou": "Added by you",
         "remove": "Remove from list",
-        "removeFailed": "Could not remove it. Please try again.",
+        "removeFailed": "Could not take it off your list. Please try again.",
         "setAside": "Set aside",
         "backToReview": "Back to review"
       },

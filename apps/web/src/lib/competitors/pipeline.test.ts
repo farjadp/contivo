@@ -468,6 +468,54 @@ describe('runDiscoveryPipeline', () => {
     const sourceStats = doneCall!.data.sourceStats as Record<string, unknown>;
     expect(sourceStats.tokensIncomplete).toBe(true);
   });
+
+  it('passes each competitor row\'s updatedAt into buildBrandBrief, so the rejection cap keeps the most recent ones', async () => {
+    // 25 reasoned rejections in the order loadRun returns them (createdAt
+    // asc), each re-decided later than the one before it. Without updatedAt
+    // the brief's sort falls back to input order and keeps the OLDEST 20
+    // (rej-0..rej-19); with it, it keeps the newest 20 (rej-5..rej-24).
+    const base = Date.UTC(2026, 8, 1);
+    const rows = Array.from({ length: 25 }, (_, i) => ({
+      id: `c${i}`,
+      name: `Rejected ${i}`,
+      domain: `rej-${i}.com`,
+      userDecision: 'REJECTED',
+      rejectionReason: 'TOO_BIG',
+      evidence: [],
+      updatedAt: new Date(base + i * 60_000),
+    }));
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(
+      baseRun({
+        workspace: {
+          id: 'ws1',
+          name: 'Acme',
+          websiteUrl: null,
+          brandSummary: null,
+          targetCountry: null,
+          targetLanguage: 'en',
+          competitors: rows,
+        },
+      }),
+    );
+
+    await runDiscoveryPipeline('run1');
+
+    expect(queriesMock.buildBrandBrief).toHaveBeenCalledTimes(1);
+    const input = queriesMock.buildBrandBrief.mock.calls[0][0] as {
+      competitors: Array<{ domain: string; updatedAt?: Date }>;
+    };
+    expect(input.competitors.map((c) => c.updatedAt)).toEqual(rows.map((r) => r.updatedAt));
+
+    // And the real brief built from exactly what the pipeline passed keeps
+    // the newest rejections, not the oldest.
+    const actual = await vi.importActual<typeof import('./queries')>('./queries');
+    const brief = actual.buildBrandBrief(input as Parameters<typeof actual.buildBrandBrief>[0]);
+    const kept = brief.rejectedCompetitors.map((r) => r.domain);
+    expect(kept).toHaveLength(actual.MAX_REJECTED_IN_BRIEF);
+    expect(kept[0]).toBe('rej-24.com');
+    expect(kept).not.toContain('rej-0.com');
+    expect(kept).not.toContain('rej-4.com');
+  });
 });
 
 describe('reapStaleRuns', () => {
