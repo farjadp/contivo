@@ -1,0 +1,262 @@
+{
+  "legal": {
+    "common": {
+      "eyebrow": "Legal",
+      "updated": "Last updated {date}",
+      "shortVersion": "The short version",
+      "contents": "Contents",
+      "related": "Also worth reading",
+      "links": {
+        "privacy": {
+          "title": "Privacy",
+          "body": "What we collect, who processes it, and how to get it deleted."
+        },
+        "terms": {
+          "title": "Terms of use",
+          "body": "What you agree to, what we promise, and the refund rule."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "A question the page did not answer goes to a person."
+        }
+      }
+    },
+    "privacy": {
+      "meta": {
+        "title": "Privacy — Contivo",
+        "description": "What Contivo collects, which providers process it, the three cookies it sets, and how to have your data deleted."
+      },
+      "eyebrow": "Privacy",
+      "headline": "What we keep, and <accent>why</accent>.",
+      "intro": "Contivo reads your website, writes on your behalf and, if you let it, publishes to your accounts. That takes real access to real data. This page says exactly what, and what we never do with it. Contivo is operated by {entity}, based in Ontario, Canada.",
+      "summary": [
+        "We collect what the product needs to run: your account, your workspace, and the accounts you connect. Nothing for advertising.",
+        "We never sell your data, never show you ads, and set no tracking or analytics cookies.",
+        "Your text goes to AI providers (OpenAI and Google) to be analysed and written. That is how the product works, and we say so plainly.",
+        "Write to {email} and we delete your account and workspace within 30 days."
+      ],
+      "sections": [
+        {
+          "id": "who",
+          "title": "Who is responsible",
+          "blocks": [
+            "Contivo is operated by {entity}, based in Ontario, Canada. We are responsible for the personal information described here under Canada's Personal Information Protection and Electronic Documents Act (PIPEDA).",
+            "Privacy questions and requests go to {email}. A person reads that inbox, not a bot."
+          ]
+        },
+        {
+          "id": "collect",
+          "title": "What we collect",
+          "blocks": [
+            "Only what running the product requires:",
+            [
+              "Account: your email address, your name if you give one, and your password. The password is stored only as a one-way hash; we cannot read it.",
+              "Workspace: the website address you give us, what we read from that site's public pages, and what Contivo builds from it: brand memory, competitors, keywords, strategy, drafts and published content.",
+              "Connected accounts: when you connect LinkedIn or X, an access token that lets Contivo post as you. It is stored encrypted.",
+              "Your own site: if you connect it through the Site API, the key that lets Contivo publish there.",
+              "Usage records: which AI actions ran and when, and a log of workspace activity, so we can show you what happened and keep costs in check.",
+              "Error reports: when something breaks, a technical report of the failure. It is configured not to include your personal information."
+            ],
+            "Billing is not live yet. When it is, payments go through Stripe, and your card number goes to Stripe, never to us."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "How we use it",
+          "blocks": [
+            "To run what you asked for: analyse your site and your market, write drafts, check them, and publish what you approve or what Autopilot is set to send.",
+            "To keep the service working and secure: fixing errors, stopping abuse, enforcing usage limits.",
+            "To write to you about your account: security notices, changes to these terms, billing once it exists. No marketing email unless you ask for it.",
+            "We do not sell your data, rent it, use it for advertising, or train models of our own on it."
+          ]
+        },
+        {
+          "id": "providers",
+          "title": "Who else processes it",
+          "blocks": [
+            "Contivo runs on other companies' infrastructure. Each receives only what its part of the work needs:",
+            [
+              "OpenAI and Google (Gemini): your site's content, your brand memory and your instructions, to analyse, plan and write. What they do with API data is governed by their API terms.",
+              "DataForSEO: keywords and domain names, to fetch search volumes and results pages. No personal information.",
+              "LinkedIn and X: the posts you publish, and only once you have connected the account.",
+              "Vercel, Railway and Neon: hosting and the database, where everything above is stored.",
+              "Sentry: error reports.",
+              "Stripe: payments, once billing is live."
+            ],
+            "Some of these providers store or process data outside Canada, including in the United States. Data held there can be accessible to that country's authorities under its laws."
+          ]
+        },
+        {
+          "id": "cookies",
+          "title": "Cookies",
+          "blocks": [
+            "Contivo sets three cookies, all needed for the site to work:",
+            [
+              "auth-token: keeps you signed in. It lasts seven days and cannot be read by scripts on the page.",
+              "NEXT_LOCALE: remembers the language you chose.",
+              "tz: your time zone, so scheduled posts go out at the hour you meant."
+            ],
+            "No advertising cookies, no analytics cookies, no third-party trackers. That is why there is no cookie banner."
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "How long we keep it",
+          "blocks": [
+            "As long as your account exists. Ask us to delete it and we delete your account, workspaces, content and connected-account tokens within 30 days.",
+            "Two exceptions. Payment records we are required by law to keep stay for as long as the law says. And posts already published on LinkedIn, X or your own site stay there: we can remove them from Contivo, but deleting them from those platforms is done on those platforms."
+          ]
+        },
+        {
+          "id": "rights",
+          "title": "Your rights",
+          "blocks": [
+            "You can ask to see the personal information we hold about you, have it corrected, receive a copy of it, or have it deleted. Write to {email}. We answer within 30 days.",
+            "You can disconnect LinkedIn or X at any time from the Connections page. Contivo stops posting at once and deletes the token.",
+            "If you are not satisfied with how we handle a complaint, you can take it to the Office of the Privacy Commissioner of Canada."
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Security",
+          "blocks": [
+            "Passwords are hashed, connected-account tokens are encrypted, and everything travels over HTTPS. Access to production data is limited to the people who run the service.",
+            "No system is perfectly secure. If a breach puts your information at real risk, we tell you and the Privacy Commissioner, as the law requires."
+          ]
+        },
+        {
+          "id": "children",
+          "title": "Children",
+          "blocks": [
+            "Contivo is a tool for businesses and is not meant for anyone under 16. We do not knowingly collect information from children."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Changes to this page",
+          "blocks": [
+            "When this page changes, the date at the top changes with it. If a change affects what we collect or who receives it, we email account holders before it takes effect."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "meta": {
+        "title": "Terms of use — Contivo",
+        "description": "The agreement between you and Contivo: early access, your content, AI output, connected accounts, payment and the 14-day refund."
+      },
+      "eyebrow": "Terms",
+      "headline": "The rules, in <accent>plain</accent> words.",
+      "intro": "These terms are the agreement between you and {entity}, which operates Contivo. By creating an account you accept them. They are written to be read, so read them.",
+      "summary": [
+        "What you bring and what Contivo writes for you both belong to you.",
+        "AI can be wrong. The quality gate catches a lot, but you are responsible for what goes out under your name, including what Autopilot publishes.",
+        "Contivo is in early access and free for now. When billing starts, you can cancel any time.",
+        "Within 14 days of any payment, ask and we refund it in full. No questions."
+      ],
+      "sections": [
+        {
+          "id": "agreement",
+          "title": "The agreement",
+          "blocks": [
+            "These terms are between you and {entity}, based in Ontario, Canada. If you use Contivo for a company, you accept them on the company's behalf and confirm you are allowed to.",
+            "The Privacy page is part of this agreement. It explains what we do with your data."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Early access",
+          "blocks": [
+            "Contivo is in early access. Features will change, some will be added and some removed, and there will be outages. For now we make no uptime promise.",
+            "While billing is not live, using Contivo is free. Before we start charging, we will tell you what it costs, and nothing is charged without your agreement."
+          ]
+        },
+        {
+          "id": "account",
+          "title": "Your account",
+          "blocks": [
+            "You must be at least 16, give a real email address, and keep your password to yourself. Whatever happens under your account is your responsibility, so if you think someone else has access, tell us straight away."
+          ]
+        },
+        {
+          "id": "content",
+          "title": "Your content",
+          "blocks": [
+            "Everything you bring stays yours: your site, your text, your brand. What Contivo writes for you is yours too, and you can use it however you like.",
+            "To run the service, you give us permission to store and process that content and send it to the providers named on the Privacy page. That permission covers running Contivo for you and ends when your content is deleted.",
+            "You confirm you have the right to what you bring, and the right to publish on every account you connect."
+          ]
+        },
+        {
+          "id": "ai-output",
+          "title": "What the AI writes",
+          "blocks": [
+            "Contivo writes with AI models, and they make mistakes: a wrong fact, an invented number, a claim your business cannot back. The quality gate is there to catch these, and it does catch a lot. It does not catch everything.",
+            "You are responsible for what is published under your name. If you switch Autopilot on, you are telling Contivo to publish without asking you each time, and the responsibility for those posts is yours as well. If a post matters, read it first."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "What you may not do",
+          "blocks": [
+            [
+              "Publish spam, or anything illegal, deceptive, or infringing someone else's rights.",
+              "Pretend to be someone you are not, or connect an account you have no right to.",
+              "Use Contivo to overload or attack another website.",
+              "Get around usage limits, or probe and break the service's security.",
+              "Resell Contivo to others without an agreement with us."
+            ],
+            "If you do, we can suspend or close your account. Where we can, we warn you first."
+          ]
+        },
+        {
+          "id": "networks",
+          "title": "Connected networks",
+          "blocks": [
+            "When you connect LinkedIn, X or your own site, that platform's own rules apply as well. Those platforms can change their APIs, restrict access or disconnect an account, and when they do, publishing through Contivo may stop. That is outside our control, and we are not responsible for it."
+          ]
+        },
+        {
+          "id": "payment",
+          "title": "Payment and refunds",
+          "blocks": [
+            "When billing is live, prices are those shown on the Pricing page when you subscribe. Subscriptions renew each period until you cancel. Cancelling stops the next renewal, and your plan stays active until the end of the period you have paid for.",
+            "Within 14 days of any payment, write to {email} and we refund that payment in full. We will not ask why.",
+            "If we change a price, we tell you at least 30 days before it applies to you. Taxes are added where the law requires."
+          ]
+        },
+        {
+          "id": "ending",
+          "title": "Ending the agreement",
+          "blocks": [
+            "You can stop using Contivo and ask for your account to be deleted at any time. If you want a copy of your content first, ask and we send it to you.",
+            "We can close accounts that break these terms. If we ever shut Contivo down, we give at least 30 days' notice so you can take your content with you."
+          ]
+        },
+        {
+          "id": "liability",
+          "title": "Liability",
+          "blocks": [
+            "Contivo is provided as it is. As far as the law allows, we make no promise that it will be uninterrupted, error-free, or that it will produce a particular business result.",
+            "As far as the law allows, our total liability to you is limited to whichever is greater: what you paid us in the 12 months before the claim, or 100 Canadian dollars. We are not liable for indirect losses such as lost profit or lost data. Nothing here limits rights the law does not allow us to limit."
+          ]
+        },
+        {
+          "id": "law",
+          "title": "Governing law",
+          "blocks": [
+            "These terms are governed by the laws of Ontario and the federal laws of Canada that apply there. Disputes go to the courts of Ontario."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Changes",
+          "blocks": [
+            "If we change these terms, the date at the top changes. For a change that matters, we email you at least 14 days before it takes effect. If you keep using Contivo after that, you accept the new terms. If you do not accept them, you can close your account.",
+            "Questions about these terms go to {email}."
+          ]
+        }
+      ]
+    }
+  }
+}
