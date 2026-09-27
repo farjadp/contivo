@@ -24,6 +24,7 @@ import { prisma } from '@/lib/db';
 import { generateReportHTML } from '@/lib/ai-report-designer';
 import { convertHtmlToPdf } from '@/lib/html-to-pdf';
 import path from 'path';
+import { tmpdir } from 'os';
 import fs from 'fs/promises';
 import { asContentLanguage } from '@/lib/content-language';
 import { missingReportRequirements } from '@/lib/report-readiness';
@@ -31,8 +32,18 @@ import { missingReportRequirements } from '@/lib/report-readiness';
 // How many reports a user may generate per calendar month
 const MONTHLY_LIMIT = 5;
 
-// Reports are served as static files from /public/reports/
-const REPORTS_DIR = path.join(process.cwd(), 'public', 'reports');
+/*
+  Reports used to be written into `public/`, which Next serves as static files
+  with no authentication: anyone holding the URL could read another account's
+  whole strategy report, and the workspace id was right there in the filename.
+  They also vanished on every redeploy, because the container filesystem is
+  ephemeral.
+
+  The bytes now live on the row and are served by /api/reports/[id], which
+  checks the session and the owner. Puppeteer still needs somewhere to write a
+  file, so it gets a scratch directory that nothing serves.
+*/
+const SCRATCH_DIR = path.join(tmpdir(), 'contivo-reports');
 
 // A missing workspace and someone else's workspace return the same message,
 // so neither can be used to test which workspace ids exist.
@@ -130,14 +141,13 @@ export async function generateStrategicReport(workspaceId: string) {
   const insights = workspace.audienceInsights as any;
   const brandSummary = workspace.brandSummary as any;
 
-  // Ensure the public output directory exists
-  await fs.mkdir(REPORTS_DIR, { recursive: true });
+  await fs.mkdir(SCRATCH_DIR, { recursive: true });
 
   // Unique filename per generation run
   const timestamp = Date.now();
   const baseFilename = `strategic-report-${workspaceId}-${timestamp}`;
-  const htmlPath = path.join(REPORTS_DIR, `${baseFilename}.html`);
-  const pdfPath = path.join(REPORTS_DIR, `${baseFilename}.pdf`);
+  const htmlPath = path.join(SCRATCH_DIR, `${baseFilename}.html`);
+  const pdfPath = path.join(SCRATCH_DIR, `${baseFilename}.pdf`);
 
   // Step 1 — AI designs the report as HTML
   console.log('[strategic-reports] Generating HTML with AI...');
@@ -164,17 +174,24 @@ export async function generateStrategicReport(workspaceId: string) {
   console.log('[strategic-reports] Converting to PDF with Puppeteer...');
   await convertHtmlToPdf(reportHTML, pdfPath, asContentLanguage(workspace.contentLanguage));
 
-  // Step 4 — Record the generated report in the database
-  const pdfStats = await fs.stat(pdfPath);
+  // Step 4 — Record the report, bytes and all, then delete the scratch files.
+  const pdfBytes = await fs.readFile(pdfPath);
+  await fs.rm(htmlPath, { force: true });
+  await fs.rm(pdfPath, { force: true });
 
-  await prisma.strategicReport.create({
+  const report = await prisma.strategicReport.create({
     data: {
       workspaceId,
       userId,
-      // "docxPath" field repurposed for the HTML version (editable copy)
-      docxPath: `/reports/${baseFilename}.html`,
-      pdfPath: `/reports/${baseFilename}.pdf`,
-      fileSize: pdfStats.size,
+      // Filled in below, once the row has an id to address it by. These two
+      // columns still hold a URL because the history list renders them
+      // directly; on rows from before this change it is a /reports path that
+      // no longer resolves.
+      docxPath: '',
+      pdfPath: '',
+      pdfData: pdfBytes,
+      htmlData: Buffer.from(reportHTML, 'utf-8'),
+      fileSize: pdfBytes.byteLength,
       sectionsIncluded: [
         'Executive Summary',
         'Brand Profile',
@@ -190,14 +207,21 @@ export async function generateStrategicReport(workspaceId: string) {
     },
   });
 
+  const pdfUrl = `/api/reports/${report.id}`;
+  const docxUrl = `/api/reports/${report.id}?format=html`;
+  await prisma.strategicReport.update({
+    where: { id: report.id },
+    data: { pdfPath: pdfUrl, docxPath: docxUrl },
+  });
+
   console.log('[strategic-reports] Report saved successfully.');
 
   return {
     success: true,
-    // "DOCX" button in UI will now open the HTML version
-    docxUrl: `/reports/${baseFilename}.html`,
-    pdfUrl: `/reports/${baseFilename}.pdf`,
-    fileSize: pdfStats.size,
+    // The "DOCX" button opens the HTML version.
+    docxUrl,
+    pdfUrl,
+    fileSize: pdfBytes.byteLength,
   };
 }
 
