@@ -789,10 +789,18 @@ const REJECTED_MARKER_SHAPE_RE = /=*\s*(BEGIN|END)\s+REJECTED\s+EXAMPLES[^\n]*/g
  * unprotected channel into the prompt.
  */
 export function sanitizeRejectedFieldForPrompt(value: string | null | undefined, nonce: string): string {
-  return stripForgedMarkers(sanitizePromptField(value), nonce).replace(
-    REJECTED_MARKER_SHAPE_RE,
-    '[stripped: resembled a data-boundary marker]',
-  );
+  return stripAllPromptMarkers(sanitizePromptField(value), nonce);
+}
+
+/**
+ * Strips every boundary-marker shape this prompt uses (candidate blocks and
+ * the rejected-examples block) and the nonce from untrusted text. Built on
+ * the unchanged `stripForgedMarkers`, with the rejected-examples shape added
+ * as a second pass, so any text inserted into the judge prompt, candidate
+ * evidence included, can carry neither kind of forged boundary.
+ */
+export function stripAllPromptMarkers(text: string, nonce: string): string {
+  return stripForgedMarkers(text, nonce).replace(REJECTED_MARKER_SHAPE_RE, '[stripped: resembled a data-boundary marker]');
 }
 
 /**
@@ -852,8 +860,8 @@ export function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]):
   ];
 
   for (const candidate of batch) {
-    const safeTitle = candidate.siteTitle ? stripForgedMarkers(candidate.siteTitle, nonce) : null;
-    const safeEvidence = candidate.siteEvidence ? stripForgedMarkers(candidate.siteEvidence, nonce) : '';
+    const safeTitle = candidate.siteTitle ? stripAllPromptMarkers(candidate.siteTitle, nonce) : null;
+    const safeEvidence = candidate.siteEvidence ? stripAllPromptMarkers(candidate.siteEvidence, nonce) : '';
     const safeLanguage = sanitizePageLanguageForPrompt(candidate.pageLanguage);
 
     lines.push(

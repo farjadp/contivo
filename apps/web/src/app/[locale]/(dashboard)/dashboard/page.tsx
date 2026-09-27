@@ -19,6 +19,7 @@ import { buildJourney, tabGate, type StepId, type WorkspaceFacts } from '@/lib/w
 import { buildLoop, STAGES, type StageId } from '@/lib/workspace-loop';
 import { LoopRail } from '../growth/[id]/_components/LoopRail';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
+import { countCompetitors } from '@/lib/competitor-counts';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -197,7 +198,7 @@ export default async function DashboardPage() {
     workspaceId: workspace.id,
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: accepted,
-    totalCompetitors: workspace.competitors.length,
+    totalCompetitors: countCompetitors(workspace.competitors),
     matrixCharts: Array.isArray(insights?.competitiveMatrices?.charts) ? insights.competitiveMatrices.charts.length : 0,
     keywordCompetitors: Array.isArray(insights?.competitorKeywordsIntel?.competitors)
       ? insights.competitorKeywordsIntel.competitors.length

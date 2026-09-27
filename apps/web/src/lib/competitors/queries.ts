@@ -11,12 +11,15 @@ export type BrandBrief = {
   market: TargetMarket;
   acceptedCompetitors: Array<{ name: string; domain: string | null }>;
   /**
-   * The user's most recent rejections (at most MAX_REJECTED_IN_BRIEF), used
-   * as negative examples by both the query and the judge prompts. `reason`
-   * is one of the closed REJECTION_REASON codes or null — any other stored
-   * value is dropped here, so nothing but the allowlist reaches a prompt.
+   * The user's most recent rejections that carry a reason (at most
+   * MAX_REJECTED_IN_BRIEF), used as negative examples by both the query and
+   * the judge prompts. Only a rejection with an allowlisted reason code is
+   * here: a rejection without one (including every "Remove from list")
+   * says nothing about *why*, and as an example it would read as "reject
+   * anything like this". Those domains are still excluded from later runs
+   * through `knownDomains`; they just teach the prompts nothing.
    */
-  rejectedCompetitors: Array<{ name: string; domain: string | null; reason: RejectionReasonCode | null }>;
+  rejectedCompetitors: Array<{ name: string; domain: string | null; reason: RejectionReasonCode }>;
   knownDomains: string[];
 };
 
@@ -42,15 +45,13 @@ export const REJECTION_REASON_EXPLANATIONS = {
 
 export type RejectionReasonCode = keyof typeof REJECTION_REASON_EXPLANATIONS;
 
-const NO_REASON_EXPLANATION = 'was rejected by the user without a stated reason';
-
 export function isRejectionReasonCode(value: unknown): value is RejectionReasonCode {
   return typeof value === 'string' && Object.prototype.hasOwnProperty.call(REJECTION_REASON_EXPLANATIONS, value);
 }
 
-/** The fixed sentence for a reason code; the no-reason sentence for anything else. */
-export function explainRejectionReason(reason: RejectionReasonCode | null): string {
-  return reason ? REJECTION_REASON_EXPLANATIONS[reason] : NO_REASON_EXPLANATION;
+/** The fixed sentence for a reason code. */
+export function explainRejectionReason(reason: RejectionReasonCode): string {
+  return REJECTION_REASON_EXPLANATIONS[reason];
 }
 
 /**
@@ -106,7 +107,7 @@ export function buildBrandBrief(input: {
   const audience = trimTo(summaryObj.audience);
 
   const acceptedCompetitors: Array<{ name: string; domain: string | null }> = [];
-  const rejected: Array<{ name: string; domain: string | null; reason: RejectionReasonCode | null; at: number; index: number }> = [];
+  const rejected: Array<{ name: string; domain: string | null; reason: RejectionReasonCode; at: number; index: number }> = [];
   const knownDomains: string[] = [];
 
   for (const competitor of input.competitors) {
@@ -114,12 +115,15 @@ export function buildBrandBrief(input: {
 
     if (competitor.userDecision === 'ACCEPTED') {
       acceptedCompetitors.push({ name: competitor.name, domain: competitor.domain });
-    } else if (competitor.userDecision === 'REJECTED') {
+    } else if (competitor.userDecision === 'REJECTED' && isRejectionReasonCode(competitor.rejectionReason)) {
+      // A rejection without an allowlisted reason (none given, "Remove from
+      // list", or a legacy/free-text value) is left out of the examples; its
+      // domain is already in knownDomains above.
       const at = competitor.updatedAt instanceof Date ? competitor.updatedAt.getTime() : Number.NaN;
       rejected.push({
         name: competitor.name,
         domain: competitor.domain,
-        reason: isRejectionReasonCode(competitor.rejectionReason) ? competitor.rejectionReason : null,
+        reason: competitor.rejectionReason,
         at: Number.isNaN(at) ? Number.NEGATIVE_INFINITY : at,
         index: rejected.length,
       });
@@ -176,7 +180,7 @@ export function buildRejectedSectionForQueries(brief: BrandBrief): string[] {
     const domain = sanitizePromptField(rejected.domain) || 'no domain';
     lines.push(`- ${name} (${domain}): ${explainRejectionReason(rejected.reason)}`);
   }
-  const present = new Set(brief.rejectedCompetitors.map((r) => r.reason).filter(isRejectionReasonCode));
+  const present = new Set(brief.rejectedCompetitors.map((r) => r.reason));
   for (const code of Object.keys(QUERY_STEERING) as RejectionReasonCode[]) {
     if (present.has(code)) lines.push(QUERY_STEERING[code]);
   }
