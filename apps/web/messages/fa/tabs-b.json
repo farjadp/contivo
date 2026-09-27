@@ -389,7 +389,11 @@
       "analyzedOn": "تحلیل‌شده در {date} · ",
       "refreshIn": "به‌روزرسانی تا {hours} ساعت دیگر",
       "readyToRefresh": "آمادهٔ به‌روزرسانی",
-      "empty": "—"
+      "empty": "—",
+      "sampleDataTitle": "دادهٔ نمونه، ذخیره نشد",
+      "sampleDataBody": "حالت DATAFORSEO_ALLOW_MOCKS روشن است؛ این {count} ردیف را خود برنامه ساخته و واقعی نیست. چیزی ذخیره نشد و ماتریس‌ها و ایده‌پردازی آن را نمی‌بینند.",
+      "notConfiguredTitle": "DataForSEO وصل نیست",
+      "notConfiguredBody": "برای گرفتن دادهٔ زندهٔ کلیدواژه و نتایج گوگل، مقادیر DATAFORSEO_LOGIN و DATAFORSEO_PASSWORD را در محیط اجرا تنظیم کنید."
     },
     "rescrape": {
       "history": "تاریخچه ({count})",

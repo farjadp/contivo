@@ -178,6 +178,17 @@ export function SeoIntelligenceTab({
         setScanMessages((prev) => ({ ...prev, [domain]: t('errorPrefix', { message: result.error }) }));
         return;
       }
+      // Sample data is not written to the database, so there is nothing to
+      // reload into — say so instead of blanking the panel.
+      if ('stored' in result && result.stored === false) {
+        setScanMessages((prev) => ({
+          ...prev,
+          [domain]: `${t('sampleDataTitle')} — ${t('sampleDataBody', {
+            count: format.number('count' in result ? (result.count ?? 0) : 0),
+          })}`,
+        }));
+        return;
+      }
       // Reload page to pick up new data (lightweight full-page refresh)
       window.location.reload();
     } catch (e) {
@@ -216,6 +227,14 @@ export function SeoIntelligenceTab({
         }
         if ('error' in result && result.error) {
           setSerpMessage(t('errorPrefix', { message: result.error }));
+          return;
+        }
+        if ('stored' in result && result.stored === false) {
+          setSerpMessage(
+            `${t('sampleDataTitle')} — ${t('sampleDataBody', {
+              count: format.number('serpCount' in result ? (result.serpCount ?? 0) : 0),
+            })}`,
+          );
           return;
         }
         window.location.reload();
