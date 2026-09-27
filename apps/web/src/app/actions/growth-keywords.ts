@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
+import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
 
 type TokenUsageRun = {
   model: string;
@@ -78,6 +79,7 @@ export type CompetitorKeywordsPayload = {
   generated_at: string;
   source: 'AI' | 'MANUAL';
   ai_estimated: boolean;
+  competitor_basis?: SelectionBasis;
   competitors: CompetitorKeywordIntel[];
   content_gaps: ContentGapOpportunity[];
   keyword_heatmap: {
@@ -273,20 +275,21 @@ async function collectCompetitorSignals(domain: string): Promise<{
   };
 }
 
-function pickCompetitors(workspace: any): Array<{
-  name: string;
-  domain: string;
-  type: string;
-  description: string;
-  category: string;
-  audience: string;
-}> {
+function pickCompetitors(workspace: any): {
+  items: Array<{
+    name: string;
+    domain: string;
+    type: string;
+    description: string;
+    category: string;
+    audience: string;
+  }>;
+  basis: SelectionBasis;
+} {
   const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
-  const accepted = all.filter((item: any) => item.userDecision === 'ACCEPTED');
-  const fallback = all.filter((item: any) => item.userDecision !== 'REJECTED');
-  const source = accepted.length > 0 ? accepted : fallback;
+  const { competitors, basis } = selectCompetitors(all);
 
-  return source
+  const items = competitors
     .map((item: any) => ({
       name: trimTo(item.name, 120),
       domain: normalizeDomain(item.domain),
@@ -297,6 +300,8 @@ function pickCompetitors(workspace: any): Array<{
     }))
     .filter((item: { name: string; domain: string }) => item.name && item.domain)
     .slice(0, 8);
+
+  return { items, basis };
 }
 
 function buildKeywordAnalysisPrompt(input: {
@@ -752,7 +757,7 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
     });
     if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-    const competitors = pickCompetitors(workspace);
+    const { items: competitors, basis } = pickCompetitors(workspace);
     if (competitors.length < 2) {
       return { error: await actionError('needTwoReviewed') };
     }
@@ -795,6 +800,7 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
       (workspace.audienceInsights as any)?.competitorKeywordsIntel?.token_usage,
     );
     payload.token_usage = appendTokenUsage(existingTokenUsage, openAiResult?.usage || null);
+    payload.competitor_basis = basis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },

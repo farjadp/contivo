@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
+import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
 
 type MatrixAxis = {
   x: string;
@@ -52,6 +53,7 @@ type CompetitiveMatrixPayload = {
   generated_at: string;
   ai_estimated: boolean;
   source: 'AI' | 'MANUAL';
+  competitor_basis?: SelectionBasis;
   charts: CompetitiveMatrixChart[];
   cross_chart_summary: string;
   strongest_differentiation_opportunity: string;
@@ -520,20 +522,21 @@ async function callOpenAiMatrices(
   }
 }
 
-function extractCompetitorInput(workspace: any): Array<{
-  name: string;
-  website: string;
-  type: string;
-  description: string;
-  category: string;
-  audience: string;
-}> {
-  const competitors = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
-  const accepted = competitors.filter((item: any) => item.userDecision === 'ACCEPTED');
-  const fallback = competitors.filter((item: any) => item.userDecision !== 'REJECTED');
-  const filtered = accepted.length > 0 ? accepted : fallback;
+function extractCompetitorInput(workspace: any): {
+  items: Array<{
+    name: string;
+    website: string;
+    type: string;
+    description: string;
+    category: string;
+    audience: string;
+  }>;
+  basis: SelectionBasis;
+} {
+  const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
+  const { competitors, basis } = selectCompetitors(all);
 
-  return filtered.slice(0, 12).map((item: any) => ({
+  const items = competitors.slice(0, 12).map((item: any) => ({
     name: trimTo(item.name, 120),
     website: normalizeWebsite(item.domain),
     type: String(item.type || 'DIRECT'),
@@ -541,6 +544,8 @@ function extractCompetitorInput(workspace: any): Array<{
     category: trimTo(item.category, 120),
     audience: trimTo(item.audienceGuess, 160),
   }));
+
+  return { items, basis };
 }
 
 function mergeCompetitiveMatricesInAudienceInsights(
@@ -566,7 +571,7 @@ export async function generateWorkspaceCompetitiveMatrices(workspaceId: string) 
     });
     if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-    const competitors = extractCompetitorInput(workspace);
+    const { items: competitors, basis } = extractCompetitorInput(workspace);
     if (competitors.length < 2) {
       return { error: await actionError('needTwoReviewedMatrices') };
     }
@@ -597,6 +602,7 @@ export async function generateWorkspaceCompetitiveMatrices(workspaceId: string) 
             competitors,
           });
     payload.token_usage = nextTokenUsage;
+    payload.competitor_basis = basis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },
@@ -640,7 +646,7 @@ export async function saveWorkspaceCompetitiveMatricesEdits(
     });
     if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-    const competitors = extractCompetitorInput(workspace);
+    const { items: competitors } = extractCompetitorInput(workspace);
     const normalized = normalizeMatrixPayload(payload, {
       companyName: workspace.name,
       companyWebsite: workspace.websiteUrl || '',
