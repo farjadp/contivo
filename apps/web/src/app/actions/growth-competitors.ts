@@ -85,12 +85,13 @@ function isCompetitorType(value: unknown): value is CompetitorType {
 
 /**
  * `rejectionReason` is carried into `buildBrandBrief`'s
- * `rejectedCompetitors`, the brief every later run is built from. A
- * free-text reason there would be a prompt-injection channel from the
- * browser into any prompt that renders the brief, so it is a closed set
- * like every other enum-ish field, not a caption the user can type. The
- * set is the spec's (§4): each value names a way a suggestion can fail to
- * be a competitor, with no catch-all `OTHER`.
+ * `rejectedCompetitors`, which both the query prompt and the judge prompt
+ * render as negative examples on every later run (each code mapped to a
+ * fixed sentence in `REJECTION_REASON_EXPLANATIONS`, `lib/competitors/
+ * queries.ts`, which must list exactly these codes). A free-text reason
+ * would be a prompt-injection channel from the browser into those prompts,
+ * so it is a closed set like every other enum-ish field, not a caption the
+ * user can type. The set is the spec's (§4), with no catch-all `OTHER`.
  */
 const REJECTION_REASONS = ['DIFFERENT_MARKET', 'TOO_BIG', 'DIFFERENT_PRODUCT', 'NOT_A_COMPANY'] as const;
 type RejectionReason = (typeof REJECTION_REASONS)[number];
@@ -748,6 +749,7 @@ export async function addManualCompetitor(
       domain: c.domain,
       userDecision: c.userDecision,
       rejectionReason: c.rejectionReason,
+      updatedAt: c.updatedAt,
     })),
   });
 

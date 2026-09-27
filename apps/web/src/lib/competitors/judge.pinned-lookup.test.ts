@@ -23,7 +23,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // ---------------------------------------------------------------------------
 const { dnsLookupMock, isBlockedAddressMock } = vi.hoisted(() => ({
   dnsLookupMock: vi.fn(),
-  isBlockedAddressMock: vi.fn((_address: string) => false),
+  isBlockedAddressMock: vi.fn<(address: string) => boolean>(() => false),
 }));
 
 vi.mock('node:dns', () => ({

@@ -238,11 +238,16 @@ export async function harvestFromWebSearch(
   return { candidates, tokens, errors };
 }
 
-export async function harvestFromSerp(
-  _queries: string[],
-  _market: TargetMarket,
-  _exclude: Set<string>,
-): Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }> {
+/**
+ * The signature matches `harvestFromWebSearch` so the pipeline can call both
+ * the same way; the parameters are named only in the type because this stub
+ * does not read them yet.
+ */
+export const harvestFromSerp: (
+  queries: string[],
+  market: TargetMarket,
+  exclude: Set<string>,
+) => Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }> = async () => {
   // DataForSEO has no credentials in production and its client currently
   // returns fabricated keywords and SERP rows when they are missing, so this
   // source stays off until that is fixed. Returning nothing is the honest
@@ -254,4 +259,4 @@ export async function harvestFromSerp(
     return { candidates: [], tokens: 0, errors: [] };
   }
   return { candidates: [], tokens: 0, errors: ['SERP source not implemented yet'] };
-}
+};

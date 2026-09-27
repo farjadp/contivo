@@ -253,7 +253,7 @@
       "undo": {
         "accepted": "<b>{name}</b> is now one of your competitors.",
         "rejected": "<b>{name}</b> was set aside and won't be suggested again.",
-        "reasonPrompt": "If you like, say why:",
+        "reasonPrompt": "If you like, say why, and the next search will suggest fewer companies like it:",
         "reasonSaved": "Reason saved.",
         "undo": "Undo",
         "dismiss": "Dismiss",

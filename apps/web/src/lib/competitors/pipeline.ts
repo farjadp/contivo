@@ -196,6 +196,7 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
         domain: c.domain,
         userDecision: c.userDecision,
         rejectionReason: c.rejectionReason,
+        updatedAt: c.updatedAt,
       })),
     });
 
