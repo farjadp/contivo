@@ -14,8 +14,13 @@
 
 ## Competitive Intelligence
 
-- Competitor discovery with archive
-- Competitor validation flow (accept/reject/manual)
+- Competitor discovery grounded in live web-search citations, with clickable evidence per competitor
+- Per-workspace target market (country and search language, separate from content language)
+- Competitors labelled SEO and/or business
+- Review queue with accept/reject/manual add, optional rejection reasons that steer the next run
+- "Remove" keeps a company from being suggested again in future runs
+- Run history: queries used, target market, and found/accepted counts per run
+- Failed or empty runs cost no quota
 - Market matrices generation (multi-chart)
 - Competitor keyword analysis and strategy signals
 - Products & Services comparison between client and competitors
