@@ -24,16 +24,16 @@ Today (`generateWorkspaceCompetitiveMatrices`, `apps/web/src/app/actions/growth-
 
 | # | Decision | Status |
 |---|---|---|
-| M1 | Rebuild on evidence + structured storage (options B + D from the brainstorm). Cosmetic prompt polish alone is rejected: it makes guesses look better. | proposed |
+| M1 | Rebuild on evidence + structured storage (options B + D from the brainstorm). Cosmetic prompt polish alone is rejected: it makes guesses look better. | **approved 27 Sep** |
 | M2 | **Axes = 2 core + 1–3 market-specific** (3–5 charts). Core charts are identical across workspaces so downstream code can rely on them; market charts are proposed by the model from the brand brief and competitor positioning, and the user picks/renames them. | proposed |
-| M3 | **Fail closed.** No heuristic fallback. A failed run saves nothing; the ideation gate stays shut with a clear message. | proposed |
+| M3 | **Fail closed.** No heuristic fallback. A failed run saves nothing; the ideation gate stays shut with a clear message. Farjad accepted the consequence: workspaces that were riding the fabricated fallback stop until a run succeeds. | **approved 27 Sep** |
 | M4 | Manual score edits live in an **override layer** that survives regeneration, is visible on the chart, and can be reset per point. | approved (Q4) |
 | M5 | Competitor input comes only from `selectCompetitors` (discovery §7). `basis` is stored on the run, mirrored as `competitor_basis` on the projection (the key discovery already writes), and shown in the UI. Note the landed contract is stricter than first agreed: `UNCONFIRMED_HIGH` needs high confidence **and** corroboration (citations from at least 2 distinct queries, or more than one source), so a matrix run can legitimately refuse where the old filter would have proceeded. | proposed |
 | M6 | Evidence bundle is limited to what the app already holds: discovery `evidence`, `positioning`, `keyFeatures`, `labels`, `confidence`, own-site `brandSummary`, and `competitorKeywordsIntel` when present. **No new crawling or paid data in this iteration** (Q3). Deferred items are tracked in Notion Mission Control. | approved (Q3) |
 | M7 | Output language = workspace `contentLanguage` (the content is for the customer's audience; `targetLanguage` is the search language and is passed to the prompt only as market context). Core axis labels come from i18n, never from the model. | proposed |
 | M8 | The token-usage panel leaves the main UI and becomes a collapsed technical disclosure. | proposed |
-| M9 | **Certainty is an enum, not a self-reported float.** The scorer returns `certain` / `likely` / `unsure`, mapped in code to 0.9 / 0.7 / 0.5, then adjusted only by deterministic signals. Measured live in discovery (2026-09-26), a model's own 0-1 confidence pinned at 1.0 for every candidate including ones it rejected, so the number carried no information. | proposed |
-| M10 | **Every fabricating fallback in the intelligence actions goes**, not just the matrices one: `fallbackMatrices`, `fallbackKeywordPayload` (growth-keywords.ts) and `fallbackPayload` (growth-offerings.ts) all invent output when the OpenAI call fails, with real competitors attached, and it reads as genuine analysis. Verified still live on `competitor-discovery-redesign` at 7a035f8. | proposed |
+| M9 | **approved 27 Sep. Certainty is an enum, not a self-reported float.** The scorer returns `certain` / `likely` / `unsure`, mapped in code to 0.9 / 0.7 / 0.5, then adjusted only by deterministic signals. Measured live in discovery (2026-09-26), a model's own 0-1 confidence pinned at 1.0 for every candidate including ones it rejected, so the number carried no information. | proposed |
+| M10 | **approved 27 Sep. Every fabricating fallback in the intelligence actions goes**, not just the matrices one: `fallbackMatrices`, `fallbackKeywordPayload` (growth-keywords.ts) and `fallbackPayload` (growth-offerings.ts) all invent output when the OpenAI call fails, with real competitors attached, and it reads as genuine analysis. Verified still live on `competitor-discovery-redesign` at 7a035f8. | proposed |
 | M11 | Schema changes ship as a **migration file**, not `db push`: production is migrated, and the branch already carries `20260926000000_competitor_discovery`. | proposed |
 
 ## 3. Axes
@@ -221,9 +221,27 @@ Same stance as discovery §9: each stage fails loudly, a missing `OPENAI_API_KEY
 - Migrating downstream consumers from the projection blob to the tables.
 - Per-chart history view (runs are stored, UI not planned yet).
 
-## 13. Open for review
-1. Confirm M1 (B + D) and M3 (fail closed even though it may block ideation for workspaces that relied on the fake fallback).
-2. Confirm the two core axes in §3.1, or swap one.
-3. Confirm minimum 3 charts (readiness threshold 5 → 3).
-4. Confirm M8 (token panel becomes a disclosure).
-5. Confirm M10: removing the keyword and offerings fallbacks is in scope here, which means those two features start failing visibly instead of quietly inventing output.
+## 13. Review status
+
+Answered by Farjad on 27 Sep 2026:
+
+1. **M1 and M3 approved.** Rebuild on evidence, fail closed, and accept that ideation stops for workspaces that were relying on the fabricated fallback.
+2. **M10 approved.** All three fabricating fallbacks go together: matrices, keyword intelligence and offerings.
+
+Still open, and not blocking the pure-function work:
+
+3. The two core axes in section 3.1 — confirm or swap one.
+4. The minimum of 3 charts, which lowers `REQUIRED_MATRIX_CHARTS` from 5 to 3.
+5. M8, the token panel becoming a collapsed disclosure.
+
+## 14. Build order
+
+Landed 27 Sep on this branch, in `apps/web/src/lib/matrices/` with 36 tests, chosen because none of it touches a file the competitor-discovery branch is rewriting:
+
+- `types.ts` — certainty, chart kind, company type, the score and override shapes.
+- `scoring.ts` — the certainty enum mapped to banded numbers, corroboration inside the band, the shared confidence words.
+- `white-space.ts` — the computed gap, restricted to cells the target can reach.
+- `projection.ts` — the payload every existing reader consumes, with the override layer applied on top and staleness flagged.
+
+Still to build, and waiting on the discovery branch going final because they share files:
+the Prisma models and their migration, the run action and its `/api/matrices/run` route, the axis, score and summary prompts, the UI, and the removal of the three fallbacks (M10).
