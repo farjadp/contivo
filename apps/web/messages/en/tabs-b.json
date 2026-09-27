@@ -110,6 +110,13 @@
     "competitorMap": {
       "discover": "Discover Competitors with AI",
       "discoveringStage": "Discovering… ({stage})",
+      "stages": {
+        "QUERIES": "Generating queries",
+        "SEARCH": "Searching the web",
+        "ENRICH": "Reading competitor sites",
+        "JUDGE": "Judging candidates",
+        "SAVE": "Saving results"
+      },
       "discoveredNone": "No new competitors were found this run.",
       "counts": "{active} active / {accepted} accepted",
       "runs": "Discovery runs: {used}/{max}",

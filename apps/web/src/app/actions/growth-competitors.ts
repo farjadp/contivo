@@ -40,7 +40,7 @@
  * actions talk to Prisma and to the pure pipeline library only.
  */
 
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
@@ -55,6 +55,7 @@ import { normalizeCandidateDomain } from '@/lib/competitors/domains';
 import { buildBrandBrief } from '@/lib/competitors/queries';
 import { enrichCandidates, judgeCandidates } from '@/lib/competitors/judge';
 import { confidenceBand } from '@/lib/competitors/scoring';
+import { sanitizeUpstreamText } from '@/lib/competitors/redact';
 import { parseStoredEvidence, reapStaleRuns } from '@/lib/competitors/pipeline';
 import type {
   Candidate,
@@ -115,28 +116,19 @@ function isValidCountry(value: string | null): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Error-text hygiene — DiscoveryRun.error and .sourceStats are persisted by
-// the pipeline (judge.ts, search.ts) from upstream HTTP failures and can
-// contain a raw response body. They are shown in the UI through this
-// module's serializers, so this is where they get scrubbed and capped,
-// regardless of how careful the write side already was.
+// Error-text hygiene — DiscoveryRun.error and .sourceStats are shown in the
+// UI through this module's serializers. `sanitizeUpstreamText` (shared with
+// the write sites in judge.ts, search.ts and queries.ts — see that module's
+// doc comment) is applied again here as defence in depth: a write site
+// added later that forgets to redact should not be the only thing standing
+// between a leaked value and the browser.
 // ---------------------------------------------------------------------------
-
-const MAX_ERROR_TEXT_LENGTH = 500;
-// Anything shaped like an API key, or an Authorization/Bearer echo.
-const SECRET_LIKE_RE = /(sk-[A-Za-z0-9_-]{8,}|Bearer\s+[^\s"',}]+|"?authorization"?\s*:\s*"?[^"'\s,}]+)/gi;
-
-function sanitizeErrorText(value: string | null | undefined): string | null {
-  if (!value) return null;
-  const scrubbed = value.replace(SECRET_LIKE_RE, '[redacted]');
-  return scrubbed.length > MAX_ERROR_TEXT_LENGTH ? `${scrubbed.slice(0, MAX_ERROR_TEXT_LENGTH)}…` : scrubbed;
-}
 
 function sanitizeSourceStats(value: unknown): SourceStats | null {
   if (!value || typeof value !== 'object') return null;
   const stats = value as SourceStats;
   if (!Array.isArray(stats.errors)) return stats;
-  return { ...stats, errors: stats.errors.map((e) => sanitizeErrorText(e) ?? '') };
+  return { ...stats, errors: stats.errors.map((e) => sanitizeUpstreamText(e) ?? '') };
 }
 
 // ---------------------------------------------------------------------------
@@ -255,7 +247,7 @@ function toRunView(run: {
     stage: run.stage,
     savedCount: run.savedCount,
     tokensUsed: run.tokensUsed,
-    error: sanitizeErrorText(run.error),
+    error: sanitizeUpstreamText(run.error),
     sourceStats: sanitizeSourceStats(run.sourceStats),
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
@@ -324,15 +316,31 @@ export async function startCompetitorDiscovery(
     language: workspace.targetLanguage === 'fa' ? 'fa' : 'en',
   };
 
-  const run = await prisma.discoveryRun.create({
-    data: {
-      workspaceId,
-      userId: session.userId,
-      status: 'PENDING',
-      market: market as unknown as Prisma.InputJsonValue,
-    },
-    select: { id: true },
-  });
+  let run: { id: string };
+  try {
+    run = await prisma.discoveryRun.create({
+      data: {
+        workspaceId,
+        userId: session.userId,
+        status: 'PENDING',
+        market: market as unknown as Prisma.InputJsonValue,
+      },
+      select: { id: true },
+    });
+  } catch (error) {
+    // `discovery_runs_one_active_per_workspace` (a partial unique index —
+    // see prisma/add-discovery-run-active-constraint.ts, since Prisma's
+    // schema language cannot express "unique where status IN (...)")
+    // enforces at the database level what the `active` check above only
+    // checks-then-acts on. Two concurrent calls can both pass that check
+    // before either has created its row; the constraint is what actually
+    // stops a second PENDING/RUNNING row from ever being written, and this
+    // catch is what makes the two agree on the error the caller sees.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return { error: await actionError('discoveryAlreadyRunning') };
+    }
+    throw error;
+  }
 
   await writeActivityLog({
     userId: session.userId,
@@ -341,11 +349,30 @@ export async function startCompetitorDiscovery(
     detail: { runId: run.id },
   });
 
-  // Fire-and-forget: the DiscoveryRun row this call already created (and
-  // whatever `runDiscoveryPipeline` does to it next) is the source of truth
-  // for what happened, not this HTTP call's outcome. `triggerBackgroundRun`
-  // swallows its own errors for exactly that reason.
-  void triggerBackgroundRun('/api/growth/discovery/run', { runId: run.id });
+  const dispatch = await triggerBackgroundRun('/api/growth/discovery/run', { runId: run.id });
+  if (!dispatch.ok) {
+    // The row already exists in PENDING, but the thing that was supposed
+    // to move it forward never even reached the route — left alone, this
+    // row would sit in PENDING (refusing every retry with
+    // discoveryAlreadyRunning) until reapStaleRuns caught it up to
+    // STALE_RUN_MINUTES later. Mark it FAILED now, so the caller learns
+    // this immediately instead of ten minutes from now.
+    await prisma.discoveryRun.update({
+      where: { id: run.id },
+      data: {
+        status: 'FAILED',
+        error: sanitizeUpstreamText(dispatch.error),
+        finishedAt: new Date(),
+      },
+    });
+    await writeActivityLog({
+      userId: session.userId,
+      workspaceId,
+      action: 'COMPETITOR_DISCOVERY_DISPATCH_FAILED',
+      detail: { runId: run.id, error: dispatch.error },
+    });
+    return { error: await actionError('discoveryDispatchFailed') };
+  }
 
   return { runId: run.id };
 }
@@ -565,7 +592,7 @@ export async function listDiscoveryRuns(workspaceId: string): Promise<RunHistory
     stage: run.stage,
     savedCount: run.savedCount,
     tokensUsed: run.tokensUsed,
-    error: sanitizeErrorText(run.error),
+    error: sanitizeUpstreamText(run.error),
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
   }));
@@ -591,6 +618,15 @@ export async function addManualCompetitor(
 
   const domain = normalizeCandidateDomain(domainInput);
   if (!domain) return { error: await actionError('invalidUrl') };
+
+  // The deleted `discoverCompetitorsWithOpenAI`/manual-edit flow this
+  // action replaces always excluded the workspace's own domain from its
+  // results; restore the same guard here so "add a competitor" cannot be
+  // used to add the workspace to its own competitor list.
+  const ownDomain = normalizeCandidateDomain(workspace.websiteUrl || '');
+  if (ownDomain && domain === ownDomain) {
+    return { error: await actionError('competitorIsOwnDomain') };
+  }
 
   const duplicate = workspace.competitors.some(
     (c) => c.domain && normalizeCandidateDomain(c.domain) === domain,

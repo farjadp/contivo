@@ -27,6 +27,7 @@ const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMoc
         findFirst: vi.fn(),
         count: vi.fn(),
         create: vi.fn(),
+        update: vi.fn(),
         findMany: vi.fn(),
       },
       competitor: {
@@ -105,6 +106,7 @@ beforeEach(() => {
   pipelineMock.reapStaleRuns.mockResolvedValue(undefined);
   prismaMock.discoveryRun.findFirst.mockResolvedValue(null);
   prismaMock.discoveryRun.count.mockResolvedValue(0);
+  backgroundRunMock.triggerBackgroundRun.mockResolvedValue({ ok: true });
 });
 
 afterEach(() => {
@@ -356,6 +358,51 @@ describe('startCompetitorDiscovery', () => {
       runId: 'new-run',
     });
   });
+
+  it('marks the run FAILED immediately, and reports an error, when the background trigger cannot be dispatched at all', async () => {
+    prismaMock.discoveryRun.create.mockResolvedValue({ id: 'new-run' });
+    backgroundRunMock.triggerBackgroundRun.mockResolvedValue({ ok: false, error: 'CRON_SECRET is not set' });
+    prismaMock.discoveryRun.update.mockResolvedValue({});
+
+    const result = await startCompetitorDiscovery('ws-1');
+
+    expect(result).toEqual({ error: 'discoveryDispatchFailed' });
+    expect(prismaMock.discoveryRun.update).toHaveBeenCalledWith({
+      where: { id: 'new-run' },
+      data: expect.objectContaining({ status: 'FAILED', error: 'CRON_SECRET is not set' }),
+    });
+  });
+
+  it('returns discoveryAlreadyRunning, not a raw database error, when the database constraint catches a race the findFirst check missed', async () => {
+    // Simulates two concurrent calls both passing the `active` findFirst
+    // check before either has written its row: the partial unique index
+    // (discovery_runs_one_active_per_workspace) is what actually stops the
+    // second create, surfaced by Prisma as a P2002.
+    const { Prisma } = await import('@prisma/client');
+    prismaMock.discoveryRun.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+        code: 'P2002',
+        clientVersion: '5.22.0',
+      }),
+    );
+
+    const result = await startCompetitorDiscovery('ws-1');
+
+    expect(result).toEqual({ error: 'discoveryAlreadyRunning' });
+    expect(backgroundRunMock.triggerBackgroundRun).not.toHaveBeenCalled();
+  });
+
+  it('re-throws a database error that is not the active-run unique constraint', async () => {
+    const { Prisma } = await import('@prisma/client');
+    prismaMock.discoveryRun.create.mockRejectedValue(
+      new Prisma.PrismaClientKnownRequestError('Some other failure', {
+        code: 'P2003',
+        clientVersion: '5.22.0',
+      }),
+    );
+
+    await expect(startCompetitorDiscovery('ws-1')).rejects.toThrow('Some other failure');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -419,6 +466,16 @@ describe('addManualCompetitor', () => {
     const result = await addManualCompetitor('ws-1', 'not a domain at all');
 
     expect(result).toEqual({ error: 'invalidUrl' });
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects the workspace\'s own domain without creating a row', async () => {
+    // workspaceRow() defaults websiteUrl to https://acme.com.
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+
+    const result = await addManualCompetitor('ws-1', 'https://acme.com/pricing');
+
+    expect(result).toEqual({ error: 'competitorIsOwnDomain' });
     expect(prismaMock.competitor.create).not.toHaveBeenCalled();
   });
 

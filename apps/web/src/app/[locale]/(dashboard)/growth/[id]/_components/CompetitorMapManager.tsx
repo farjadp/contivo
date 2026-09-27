@@ -51,6 +51,23 @@ const POLL_INTERVAL_MS = 4000;
 // truth for when a run is actually dead — `reapStaleRuns` owns that.
 const MAX_POLL_ATTEMPTS = 150;
 
+/** The five stage names `runDiscoveryPipeline` writes to `DiscoveryRun.stage`. */
+const KNOWN_STAGES = new Set(['QUERIES', 'SEARCH', 'ENRICH', 'JUDGE', 'SAVE']);
+
+/**
+ * Translates a pipeline stage into a label for `discoveringStage`, instead
+ * of interpolating the raw enum value — `tabsB.competitorMap.stages` was
+ * missing, so the Persian UI was rendering the English enum verbatim, e.g.
+ * «در حال یافتن رقبا… (ENRICH)». Falls back to the raw value for a stage
+ * this UI doesn't recognise yet, rather than throwing on a missing message.
+ */
+function stageLabel(t: ReturnType<typeof useTranslations>, stage: string): string {
+  if (KNOWN_STAGES.has(stage)) {
+    return t(`stages.${stage as 'QUERIES' | 'SEARCH' | 'ENRICH' | 'JUDGE' | 'SAVE'}`);
+  }
+  return stage;
+}
+
 function isSyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
   const name = String(item.name || '').toLowerCase().trim();
   const domain = String(item.domain || '').toLowerCase().trim();
@@ -391,7 +408,7 @@ export function CompetitorMapManager({
           className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
         >
           {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
-          {isDiscovering && discoveryStage ? t('discoveringStage', { stage: discoveryStage }) : t('discover')}
+          {isDiscovering && discoveryStage ? t('discoveringStage', { stage: stageLabel(t, discoveryStage) }) : t('discover')}
         </button>
 
         <span className="text-xs font-semibold text-moss-muted">

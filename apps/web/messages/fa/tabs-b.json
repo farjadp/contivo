@@ -110,6 +110,13 @@
     "competitorMap": {
       "discover": "یافتن رقبا با هوش مصنوعی",
       "discoveringStage": "در حال یافتن رقبا… ({stage})",
+      "stages": {
+        "QUERIES": "ساخت عبارت‌های جست‌وجو",
+        "SEARCH": "جست‌وجو در وب",
+        "ENRICH": "خواندن سایت رقبا",
+        "JUDGE": "داوری نامزدها",
+        "SAVE": "ذخیرهٔ نتایج"
+      },
       "discoveredNone": "در این اجرا رقیب تازه‌ای پیدا نشد.",
       "counts": "{active} فعال / {accepted} پذیرفته‌شده",
       "runs": "اجراهای جست‌وجو: {used}/{max}",

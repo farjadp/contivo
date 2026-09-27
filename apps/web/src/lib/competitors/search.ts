@@ -1,6 +1,7 @@
 import { hasDataForSeoCredentials } from '../dataforseo';
 import { normalizeCandidateDomain } from './domains';
 import { readTokenUsage } from './queries';
+import { sanitizeUpstreamText } from './redact';
 import { newEvidenceId } from './types';
 import type { Candidate, EvidenceItem, TargetMarket } from './types';
 
@@ -169,7 +170,7 @@ async function runOneQuery(
     });
 
     if (!res.ok) {
-      return { error: `Search query failed for "${query}": ${res.status} ${await res.text()}` };
+      return { error: `Search query failed for "${query}": ${res.status} ${sanitizeUpstreamText(await res.text())}` };
     }
 
     const data = await res.json();

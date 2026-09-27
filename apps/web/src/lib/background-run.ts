@@ -9,29 +9,55 @@
  * work to `after()`, then returns immediately.
  *
  * This helper is the reusable half of that pattern: it POSTs to
- * `${WEB_APP_URL}${path}` with the same `Bearer <CRON_SECRET>` this repo's
- * other internal routes require (see `/api/autopilot/tick`), and swallows
- * every error itself. The caller fires and forgets — the row the job
- * writes to (a `DiscoveryRun`, or whatever the caller uses to track
- * progress) is the source of truth for what happened, not this HTTP call's
- * outcome. A caller that needs to know the trigger itself failed should not
- * rely on this function; it deliberately never throws or returns a status.
+ * `${resolveWebAppUrl()}${path}` with the same `Bearer <CRON_SECRET>` this
+ * repo's other internal routes require (see `/api/autopilot/tick`).
+ *
+ * It reports whether the dispatch itself succeeded (`{ ok: true }` / `{ ok:
+ * false, error }`) rather than swallowing every failure silently. The
+ * caller needs that: `startCompetitorDiscovery` already creates a
+ * `DiscoveryRun` row in `PENDING` before calling this, and if the trigger
+ * never even reached the route — a missing `CRON_SECRET`, a connection
+ * refused, a non-2xx response — that row would otherwise sit in `PENDING`
+ * until `reapStaleRuns` marks it `FAILED` up to `STALE_RUN_MINUTES` later,
+ * with the polling UI stuck showing "discovering" and every retry refused
+ * with `discoveryAlreadyRunning` in the meantime. The caller is expected to
+ * mark the row `FAILED` itself on a `{ ok: false }` result, so the failure
+ * is visible immediately instead of ten minutes later.
  */
-export async function triggerBackgroundRun(path: string, body: Record<string, unknown>): Promise<void> {
-  const baseUrl = process.env.WEB_APP_URL;
-  const secret = process.env.CRON_SECRET;
+export type BackgroundRunResult = { ok: true } | { ok: false; error: string };
 
-  if (!baseUrl || !secret) {
+/**
+ * `WEB_APP_URL` is the explicit, deploy-time value (set in production per
+ * the deploy runbook). It falls back to `NEXT_PUBLIC_APP_URL` (already set
+ * in every environment for other client-facing purposes) and, failing
+ * that, to `http://localhost:<PORT>` — `PORT` is what Next actually binds
+ * to in dev, which is not fixed here on purpose (this repo's local dev
+ * quirks: the web app's port is randomized per session, so a hardcoded
+ * `:3000` would be wrong as often as it was right).
+ */
+function resolveWebAppUrl(): string {
+  const explicit = process.env.WEB_APP_URL?.trim();
+  if (explicit) return explicit;
+
+  const publicUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (publicUrl) return publicUrl;
+
+  const port = process.env.PORT?.trim() || '3000';
+  return `http://localhost:${port}`;
+}
+
+export async function triggerBackgroundRun(path: string, body: Record<string, unknown>): Promise<BackgroundRunResult> {
+  const secret = process.env.CRON_SECRET;
+  if (!secret) {
     // Never log `secret` itself, even redacted-looking — just say which
     // env var is missing.
-    console.error(
-      `triggerBackgroundRun: cannot reach ${path} — ${!baseUrl ? 'WEB_APP_URL' : 'CRON_SECRET'} is not set`,
-    );
-    return;
+    return { ok: false, error: 'CRON_SECRET is not set' };
   }
 
+  const baseUrl = resolveWebAppUrl();
+
   try {
-    await fetch(`${baseUrl}${path}`, {
+    const res = await fetch(`${baseUrl}${path}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,7 +65,13 @@ export async function triggerBackgroundRun(path: string, body: Record<string, un
       },
       body: JSON.stringify(body),
     });
+
+    if (!res.ok) {
+      return { ok: false, error: `Background route responded ${res.status}` };
+    }
+
+    return { ok: true };
   } catch (error) {
-    console.error(`triggerBackgroundRun: request to ${path} failed:`, error instanceof Error ? error.message : error);
+    return { ok: false, error: error instanceof Error ? error.message : 'Request to the background route failed' };
   }
 }

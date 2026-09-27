@@ -1,3 +1,4 @@
+import { sanitizeUpstreamText } from './redact';
 import type { TargetMarket } from './types';
 
 export type BrandBrief = {
@@ -162,7 +163,11 @@ export async function generateQueries(brief: BrandBrief): Promise<{ queries: str
   });
 
   if (!res.ok) {
-    throw new Error(`OpenAI query generation failed: ${res.status} ${await res.text()}`);
+    // This throw propagates out of `runDiscoveryPipeline`'s QUERIES stage
+    // into its outer catch, which writes `error.message` straight to
+    // `DiscoveryRun.error` — the same reason judge.ts's and search.ts's
+    // batch/query errors are sanitized before they're built.
+    throw new Error(`OpenAI query generation failed: ${res.status} ${sanitizeUpstreamText(await res.text())}`);
   }
 
   const data = await res.json();
