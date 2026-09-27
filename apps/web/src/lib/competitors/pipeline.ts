@@ -212,11 +212,14 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     // Every domain this workspace already has an opinion on — accepted,
     // pending or REJECTED — is excluded before the search even runs. This
     // is what stops a name the user already rejected from being
-    // resurfaced on every future run.
+    // resurfaced on every future run. `brief.knownDomains` is the same set
+    // `buildBrandBrief` collected from every competitor row regardless of
+    // decision (see its doc comment), so this is the one place that set is
+    // read back out, normalized for comparison against harvested domains.
     const exclude = new Set<string>();
     if (brief.ownDomain) exclude.add(normalizeStoredDomain(brief.ownDomain));
-    for (const competitor of allCompetitors) {
-      if (competitor.domain) exclude.add(normalizeStoredDomain(competitor.domain));
+    for (const domain of brief.knownDomains) {
+      exclude.add(normalizeStoredDomain(domain));
     }
 
     const [webOutcome, serpOutcome] = await Promise.allSettled([

@@ -8,11 +8,11 @@ import type { Prisma } from '@prisma/client';
  * therefore count every row except REJECTED ones: ACCEPTED, PENDING and
  * undecided (null) rows all count.
  */
-export function countsTowardCompetitorTotal(competitor: { userDecision: string | null }): boolean {
+export function countsTowardCompetitorTotal(competitor: { userDecision?: string | null }): boolean {
   return competitor.userDecision !== 'REJECTED';
 }
 
-export function countCompetitors(competitors: Array<{ userDecision: string | null }>): number {
+export function countCompetitors(competitors: Array<{ userDecision?: string | null }>): number {
   return competitors.filter(countsTowardCompetitorTotal).length;
 }
 

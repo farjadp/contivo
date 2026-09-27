@@ -190,7 +190,13 @@ export function buildRejectedSectionForQueries(brief: BrandBrief): string[] {
 export function buildQueryGenerationPrompt(brief: BrandBrief): string {
   const languageName = brief.market.language === 'fa' ? 'Persian' : 'English';
   const country = brief.market.country || 'no specific country';
-  const competitorNames = brief.acceptedCompetitors.map((c) => c.name).filter(Boolean);
+  // Accepted names are untrusted the same way rejected ones are: they came
+  // from a scraped site, a manually entered value, or (for older rows) an
+  // earlier extraction flow. Run them through the same sanitiser used for
+  // the rejected section above so a name can't inject a line of its own
+  // into the prompt; sanitizePromptField collapses to one line and caps
+  // length without touching ZWNJ/ZWJ, which correct Persian names need.
+  const competitorNames = brief.acceptedCompetitors.map((c) => sanitizePromptField(c.name)).filter(Boolean);
 
   const lines = [
     `Write ${MAX_QUERIES} web search queries that would surface companies competing with this business.`,

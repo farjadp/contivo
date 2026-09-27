@@ -516,6 +516,52 @@ describe('runDiscoveryPipeline', () => {
     expect(kept).not.toContain('rej-0.com');
     expect(kept).not.toContain('rej-4.com');
   });
+
+  it('excludes the workspace\'s own domain and every existing competitor domain from SEARCH, rejected ones included, even when a rejection carries no reason', async () => {
+    // A reason-less rejection (no code, or a legacy free-text value) is left
+    // out of brief.rejectedCompetitors — see queries.ts — but its domain
+    // must still reach brief.knownDomains and, from there, the exclude set
+    // SEARCH is given. This is what stops a removed company from being
+    // resurfaced on the next run even when it carries no rejection reason.
+    queriesMock.buildBrandBrief.mockReturnValue({
+      companyName: 'Acme',
+      ownDomain: 'acme.com',
+      summary: '',
+      valueProposition: '',
+      industry: '',
+      audience: '',
+      market: { country: null, language: 'en' },
+      acceptedCompetitors: [],
+      rejectedCompetitors: [],
+      knownDomains: ['accepted.com', 'reasonless-reject.com', 'coded-reject.com'],
+    });
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(
+      baseRun({
+        workspace: {
+          id: 'ws1',
+          name: 'Acme',
+          websiteUrl: 'https://acme.com',
+          brandSummary: null,
+          targetCountry: null,
+          targetLanguage: 'en',
+          competitors: [],
+        },
+      }),
+    );
+
+    await runDiscoveryPipeline('run1');
+
+    expect(searchMock.harvestFromWebSearch).toHaveBeenCalledTimes(1);
+    const [, , webExclude] = searchMock.harvestFromWebSearch.mock.calls[0];
+    const [, , serpExclude] = searchMock.harvestFromSerp.mock.calls[0];
+    for (const exclude of [webExclude, serpExclude]) {
+      expect(exclude).toBeInstanceOf(Set);
+      expect(exclude.has('acme.com')).toBe(true);
+      expect(exclude.has('accepted.com')).toBe(true);
+      expect(exclude.has('reasonless-reject.com')).toBe(true);
+      expect(exclude.has('coded-reject.com')).toBe(true);
+    }
+  });
 });
 
 describe('reapStaleRuns', () => {
