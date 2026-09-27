@@ -22,6 +22,7 @@ import { Link } from '@/i18n/navigation';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
+import { pageAlternates } from '@/lib/page-metadata';
 
 export async function generateMetadata({
   params,
@@ -34,6 +35,7 @@ export async function generateMetadata({
   return {
     title: t('title'),
     description: t('description'),
+    alternates: pageAlternates(locale, '/docs/site-api'),
   };
 }
 

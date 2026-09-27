@@ -17,7 +17,7 @@ export function SiteFooter() {
 
   return (
     <footer className="theme-chalk border-t border-moss bg-chalk font-plex text-moss">
-      <div className="mx-auto grid max-w-[92rem] gap-12 px-6 py-16 md:grid-cols-[1.6fr_1fr_1fr_1fr] md:px-12 md:py-20">
+      <div className="mx-auto grid max-w-[92rem] gap-12 px-6 py-16 md:grid-cols-[1.4fr_1fr_1fr_1fr_1fr] md:px-12 md:py-20">
         <div>
           <div className="flex items-center gap-3">
             <span aria-hidden className="inline-block h-3 w-3 rotate-45 bg-saffron" />
@@ -55,6 +55,13 @@ export function SiteFooter() {
           ]}
         />
         <FooterCol
+          title={t('companyTitle')}
+          links={[
+            [{ pathname: '/about' }, t('about')],
+            [{ pathname: '/contact' }, t('contact')],
+          ]}
+        />
+        <FooterCol
           title={t('accountTitle')}
           links={[
             [{ pathname: '/sign-in' }, t('signIn')],
@@ -71,6 +78,14 @@ export function SiteFooter() {
             year: format.number(new Date().getFullYear(), { useGrouping: false }),
           })}</span>
           <span>{t('standBehind')}</span>
+          <nav aria-label={t('legalTitle')} className="flex gap-5">
+            <Link href="/privacy" className="underline decoration-transparent underline-offset-4 transition-colors hover:text-moss hover:decoration-saffron">
+              {t('privacy')}
+            </Link>
+            <Link href="/terms" className="underline decoration-transparent underline-offset-4 transition-colors hover:text-moss hover:decoration-saffron">
+              {t('terms')}
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

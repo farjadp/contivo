@@ -1,0 +1,138 @@
+{
+  "company": {
+    "contact": {
+      "meta": {
+        "title": "Contact — Contivo",
+        "description": "Write to the person who builds Contivo. Questions, bugs, privacy requests and agency enquiries."
+      },
+      "eyebrow": "Contact",
+      "headline": "Write to a <accent>person</accent>.",
+      "intro": "No ticket queue and no chatbot. Mail sent here is read by the person who builds Contivo, and the reply comes from them too.",
+      "addressLabel": "The address",
+      "copy": "Copy",
+      "copied": "Address copied",
+      "selected": "Selected. Press Ctrl+C (⌘C on a Mac) to copy.",
+      "write": "Write an email",
+      "facts": {
+        "who": {
+          "label": "Who reads it",
+          "value": "The founder, not a support team"
+        },
+        "where": {
+          "label": "Where",
+          "value": "Ontario, Canada. Eastern Time."
+        },
+        "how": {
+          "label": "Language",
+          "value": "English or Persian, whichever suits you"
+        }
+      },
+      "topicsTitle": "Save a round of replies",
+      "topicsIntro": "Pick what you are writing about. Your mail app opens a draft with the subject filled in and a few questions that get you a useful answer the first time.",
+      "draftHint": "Subject:",
+      "topics": {
+        "question": {
+          "title": "A question before you start",
+          "summary": "Whether Contivo fits your business, your language or your channels.",
+          "subject": "Contivo: a question before I start",
+          "body": "Hi,\n\nMy website: \nWhat I would like Contivo to do: \nMy question: \n\nThanks"
+        },
+        "broken": {
+          "title": "Something is not working",
+          "summary": "A run that failed, a post that never went out, a page that errors.",
+          "subject": "Contivo: something is not working",
+          "body": "Hi,\n\nWhat I did: \nWhat I expected: \nWhat happened instead: \nThe page address (URL) where it happened: \nRoughly when: \n\nA screenshot helps a lot, if you have one."
+        },
+        "privacy": {
+          "title": "Your data",
+          "summary": "A copy of what we hold, a correction, or deleting your account.",
+          "subject": "Contivo: privacy request",
+          "body": "Hi,\n\nThe email address on my account: \nWhat I am asking for (a copy / a correction / deletion): \n\nThanks"
+        },
+        "agency": {
+          "title": "Agencies and partnerships",
+          "summary": "Running Contivo for several clients, or building something with it.",
+          "subject": "Contivo: agency or partnership",
+          "body": "Hi,\n\nWho we are: \nHow many brands or clients: \nWhat we have in mind: \n\nThanks"
+        }
+      },
+      "before": "Many answers are already written down: what happens to your data is on the <privacy>Privacy page</privacy>, and what it costs is on <pricing>Pricing</pricing>."
+    },
+    "about": {
+      "meta": {
+        "title": "About — Contivo",
+        "description": "Who builds Contivo, the rules it is built on, and where it honestly stands today."
+      },
+      "eyebrow": "About",
+      "headline": "Run on its founder's <accent>own</accent> sites first.",
+      "intro": "Contivo is built by Farjad P.D, founder of {entity}, in Ontario, Canada. It is for a plain problem: a small company knows it should publish steadily and keep an eye on its market, and nobody has the hours to do it well.",
+      "principlesTitle": "The rules it is built on",
+      "principlesIntro": "Each of these is a decision already made in the product, not a promise about one. The date is when it went in.",
+      "principles": [
+        {
+          "title": "Refuse before inventing",
+          "body": "In August 2026 the writer produced a client case study that never happened, and the AI reviewer passed it nine out of ten. Since then, a draft that invents a case, a figure or a quote does not get through the quality gate.",
+          "date": "2026-08-18"
+        },
+        {
+          "title": "Show no number that was not measured",
+          "body": "When the search-data provider is not connected, Contivo now shows no search volume at all, instead of a plausible one it made up.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Sell only what works",
+          "body": "This site used to list networks Contivo cannot post to yet. They came off the page the day that was noticed.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Persian is written, not translated",
+          "body": "A Persian workspace gets articles written in Persian from the start, not English ones with a Persian menu around them.",
+          "date": "2026-09-23"
+        }
+      ],
+      "since": "In the product since {date}",
+      "timelineTitle": "How it got here",
+      "timeline": [
+        {
+          "date": "2026-03-12",
+          "title": "First commit",
+          "body": "A workspace, a connection to LinkedIn and X, and a scheduler."
+        },
+        {
+          "date": "2026-04-26",
+          "title": "The strategic report",
+          "body": "Contivo starts reading a site and its competitors and writing up what it finds."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Autopilot and the quality gate",
+          "body": "It publishes on a schedule, and every draft has to pass a review before it goes out."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Your own website",
+          "body": "Besides social networks, Contivo can publish articles straight to your site."
+        },
+        {
+          "date": "2026-09-23",
+          "title": "Persian",
+          "body": "The whole product, and the writing itself, in Persian."
+        },
+        {
+          "date": "2026-09-27",
+          "title": "Early access",
+          "body": "Where it is today: free, running on its founder's own sites, and open to try."
+        }
+      ],
+      "standsTitle": "Where it stands",
+      "stands": [
+        "Early access. Billing is not live, so it is free.",
+        "No customers to name yet, so this site names none.",
+        "Things break sometimes. When they do, you can write to the person who fixes them."
+      ],
+      "ctaTitle": "See whether it fits your site.",
+      "ctaStart": "Start free",
+      "ctaContact": "Or write to us"
+    }
+  }
+}

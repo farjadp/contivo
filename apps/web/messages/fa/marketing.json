@@ -239,6 +239,12 @@
     "signIn": "ورود",
     "createWorkspace": "ساختن فضای کاری",
     "copyright": "© {year} Contivo",
-    "standBehind": "چیزی منتشر نمی‌شود که دروازهٔ کیفیت پایش نایستد."
+    "standBehind": "چیزی منتشر نمی‌شود که دروازهٔ کیفیت پایش نایستد.",
+    "companyTitle": "شرکت",
+    "about": "دربارهٔ ما",
+    "contact": "تماس با ما",
+    "legalTitle": "حقوقی",
+    "privacy": "حریم خصوصی",
+    "terms": "شرایط استفاده"
   }
 }

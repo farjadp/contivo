@@ -184,3 +184,52 @@ export function Spotlight({
     </div>
   );
 }
+
+// ─── A line drawn by scrolling ───────────────────────────────────────────────
+
+/**
+ * A vertical rule that draws itself down its container as the container
+ * passes the middle of the screen, for timelines. Absolutely positioned: put
+ * it inside a `relative` parent and it spans that parent's height. Under
+ * reduced motion it is simply drawn.
+ */
+export function ScrollLine({ className }: { className?: string }) {
+  const line = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = line.current;
+    const host = el?.parentElement?.parentElement;
+    if (!el || !host) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      el.style.transform = 'scaleY(1)';
+      return;
+    }
+
+    let frame = 0;
+    const update = () => {
+      frame = 0;
+      const r = host.getBoundingClientRect();
+      const mid = window.innerHeight * 0.55;
+      const p = Math.min(1, Math.max(0, (mid - r.top) / Math.max(r.height, 1)));
+      el.style.transform = `scaleY(${p})`;
+    };
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
+  return (
+    <div aria-hidden className={cn('pointer-events-none absolute w-[2px] bg-rule', className)}>
+      <div ref={line} className="h-full w-full origin-top scale-y-0 bg-saffron" />
+    </div>
+  );
+}

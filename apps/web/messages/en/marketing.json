@@ -239,6 +239,12 @@
     "signIn": "Sign in",
     "createWorkspace": "Create a workspace",
     "copyright": "© {year} Contivo",
-    "standBehind": "Nothing goes out that the quality gate would not stand behind."
+    "standBehind": "Nothing goes out that the quality gate would not stand behind.",
+    "companyTitle": "Company",
+    "about": "About",
+    "contact": "Contact",
+    "legalTitle": "Legal",
+    "privacy": "Privacy",
+    "terms": "Terms"
   }
 }
