@@ -152,7 +152,9 @@ Per company: `{ id, name, domain, type, positioning, keyFeatures, labels, discov
 If `Workspace.matrixAxes` exists, skip. Otherwise propose 4 candidates (§3.2) and pause the run at stage `AXES` until the user picks; the UI shows the chooser. Default: the first 2 candidates are preselected so one click continues.
 
 ### 5.3 Score (one LLM call per chart, parallel, concurrency 3, JSON schema)
-Input: the bundle, the axis definition with a scoring rubric for each end, the language. Output per company: `xScore`, `yScore`, `xReason`, `yReason`, `evidenceRefs`, `confidence`. Hard rules in the prompt and enforced in code:
+Input: the bundle, the axis definition with a scoring rubric for each end, the language. Output per company: `xScore`, `yScore`, `xReason`, `yReason`, `evidenceRefs`, `certainty` (`certain` | `likely` | `unsure`). Hard rules in the prompt and enforced in code:
+- `certainty` is mapped in code to 0.9 / 0.7 / 0.5 (M9). The model never emits a raw number, and nothing it says can push a score to 1.
+- Deterministic adjustments only, each scaled by the remaining headroom so a lower certainty never overtakes a higher one: the count of distinct evidence items supporting that axis, and agreement between the two core charts.
 - A score with no `evidenceRefs` is kept but flagged `estimated = true` and its confidence is capped at 0.5.
 - Scale: the judge already labelled ASPIRATIONAL competitors; the prompt states the target's scale explicitly so the target is never defaulted to 5.
 - Confidence is shown with the shared bands (high ≥ 0.8, medium ≥ 0.6, otherwise low), as a word.
