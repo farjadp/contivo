@@ -113,8 +113,8 @@ export async function fetchDomainKeywords(
     );
   } catch (err: any) {
     console.error('[DataForSEO] fetchDomainKeywords error:', err.message);
-    if (err.message?.includes('credentials are missing') || process.env.NODE_ENV === 'development') {
-      console.log('Returning mock keyword data for domain:', domain);
+    if (mocksAllowed(err)) {
+      console.warn('[DataForSEO] returning MOCK keyword data for', domain);
       return generateMockKeywords(domain, limit);
     }
     return [];
@@ -162,8 +162,8 @@ export async function fetchSerpResults(
     );
   } catch (err: any) {
     console.error('[DataForSEO] fetchSerpResults error:', err.message);
-    if (err.message?.includes('credentials are missing') || process.env.NODE_ENV === 'development') {
-      console.log('Returning mock SERP data for keyword:', keyword);
+    if (mocksAllowed(err)) {
+      console.warn('[DataForSEO] returning MOCK SERP data for', keyword);
       return generateMockSerp(keyword);
     }
     return [];
@@ -182,6 +182,26 @@ export async function fetchSerpResults(
       description: item?.description ? String(item.description) : null,
       domain: String(item?.domain || ''),
     }));
+}
+
+/**
+ * Whether this process may answer with invented data.
+ *
+ * It used to be "the credentials are missing, or NODE_ENV is development" —
+ * which meant an unconfigured production returned `Math.sin()` search volumes
+ * and a hardcoded hubspot/g2/forbes SERP, written into `competitor_keywords`
+ * with no flag saying they were made up, under a tab headed "Powered by real
+ * DataForSEO API data — NOT AI-estimated". A customer could act on numbers
+ * nobody measured.
+ *
+ * Now it takes a deliberate `DATAFORSEO_ALLOW_MOCKS=true`, and never in
+ * production whatever that says. Missing credentials give an empty result,
+ * which the callers already treat as "no data" and surface honestly.
+ */
+function mocksAllowed(err: { message?: string }): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
+  if (process.env.DATAFORSEO_ALLOW_MOCKS !== 'true') return false;
+  return Boolean(err?.message?.includes('credentials are missing'));
 }
 
 // ----- Mock Data Generators -----------------------------------------------

@@ -378,13 +378,32 @@ const STOPWORDS = new Set([
   'the', 'a', 'an', 'and', 'or', 'of', 'to', 'in', 'for', 'on', 'with', 'how', 'why', 'what',
   'your', 'you', 'is', 'are', 'vs', 'from', 'that', 'this', 'it', 'at', 'by', 'as', 'be', 'we',
   'our', 'their', 'they', 'but', 'not', 'can', 'will', 'has', 'have', 'was', 'were', 'more',
+  // Persian. Without these the commonest words in the language count as
+  // shared tokens and push every pair's similarity up, which would turn the
+  // fixed check into a source of false duplicates.
+  'است', 'این', 'آن', 'آنها', 'های', 'برای', 'شما', 'خود', 'کنید', 'میشود', 'میکند',
+  'هستند', 'بود', 'باشد', 'هم', 'یک', 'اما', 'یا', 'تا', 'روی', 'کرد', 'دارد', 'دارند',
+  'چه', 'همه', 'بین', 'وقتی', 'چون', 'نیست', 'باید', 'بیشتر', 'خودتان',
 ]);
 
+/**
+ * The words of a draft, for the near-duplicate check.
+ *
+ * The character class here used to be `[^a-z0-9\s]`, which deletes every
+ * Persian letter. A Persian draft tokenised to the empty set, `jaccard`
+ * returned 0 for any pair, and the duplicate check passed everything — one of
+ * the gate's five hard checks quietly doing nothing on an entire language,
+ * while the run log recorded it as a pass.
+ *
+ * ZWNJ is removed rather than treated as a separator, so «می‌شود» and «میشود»
+ * come out as the same token.
+ */
 function tokenize(text: string): Set<string> {
   return new Set(
     String(text)
       .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, ' ')
+      .replace(/\u200c/g, '')
+      .replace(/[^a-z0-9\u0600-\u06ff\s]/g, ' ')
       .split(/\s+/)
       .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
   );
