@@ -3,7 +3,7 @@
 - **Date:** 2026-09-26
 - **Status:** Draft for review. **Do not implement until the competitor-discovery redesign has landed** (see §11).
 - **Branch:** `competitor-discovery-redesign` (spec only); implementation on its own branch after discovery.
-- **Depends on:** `2026-09-26-competitor-discovery-design.md` (§4 Competitor fields, §7 selector, §5.0 async run pattern). Final names from the discovery session (2026-09-26): `selectCompetitors()` in `apps/web/src/lib/competitors/selection.ts` returning `{ competitors, basis: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE' }`; `triggerBackgroundRun(path, body)` in `apps/web/src/lib/background-run.ts`; evidence items carry a stable `id` (requested, agreed); confidence bands shared: high ≥ 0.8, medium ≥ 0.6, shown as a word never a percentage; `Workspace.targetLanguage` exists separately from `contentLanguage`..
+- **Depends on:** `2026-09-26-competitor-discovery-design.md` (§4 Competitor fields, §7 selector, §5.0 async run pattern). Final names from the discovery session (2026-09-26): `selectCompetitors()` in `apps/web/src/lib/competitors/selection.ts` returning `{ competitors, basis: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE' }`; `triggerBackgroundRun(path, body)` in `apps/web/src/lib/background-run.ts`, which returns `{ ok, error }` and has a 10s dispatch timeout; evidence items carry a stable `id` (requested, agreed); confidence bands shared: high ≥ 0.8, medium ≥ 0.6, shown as a word never a percentage; `Workspace.targetLanguage` exists separately from `contentLanguage`..
 
 ## 1. Why
 
@@ -28,10 +28,13 @@ Today (`generateWorkspaceCompetitiveMatrices`, `apps/web/src/app/actions/growth-
 | M2 | **Axes = 2 core + 1–3 market-specific** (3–5 charts). Core charts are identical across workspaces so downstream code can rely on them; market charts are proposed by the model from the brand brief and competitor positioning, and the user picks/renames them. | proposed |
 | M3 | **Fail closed.** No heuristic fallback. A failed run saves nothing; the ideation gate stays shut with a clear message. | proposed |
 | M4 | Manual score edits live in an **override layer** that survives regeneration, is visible on the chart, and can be reset per point. | approved (Q4) |
-| M5 | Competitor input comes only from `selectCompetitors` (discovery §7). `basis` is stored on the run, mirrored as `competitor_basis` on the projection (the key discovery already writes), and shown in the UI. | proposed |
+| M5 | Competitor input comes only from `selectCompetitors` (discovery §7). `basis` is stored on the run, mirrored as `competitor_basis` on the projection (the key discovery already writes), and shown in the UI. Note the landed contract is stricter than first agreed: `UNCONFIRMED_HIGH` needs high confidence **and** corroboration (citations from at least 2 distinct queries, or more than one source), so a matrix run can legitimately refuse where the old filter would have proceeded. | proposed |
 | M6 | Evidence bundle is limited to what the app already holds: discovery `evidence`, `positioning`, `keyFeatures`, `labels`, `confidence`, own-site `brandSummary`, and `competitorKeywordsIntel` when present. **No new crawling or paid data in this iteration** (Q3). Deferred items are tracked in Notion Mission Control. | approved (Q3) |
 | M7 | Output language = workspace `contentLanguage` (the content is for the customer's audience; `targetLanguage` is the search language and is passed to the prompt only as market context). Core axis labels come from i18n, never from the model. | proposed |
 | M8 | The token-usage panel leaves the main UI and becomes a collapsed technical disclosure. | proposed |
+| M9 | **Certainty is an enum, not a self-reported float.** The scorer returns `certain` / `likely` / `unsure`, mapped in code to 0.9 / 0.7 / 0.5, then adjusted only by deterministic signals. Measured live in discovery (2026-09-26), a model's own 0-1 confidence pinned at 1.0 for every candidate including ones it rejected, so the number carried no information. | proposed |
+| M10 | **Every fabricating fallback in the intelligence actions goes**, not just the matrices one: `fallbackMatrices`, `fallbackKeywordPayload` (growth-keywords.ts) and `fallbackPayload` (growth-offerings.ts) all invent output when the OpenAI call fails, with real competitors attached, and it reads as genuine analysis. Verified still live on `competitor-discovery-redesign` at 7a035f8. | proposed |
+| M11 | Schema changes ship as a **migration file**, not `db push`: production is migrated, and the branch already carries `20260926000000_competitor_discovery`. | proposed |
 
 ## 3. Axes
 
@@ -140,7 +143,7 @@ model MatrixOverride {
 ## 5. Pipeline
 
 ### 5.0 Trigger
-Same pattern as discovery §5.0: the action checks ownership, calls `selectCompetitors`, refuses when `basis = NONE` or fewer than 2 competitors, refuses when a run is PENDING/RUNNING, creates `MatrixRun (PENDING)`, calls `triggerBackgroundRun('/api/matrices/run', { runId })`; that route owns `maxDuration = 300` and `after()`. The action returns the run id. UI polls. A run RUNNING for > 10 min is marked FAILED on next read.
+Same pattern as discovery §5.0: the action checks ownership, calls `selectCompetitors`, refuses when `basis = NONE` or fewer than 2 competitors, refuses when a run is PENDING/RUNNING, creates `MatrixRun (PENDING)`, calls `triggerBackgroundRun('/api/matrices/run', { runId })`; that route owns `maxDuration = 300` and `after()`. On `{ ok: false }` the action marks the run `FAILED` immediately rather than leaving it `PENDING` until the stale reaper finds it, the pattern discovery settled on. The action returns the run id. UI polls. A run RUNNING for > 10 min is marked FAILED on next read.
 
 ### 5.1 Evidence bundle (deterministic)
 Per company: `{ id, name, domain, type, positioning, keyFeatures, labels, discoveryConfidence, evidence: EvidenceItem[] (each with its stable id), keywordClusters?, keywordCount? }`. For the target: brandSummary offers, value proposition, audience, own keyword data if any; target evidence items get ids prefixed `own:`.
@@ -194,6 +197,8 @@ Per run: 0–1 axes call + 3–5 score calls + 3–5 summary calls + 1 cross-cha
 - `gemini.ts` `summarizeMarketMetricContext`: include `content_angles` and `white_space`; stop reading `x_reason` of TARGET-less lists differently (no shape change otherwise).
 - `narrative/engine.ts`: no change required; the projection keeps its shape.
 - Delete `fallbackMatrices`, `heuristicPointScore`, `hashString`, and the `needTwoReviewedMatrices` path's "fallback to all non-rejected" behaviour.
+- `saveWorkspaceCompetitiveMatricesEdits` (the manual-edit path) does not set `competitor_basis`, so a hand-edited payload loses the label saying what it rests on. The override layer (section 5.8) replaces this path; until it does, the basis must be carried through.
+- **Outside the matrix files but the same defect, fixed with this work (M10):** `fallbackKeywordPayload` in `growth-keywords.ts` and `fallbackPayload` in `growth-offerings.ts`. Both fabricate a full payload when the model call fails. `growth-offerings.ts` is worse: `normalizePayload` builds a fallback unconditionally and uses it to fill any field the model omitted, so a partial answer is silently completed with invented offerings.
 
 ## 9. Error handling
 Same stance as discovery §9: each stage fails loudly, a missing `OPENAI_API_KEY` is `FAILED` with an admin-facing message, and nothing invented is ever written. A partially failed set of chart calls fails the whole run (a matrix set with a missing core chart is not usable).
@@ -206,7 +211,8 @@ Same stance as discovery §9: each stage fails loudly, a missing `OPENAI_API_KEY
 ## 11. Sequencing and conflicts
 - Discovery implementation must land first: it provides `Competitor.evidence/positioning/keyFeatures/labels/confidence` (evidence items with stable ids), `selectCompetitors`, and `triggerBackgroundRun`. Its plan: `docs/superpowers/plans/2026-09-26-competitor-discovery.md`; the handover is after its Task 11.
 - Both features live in `CompetitiveMatricesTab.tsx`. Discovery §6 restructures the competitors half; this spec rebuilds the matrix half. Implement sequentially on separate branches to avoid a merge fight.
-- Checked 2026-09-26 16:00: the discovery session is still at spec stage (last commit `33c94c1`, docs only). No code conflict yet.
+- Checked 2026-09-27: discovery is at Task 9 of 11. `selectCompetitors` has landed (496429f, 7a035f8) and is already wired into `growth-matrices.ts`, `growth-keywords.ts` and `growth-offerings.ts`, with `competitor_basis` persisted. Two tasks remain there: its UI, then cleanup and a cost report.
+- This spec now lives on branch `positioning-matrices`, cut from `main`, so it stops accumulating in the discovery branch's review range.
 
 ## 12. Deferred (tracked in Notion Mission Control)
 - Richer evidence per competitor: pricing-page crawl, blog/post counts, traffic estimates (needs DataForSEO in prod, which is currently missing). Would let "Content presence" and a future "Audience scale" axis be computed rather than judged.
@@ -218,3 +224,4 @@ Same stance as discovery §9: each stage fails loudly, a missing `OPENAI_API_KEY
 2. Confirm the two core axes in §3.1, or swap one.
 3. Confirm minimum 3 charts (readiness threshold 5 → 3).
 4. Confirm M8 (token panel becomes a disclosure).
+5. Confirm M10: removing the keyword and offerings fallbacks is in scope here, which means those two features start failing visibly instead of quietly inventing output.
