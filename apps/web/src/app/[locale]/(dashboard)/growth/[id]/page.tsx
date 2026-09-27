@@ -638,17 +638,10 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <CompetitiveMatricesTab
             workspaceId={workspace.id}
             initialMatrices={initialMatrices}
-            initialCompetitors={workspace.competitors.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              domain: item.domain,
-              description: item.description,
-              category: item.category,
-              audienceGuess: item.audienceGuess,
-              type: item.type,
-              userDecision: item.userDecision,
-              source: item.source,
-            }))}
+            targetMarket={{
+              country: workspace.targetCountry,
+              language: workspace.targetLanguage === 'fa' ? 'fa' : 'en',
+            }}
             discoveryMeta={{
               usedRuns: discoveryStats.usedRuns,
               remainingRuns: discoveryStats.remainingRuns,

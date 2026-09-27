@@ -107,53 +107,6 @@
       "aiTrustScore": "AI Trust Score",
       "confidenceScore": "Confidence Score"
     },
-    "competitorMap": {
-      "discover": "Discover Competitors with AI",
-      "discoveringStage": "Discovering… ({stage})",
-      "stages": {
-        "QUERIES": "Generating queries",
-        "SEARCH": "Searching the web",
-        "ENRICH": "Reading competitor sites",
-        "JUDGE": "Judging candidates",
-        "SAVE": "Saving results"
-      },
-      "discoveredNone": "No new competitors were found this run.",
-      "counts": "{active} active / {accepted} accepted",
-      "runs": "Discovery runs: {used}/{max}",
-      "decisionFailed": "Could not save that decision.",
-      "discoverFailed": "Unexpected error while discovering competitors.",
-      "discovered": "We found potential competitors for your business. Please review and confirm them.",
-      "axisSophistication": "Product Sophistication",
-      "axisAudience": "Audience Size",
-      "yourBrand": "Your Brand",
-      "legend": {
-        "direct": "Direct",
-        "indirect": "Indirect",
-        "aspirational": "Aspirational"
-      },
-      "topTitle": "Top Competitors by Brand Position",
-      "topEmpty": "No accepted competitors yet.",
-      "noDomain": "No domain",
-      "scorePair": "Audience {audience} / Sophistication {sophistication}",
-      "addTitle": "Add Competitor Manually",
-      "manualDomainPlaceholder": "competitor.com",
-      "add": "Add",
-      "addFailed": "Could not add that competitor.",
-      "added": "Competitor added.",
-      "types": {
-        "DIRECT": "Direct",
-        "INDIRECT": "Indirect",
-        "ASPIRATIONAL": "Aspirational"
-      },
-      "accept": "Accept",
-      "reject": "Reject",
-      "undecided": "Undecided",
-      "decisionSaved": "Saved",
-      "archiveTitle": "Discovery Archive",
-      "archiveEmpty": "No discovery runs yet.",
-      "archiveRun": "Run #{number} ({count} competitors)",
-      "typeSaveFailed": "Could not save that type."
-    },
     "keywords": {
       "analyze": "Analyze Competitor Keywords",
       "generated": "Competitor keyword intelligence generated from competitor content signals.",

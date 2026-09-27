@@ -107,53 +107,6 @@
       "aiTrustScore": "امتیاز اطمینان هوش مصنوعی",
       "confidenceScore": "امتیاز اطمینان"
     },
-    "competitorMap": {
-      "discover": "یافتن رقبا با هوش مصنوعی",
-      "discoveringStage": "در حال یافتن رقبا… ({stage})",
-      "stages": {
-        "QUERIES": "ساخت عبارت‌های جست‌وجو",
-        "SEARCH": "جست‌وجو در وب",
-        "ENRICH": "خواندن سایت رقبا",
-        "JUDGE": "داوری نامزدها",
-        "SAVE": "ذخیرهٔ نتایج"
-      },
-      "discoveredNone": "در این اجرا رقیب تازه‌ای پیدا نشد.",
-      "counts": "{active} فعال / {accepted} پذیرفته‌شده",
-      "runs": "اجراهای جست‌وجو: {used}/{max}",
-      "decisionFailed": "این تصمیم ذخیره نشد.",
-      "discoverFailed": "هنگام یافتن رقبا خطای پیش‌بینی‌نشده رخ داد.",
-      "discovered": "چند رقیب احتمالی برای کسب‌وکارتان پیدا کردیم. لطفاً بررسی و تأیید کنید.",
-      "axisSophistication": "پیچیدگی محصول",
-      "axisAudience": "اندازهٔ مخاطب",
-      "yourBrand": "برند شما",
-      "legend": {
-        "direct": "مستقیم",
-        "indirect": "غیرمستقیم",
-        "aspirational": "الگو"
-      },
-      "topTitle": "نزدیک‌ترین رقبا به جایگاه برند شما",
-      "topEmpty": "هنوز رقیبی پذیرفته نشده است.",
-      "noDomain": "بدون دامنه",
-      "scorePair": "مخاطب {audience} / پیچیدگی {sophistication}",
-      "addTitle": "افزودن دستی رقیب",
-      "manualDomainPlaceholder": "competitor.com",
-      "add": "افزودن",
-      "addFailed": "افزودن آن رقیب انجام نشد.",
-      "added": "رقیب اضافه شد.",
-      "types": {
-        "DIRECT": "مستقیم",
-        "INDIRECT": "غیرمستقیم",
-        "ASPIRATIONAL": "الگو"
-      },
-      "accept": "پذیرش",
-      "reject": "رد",
-      "undecided": "بدون تصمیم",
-      "decisionSaved": "ذخیره شد",
-      "archiveTitle": "بایگانی جست‌وجوها",
-      "archiveEmpty": "هنوز جست‌وجویی انجام نشده است.",
-      "archiveRun": "اجرای {number} ({count} رقیب)",
-      "typeSaveFailed": "نوع رقیب ذخیره نشد."
-    },
     "keywords": {
       "analyze": "تحلیل کلیدواژه‌های رقبا",
       "generated": "هوشمندی کلیدواژهٔ رقبا از روی نشانه‌های محتوایی آن‌ها ساخته شد.",

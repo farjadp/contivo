@@ -57,18 +57,6 @@ type CompetitiveMatrixPayload = {
   };
 };
 
-type CompetitorItem = {
-  id: string;
-  name: string;
-  domain?: string | null;
-  description?: string | null;
-  category?: string | null;
-  audienceGuess?: string | null;
-  type?: string | null;
-  userDecision?: string | null;
-  source?: string | null;
-};
-
 type DiscoveryMeta = {
   usedRuns: number;
   remainingRuns: number;
@@ -128,13 +116,13 @@ function clampConfidence(value: number): number {
 export function CompetitiveMatricesTab({
   workspaceId,
   initialMatrices,
-  initialCompetitors,
+  targetMarket,
   discoveryMeta,
   discoveryArchive,
 }: {
   workspaceId: string;
   initialMatrices: CompetitiveMatrixPayload | null;
-  initialCompetitors: CompetitorItem[];
+  targetMarket: { country: string | null; language: 'fa' | 'en' };
   discoveryMeta: DiscoveryMeta;
   discoveryArchive: DiscoveryArchiveItem[];
 }) {
@@ -243,9 +231,9 @@ export function CompetitiveMatricesTab({
         <div className="p-6 bg-chalk-raised">
           <CompetitorMapManager
             workspaceId={workspaceId}
-            initialCompetitors={initialCompetitors}
             initialMeta={discoveryMeta}
             initialArchive={discoveryArchive}
+            initialMarket={targetMarket}
           />
         </div>
       </section>

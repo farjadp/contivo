@@ -168,6 +168,138 @@
           "sub": "Reports"
         }
       }
+    },
+    "competitors": {
+      "loading": "Loading competitors…",
+      "loadFailed": "Could not load your competitors.",
+      "retry": "Try again",
+      "newTab": "(opens in a new tab)",
+      "noDomain": "No website",
+      "market": {
+        "searchingIn": "Searching in {country}, in {language}",
+        "everywhere": "all countries",
+        "change": "Change",
+        "countryLabel": "Country",
+        "languageLabel": "Search language",
+        "save": "Save",
+        "cancel": "Cancel",
+        "saveFailed": "Could not save the market.",
+        "lockedWhileRunning": "You can change this once the current search finishes."
+      },
+      "run": {
+        "find": "Find competitors",
+        "quota": "{remaining, number} of {max, number} searches left",
+        "quotaSpent": "You have used all {max, number} searches for this workspace.",
+        "onlyDoneCounts": "A search only counts when it finds something.",
+        "startFailed": "Could not start the search.",
+        "starting": "Getting the search ready",
+        "leaveNote": "You don't need to stay on this page. The search keeps going, and the results will be here when you come back.",
+        "queryCount": "{count, plural, one {# search query written} other {# search queries written}}",
+        "stages": {
+          "QUERIES": "Writing search queries",
+          "SEARCH": "Searching the web",
+          "ENRICH": "Reading each candidate's website",
+          "JUDGE": "Checking each one against its evidence",
+          "SAVE": "Saving the results"
+        },
+        "stageDone": "done",
+        "stageCurrent": "in progress",
+        "done": "{count, plural, one {Found # likely competitor.} other {Found # likely competitors.}} Review each one and its evidence below.",
+        "skippedSites": "Time ran out before {count, plural, one {# site} other {# sites}} could be read, so they were left out.",
+        "emptyTitle": "No competitors this time",
+        "emptyDetail": "We ran {count, plural, one {# search} other {# searches}} in {language} for {country}, and none of the results held up once we checked the evidence.",
+        "emptyDetailNoCount": "We searched in {language} for {country}, and none of the results held up once we checked the evidence.",
+        "notCharged": "This search was not counted against your limit.",
+        "nextStepsIntro": "Before the next search, you can do one of two things:",
+        "nextChangeMarket": "Change the country or language",
+        "nextAddManual": "Add a competitor you already know",
+        "nextAddManualHint": "The next search uses it as a reference.",
+        "failedTitle": "The search did not finish",
+        "failedNotCharged": "It was not counted against your limit, so you can try again.",
+        "failedDetail": "Error details:",
+        "pollStopped": "This page stopped checking on the search. Reload to see where it is."
+      },
+      "queue": {
+        "title": "Waiting for your review",
+        "empty": "Nothing to review right now. Competitors a search finds will appear here.",
+        "accept": "Accept",
+        "reject": "Reject",
+        "typeLabel": "Type",
+        "why": "Why was this suggested?",
+        "queries": "Searches that found it",
+        "sources": "Pages that mention it",
+        "site": "What its own website says",
+        "features": "Main features",
+        "sitePages": "Pages we read",
+        "noEvidence": "No evidence was saved for this suggestion.",
+        "decisionFailed": "That was not saved. Please try again.",
+        "typeSaveFailed": "The type was not saved. Please try again."
+      },
+      "confidence": {
+        "high": "High confidence",
+        "medium": "Medium confidence",
+        "low": "Low confidence",
+        "unknown": "Not assessed"
+      },
+      "labels": {
+        "SEO": "Competes in search results",
+        "BUSINESS": "Competes for customers"
+      },
+      "types": {
+        "DIRECT": "Direct",
+        "INDIRECT": "Indirect",
+        "ASPIRATIONAL": "Aspirational"
+      },
+      "undo": {
+        "accepted": "<b>{name}</b> is now one of your competitors.",
+        "rejected": "<b>{name}</b> was set aside.",
+        "reasonPrompt": "Optional: tell us why, and the next search will take it into account.",
+        "reasonSaved": "Reason saved.",
+        "undo": "Undo",
+        "dismiss": "Dismiss",
+        "undoFailed": "Could not undo that. Please try again."
+      },
+      "reasons": {
+        "NOT_A_COMPETITOR": "Not a competitor",
+        "WRONG_SCALE": "Not our size",
+        "DUPLICATE": "Duplicate",
+        "ALREADY_KNOWN": "We already knew it"
+      },
+      "list": {
+        "title": "Your competitors",
+        "empty": "No competitors yet. Accept one from the review list, or add one you know.",
+        "addedByYou": "Added by you",
+        "remove": "Remove",
+        "removeConfirm": "Remove for good?",
+        "removeYes": "Remove",
+        "removeNo": "Keep",
+        "removeFailed": "Could not remove it. Please try again.",
+        "setAside": "Set aside",
+        "backToReview": "Back to review"
+      },
+      "add": {
+        "title": "Add a competitor you know",
+        "hint": "Enter their website. We read the site and check how close a match it is, but it is saved either way.",
+        "placeholder": "competitor.com",
+        "button": "Add",
+        "added": "<b>{name}</b> was added.",
+        "warning": "Saved, with a note:",
+        "failed": "Could not add this competitor."
+      },
+      "history": {
+        "title": "Past searches",
+        "empty": "No searches yet.",
+        "found": "{count, plural, one {# found} other {# found}}",
+        "notCharged": "Not counted",
+        "legacy": "Earlier search",
+        "status": {
+          "PENDING": "Starting",
+          "RUNNING": "Running",
+          "DONE": "Finished",
+          "EMPTY": "Nothing found",
+          "FAILED": "Did not finish"
+        }
+      }
     }
   }
 }

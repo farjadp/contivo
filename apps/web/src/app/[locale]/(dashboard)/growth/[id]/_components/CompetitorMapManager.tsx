@@ -1,661 +1,475 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Check, Loader2, Plus, Sparkles, Target } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
 import {
   addManualCompetitor,
   getDiscoveryStatus,
+  listDiscoveryRuns,
+  removeCompetitor,
   setCompetitorDecision,
   startCompetitorDiscovery,
   updateCompetitorType,
 } from '@/app/actions/growth-competitors';
+import type {
+  CompetitorView,
+  DiscoveryMeta,
+  RunHistoryItem,
+  RunView,
+} from '@/app/actions/growth-competitors';
+import type { CompetitorType } from '@/lib/competitors/types';
+import { ErrorNote } from './CompetitorBits';
+import { CompetitorDiscoveryPanel, type TargetMarketView } from './CompetitorDiscoveryPanel';
+import { CompetitorList, ManualCompetitorForm, RunHistory, type LegacyRun } from './CompetitorList';
+import { CompetitorReviewQueue, DecisionUndoBar, type LastDecision } from './CompetitorReviewQueue';
+import {
+  POLL_INTERVAL_MS,
+  isRunActive,
+  mergeCompetitors,
+  shouldKeepPolling,
+  sortByConfidence,
+  type RejectionReasonChip,
+} from './competitor-discovery-logic';
 
-type CompetitorItem = {
-  id: string;
-  name: string;
-  domain?: string | null;
-  description?: string | null;
-  category?: string | null;
-  audienceGuess?: string | null;
-  type?: string | null;
-  userDecision?: string | null;
-  source?: string | null;
-};
-
-type DiscoveryMeta = {
-  usedRuns: number;
-  remainingRuns: number;
-  maxRuns: number;
-};
-
-type DiscoveryArchiveItem = {
-  id: string;
-  runNumber: number;
-  source: string;
-  discoveredCount: number;
-  createdAt: string | Date;
-};
+type DiscoveryStatus = Awaited<ReturnType<typeof getDiscoveryStatus>>;
 
 /**
- * Terminal states of a `DiscoveryRun` — once the polled status lands on one
- * of these, `runAiDiscovery` stops polling. Kept in sync with the `status`
- * values `runDiscoveryPipeline` (`@/lib/competitors/pipeline`) writes.
+ * The competitors section of the Growth workspace: a run panel, a review
+ * queue of PENDING suggestions with their evidence, and the accepted list.
+ *
+ * The name is kept from the scatter-map component this replaces so the tab
+ * that renders it did not need restructuring. The map is gone on purpose: it
+ * positioned competitors from regex guesses over their descriptions, which
+ * presented invented numbers as a chart.
+ *
+ * Every change saves the moment it is made. There is no draft state and no
+ * save button; accept and reject offer an undo instead.
  */
-const TERMINAL_RUN_STATUSES = new Set(['DONE', 'EMPTY', 'FAILED']);
-const POLL_INTERVAL_MS = 4000;
-// Generous relative to STALE_RUN_MINUTES (10): this is a client-side safety
-// net so a browser tab left open doesn't poll forever, not the source of
-// truth for when a run is actually dead — `reapStaleRuns` owns that.
-const MAX_POLL_ATTEMPTS = 150;
-
-/** The five stage names `runDiscoveryPipeline` writes to `DiscoveryRun.stage`. */
-const KNOWN_STAGES = new Set(['QUERIES', 'SEARCH', 'ENRICH', 'JUDGE', 'SAVE']);
-
-/**
- * Translates a pipeline stage into a label for `discoveringStage`, instead
- * of interpolating the raw enum value — `tabsB.competitorMap.stages` was
- * missing, so the Persian UI was rendering the English enum verbatim, e.g.
- * «در حال یافتن رقبا… (ENRICH)». Falls back to the raw value for a stage
- * this UI doesn't recognise yet, rather than throwing on a missing message.
- */
-function stageLabel(t: ReturnType<typeof useTranslations>, stage: string): string {
-  if (KNOWN_STAGES.has(stage)) {
-    return t(`stages.${stage as 'QUERIES' | 'SEARCH' | 'ENRICH' | 'JUDGE' | 'SAVE'}`);
-  }
-  return stage;
-}
-
-function isSyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
-  const name = String(item.name || '').toLowerCase().trim();
-  const domain = String(item.domain || '').toLowerCase().trim();
-  const syntheticNames = ['nova labs', 'pulse works', 'axis growth', 'summit metrics', 'clarity forge'];
-
-  if (!name && !domain) return true;
-  if (syntheticNames.includes(name)) return true;
-  if (/^market\d+\.com$/.test(domain)) return true;
-
-  return false;
-}
-
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function computeKeywordScore(text: string, rules: Array<{ pattern: RegExp; delta: number }>, initial = 50): number {
-  return rules.reduce((score, rule) => (rule.pattern.test(text) ? score + rule.delta : score), initial);
-}
-
-function estimateAudienceSizeScore(item: CompetitorItem): number {
-  const text = `${item.name} ${item.domain || ''} ${item.description || ''} ${item.category || ''} ${item.audienceGuess || ''}`.toLowerCase();
-
-  let score = computeKeywordScore(
-    text,
-    [
-      { pattern: /\b(enterprise|global|fortune|mid[-\s]?market)\b/, delta: 14 },
-      { pattern: /\b(platform|marketplace|network|suite|all[-\s]?in[-\s]?one)\b/, delta: 9 },
-      { pattern: /\b(smb|small business|startup|local|niche)\b/, delta: -10 },
-      { pattern: /\b(agency|boutique|consulting|freelance)\b/, delta: -8 },
-      { pattern: /\b(consumer|b2c|mass market)\b/, delta: 6 },
-    ],
-    50,
-  );
-
-  if (item.type === 'INDIRECT') score += 4;
-  if (item.type === 'ASPIRATIONAL') score += 7;
-
-  return clamp(score, 10, 90);
-}
-
-function estimateSophisticationScore(item: CompetitorItem): number {
-  const text = `${item.name} ${item.domain || ''} ${item.description || ''} ${item.category || ''}`.toLowerCase();
-
-  let score = computeKeywordScore(
-    text,
-    [
-      { pattern: /\b(ai|machine learning|predictive|automation|workflow)\b/, delta: 14 },
-      { pattern: /\b(api|infrastructure|platform|analytics|orchestration)\b/, delta: 10 },
-      { pattern: /\b(enterprise|security|compliance|integrations?)\b/, delta: 8 },
-      { pattern: /\b(agency|service|consulting|done[-\s]?for[-\s]?you)\b/, delta: -9 },
-      { pattern: /\b(template|simple|starter|basic)\b/, delta: -7 },
-    ],
-    50,
-  );
-
-  if (item.type === 'ASPIRATIONAL') score += 10;
-  if (item.type === 'INDIRECT') score -= 3;
-
-  return clamp(score, 10, 90);
-}
-
-function computeCompetitorPoint(item: CompetitorItem): { x: number; y: number; distanceToBrand: number } {
-  const audienceScore = estimateAudienceSizeScore(item);
-  const sophisticationScore = estimateSophisticationScore(item);
-  const seed = `${item.id}:${item.name}:${item.domain || ''}`;
-  const jitter = ((hashString(seed) % 7) - 3) * 0.8;
-
-  const x = clamp(audienceScore + jitter, 12, 88);
-  const y = clamp(100 - sophisticationScore + jitter, 12, 88);
-  const distanceToBrand = Math.sqrt((x - 50) ** 2 + (y - 50) ** 2);
-
-  return { x, y, distanceToBrand };
-}
-
-function getTypeStyles(type?: string | null): string {
-  // Rival blue for every competitor, told apart by fill (see the matrix tab).
-  if (type === 'DIRECT') return 'bg-rival border-rival';
-  if (type === 'INDIRECT') return 'bg-chalk-raised border-rival';
-  return 'bg-moss-700 border-moss-700';
-}
-
-/**
- * Map a `getDiscoveryStatus`/`addManualCompetitor` `CompetitorView` (the
- * server's serialization) back onto this component's own looser
- * `CompetitorItem` shape, which is also what `initialCompetitors` arrives
- * as straight from a Prisma row via the parent page.
- */
-function fromCompetitorView(view: {
-  id: string;
-  name: string;
-  domain: string | null;
-  description: string | null;
-  type: string;
-  userDecision: string;
-  source: string;
-}): CompetitorItem {
-  return {
-    id: view.id,
-    name: view.name,
-    domain: view.domain,
-    description: view.description,
-    category: null,
-    audienceGuess: null,
-    type: view.type,
-    userDecision: view.userDecision,
-    source: view.source,
-  };
-}
-
 export function CompetitorMapManager({
   workspaceId,
-  initialCompetitors,
   initialMeta,
   initialArchive,
+  initialMarket,
 }: {
   workspaceId: string;
-  initialCompetitors: CompetitorItem[];
-  initialMeta?: DiscoveryMeta;
-  initialArchive?: DiscoveryArchiveItem[];
+  initialMeta: DiscoveryMeta;
+  initialArchive?: LegacyRun[];
+  initialMarket: TargetMarketView;
 }) {
-  const t = useTranslations('tabsB.competitorMap');
+  const t = useTranslations('growth.competitors');
   const format = useFormatter();
   const router = useRouter();
-  const [competitors, setCompetitors] = useState<CompetitorItem[]>(
-    initialCompetitors
-      .filter((item) => !isSyntheticCompetitor(item))
-      .map((item) => ({
-        ...item,
-        type: item.type || 'DIRECT',
-        userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-      })),
-  );
-  // Decisions and type changes each save the instant they are made — there
-  // is no bulk "save edits" step, and no local-only draft state to lose on
-  // navigation. These two sets track which rows are mid-flight so their
-  // controls can show a spinner and stay disabled during that one request.
-  const [savingDecisionIds, setSavingDecisionIds] = useState<string[]>([]);
-  const [savingTypeIds, setSavingTypeIds] = useState<string[]>([]);
-  const [manualDomain, setManualDomain] = useState('');
-  const [isAddingManual, setIsAddingManual] = useState(false);
-  const [isDiscovering, setIsDiscovering] = useState(false);
-  const [discoveryStage, setDiscoveryStage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [discoveryMeta, setDiscoveryMeta] = useState<DiscoveryMeta>(
-    initialMeta || { usedRuns: 0, remainingRuns: 3, maxRuns: 3 },
-  );
-  const [discoveryArchive] = useState<DiscoveryArchiveItem[]>(initialArchive || []);
+  // Read through a ref inside the load and poll callbacks, so a router object
+  // that changes identity between renders can never re-trigger the initial
+  // load or restart the poll interval.
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
-  // Guards a poll loop that outlives the component (tab navigated away
-  // mid-discovery) from setting state on an unmounted component.
-  const pollGuard = useRef(0);
-  useEffect(() => () => {
-    pollGuard.current += 1;
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [run, setRun] = useState<RunView | null>(null);
+  const [meta, setMeta] = useState<DiscoveryMeta>(initialMeta);
+  const [competitors, setCompetitors] = useState<CompetitorView[]>([]);
+  const [history, setHistory] = useState<RunHistoryItem[]>([]);
+  const [market, setMarket] = useState<TargetMarketView>(initialMarket);
+  // The market the latest run searched, as far as this page knows: the
+  // saved market when the page loaded, then whatever was saved when a run
+  // was started here. Editing the market afterwards must not rewrite what
+  // an EMPTY result says was searched. (RunView does not expose the run's
+  // own market snapshot, so a market changed in another session before
+  // this page loaded is not reflected.)
+  const [runMarket, setRunMarket] = useState<TargetMarketView>(initialMarket);
+
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [pollStopped, setPollStopped] = useState(false);
+
+  const [savingDecisionIds, setSavingDecisionIds] = useState<ReadonlySet<string>>(new Set());
+  const [savingTypeIds, setSavingTypeIds] = useState<ReadonlySet<string>>(new Set());
+  const [removingIds, setRemovingIds] = useState<ReadonlySet<string>>(new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [lastDecision, setLastDecision] = useState<LastDecision | null>(null);
+
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addedName, setAddedName] = useState<string | null>(null);
+  const [addWarning, setAddWarning] = useState<string | null>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
+
+  // Rows with a write in flight. A poll that lands mid-save keeps the local
+  // copy of these rather than flipping them back to what the server had a
+  // moment ago. A ref, not state: the poll callback reads it asynchronously.
+  const inFlightRef = useRef<Set<string>>(new Set());
+  const runRef = useRef<RunView | null>(null);
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
   }, []);
 
-  const applyDecision = async (competitorId: string, decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => {
-    const previous = competitors.find((c) => c.id === competitorId)?.userDecision;
-    if (previous === decision) return;
+  const addTo = (setter: typeof setSavingDecisionIds, id: string) =>
+    setter((prev) => new Set(prev).add(id));
+  const removeFrom = (setter: typeof setSavingDecisionIds, id: string) =>
+    setter((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
 
-    // Optimistic: the button reflects the choice immediately, and rolls back
-    // if the write fails, so the screen never claims something the DB refused.
-    updateCompetitorLocal(competitorId, { userDecision: decision });
-    setError(null);
-
-    setSavingDecisionIds((ids) => [...ids, competitorId]);
+  const refreshHistory = useCallback(async () => {
     try {
-      const result = await setCompetitorDecision(workspaceId, competitorId, decision);
-      if (result && 'error' in result && result.error) {
-        updateCompetitorLocal(competitorId, { userDecision: previous });
-        setError(result.error);
-      }
-    } catch (err) {
-      console.error(err);
-      updateCompetitorLocal(competitorId, { userDecision: previous });
-      setError(t('decisionFailed'));
-    } finally {
-      setSavingDecisionIds((ids) => ids.filter((id) => id !== competitorId));
-      router.refresh();
+      const runs = await listDiscoveryRuns(workspaceId);
+      if (mountedRef.current) setHistory(runs);
+    } catch (error) {
+      console.error(error);
     }
-  };
+  }, [workspaceId]);
 
-  const applyType = async (competitorId: string, type: string) => {
-    const previous = competitors.find((c) => c.id === competitorId)?.type;
-    if (previous === type) return;
-    if (type !== 'DIRECT' && type !== 'INDIRECT' && type !== 'ASPIRATIONAL') return;
-
-    updateCompetitorLocal(competitorId, { type });
-    setError(null);
-
-    setSavingTypeIds((ids) => [...ids, competitorId]);
-    try {
-      const result = await updateCompetitorType(workspaceId, competitorId, type);
-      if (result && 'error' in result && result.error) {
-        updateCompetitorLocal(competitorId, { type: previous });
-        setError(result.error);
+  const applyStatus = useCallback(
+    (status: DiscoveryStatus) => {
+      const wasActive = isRunActive(runRef.current?.status);
+      runRef.current = status.run;
+      setRun(status.run);
+      setMeta(status.meta);
+      setCompetitors((prev) => mergeCompetitors(status.competitors, prev, inFlightRef.current));
+      if (wasActive && !isRunActive(status.run?.status)) {
+        // A run just finished while this page was watching it.
+        void refreshHistory();
+        routerRef.current.refresh();
       }
-    } catch (err) {
-      console.error(err);
-      updateCompetitorLocal(competitorId, { type: previous });
-      setError(t('typeSaveFailed'));
-    } finally {
-      setSavingTypeIds((ids) => ids.filter((id) => id !== competitorId));
-      router.refresh();
-    }
-  };
-
-  const visibleCompetitors = useMemo(
-    () =>
-      competitors.filter(
-        (item) => item.userDecision !== 'REJECTED' && !isSyntheticCompetitor(item),
-      ),
-    [competitors],
+    },
+    [refreshHistory],
   );
 
-  const acceptedCount = useMemo(
-    () => competitors.filter((item) => item.userDecision === 'ACCEPTED').length,
-    [competitors],
-  );
-  const positionedCompetitors = useMemo(
-    () =>
-      visibleCompetitors
-        .map((item) => ({ ...item, point: computeCompetitorPoint(item) }))
-        .sort((a, b) => a.point.distanceToBrand - b.point.distanceToBrand),
-    [visibleCompetitors],
-  );
-  const topCompetitors = useMemo(() => positionedCompetitors.slice(0, 10), [positionedCompetitors]);
-
-  const updateCompetitorLocal = (id: string, patch: Partial<CompetitorItem>) => {
-    setCompetitors((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  };
-
-  const addCompetitor = async () => {
-    const domain = manualDomain.trim();
-    if (!domain) return;
-
-    setIsAddingManual(true);
-    setError(null);
-    setSuccess(null);
-
+  const load = useCallback(async () => {
+    setLoadState('loading');
     try {
-      const result = await addManualCompetitor(workspaceId, domain);
-      if ('error' in result) {
-        setError(result.error);
+      const [status, runs] = await Promise.all([getDiscoveryStatus(workspaceId), listDiscoveryRuns(workspaceId)]);
+      if (!mountedRef.current) return;
+      applyStatus(status);
+      setHistory(runs);
+      setLoadState('ready');
+    } catch (error) {
+      console.error(error);
+      if (mountedRef.current) setLoadState('error');
+    }
+  }, [workspaceId, applyStatus]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Poll only while the latest run is PENDING or RUNNING. When a poll comes
+  // back DONE, EMPTY or FAILED, `runActive` flips and this effect's cleanup
+  // clears the interval; unmounting clears it too.
+  const runActive = isRunActive(run?.status);
+  const runId = run?.id;
+  useEffect(() => {
+    if (!runActive) return;
+    setPollStopped(false);
+    let cancelled = false;
+    let inFlight = false;
+    const timer = window.setInterval(async () => {
+      if (inFlight) return;
+      if (!shouldKeepPolling(runRef.current, Date.now())) {
+        window.clearInterval(timer);
+        if (!cancelled) setPollStopped(true);
         return;
       }
+      inFlight = true;
+      try {
+        const status = await getDiscoveryStatus(workspaceId);
+        if (!cancelled) applyStatus(status);
+      } catch (error) {
+        // One failed poll is not the end of the run; the next tick retries.
+        console.error(error);
+      } finally {
+        inFlight = false;
+      }
+    }, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [runActive, runId, workspaceId, applyStatus]);
 
-      setCompetitors((prev) => [...prev, fromCompetitorView(result.competitor)]);
-      setManualDomain('');
-      setSuccess(result.judgeWarning || t('added'));
-      router.refresh();
-    } catch (addError) {
-      console.error(addError);
-      setError(t('addFailed'));
-    } finally {
-      setIsAddingManual(false);
-    }
-  };
-
-  const runAiDiscovery = async () => {
-    setIsDiscovering(true);
-    setDiscoveryStage(null);
-    setError(null);
-    setSuccess(null);
-
-    const myRun = ++pollGuard.current;
-
+  const startRun = async () => {
+    setStarting(true);
+    setStartError(null);
     try {
       const started = await startCompetitorDiscovery(workspaceId);
       if ('error' in started) {
-        if (started.meta) setDiscoveryMeta(started.meta);
-        setError(started.error);
+        if (started.meta) setMeta(started.meta);
+        setStartError(started.error);
+        // A dispatch failure leaves a FAILED run behind; show it.
+        try {
+          const status = await getDiscoveryStatus(workspaceId);
+          if (mountedRef.current) applyStatus(status);
+        } catch (error) {
+          console.error(error);
+        }
         return;
       }
-
-      for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt += 1) {
-        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
-        // The component unmounted, or another discovery run started while
-        // this loop was sleeping — either way this poll is stale.
-        if (pollGuard.current !== myRun) return;
-
-        const status = await getDiscoveryStatus(workspaceId);
-        if (pollGuard.current !== myRun) return;
-
-        setDiscoveryMeta(status.meta);
-        if (status.run) setDiscoveryStage(status.run.stage);
-
-        if (status.run && TERMINAL_RUN_STATUSES.has(status.run.status)) {
-          setCompetitors(
-            status.competitors
-              .filter((item) => !isSyntheticCompetitor(item))
-              .map(fromCompetitorView),
-          );
-
-          if (status.run.status === 'FAILED') {
-            setError(status.run.error || t('discoverFailed'));
-          } else if (status.run.status === 'EMPTY') {
-            setSuccess(t('discoveredNone'));
-          } else {
-            setSuccess(t('discovered'));
-          }
-          router.refresh();
-          return;
-        }
-      }
-
-      // Polling gave up before the run reached a terminal state — the run
-      // itself is still tracked server-side (and will eventually be reaped
-      // if it is truly stuck), this is just the browser no longer watching.
-      setError(t('discoverFailed'));
-    } catch (discoverError) {
-      console.error(discoverError);
-      if (pollGuard.current === myRun) setError(t('discoverFailed'));
+      setRunMarket(market);
+      const status = await getDiscoveryStatus(workspaceId);
+      if (mountedRef.current) applyStatus(status);
+      void refreshHistory();
+    } catch (error) {
+      console.error(error);
+      if (mountedRef.current) setStartError(t('run.startFailed'));
     } finally {
-      if (pollGuard.current === myRun) {
-        setIsDiscovering(false);
-        setDiscoveryStage(null);
-      }
+      if (mountedRef.current) setStarting(false);
     }
   };
 
-  return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center gap-3">
+  const patchLocal = (id: string, patch: Partial<CompetitorView>) =>
+    setCompetitors((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+
+  /** Saves a decision immediately, optimistically, rolling back on failure. Returns whether it saved. */
+  const saveDecision = async (
+    competitor: CompetitorView,
+    decision: 'ACCEPTED' | 'REJECTED' | 'PENDING',
+    reason?: RejectionReasonChip,
+  ): Promise<boolean> => {
+    const previous = { userDecision: competitor.userDecision, rejectionReason: competitor.rejectionReason };
+    patchLocal(competitor.id, { userDecision: decision, rejectionReason: decision === 'REJECTED' ? reason ?? null : null });
+    setActionError(null);
+    inFlightRef.current.add(competitor.id);
+    addTo(setSavingDecisionIds, competitor.id);
+    try {
+      const result = await setCompetitorDecision(workspaceId, competitor.id, decision, reason);
+      if ('error' in result) {
+        patchLocal(competitor.id, previous);
+        setActionError(result.error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error(error);
+      patchLocal(competitor.id, previous);
+      setActionError(t('queue.decisionFailed'));
+      return false;
+    } finally {
+      inFlightRef.current.delete(competitor.id);
+      removeFrom(setSavingDecisionIds, competitor.id);
+      router.refresh();
+    }
+  };
+
+  const decide = async (competitor: CompetitorView, decision: 'ACCEPTED' | 'REJECTED') => {
+    const saved = await saveDecision(competitor, decision);
+    if (saved) setLastDecision({ id: competitor.id, name: competitor.name, decision, reason: null, busy: false });
+  };
+
+  const undo = async () => {
+    if (!lastDecision) return;
+    const competitor = competitors.find((item) => item.id === lastDecision.id);
+    if (!competitor) {
+      setLastDecision(null);
+      return;
+    }
+    setLastDecision({ ...lastDecision, busy: true });
+    const saved = await saveDecision(competitor, 'PENDING');
+    if (saved) setLastDecision(null);
+    else {
+      setLastDecision({ ...lastDecision, busy: false });
+      setActionError(t('undo.undoFailed'));
+    }
+  };
+
+  const chooseReason = async (reason: RejectionReasonChip) => {
+    if (!lastDecision || lastDecision.decision !== 'REJECTED') return;
+    const competitor = competitors.find((item) => item.id === lastDecision.id);
+    if (!competitor) return;
+    setLastDecision({ ...lastDecision, busy: true });
+    const saved = await saveDecision(competitor, 'REJECTED', reason);
+    setLastDecision((current) =>
+      current && current.id === lastDecision.id
+        ? { ...current, busy: false, reason: saved ? reason : current.reason }
+        : current,
+    );
+  };
+
+  const changeType = async (competitor: CompetitorView, type: CompetitorType) => {
+    if (competitor.type === type) return;
+    const previous = competitor.type;
+    patchLocal(competitor.id, { type });
+    setActionError(null);
+    inFlightRef.current.add(competitor.id);
+    addTo(setSavingTypeIds, competitor.id);
+    try {
+      const result = await updateCompetitorType(workspaceId, competitor.id, type);
+      if ('error' in result) {
+        patchLocal(competitor.id, { type: previous });
+        setActionError(result.error);
+      }
+    } catch (error) {
+      console.error(error);
+      patchLocal(competitor.id, { type: previous });
+      setActionError(t('queue.typeSaveFailed'));
+    } finally {
+      inFlightRef.current.delete(competitor.id);
+      removeFrom(setSavingTypeIds, competitor.id);
+      router.refresh();
+    }
+  };
+
+  const remove = async (competitor: CompetitorView) => {
+    setActionError(null);
+    addTo(setRemovingIds, competitor.id);
+    try {
+      const result = await removeCompetitor(workspaceId, competitor.id);
+      if ('error' in result) {
+        setActionError(result.error);
+        return;
+      }
+      setCompetitors((prev) => prev.filter((item) => item.id !== competitor.id));
+      if (lastDecision?.id === competitor.id) setLastDecision(null);
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      setActionError(t('list.removeFailed'));
+    } finally {
+      removeFrom(setRemovingIds, competitor.id);
+    }
+  };
+
+  const addManual = async (domain: string): Promise<boolean> => {
+    setAdding(true);
+    setAddError(null);
+    setAddedName(null);
+    setAddWarning(null);
+    try {
+      const result = await addManualCompetitor(workspaceId, domain);
+      if ('error' in result) {
+        setAddError(result.error);
+        return false;
+      }
+      setCompetitors((prev) => [...prev, result.competitor]);
+      setAddedName(result.competitor.name);
+      setAddWarning(result.judgeWarning);
+      router.refresh();
+      return true;
+    } catch (error) {
+      console.error(error);
+      setAddError(t('add.failed'));
+      return false;
+    } finally {
+      setAdding(false);
+    }
+  };
+
+  const focusManualAdd = () => {
+    const input = manualInputRef.current;
+    if (!input) return;
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  };
+
+  const pending = useMemo(
+    () => sortByConfidence(competitors.filter((item) => item.userDecision === 'PENDING')),
+    [competitors],
+  );
+  const accepted = useMemo(() => competitors.filter((item) => item.userDecision === 'ACCEPTED'), [competitors]);
+  const rejected = useMemo(() => competitors.filter((item) => item.userDecision === 'REJECTED'), [competitors]);
+
+  if (loadState === 'loading') {
+    return (
+      <div className="flex items-center gap-2 py-6 text-sm text-moss-muted" role="status">
+        <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+        {t('loading')}
+      </div>
+    );
+  }
+
+  if (loadState === 'error') {
+    return (
+      <div className="space-y-3">
+        <ErrorNote>{t('loadFailed')}</ErrorNote>
         <button
           type="button"
-          onClick={runAiDiscovery}
-          disabled={isDiscovering || discoveryMeta.remainingRuns <= 0}
-          className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
+          onClick={() => void load()}
+          className="rounded-lg border border-rule-strong bg-chalk-raised px-4 py-2 text-sm font-semibold text-moss transition hover:bg-chalk-sunk"
         >
-          {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
-          {isDiscovering && discoveryStage ? t('discoveringStage', { stage: stageLabel(t, discoveryStage) }) : t('discover')}
+          {t('retry')}
         </button>
-
-        <span className="text-xs font-semibold text-moss-muted">
-          {t('counts', {
-            active: format.number(visibleCompetitors.length),
-            accepted: format.number(acceptedCount),
-          })}
-        </span>
-        <span className="text-xs font-semibold text-moss-700">
-          {t('runs', {
-            used: format.number(discoveryMeta.usedRuns),
-            max: format.number(discoveryMeta.maxRuns),
-          })}
-        </span>
       </div>
-
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>
-      ) : null}
-      {success ? (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">{success}</div>
-      ) : null}
-
-      {/*
-        Same decision as the admin console's charts and the positioning
-        matrix above: the plot area is pinned to `ltr` so the axes keep
-        their low-to-high reading and every point stays where its score
-        puts it. The axis captions and the brand pin inside are translated;
-        only the frame is physical.
-      */}
-      <div
-        dir="ltr"
-        className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-rule bg-chalk/50 rounded-tr-lg rounded-bl-lg overflow-visible"
-      >
-        <span className="absolute -left-14 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
-          {t('axisSophistication')}
-        </span>
-        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
-          {t('axisAudience')}
-        </span>
-
-        <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-          <div className="h-8 w-8 rounded-full bg-saffron border-2 border-moss shadow-xl z-20 flex items-center justify-center">
-            <Target className="w-4 h-4 text-moss" />
-          </div>
-          <span className="mt-2 text-xs font-bold text-moss bg-chalk-sunk border border-rule px-2 py-0.5 rounded shadow-sm">
-            {t('yourBrand')}
-          </span>
-        </div>
-
-        {positionedCompetitors.map((competitor) => {
-          return (
-            <div
-              key={competitor.id}
-              className="absolute flex flex-col items-center group transition-all duration-200 hover:z-40"
-              style={{
-                left: `${competitor.point.x}%`,
-                top: `${competitor.point.y}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <div className={`h-4 w-4 rounded-full border-2 shadow-sm z-10 transition-transform group-hover:scale-150 ${getTypeStyles(competitor.type)}`} />
-              <span className="mt-1.5 text-[10px] font-bold text-moss bg-chalk-raised border border-rule px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
-                {/* Competitor names are data, never translated. */}
-                <bdi>{competitor.name}</bdi>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-6 pt-6 text-xs font-semibold text-moss-muted">
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('DIRECT')}`} /> {t('legend.direct')}</div>
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('INDIRECT')}`} /> {t('legend.indirect')}</div>
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('ASPIRATIONAL')}`} /> {t('legend.aspirational')}</div>
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">
-          {t('topTitle')}
-        </h4>
-        {topCompetitors.length === 0 ? (
-          <p className="text-sm text-moss-muted">{t('topEmpty')}</p>
-        ) : (
-          <div className="space-y-2">
-            {topCompetitors.map((competitor, index) => (
-              <div
-                key={competitor.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-rule bg-chalk px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-moss truncate">
-                    {format.number(index + 1)}. <bdi>{competitor.name}</bdi>
-                  </p>
-                  <p className="text-xs text-moss-muted truncate">
-                    <bdi>{competitor.domain || t('noDomain')}</bdi>
-                    {competitor.type
-                      ? ` · ${t(`types.${competitor.type as 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL'}`)}`
-                      : ''}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs text-moss-muted">
-                  {t('scorePair', {
-                    audience: format.number(Math.round(competitor.point.x)),
-                    sophistication: format.number(Math.round(100 - competitor.point.y)),
-                  })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('addTitle')}</h4>
-        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
-          <input
-            type="text"
-            value={manualDomain}
-            onChange={(event) => setManualDomain(event.target.value)}
-            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
-            placeholder={t('manualDomainPlaceholder')}
-            dir="ltr"
-          />
-          <button
-            type="button"
-            onClick={addCompetitor}
-            disabled={isAddingManual || !manualDomain.trim()}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-chalk-raised px-4 py-2 text-sm font-bold text-moss border border-rule-strong hover:bg-chalk-sunk disabled:opacity-60"
-          >
-            {isAddingManual ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            {t('add')}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {competitors.map((competitor) => (
-          <div key={competitor.id} className="rounded-xl border border-rule bg-chalk-raised p-4 space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-semibold text-moss truncate">
-                <bdi>{competitor.name}</bdi>
-              </p>
-              <p className="text-xs text-moss-muted truncate" dir="ltr">
-                {competitor.domain || t('noDomain')}
-              </p>
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
-              <select
-                value={competitor.type || 'DIRECT'}
-                onChange={(event) => applyType(competitor.id, event.target.value)}
-                disabled={savingTypeIds.includes(competitor.id)}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none disabled:opacity-60"
-              >
-                <option value="DIRECT">{t('types.DIRECT')}</option>
-                <option value="INDIRECT">{t('types.INDIRECT')}</option>
-                <option value="ASPIRATIONAL">{t('types.ASPIRATIONAL')}</option>
-              </select>
-
-              <DecisionButtons
-                value={competitor.userDecision || (competitor.source === 'AI' ? 'PENDING' : 'ACCEPTED')}
-                saving={savingDecisionIds.includes(competitor.id)}
-                onChange={(d) => applyDecision(competitor.id, d)}
-              />
-            </div>
-
-            {competitor.description ? (
-              <p className="rounded-md border border-rule bg-chalk px-3 py-2 text-xs leading-relaxed text-moss-muted">
-                {competitor.description}
-              </p>
-            ) : null}
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('archiveTitle')}</h4>
-        {discoveryArchive.length === 0 ? (
-          <p className="text-sm text-moss-muted">{t('archiveEmpty')}</p>
-        ) : (
-          <div className="space-y-2">
-            {discoveryArchive.map((run) => (
-              <div key={run.id} className="flex items-center justify-between gap-4 rounded-lg border border-rule bg-chalk px-3 py-2">
-                <div className="text-sm font-medium text-moss">
-                  {t('archiveRun', {
-                    number: format.number(run.runNumber),
-                    count: format.number(run.discoveredCount),
-                  })}
-                </div>
-                <div className="text-xs text-moss-muted">
-                  {format.dateTime(new Date(run.createdAt), {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DecisionButtons({
-  value,
-  saving,
-  onChange,
-}: {
-  value: string;
-  saving: boolean;
-  onChange: (decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => void;
-}) {
-  const t = useTranslations('tabsB.competitorMap');
-  const options: Array<{ key: 'ACCEPTED' | 'REJECTED'; label: string; on: string }> = [
-    { key: 'ACCEPTED', label: t('accept'), on: 'bg-moss text-chalk border-moss' },
-    { key: 'REJECTED', label: t('reject'), on: 'bg-red-600 text-chalk border-red-600' },
-  ];
+    );
+  }
 
   return (
-    <div className="flex items-center gap-1.5">
-      {options.map((o) => {
-        const active = value === o.key;
-        return (
-          <button
-            key={o.key}
-            type="button"
-            disabled={saving}
-            // Clicking the active choice clears it back to undecided.
-            onClick={() => onChange(active ? 'PENDING' : o.key)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${
-              active ? o.on : 'border-rule-strong bg-chalk-raised text-moss-muted hover:bg-chalk'
-            }`}
-          >
-            {active && <Check className="h-3.5 w-3.5" />}
-            {o.label}
-          </button>
-        );
-      })}
-      {saving ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-moss-muted" />
-      ) : value === 'PENDING' ? (
-        <span className="text-xs text-moss-muted">{t('undecided')}</span>
-      ) : (
-        <span className="text-xs text-moss-700">{t('decisionSaved')}</span>
-      )}
+    <div className="space-y-6">
+      <CompetitorDiscoveryPanel
+        workspaceId={workspaceId}
+        meta={meta}
+        run={run}
+        market={market}
+        runMarket={runMarket}
+        starting={starting}
+        startError={startError}
+        pollStopped={pollStopped}
+        pendingCount={pending.length}
+        onStart={startRun}
+        onMarketSaved={setMarket}
+        onAddManual={focusManualAdd}
+      />
+
+      {actionError ? <ErrorNote>{actionError}</ErrorNote> : null}
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold text-moss">
+          {t('queue.title')}
+          {pending.length > 0 ? (
+            <span className="ms-2 rounded-full bg-saffron-soft px-2 py-0.5 text-xs font-bold text-saffron-ink">
+              {format.number(pending.length)}
+            </span>
+          ) : null}
+        </h3>
+        {lastDecision ? (
+          <DecisionUndoBar
+            last={lastDecision}
+            onUndo={() => void undo()}
+            onReason={(reason) => void chooseReason(reason)}
+            onDismiss={() => setLastDecision(null)}
+          />
+        ) : null}
+        <CompetitorReviewQueue
+          competitors={pending}
+          savingDecisionIds={savingDecisionIds}
+          savingTypeIds={savingTypeIds}
+          onDecision={(competitor, decision) => void decide(competitor, decision)}
+          onType={(competitor, type) => void changeType(competitor, type)}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold text-moss">{t('list.title')}</h3>
+        <CompetitorList
+          accepted={accepted}
+          rejected={rejected}
+          savingTypeIds={savingTypeIds}
+          savingDecisionIds={savingDecisionIds}
+          removingIds={removingIds}
+          onType={(competitor, type) => void changeType(competitor, type)}
+          onRemove={(competitor) => void remove(competitor)}
+          onBackToReview={(competitor) => void saveDecision(competitor, 'PENDING')}
+          addSlot={
+            <ManualCompetitorForm
+              ref={manualInputRef}
+              adding={adding}
+              error={addError}
+              addedName={addedName}
+              warning={addWarning}
+              onAdd={addManual}
+            />
+          }
+        />
+        <RunHistory runs={history} legacy={initialArchive ?? []} />
+      </section>
     </div>
   );
 }
