@@ -245,9 +245,16 @@ model StrategicReport {
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   userId      String
 
-  // File paths
+  /// Legacy public paths under /reports. Kept so old rows still render, but
+  /// nothing new is written there: the files were world-readable and did not
+  /// survive a redeploy. New reports live in `pdfData` / `htmlData`.
   docxPath String
   pdfPath  String
+
+  /// The report itself, served only through /api/reports/[id] to the account
+  /// that owns it. Null on rows generated before that route existed.
+  pdfData  Bytes?
+  htmlData Bytes?
 
   // Metadata
   reportDate       DateTime @default(now())
