@@ -43,6 +43,38 @@ export type JudgedCandidate = EnrichedCandidate & {
 
 export type ScoredCandidate = JudgedCandidate & { finalConfidence: number };
 
+export type SourceHarvestStats = { harvested: number; tokens: number | null; errors: number };
+
+/**
+ * Shape of `DiscoveryRun.sourceStats`, the JSON blob `runDiscoveryPipeline`
+ * (`./pipeline`) writes incrementally as each stage completes and that the
+ * polling UI (Task 10) reads back through `getDiscoveryStatus`. Every field
+ * is optional on purpose: a run that failed during SEARCH never gets a
+ * `judge` key, and that absence — not a zero — is the honest signal that
+ * the stage never ran.
+ */
+export type SourceStats = {
+  queries?: { count: number; tokens: number | null };
+  search?: {
+    webSearch?: SourceHarvestStats;
+    serp?: SourceHarvestStats;
+    merged?: number;
+  };
+  enrich?: { input: number; enriched: number };
+  judge?: { input: number; judged: number; kept: number; tokens: number | null };
+  save?: { saved: number };
+  /**
+   * Batch/harvest failure messages. These originate upstream (`./judge`,
+   * `./search`) and may echo a raw HTTP error body, so anything read out of
+   * here for display must be treated as untrusted text — see
+   * `sanitizeErrorText` in the actions module that serialises this for the
+   * browser.
+   */
+  errors?: string[];
+  tokensIncomplete?: boolean;
+  tokensUnknown?: boolean;
+};
+
 /** 8 hex chars. Short enough to read in a payload, unique enough within one competitor. */
 export function newEvidenceId(): string {
   return randomBytes(4).toString('hex');

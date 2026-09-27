@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Check, Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
+import { Check, Loader2, Plus, Sparkles, Target } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
 import {
-  discoverWorkspaceCompetitors,
-  saveWorkspaceCompetitorEdits,
+  addManualCompetitor,
+  getDiscoveryStatus,
   setCompetitorDecision,
+  startCompetitorDiscovery,
+  updateCompetitorType,
 } from '@/app/actions/growth-competitors';
 
 type CompetitorItem = {
@@ -37,45 +39,17 @@ type DiscoveryArchiveItem = {
   createdAt: string | Date;
 };
 
-type CompetitiveMatrixPayload = {
-  generated_at: string;
-  ai_estimated: boolean;
-  source: 'AI' | 'MANUAL';
-  charts: Array<{
-    chart_key: string;
-    chart_name: string;
-    axes: { x: string; y: string };
-    companies: Array<{
-      name: string;
-      website: string;
-      type: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL' | 'TARGET';
-      x_score: number;
-      y_score: number;
-      x_reason: string;
-      y_reason: string;
-      confidence_score: number;
-    }>;
-    summary: {
-      market_pattern: string;
-      positioning_opportunity: string;
-    };
-  }>;
-  cross_chart_summary: string;
-  strongest_differentiation_opportunity: string;
-  token_usage: {
-    runs: number;
-    lifetime_prompt_tokens: number;
-    lifetime_completion_tokens: number;
-    lifetime_total_tokens: number;
-    last_run: {
-      model: string;
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
-      created_at: string;
-    } | null;
-  };
-};
+/**
+ * Terminal states of a `DiscoveryRun` — once the polled status lands on one
+ * of these, `runAiDiscovery` stops polling. Kept in sync with the `status`
+ * values `runDiscoveryPipeline` (`@/lib/competitors/pipeline`) writes.
+ */
+const TERMINAL_RUN_STATUSES = new Set(['DONE', 'EMPTY', 'FAILED']);
+const POLL_INTERVAL_MS = 4000;
+// Generous relative to STALE_RUN_MINUTES (10): this is a client-side safety
+// net so a browser tab left open doesn't poll forever, not the source of
+// truth for when a run is actually dead — `reapStaleRuns` owns that.
+const MAX_POLL_ATTEMPTS = 150;
 
 function isSyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
   const name = String(item.name || '').toLowerCase().trim();
@@ -167,18 +141,44 @@ function getTypeStyles(type?: string | null): string {
   return 'bg-moss-700 border-moss-700';
 }
 
+/**
+ * Map a `getDiscoveryStatus`/`addManualCompetitor` `CompetitorView` (the
+ * server's serialization) back onto this component's own looser
+ * `CompetitorItem` shape, which is also what `initialCompetitors` arrives
+ * as straight from a Prisma row via the parent page.
+ */
+function fromCompetitorView(view: {
+  id: string;
+  name: string;
+  domain: string | null;
+  description: string | null;
+  type: string;
+  userDecision: string;
+  source: string;
+}): CompetitorItem {
+  return {
+    id: view.id,
+    name: view.name,
+    domain: view.domain,
+    description: view.description,
+    category: null,
+    audienceGuess: null,
+    type: view.type,
+    userDecision: view.userDecision,
+    source: view.source,
+  };
+}
+
 export function CompetitorMapManager({
   workspaceId,
   initialCompetitors,
   initialMeta,
   initialArchive,
-  onMatricesUpdated,
 }: {
   workspaceId: string;
   initialCompetitors: CompetitorItem[];
   initialMeta?: DiscoveryMeta;
   initialArchive?: DiscoveryArchiveItem[];
-  onMatricesUpdated?: (matrices: CompetitiveMatrixPayload | null) => void;
 }) {
   const t = useTranslations('tabsB.competitorMap');
   const format = useFormatter();
@@ -192,38 +192,29 @@ export function CompetitorMapManager({
         userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
       })),
   );
-  // Accept/reject happens in local state; nothing reaches the database until
-  // the save button is pressed. Users changed dropdowns, navigated away, and
-  // silently lost the decisions — so track what is actually persisted.
-  const [savedSnapshot, setSavedSnapshot] = useState(() =>
-    JSON.stringify(
-      initialCompetitors
-        .filter((item) => !isSyntheticCompetitor(item))
-        .map((item) => ({
-          id: item.id,
-          // Decisions save on click, so they are not part of the dirty state —
-          // only the free-text fields need an explicit save.
-          type: item.type || 'DIRECT',
-          name: item.name,
-          domain: item.domain ?? '',
-        })),
-    ),
-  );
-  // Decisions save the instant they are clicked, so this tracks which rows
-  // are mid-flight rather than a whole-form dirty state.
+  // Decisions and type changes each save the instant they are made — there
+  // is no bulk "save edits" step, and no local-only draft state to lose on
+  // navigation. These two sets track which rows are mid-flight so their
+  // controls can show a spinner and stay disabled during that one request.
   const [savingDecisionIds, setSavingDecisionIds] = useState<string[]>([]);
-  const [manualName, setManualName] = useState('');
+  const [savingTypeIds, setSavingTypeIds] = useState<string[]>([]);
   const [manualDomain, setManualDomain] = useState('');
+  const [isAddingManual, setIsAddingManual] = useState(false);
   const [isDiscovering, setIsDiscovering] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [discoveryStage, setDiscoveryStage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [discoveryMeta, setDiscoveryMeta] = useState<DiscoveryMeta>(
     initialMeta || { usedRuns: 0, remainingRuns: 3, maxRuns: 3 },
   );
-  const [discoveryArchive, setDiscoveryArchive] = useState<DiscoveryArchiveItem[]>(
-    initialArchive || [],
-  );
+  const [discoveryArchive] = useState<DiscoveryArchiveItem[]>(initialArchive || []);
+
+  // Guards a poll loop that outlives the component (tab navigated away
+  // mid-discovery) from setting state on an unmounted component.
+  const pollGuard = useRef(0);
+  useEffect(() => () => {
+    pollGuard.current += 1;
+  }, []);
 
   const applyDecision = async (competitorId: string, decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => {
     const previous = competitors.find((c) => c.id === competitorId)?.userDecision;
@@ -231,26 +222,47 @@ export function CompetitorMapManager({
 
     // Optimistic: the button reflects the choice immediately, and rolls back
     // if the write fails, so the screen never claims something the DB refused.
-    updateCompetitor(competitorId, { userDecision: decision });
+    updateCompetitorLocal(competitorId, { userDecision: decision });
     setError(null);
-
-    // Rows created locally have no database row yet — they persist via the
-    // bulk save, which is what creates them.
-    if (competitorId.startsWith('temp-')) return;
 
     setSavingDecisionIds((ids) => [...ids, competitorId]);
     try {
       const result = await setCompetitorDecision(workspaceId, competitorId, decision);
       if (result && 'error' in result && result.error) {
-        updateCompetitor(competitorId, { userDecision: previous });
+        updateCompetitorLocal(competitorId, { userDecision: previous });
         setError(result.error);
       }
     } catch (err) {
       console.error(err);
-      updateCompetitor(competitorId, { userDecision: previous });
+      updateCompetitorLocal(competitorId, { userDecision: previous });
       setError(t('decisionFailed'));
     } finally {
       setSavingDecisionIds((ids) => ids.filter((id) => id !== competitorId));
+      router.refresh();
+    }
+  };
+
+  const applyType = async (competitorId: string, type: string) => {
+    const previous = competitors.find((c) => c.id === competitorId)?.type;
+    if (previous === type) return;
+    if (type !== 'DIRECT' && type !== 'INDIRECT' && type !== 'ASPIRATIONAL') return;
+
+    updateCompetitorLocal(competitorId, { type });
+    setError(null);
+
+    setSavingTypeIds((ids) => [...ids, competitorId]);
+    try {
+      const result = await updateCompetitorType(workspaceId, competitorId, type);
+      if (result && 'error' in result && result.error) {
+        updateCompetitorLocal(competitorId, { type: previous });
+        setError(result.error);
+      }
+    } catch (err) {
+      console.error(err);
+      updateCompetitorLocal(competitorId, { type: previous });
+      setError(t('typeSaveFailed'));
+    } finally {
+      setSavingTypeIds((ids) => ids.filter((id) => id !== competitorId));
       router.refresh();
     }
   };
@@ -262,34 +274,6 @@ export function CompetitorMapManager({
       ),
     [competitors],
   );
-  const currentSnapshot = useMemo(
-    () =>
-      JSON.stringify(
-        competitors.map((item) => ({
-          id: item.id,
-          type: item.type,
-          name: item.name,
-          domain: item.domain ?? '',
-        })),
-      ),
-    [competitors],
-  );
-  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
-
-  // Browsers only allow the leave-confirmation from a listener registered
-  // while changes are pending, so keep it attached only in that state.
-  const unsavedRef = useRef(hasUnsavedChanges);
-  unsavedRef.current = hasUnsavedChanges;
-  useEffect(() => {
-    if (!hasUnsavedChanges) return undefined;
-    const warn = (e: BeforeUnloadEvent) => {
-      if (!unsavedRef.current) return;
-      e.preventDefault();
-      e.returnValue = '';
-    };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [hasUnsavedChanges]);
 
   const acceptedCount = useMemo(
     () => competitors.filter((item) => item.userDecision === 'ACCEPTED').length,
@@ -304,154 +288,101 @@ export function CompetitorMapManager({
   );
   const topCompetitors = useMemo(() => positionedCompetitors.slice(0, 10), [positionedCompetitors]);
 
-  const updateCompetitor = (id: string, patch: Partial<CompetitorItem>) => {
+  const updateCompetitorLocal = (id: string, patch: Partial<CompetitorItem>) => {
     setCompetitors((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
-  const addManualCompetitor = () => {
-    const name = manualName.trim();
+  const addCompetitor = async () => {
     const domain = manualDomain.trim();
-    if (!name && !domain) return;
+    if (!domain) return;
 
-    const inferredName =
-      name || domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] || t('manualFallbackName');
-    const id = `temp-${Date.now()}`;
-
-    setCompetitors((prev) => [
-      ...prev,
-      {
-        id,
-        name: inferredName,
-        domain: domain || null,
-        description: t('manualDescription'),
-        category: null,
-        audienceGuess: null,
-        type: 'DIRECT',
-        userDecision: 'ACCEPTED',
-        source: 'MANUAL',
-      },
-    ]);
-
-    setManualName('');
-    setManualDomain('');
+    setIsAddingManual(true);
     setError(null);
     setSuccess(null);
+
+    try {
+      const result = await addManualCompetitor(workspaceId, domain);
+      if ('error' in result) {
+        setError(result.error);
+        return;
+      }
+
+      setCompetitors((prev) => [...prev, fromCompetitorView(result.competitor)]);
+      setManualDomain('');
+      setSuccess(result.judgeWarning || t('added'));
+      router.refresh();
+    } catch (addError) {
+      console.error(addError);
+      setError(t('addFailed'));
+    } finally {
+      setIsAddingManual(false);
+    }
   };
 
   const runAiDiscovery = async () => {
     setIsDiscovering(true);
+    setDiscoveryStage(null);
     setError(null);
     setSuccess(null);
 
-    try {
-      const result = await discoverWorkspaceCompetitors(workspaceId);
-      if (result?.meta) {
-        setDiscoveryMeta(result.meta);
-      }
-      if (Array.isArray(result?.archive)) {
-        setDiscoveryArchive(result.archive);
-      }
+    const myRun = ++pollGuard.current;
 
-      if (result?.error) {
-        setError(result.error);
+    try {
+      const started = await startCompetitorDiscovery(workspaceId);
+      if ('error' in started) {
+        if (started.meta) setDiscoveryMeta(started.meta);
+        setError(started.error);
         return;
       }
 
-      if (result?.competitors) {
-        setCompetitors(
-          result.competitors
-            .filter((item: CompetitorItem) => !isSyntheticCompetitor(item))
-            .map((item: CompetitorItem) => ({
-              ...item,
-              type: item.type || 'DIRECT',
-              userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-            })),
-        );
-        setSuccess(
-          result.message || t('discovered'),
-        );
-        router.refresh();
+      for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt += 1) {
+        await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+        // The component unmounted, or another discovery run started while
+        // this loop was sleeping — either way this poll is stale.
+        if (pollGuard.current !== myRun) return;
+
+        const status = await getDiscoveryStatus(workspaceId);
+        if (pollGuard.current !== myRun) return;
+
+        setDiscoveryMeta(status.meta);
+        if (status.run) setDiscoveryStage(status.run.stage);
+
+        if (status.run && TERMINAL_RUN_STATUSES.has(status.run.status)) {
+          setCompetitors(
+            status.competitors
+              .filter((item) => !isSyntheticCompetitor(item))
+              .map(fromCompetitorView),
+          );
+
+          if (status.run.status === 'FAILED') {
+            setError(status.run.error || t('discoverFailed'));
+          } else if (status.run.status === 'EMPTY') {
+            setSuccess(t('discoveredNone'));
+          } else {
+            setSuccess(t('discovered'));
+          }
+          router.refresh();
+          return;
+        }
       }
+
+      // Polling gave up before the run reached a terminal state — the run
+      // itself is still tracked server-side (and will eventually be reaped
+      // if it is truly stuck), this is just the browser no longer watching.
+      setError(t('discoverFailed'));
     } catch (discoverError) {
       console.error(discoverError);
-      setError(t('discoverFailed'));
+      if (pollGuard.current === myRun) setError(t('discoverFailed'));
     } finally {
-      setIsDiscovering(false);
-    }
-  };
-
-  const saveEdits = async () => {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await saveWorkspaceCompetitorEdits(workspaceId, competitors);
-      if (result?.meta) {
-        setDiscoveryMeta(result.meta);
+      if (pollGuard.current === myRun) {
+        setIsDiscovering(false);
+        setDiscoveryStage(null);
       }
-      if (Array.isArray(result?.archive)) {
-        setDiscoveryArchive(result.archive);
-      }
-
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-
-      if (result?.competitors) {
-        setCompetitors(
-          result.competitors
-            .filter((item: CompetitorItem) => !isSyntheticCompetitor(item))
-            .map((item: CompetitorItem) => ({
-              ...item,
-              type: item.type || 'DIRECT',
-              userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-            })),
-        );
-        if (result?.matrices) {
-          onMatricesUpdated?.(result.matrices as CompetitiveMatrixPayload);
-        }
-        setSavedSnapshot(
-          JSON.stringify(
-            (result?.competitors ?? competitors).map((item: any) => ({
-              id: item.id,
-              type: item.type || 'DIRECT',
-              name: item.name,
-              domain: item.domain ?? '',
-            })),
-          ),
-        );
-        setSuccess(result?.message || t('savedMessage'));
-        router.refresh();
-      }
-    } catch (saveError) {
-      console.error(saveError);
-      setError(t('saveFailed'));
-    } finally {
-      setIsSaving(false);
     }
   };
 
   return (
     <div className="space-y-5">
-      {hasUnsavedChanges && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-saffron bg-saffron-soft/50 px-4 py-3">
-          <p className="text-sm text-moss">
-            <span className="font-bold">{t('unsavedTitle')}</span> {t('unsavedBody')}
-          </p>
-          <button
-            type="button"
-            onClick={saveEdits}
-            disabled={isSaving}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-saffron px-3.5 py-2 text-sm font-bold text-moss hover:bg-saffron-soft disabled:opacity-60"
-          >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {t('saveNow')}
-          </button>
-        </div>
-      )}
-
       <div className="flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -460,21 +391,7 @@ export function CompetitorMapManager({
           className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
         >
           {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
-          {t('discover')}
-        </button>
-
-        <button
-          type="button"
-          onClick={saveEdits}
-          disabled={isSaving}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60 ${
-            hasUnsavedChanges
-              ? 'bg-saffron text-moss hover:bg-saffron-soft'
-              : 'border border-rule-strong bg-chalk-raised text-moss hover:bg-chalk'
-          }`}
-        >
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {hasUnsavedChanges ? t('saveTextEdits') : t('savedLabel')}
+          {isDiscovering && discoveryStage ? t('discoveringStage', { stage: discoveryStage }) : t('discover')}
         </button>
 
         <span className="text-xs font-semibold text-moss-muted">
@@ -590,14 +507,7 @@ export function CompetitorMapManager({
 
       <div className="rounded-2xl border border-rule bg-chalk p-4">
         <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('addTitle')}</h4>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <input
-            type="text"
-            value={manualName}
-            onChange={(event) => setManualName(event.target.value)}
-            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
-            placeholder={t('manualNamePlaceholder')}
-          />
+        <div className="grid gap-3 md:grid-cols-[1fr_auto]">
           <input
             type="text"
             value={manualDomain}
@@ -608,10 +518,11 @@ export function CompetitorMapManager({
           />
           <button
             type="button"
-            onClick={addManualCompetitor}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-chalk-raised px-4 py-2 text-sm font-bold text-moss border border-rule-strong hover:bg-chalk-sunk"
+            onClick={addCompetitor}
+            disabled={isAddingManual || !manualDomain.trim()}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-chalk-raised px-4 py-2 text-sm font-bold text-moss border border-rule-strong hover:bg-chalk-sunk disabled:opacity-60"
           >
-            <Plus className="h-4 w-4" />
+            {isAddingManual ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             {t('add')}
           </button>
         </div>
@@ -620,29 +531,21 @@ export function CompetitorMapManager({
       <div className="grid gap-3 md:grid-cols-2">
         {competitors.map((competitor) => (
           <div key={competitor.id} className="rounded-xl border border-rule bg-chalk-raised p-4 space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input
-                type="text"
-                value={competitor.name}
-                onChange={(event) => updateCompetitor(competitor.id, { name: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
-                placeholder={t('namePlaceholder')}
-              />
-              <input
-                type="text"
-                value={competitor.domain || ''}
-                onChange={(event) => updateCompetitor(competitor.id, { domain: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
-                placeholder={t('domainPlaceholder')}
-                dir="ltr"
-              />
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-sm font-semibold text-moss truncate">
+                <bdi>{competitor.name}</bdi>
+              </p>
+              <p className="text-xs text-moss-muted truncate" dir="ltr">
+                {competitor.domain || t('noDomain')}
+              </p>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
               <select
                 value={competitor.type || 'DIRECT'}
-                onChange={(event) => updateCompetitor(competitor.id, { type: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
+                onChange={(event) => applyType(competitor.id, event.target.value)}
+                disabled={savingTypeIds.includes(competitor.id)}
+                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none disabled:opacity-60"
               >
                 <option value="DIRECT">{t('types.DIRECT')}</option>
                 <option value="INDIRECT">{t('types.INDIRECT')}</option>
@@ -661,20 +564,6 @@ export function CompetitorMapManager({
                 {competitor.description}
               </p>
             ) : null}
-            {(competitor.category || competitor.audienceGuess) && (
-              <div className="flex flex-wrap gap-2">
-                {competitor.category ? (
-                  <span className="rounded-full border border-rule bg-chalk-sunk px-2.5 py-1 text-[11px] font-semibold text-moss">
-                    {competitor.category}
-                  </span>
-                ) : null}
-                {competitor.audienceGuess ? (
-                  <span className="rounded-full border border-rule bg-chalk px-2.5 py-1 text-[11px] font-semibold text-moss-muted">
-                    {competitor.audienceGuess}
-                  </span>
-                ) : null}
-              </div>
-            )}
           </div>
         ))}
       </div>

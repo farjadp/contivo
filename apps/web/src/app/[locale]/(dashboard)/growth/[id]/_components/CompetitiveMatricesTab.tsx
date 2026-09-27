@@ -246,7 +246,6 @@ export function CompetitiveMatricesTab({
             initialCompetitors={initialCompetitors}
             initialMeta={discoveryMeta}
             initialArchive={discoveryArchive}
-            onMatricesUpdated={setMatrices}
           />
         </div>
       </section>

@@ -8,7 +8,7 @@ import { buildBrandBrief, generateQueries } from './queries';
 import { harvestFromSerp, harvestFromWebSearch } from './search';
 import { enrichCandidates, judgeCandidates } from './judge';
 import { rankAndKeep } from './scoring';
-import type { Candidate, EvidenceItem, ScoredCandidate } from './types';
+import type { Candidate, EvidenceItem, ScoredCandidate, SourceHarvestStats, SourceStats } from './types';
 
 /**
  * A run older than this and still `PENDING`/`RUNNING` is presumed dead (the
@@ -152,7 +152,7 @@ function normalizeStoredDomain(domain: string): string {
 
 export async function runDiscoveryPipeline(runId: string): Promise<void> {
   const tokens = new TokenAccumulator();
-  const sourceStats: Record<string, unknown> = {};
+  const sourceStats: SourceStats = {};
   const runErrors: string[] = [];
 
   let run: Awaited<ReturnType<typeof loadRun>> | null = null;
@@ -210,7 +210,7 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     ]);
 
     const searchLists: Candidate[][] = [];
-    const searchCounts: Record<string, unknown> = {};
+    const searchCounts: { webSearch?: SourceHarvestStats; serp?: SourceHarvestStats } = {};
 
     for (const [label, outcome] of [
       ['webSearch', webOutcome],

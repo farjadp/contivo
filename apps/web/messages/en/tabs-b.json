@@ -108,19 +108,14 @@
       "confidenceScore": "Confidence Score"
     },
     "competitorMap": {
-      "unsavedTitle": "You have unsaved text edits.",
-      "unsavedBody": "Accept and Reject save on click, but changes to a competitor's name, domain or type need this save.",
-      "saveNow": "Save now",
       "discover": "Discover Competitors with AI",
-      "saveTextEdits": "Save text edits",
-      "savedLabel": "Saved",
+      "discoveringStage": "Discovering… ({stage})",
+      "discoveredNone": "No new competitors were found this run.",
       "counts": "{active} active / {accepted} accepted",
       "runs": "Discovery runs: {used}/{max}",
       "decisionFailed": "Could not save that decision.",
       "discoverFailed": "Unexpected error while discovering competitors.",
       "discovered": "We found potential competitors for your business. Please review and confirm them.",
-      "savedMessage": "Competitor decisions saved.",
-      "saveFailed": "Unexpected error while saving edits.",
       "axisSophistication": "Product Sophistication",
       "axisAudience": "Audience Size",
       "yourBrand": "Your Brand",
@@ -134,13 +129,10 @@
       "noDomain": "No domain",
       "scorePair": "Audience {audience} / Sophistication {sophistication}",
       "addTitle": "Add Competitor Manually",
-      "manualNamePlaceholder": "Competitor name",
       "manualDomainPlaceholder": "competitor.com",
-      "manualFallbackName": "Manual Competitor",
-      "manualDescription": "Manually added competitor",
       "add": "Add",
-      "namePlaceholder": "Name",
-      "domainPlaceholder": "Domain",
+      "addFailed": "Could not add that competitor.",
+      "added": "Competitor added.",
       "types": {
         "DIRECT": "Direct",
         "INDIRECT": "Indirect",
@@ -152,7 +144,8 @@
       "decisionSaved": "Saved",
       "archiveTitle": "Discovery Archive",
       "archiveEmpty": "No discovery runs yet.",
-      "archiveRun": "Run #{number} ({count} competitors)"
+      "archiveRun": "Run #{number} ({count} competitors)",
+      "typeSaveFailed": "Could not save that type."
     },
     "keywords": {
       "analyze": "Analyze Competitor Keywords",

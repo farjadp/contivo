@@ -73,27 +73,6 @@
         "back": "Back to workspaces"
       }
     },
-    "competitors": {
-      "title": "Competitor Analysis",
-      "subtitle": "We found {count, number} potential competitors based on your website data. Review the landscape below and validate them so our AI can design a differentiated strategy.",
-      "mapTitle": "Market Positioning Map",
-      "axisY": "Product Sophistication",
-      "axisX": "Audience Size",
-      "yourBrand": "Your Brand",
-      "legendDirect": "Direct",
-      "legendIndirect": "Indirect",
-      "legendAspirational": "Aspirational",
-      "addPlaceholder": "Add a competitor URL (e.g. https://acme.com)...",
-      "add": "Add",
-      "manualDescription": "Manually added competitor",
-      "noDescription": "No description provided.",
-      "typeLabel": "Competitor Type",
-      "typeDirect": "Direct Competitor",
-      "typeIndirect": "Indirect Alternative",
-      "typeAspirational": "Aspirational Brand",
-      "save": "Save Competitors ({count, number})",
-      "saving": "Saving & Generating..."
-    },
     "review": {
       "title": "Here’s what we found",
       "subtitle": "We scanned your website and drafted your primary content strategy. Review, edit, and confirm these details.",

@@ -18,14 +18,13 @@ const JUDGE_CONCURRENCY = 2;
 const MAX_SITE_EVIDENCE_ITEMS = 3;
 
 // ---------------------------------------------------------------------------
-// collectWebsiteEvidence and its HTML helpers are COPIED (not moved) from
-// `apps/web/src/app/actions/growth-competitors.ts` (around its
-// `collectWebsiteEvidence` function). The brief for this task asked for a
-// move, but `growth-competitors.ts` is a `'use server'` module with live
-// callers in the current UI, and deleting a function it still uses would
-// break the typecheck at this commit. Task 8 rewrites that file and deletes
-// the originals then; until it does, this duplication is deliberate — the
-// cheaper of two violations, not an oversight.
+// collectWebsiteEvidence and its HTML helpers were originally COPIED (not
+// moved) from `apps/web/src/app/actions/growth-competitors.ts` (around its
+// `collectWebsiteEvidence` function), because that file was a `'use server'`
+// module with live callers in the then-current UI, and deleting a function
+// it still used would have broken the typecheck at that commit. Task 8 has
+// since rewritten that file and deleted the originals — this copy is now
+// the only implementation.
 //
 // This copy is extended beyond the original (see `collectWebsiteEvidence`
 // below) to also surface each scanned page's `<title>` and the first
