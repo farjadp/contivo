@@ -12,6 +12,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { parseLocalDateTimeToUtc } from '@/lib/autopilot/schedule';
 import { loadStorylineContext, storylinePromptBlock } from '@/lib/narrative/context';
 import {
   generateContentIdeasWithGemini,
@@ -190,13 +191,7 @@ function parseManualScheduleUtc(payload?: ManualSourcePayload): Date | null {
   const timezone = String(payload?.timezone || 'America/Toronto').trim();
   if (!publishDate || !publishTime || !timezone) return null;
 
-  const localDateTimeString = `${publishDate}T${publishTime}:00`;
-  const localDate = new Date(localDateTimeString);
-  if (Number.isNaN(localDate.getTime())) return null;
-
-  const scheduledAtUtc = new Date(localDate.toLocaleString('en-US', { timeZone: timezone }));
-  if (Number.isNaN(scheduledAtUtc.getTime())) return null;
-  return scheduledAtUtc;
+  return parseLocalDateTimeToUtc(publishDate, publishTime, timezone);
 }
 
 // ---------------------------------------------------------------------------

@@ -4,6 +4,7 @@
 
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { parseLocalDateTimeToUtc } from '@/lib/autopilot/schedule';
 import { writeActivityLog } from '@/lib/activity-log';
 
 
@@ -25,11 +26,13 @@ export async function scheduleContentItem(payload: SchedulePayload) {
   const session = await getSession();
   if (!session?.userId) throw new Error('Unauthorized');
 
-  // Parse local date + time -> UTC Date
-  const localDateTimeString = `${payload.publishDate}T${payload.publishTime}:00`;
-  const scheduledAtUtc = new Date(
-    new Date(localDateTimeString).toLocaleString('en-US', { timeZone: payload.timezone })
+  // The customer's wall-clock time in their own zone, as a UTC instant.
+  const scheduledAtUtc = parseLocalDateTimeToUtc(
+    payload.publishDate,
+    payload.publishTime,
+    payload.timezone,
   );
+  if (!scheduledAtUtc) throw new Error('Could not read that publish date and time.');
 
   const updatedContent = await prisma.contentItem.update({
     where: {
