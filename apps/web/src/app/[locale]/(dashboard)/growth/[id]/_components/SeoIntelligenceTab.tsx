@@ -3,7 +3,10 @@
 /**
  * SEO Intelligence Tab
  *
- * Powered by real DataForSEO API data — NOT AI-estimated.
+ * Backed by DataForSEO. When its credentials are not configured the fetch
+ * returns nothing and these sections stay empty — they never fall back to
+ * invented numbers, which is what the old "NOT AI-estimated" boast in this
+ * header quietly stopped being true (see lib/dataforseo.ts).
  * Three sub-sections:
  *   1. Competitor Keywords — real keyword rankings per domain
  *   2. Keyword Opportunities — gap keywords scored by opportunity value
