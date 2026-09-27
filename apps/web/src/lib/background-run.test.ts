@@ -135,4 +135,24 @@ describe('triggerBackgroundRun', () => {
 
     expect('error' in result ? result.error : '').not.toContain(realSecret);
   });
+
+  it('stores only the cause code (never the host or port) and logs the full cause server-side', async () => {
+    process.env.CRON_SECRET = 'secret';
+    process.env.WEB_APP_URL = 'http://internal-host.example:53014';
+    const cause = Object.assign(new Error('connect ECONNREFUSED 10.1.2.3:53014'), {
+      code: 'ECONNREFUSED',
+      address: '10.1.2.3',
+      port: 53014,
+    });
+    (fetch as ReturnType<typeof vi.fn>).mockRejectedValue(new TypeError('fetch failed', { cause }));
+    const logSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const result = await triggerBackgroundRun('/api/growth/discovery/run', { runId: 'r1' });
+
+    expect(result).toEqual({ ok: false, error: 'fetch failed (ECONNREFUSED)' });
+    const logged = JSON.stringify(logSpy.mock.calls);
+    expect(logged).toContain('ECONNREFUSED');
+    expect(logged).toContain('10.1.2.3');
+    expect(logged).toContain('53014');
+  });
 });

@@ -215,7 +215,13 @@
         "nextAddManualHint": "The next search uses it as a reference.",
         "failedTitle": "The search did not finish",
         "failedNotCharged": "It was not counted against your limit, so you can try again.",
-        "failedDetail": "Error details:",
+        "failedReason": {
+          "timedOut": "The search took too long and was stopped.",
+          "dispatch": "The search could not start because of a problem on our side.",
+          "judgeOutage": "The service that checks each company against its evidence was unavailable, so nothing could be checked. The market you chose is not the problem.",
+          "rateLimited": "The AI service is receiving too many requests right now. Wait a few minutes, then try again.",
+          "generic": "Something went wrong in our system."
+        },
         "pollStopped": "This page stopped checking on the search. Reload to see where it is.",
         "queriesTitle": "Search queries"
       },

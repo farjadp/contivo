@@ -5,6 +5,7 @@
  * `@/app/actions/growth-competitors` and hand the results to these helpers.
  */
 
+import { classifyRunError, type RunErrorKind } from '@/lib/competitors/run-errors';
 import type { EvidenceItem, SourceStats, TargetMarket } from '@/lib/competitors/types';
 
 export const POLL_INTERVAL_MS = 3000;
@@ -59,7 +60,12 @@ export type RunOutcome =
   | { kind: 'active'; stage: DiscoveryStage | null; queries: string[] }
   | { kind: 'done'; saved: number; skippedSites: number }
   | { kind: 'empty'; queryCount: number | null; skippedSites: number; market: TargetMarket | null }
-  | { kind: 'failed'; error: string | null };
+  /**
+   * Only the KIND of failure reaches the panel, never the stored text: that
+   * can carry configuration details ("OPENAI_API_KEY is not set") or
+   * upstream status text, which end users should not see.
+   */
+  | { kind: 'failed'; errorKind: RunErrorKind };
 
 function queryCountOf(queries: string[] | undefined, stats: SourceStats | null): number | null {
   if (queries && queries.length > 0) return queries.length;
@@ -106,7 +112,7 @@ export function runOutcome(
         market: run.market ?? null,
       };
     case 'FAILED':
-      return { kind: 'failed', error: run.error && run.error.trim() ? run.error.trim() : null };
+      return { kind: 'failed', errorKind: classifyRunError(run.error) };
     default:
       return { kind: 'none' };
   }

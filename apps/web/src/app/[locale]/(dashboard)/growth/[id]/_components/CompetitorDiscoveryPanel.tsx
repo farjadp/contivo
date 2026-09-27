@@ -301,14 +301,7 @@ export function CompetitorDiscoveryPanel({
         <div className="space-y-2 border-t border-rule pt-4" role="alert">
           <p className="text-sm font-bold text-red-700">{t('run.failedTitle')}</p>
           <p className="text-sm text-moss">{t('run.failedNotCharged')}</p>
-          {outcome.error ? (
-            <p className="text-xs text-moss-muted">
-              {t('run.failedDetail')}{' '}
-              <span dir="auto" className="break-words">
-                {outcome.error}
-              </span>
-            </p>
-          ) : null}
+          <p className="text-xs text-moss-muted">{t(`run.failedReason.${outcome.errorKind}`)}</p>
         </div>
       ) : null}
     </div>

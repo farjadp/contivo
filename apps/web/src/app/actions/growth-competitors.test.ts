@@ -16,7 +16,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // 570,000 tokens and this file must never trigger one).
 // ---------------------------------------------------------------------------
 
-const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMock, judgeMock, queriesMock } =
+const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMock, judgeMock, queriesMock, rateLimitMock } =
   vi.hoisted(() => ({
     prismaMock: {
       workspace: {
@@ -28,6 +28,7 @@ const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMoc
         count: vi.fn(),
         create: vi.fn(),
         update: vi.fn(),
+        updateMany: vi.fn(),
         findMany: vi.fn(),
       },
       competitor: {
@@ -51,6 +52,7 @@ const { prismaMock, sessionMock, activityLogMock, backgroundRunMock, pipelineMoc
     },
     judgeMock: { enrichCandidates: vi.fn(), judgeCandidates: vi.fn() },
     queriesMock: { buildBrandBrief: vi.fn(() => ({})) },
+    rateLimitMock: { consumeRateLimit: vi.fn() },
   }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
@@ -60,6 +62,7 @@ vi.mock('@/lib/background-run', () => backgroundRunMock);
 vi.mock('@/lib/competitors/pipeline', () => pipelineMock);
 vi.mock('@/lib/competitors/judge', () => judgeMock);
 vi.mock('@/lib/competitors/queries', () => queriesMock);
+vi.mock('@/lib/rate-limit', () => rateLimitMock);
 // Real allowlist-shaped domain normalisation matters for addManualCompetitor's
 // duplicate check, so this one is not mocked.
 // `@/lib/competitors/domains` and `@/lib/competitors/scoring` are left real.
@@ -69,7 +72,9 @@ vi.mock('@/lib/competitors/queries', () => queriesMock);
 // assertion below checks *that* an error key came back and that no write
 // happened, not the exact translated sentence, so the key itself is enough.
 vi.mock('@/lib/action-errors', () => ({
-  actionError: vi.fn(async (key: string) => key),
+  actionError: vi.fn(async (key: string, values?: Record<string, unknown>) =>
+    values ? `${key} ${JSON.stringify(values)}` : key,
+  ),
 }));
 
 import {
@@ -114,6 +119,9 @@ beforeEach(() => {
   prismaMock.discoveryRun.findFirst.mockResolvedValue(null);
   prismaMock.discoveryRun.count.mockResolvedValue(0);
   backgroundRunMock.triggerBackgroundRun.mockResolvedValue({ ok: true });
+  prismaMock.discoveryRun.findMany.mockResolvedValue([]);
+  prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 1 });
+  rateLimitMock.consumeRateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfter: 3600 });
 });
 
 afterEach(() => {
@@ -419,14 +427,76 @@ describe('startCompetitorDiscovery', () => {
   it('marks the run FAILED immediately, and reports an error, when the background trigger cannot be dispatched at all', async () => {
     prismaMock.discoveryRun.create.mockResolvedValue({ id: 'new-run' });
     backgroundRunMock.triggerBackgroundRun.mockResolvedValue({ ok: false, error: 'CRON_SECRET is not set' });
-    prismaMock.discoveryRun.update.mockResolvedValue({});
 
     const result = await startCompetitorDiscovery('ws-1');
 
     expect(result).toEqual({ error: 'discoveryDispatchFailed' });
-    expect(prismaMock.discoveryRun.update).toHaveBeenCalledWith({
-      where: { id: 'new-run' },
-      data: expect.objectContaining({ status: 'FAILED', error: 'CRON_SECRET is not set' }),
+    expect(prismaMock.discoveryRun.updateMany).toHaveBeenCalledWith({
+      where: { id: 'new-run', status: 'PENDING' },
+      data: expect.objectContaining({ status: 'FAILED', error: 'DISPATCH_FAILED: CRON_SECRET is not set' }),
+    });
+  });
+
+  it('leaves the run alone and returns its id when the trigger timed out but the route had already claimed it', async () => {
+    prismaMock.discoveryRun.create.mockResolvedValue({ id: 'new-run' });
+    backgroundRunMock.triggerBackgroundRun.mockResolvedValue({ ok: false, error: 'The operation was aborted due to timeout' });
+    // The row is RUNNING already, so the PENDING-guarded FAILED write matches nothing.
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 0 });
+
+    const result = await startCompetitorDiscovery('ws-1');
+
+    expect(result).toEqual({ runId: 'new-run' });
+    expect(prismaMock.discoveryRun.update).not.toHaveBeenCalled();
+    expect(activityLogMock.writeActivityLog).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'COMPETITOR_DISCOVERY_DISPATCH_FAILED' }),
+    );
+  });
+
+  describe('non-DONE retry cap (3 per rolling 24 hours)', () => {
+    const NOW = Date.now();
+    const hoursAgo = (h: number) => ({ startedAt: new Date(NOW - h * 3600_000) });
+
+    it('refuses a 4th start while 3 non-DONE runs sit in the last 24 hours, saying when to try again', async () => {
+      // Newest first, as the query orders them; the oldest is 20h old, so a slot opens in ~4h.
+      prismaMock.discoveryRun.findMany.mockResolvedValue([hoursAgo(1), hoursAgo(5), hoursAgo(20)]);
+
+      const result = await startCompetitorDiscovery('ws-1');
+
+      expect('error' in result && result.error).toMatch(/^discoveryRetryLimitHours /);
+      expect('error' in result && JSON.parse(result.error.replace(/^\S+ /, ''))).toEqual({ hours: 4, limit: 3 });
+      expect(prismaMock.discoveryRun.create).not.toHaveBeenCalled();
+      expect(backgroundRunMock.triggerBackgroundRun).not.toHaveBeenCalled();
+    });
+
+    it('says minutes when the wait is under an hour', async () => {
+      prismaMock.discoveryRun.findMany.mockResolvedValue([hoursAgo(1), hoursAgo(2), hoursAgo(23.5)]);
+
+      const result = await startCompetitorDiscovery('ws-1');
+
+      expect('error' in result && result.error).toMatch(/^discoveryRetryLimitMinutes /);
+    });
+
+    it('counts only non-DONE runs inside the last 24 hours, for this workspace', async () => {
+      prismaMock.discoveryRun.create.mockResolvedValue({ id: 'new-run' });
+
+      await startCompetitorDiscovery('ws-1');
+
+      const [{ where, take }] = prismaMock.discoveryRun.findMany.mock.calls[0];
+      expect(where.workspaceId).toBe('ws-1');
+      expect(where.status).toEqual({ not: 'DONE' });
+      const windowMs = Date.now() - (where.startedAt.gte as Date).getTime();
+      expect(windowMs).toBeGreaterThanOrEqual(24 * 3600_000 - 5000);
+      expect(windowMs).toBeLessThanOrEqual(24 * 3600_000 + 5000);
+      expect(take).toBe(3);
+    });
+
+    it('allows a start with 2 non-DONE runs in the window', async () => {
+      prismaMock.discoveryRun.findMany.mockResolvedValue([hoursAgo(1), hoursAgo(2)]);
+      prismaMock.discoveryRun.create.mockResolvedValue({ id: 'new-run' });
+
+      const result = await startCompetitorDiscovery('ws-1');
+
+      expect(result).toEqual({ runId: 'new-run' });
     });
   });
 
@@ -587,6 +657,9 @@ describe('addManualCompetitor', () => {
         },
       ],
       tokens: 100,
+      errors: [],
+      batches: 1,
+      failedBatches: 0,
     });
     prismaMock.competitor.create.mockResolvedValue({
       id: 'new-comp',
@@ -615,6 +688,52 @@ describe('addManualCompetitor', () => {
     }
     expect(prismaMock.competitor.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ userDecision: 'ACCEPTED', source: 'MANUAL' }) }),
+    );
+  });
+
+  it('is rate-limited per workspace and reads nothing once the limit is hit', async () => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+    rateLimitMock.consumeRateLimit.mockResolvedValue({ allowed: false, remaining: 0, retryAfter: 1500 });
+
+    const result = await addManualCompetitor('ws-1', 'somesite.com');
+
+    expect(result).toEqual({ error: 'manualCompetitorRateLimited {"minutes":25,"limit":10}' });
+    expect(rateLimitMock.consumeRateLimit).toHaveBeenCalledWith('competitor-manual-add:ws-1', 10, 3600_000);
+    expect(judgeMock.enrichCandidates).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.create).not.toHaveBeenCalled();
+  });
+
+  it('does not use up an attempt on an invalid or duplicate domain', async () => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+
+    await addManualCompetitor('ws-1', 'not a domain at all');
+
+    expect(rateLimitMock.consumeRateLimit).not.toHaveBeenCalled();
+  });
+
+  it('reads fewer pages than discovery and records the judge\'s token usage', async () => {
+    prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
+    judgeMock.enrichCandidates.mockResolvedValue({
+      enriched: [{ domain: 'somesite.com', frequency: 1, sources: ['MANUAL'], evidence: [], siteTitle: null, siteEvidence: 'x', pageLanguage: 'en' }],
+      skipped: 0,
+      budgetExceeded: false,
+    });
+    judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 1234, errors: [], batches: 1, failedBatches: 0 });
+    prismaMock.competitor.create.mockResolvedValue({
+      id: 'new-comp', name: 'somesite.com', domain: 'somesite.com', description: null, type: 'DIRECT',
+      userDecision: 'ACCEPTED', rejectionReason: null, source: 'MANUAL', sources: ['MANUAL'], labels: [],
+      confidence: null, positioning: null, keyFeatures: [], evidence: [], createdAt: new Date(),
+    });
+
+    await addManualCompetitor('ws-1', 'somesite.com');
+
+    const [, options] = judgeMock.enrichCandidates.mock.calls[0];
+    expect(options.paths).toEqual(['/', '/about', '/pricing']);
+    expect(activityLogMock.writeActivityLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'COMPETITOR_MANUAL_ADD',
+        detail: expect.objectContaining({ tokensUsed: 1234, judgeRan: true }),
+      }),
     );
   });
 

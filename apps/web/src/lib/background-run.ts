@@ -59,6 +59,22 @@ function resolveWebAppUrl(): string {
   return `http://localhost:${port}`;
 }
 
+type ErrorCause = { code?: string; address?: string; port?: number; message?: string };
+
+/** The `cause` of a failed fetch, when it has one, reduced to the fields worth logging. */
+export function describeCause(error: unknown): ErrorCause | null {
+  const cause = (error as { cause?: unknown } | null)?.cause;
+  if (!cause || typeof cause !== 'object') return null;
+  const record = cause as Record<string, unknown>;
+  const code = typeof record.code === 'string' && /^[A-Z0-9_]{2,40}$/.test(record.code) ? record.code : undefined;
+  return {
+    code,
+    address: typeof record.address === 'string' ? record.address : undefined,
+    port: typeof record.port === 'number' ? record.port : undefined,
+    message: typeof record.message === 'string' ? record.message : undefined,
+  };
+}
+
 export async function triggerBackgroundRun(path: string, body: Record<string, unknown>): Promise<BackgroundRunResult> {
   const secret = process.env.CRON_SECRET;
   if (!secret) {
@@ -86,7 +102,17 @@ export async function triggerBackgroundRun(path: string, body: Record<string, un
 
     return { ok: true };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Request to the background route failed';
+    // undici puts the real cause (ECONNREFUSED, ENOTFOUND, the host and
+    // port it tried) in `error.cause`; the message alone is just "fetch
+    // failed". Log the full cause here, server-side only, and append only
+    // its code to the returned text: that text is stored in
+    // `DiscoveryRun.error`, and a host or port does not belong there.
+    const cause = describeCause(error);
+    if (cause) {
+      console.error('triggerBackgroundRun: request to', path, 'failed:', cause);
+    }
+    const base = error instanceof Error ? error.message : 'Request to the background route failed';
+    const message = cause?.code ? `${base} (${cause.code})` : base;
     // `sanitizeUpstreamText` here is defence in depth: a plain network
     // error from `fetch` (DNS failure, connection refused, timeout) has
     // never been observed to echo back a request header, but this is the

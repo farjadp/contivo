@@ -113,8 +113,24 @@ describe('runOutcome', () => {
   });
 
   it('carries the error text on FAILED, and null for a blank one', () => {
-    expect(runOutcome({ ...base, status: 'FAILED', error: ' boom ' })).toEqual({ kind: 'failed', error: 'boom' });
-    expect(runOutcome({ ...base, status: 'FAILED', error: '   ' })).toEqual({ kind: 'failed', error: null });
+    // Never the raw text: only the kind of failure, mapped to translated copy.
+    const kind = (error: string | null) => runOutcome({ ...base, status: 'FAILED', error });
+    expect(kind(' boom ')).toEqual({ kind: 'failed', errorKind: 'generic' });
+    expect(kind('   ')).toEqual({ kind: 'failed', errorKind: 'generic' });
+    expect(kind(null)).toEqual({ kind: 'failed', errorKind: 'generic' });
+    expect(kind('TIMED_OUT')).toEqual({ kind: 'failed', errorKind: 'timedOut' });
+    expect(kind('DISPATCH_FAILED: fetch failed (ECONNREFUSED)')).toEqual({ kind: 'failed', errorKind: 'dispatch' });
+    expect(kind('JUDGE_UNAVAILABLE: Judge batch failed: 500 boom')).toEqual({ kind: 'failed', errorKind: 'judgeOutage' });
+    expect(kind('JUDGE_UNAVAILABLE: Judge batch failed: 429 Rate limit reached')).toEqual({
+      kind: 'failed',
+      errorKind: 'rateLimited',
+    });
+    expect(kind('Search query failed for "x": 429 Too Many Requests')).toEqual({ kind: 'failed', errorKind: 'rateLimited' });
+    // Configuration errors get the generic message, never their own text.
+    expect(kind('OPENAI_API_KEY is not set — cannot generate discovery queries')).toEqual({
+      kind: 'failed',
+      errorKind: 'generic',
+    });
   });
 });
 

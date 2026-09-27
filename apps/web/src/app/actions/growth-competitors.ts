@@ -54,6 +54,8 @@ import {
 import { normalizeCandidateDomain } from '@/lib/competitors/domains';
 import { buildBrandBrief } from '@/lib/competitors/queries';
 import { enrichCandidates, judgeCandidates } from '@/lib/competitors/judge';
+import { RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
+import { consumeRateLimit } from '@/lib/rate-limit';
 import { confidenceBand } from '@/lib/competitors/scoring';
 import { sanitizeUpstreamText } from '@/lib/competitors/redact';
 import { parseStoredEvidence, reapStaleRuns } from '@/lib/competitors/pipeline';
@@ -329,6 +331,48 @@ async function computeDiscoveryMeta(userId: string, workspaceId: string): Promis
 }
 
 // ---------------------------------------------------------------------------
+// (Nothing in this section is exported: a 'use server' module may export
+// only async functions, and every exported one is a public RPC endpoint.)
+//
+// Retry cap — owner decision: FAILED and EMPTY runs stay free (they never
+// count against the quota above), but each costs real web-search spend
+// (~300k tokens), so a workspace may start at most this many runs that did
+// not end DONE in any rolling 24 hours. Counted from DiscoveryRun itself.
+// ---------------------------------------------------------------------------
+
+const MAX_NON_DONE_RUNS_PER_DAY = 3;
+const NON_DONE_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * When this workspace may start again, or null when it is under the cap.
+ * The window is rolling: the start frees up once the oldest non-DONE run in
+ * it is 24 hours old.
+ */
+async function nonDoneRetryAt(workspaceId: string, now: Date = new Date()): Promise<Date | null> {
+  const recent = await prisma.discoveryRun.findMany({
+    where: {
+      workspaceId,
+      status: { not: 'DONE' },
+      startedAt: { gte: new Date(now.getTime() - NON_DONE_WINDOW_MS) },
+    },
+    orderBy: { startedAt: 'desc' },
+    take: MAX_NON_DONE_RUNS_PER_DAY,
+    select: { startedAt: true },
+  });
+  if (recent.length < MAX_NON_DONE_RUNS_PER_DAY) return null;
+  // The oldest of the most recent MAX runs: once it leaves the window, one slot opens.
+  const oldest = recent[recent.length - 1].startedAt;
+  return new Date(oldest.getTime() + NON_DONE_WINDOW_MS);
+}
+
+/** The translated "try again in …" error for a wait of `ms`, in whole hours (or minutes under an hour). */
+async function retryLimitError(ms: number): Promise<string> {
+  const minutes = Math.max(1, Math.ceil(ms / 60_000));
+  if (minutes < 60) return actionError('discoveryRetryLimitMinutes', { minutes, limit: MAX_NON_DONE_RUNS_PER_DAY });
+  return actionError('discoveryRetryLimitHours', { hours: Math.ceil(minutes / 60), limit: MAX_NON_DONE_RUNS_PER_DAY });
+}
+
+// ---------------------------------------------------------------------------
 // startCompetitorDiscovery
 // ---------------------------------------------------------------------------
 
@@ -362,6 +406,12 @@ export async function startCompetitorDiscovery(
   const meta = await computeDiscoveryMeta(session.userId, workspaceId);
   if (meta.remainingRuns <= 0) {
     return { error: await actionError('discoveryLimitReached'), meta };
+  }
+
+  const now = new Date();
+  const retryAt = await nonDoneRetryAt(workspaceId, now);
+  if (retryAt) {
+    return { error: await retryLimitError(retryAt.getTime() - now.getTime()), meta };
   }
 
   const market: TargetMarket = {
@@ -424,14 +474,21 @@ export async function startCompetitorDiscovery(
     // discoveryAlreadyRunning) until reapStaleRuns caught it up to
     // STALE_RUN_MINUTES later. Mark it FAILED now, so the caller learns
     // this immediately instead of ten minutes from now.
-    await prisma.discoveryRun.update({
-      where: { id: run.id },
+    //
+    // Only while it is still PENDING, though: a trigger that timed out on
+    // the way back may still have reached the route, which then claimed the
+    // run (PENDING -> RUNNING) and is working on it. Failing it over the
+    // top would tell the user it failed while the pipeline finishes it. In
+    // that case the run is live, and the caller gets its id like any other.
+    const failed = await prisma.discoveryRun.updateMany({
+      where: { id: run.id, status: 'PENDING' },
       data: {
         status: 'FAILED',
-        error: sanitizeUpstreamText(dispatch.error),
+        error: withRunErrorCode(RUN_ERROR.DISPATCH_FAILED, sanitizeUpstreamText(dispatch.error)),
         finishedAt: new Date(),
       },
     });
+    if (failed.count === 0) return { runId: run.id };
     await writeActivityLog({
       userId: session.userId,
       workspaceId,
@@ -705,6 +762,22 @@ export async function listDiscoveryRuns(workspaceId: string): Promise<RunHistory
 // addManualCompetitor
 // ---------------------------------------------------------------------------
 
+/**
+ * Each manual add reads the site and runs a paid judge call synchronously,
+ * so it is rate-limited per workspace. Ten an hour is far above what a person
+ * adding competitors by hand needs, and well below what would make this
+ * action a cheap on-demand fetch-and-judge proxy.
+ */
+const MANUAL_ADD_LIMIT_PER_HOUR = 10;
+const MANUAL_ADD_WINDOW_MS = 60 * 60 * 1000;
+
+/**
+ * A manual add reads fewer pages than discovery does (three, not seven):
+ * enough for the judge to see what the site sells, while bounding how long
+ * the user waits on an unresponsive domain.
+ */
+const MANUAL_ADD_EVIDENCE_PATHS = ['/', '/about', '/pricing'];
+
 export async function addManualCompetitor(
   workspaceId: string,
   domainInput: string,
@@ -753,17 +826,38 @@ export async function addManualCompetitor(
     })),
   });
 
+  // Counted only once the cheap checks above have passed, so a typo or a
+  // duplicate never uses up an attempt.
+  const throttle = await consumeRateLimit(
+    `competitor-manual-add:${workspaceId}`,
+    MANUAL_ADD_LIMIT_PER_HOUR,
+    MANUAL_ADD_WINDOW_MS,
+  );
+  if (!throttle.allowed) {
+    return {
+      error: await actionError('manualCompetitorRateLimited', {
+        minutes: Math.max(1, Math.ceil(throttle.retryAfter / 60)),
+        limit: MANUAL_ADD_LIMIT_PER_HOUR,
+      }),
+    };
+  }
+
   const candidate: Candidate = { domain, frequency: 1, sources: ['MANUAL'], evidence: [] };
-  const { enriched } = await enrichCandidates([candidate]);
+  const { enriched } = await enrichCandidates([candidate], { paths: MANUAL_ADD_EVIDENCE_PATHS });
 
   // No site could be scanned at all — there is nothing for the judge to
   // read, so it never runs. The competitor is still saved (the brief is
   // explicit: ACCEPTED whatever the judge says), just with no judged
   // fields to invent.
   let judged: JudgedCandidate | undefined;
+  // `null` = the judge ran but its usage could not be read; undefined = it never ran.
+  let judgeTokens: number | null | undefined;
+  let judgeErrors: string[] = [];
   if (enriched.length > 0) {
     const result = await judgeCandidates(brief, enriched);
     judged = result.judged[0];
+    judgeTokens = result.tokens;
+    judgeErrors = result.errors;
   }
 
   const created = await prisma.competitor.create({
@@ -794,7 +888,15 @@ export async function addManualCompetitor(
     userId: session.userId,
     workspaceId,
     action: 'COMPETITOR_MANUAL_ADD',
-    detail: { competitorId: created.id, domain },
+    // Token usage is recorded here, since a manual add is not a DiscoveryRun
+    // and has no tokensUsed column of its own.
+    detail: {
+      competitorId: created.id,
+      domain,
+      judgeRan: judgeTokens !== undefined,
+      tokensUsed: judgeTokens ?? null,
+      ...(judgeErrors.length > 0 ? { judgeErrors } : {}),
+    },
   });
 
   return { competitor: toCompetitorView(created), judgeWarning };
