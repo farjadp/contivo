@@ -20,6 +20,7 @@ import {
   generateWorkspaceProductsServicesIntel,
   saveWorkspaceProductsServicesIntelEdits,
 } from '@/app/actions/growth-offerings';
+import { CompetitorBasisNote } from './CompetitorBits';
 
 type OfferingItem = {
   name: string;
@@ -465,6 +466,8 @@ export function ProductsServicesTab({
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">
         {t('disclaimer')}
       </div>
+
+      <CompetitorBasisNote payload={payload} />
 
       {payload?.token_usage ? (
         <div className="grid gap-3 md:grid-cols-2">

@@ -17,6 +17,7 @@ import {
   sortByConfidence,
   splitEvidence,
   stageIndex,
+  competitorBasisNotice,
 } from './competitor-discovery-logic';
 
 const START = '2026-09-27T10:00:00.000Z';
@@ -282,5 +283,22 @@ describe('isStaleForRows', () => {
   it('flags a response when any write completed while it was in flight', () => {
     expect(isStaleForRows(3, 3)).toBe(false);
     expect(isStaleForRows(3, 4)).toBe(true);
+  });
+});
+
+describe('competitorBasisNotice (D8 label on Matrices, Keywords, Offerings)', () => {
+  it('says nothing when there is no result yet, or it was built on accepted competitors', () => {
+    expect(competitorBasisNotice(null)).toBe('none');
+    expect(competitorBasisNotice(undefined)).toBe('none');
+    expect(competitorBasisNotice({ competitor_basis: 'ACCEPTED', charts: [] })).toBe('none');
+  });
+
+  it('labels a result built on unconfirmed high-confidence candidates', () => {
+    expect(competitorBasisNotice({ competitor_basis: 'UNCONFIRMED_HIGH' })).toBe('unconfirmed');
+  });
+
+  it('gives a legacy result with no basis the quieter "predates this check" note, not the unconfirmed one', () => {
+    expect(competitorBasisNotice({ charts: [] })).toBe('legacy');
+    expect(competitorBasisNotice({ competitor_basis: 'something-else' })).toBe('legacy');
   });
 });

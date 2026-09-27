@@ -2,10 +2,10 @@
 
 import type { ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
-import { ExternalLink as ExternalLinkIcon, Loader2 } from 'lucide-react';
+import { ExternalLink as ExternalLinkIcon, Info, Loader2 } from 'lucide-react';
 
 import type { CompetitorLabel, CompetitorType } from '@/lib/competitors/types';
-import { domainHref, safeExternalHref } from './competitor-discovery-logic';
+import { competitorBasisNotice, domainHref, safeExternalHref } from './competitor-discovery-logic';
 
 /**
  * Small pieces shared by the review queue and the accepted list. Every
@@ -145,5 +145,25 @@ export function WarningNote({ children }: { children: ReactNode }) {
     <div role="status" className="rounded-xl border border-saffron bg-saffron-soft px-4 py-3 text-sm text-saffron-ink">
       {children}
     </div>
+  );
+}
+
+/**
+ * The note Matrices, Keywords and Offerings show about which competitors a
+ * result was built on (spec D8). Renders nothing for an accepted basis or
+ * when there is no result yet.
+ */
+export function CompetitorBasisNote({ payload }: { payload: unknown }) {
+  const t = useTranslations('growth.competitors');
+  const notice = competitorBasisNotice(payload);
+  if (notice === 'none') return null;
+  if (notice === 'unconfirmed') {
+    return <WarningNote>{t('basis.unconfirmed')}</WarningNote>;
+  }
+  return (
+    <p role="note" className="flex items-start gap-2 text-xs leading-relaxed text-moss-muted">
+      <Info aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+      <span>{t('basis.legacy')}</span>
+    </p>
   );
 }

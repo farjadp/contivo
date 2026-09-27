@@ -6,6 +6,7 @@
  */
 
 import { classifyRunError, type RunErrorKind } from '@/lib/competitors/run-errors';
+import { parseStoredBasis } from '@/lib/competitors/selection';
 import type { EvidenceItem, SourceStats, TargetMarket } from '@/lib/competitors/types';
 
 export const POLL_INTERVAL_MS = 3000;
@@ -244,4 +245,27 @@ export function displayName(locale: string, type: 'region' | 'language', code: s
   } catch {
     return code;
   }
+}
+
+export type CompetitorBasisNotice = 'none' | 'unconfirmed' | 'legacy';
+
+/**
+ * Which note a Matrices / Keywords / Offerings result shows about the
+ * competitors it was built on (spec D8):
+ *   - no stored result, or basis ACCEPTED: nothing to say;
+ *   - UNCONFIRMED_HIGH: built on unreviewed high-confidence candidates, and
+ *     must say so;
+ *   - no basis at all (or one this code does not recognise): the result
+ *     predates the rule. Before it, analysis fell back to any competitor
+ *     that was not rejected, unreviewed ones included, so such a payload may
+ *     be accepted-based or weaker than UNCONFIRMED_HIGH, and nothing tells
+ *     which. It gets a quieter note that claims neither, and suggests
+ *     regenerating.
+ */
+export function competitorBasisNotice(payload: unknown): CompetitorBasisNotice {
+  if (!payload || typeof payload !== 'object') return 'none';
+  const basis = parseStoredBasis((payload as { competitor_basis?: unknown }).competitor_basis);
+  if (basis === 'ACCEPTED') return 'none';
+  if (basis === 'UNCONFIRMED_HIGH') return 'unconfirmed';
+  return 'legacy';
 }

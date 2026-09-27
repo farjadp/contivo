@@ -8,6 +8,7 @@ import {
   generateWorkspaceCompetitiveMatrices,
   saveWorkspaceCompetitiveMatricesEdits,
 } from '@/app/actions/growth-matrices';
+import { CompetitorBasisNote } from './CompetitorBits';
 import { CompetitorMapManager } from './CompetitorMapManager';
 
 type MatrixCompanyPoint = {
@@ -37,6 +38,8 @@ type CompetitiveMatrixChart = {
 
 type CompetitiveMatrixPayload = {
   generated_at: string;
+  /** Which competitors the result was built on; absent on payloads older than that rule. */
+  competitor_basis?: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE';
   ai_estimated: boolean;
   source: 'AI' | 'MANUAL';
   charts: CompetitiveMatrixChart[];
@@ -283,6 +286,12 @@ export function CompetitiveMatricesTab({
             </button>
           </div>
         </div>
+
+        {matrices ? (
+          <div className="border-b border-rule px-6 py-3 empty:hidden">
+            <CompetitorBasisNote payload={matrices} />
+          </div>
+        ) : null}
 
         {/* Global Notifications / Status */}
         {(error || success || showTokens) && (

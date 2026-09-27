@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
-import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { parseStoredBasis, selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
 import { collectSiteSignals, type SiteSignals } from '@/lib/competitors/site-signals';
 
 type TokenUsageRun = {
@@ -827,6 +827,11 @@ export async function saveWorkspaceProductsServicesIntelEdits(
     normalized.token_usage = normalizeTokenUsage(
       payload?.token_usage || (workspace.audienceInsights as any)?.productsServicesIntel?.token_usage,
     );
+    // Same rule as the matrices edit path: an edit does not change which
+    // competitors the analysis was built on, so the STORED basis (never the
+    // client's) is carried through; a legacy payload without one stays so.
+    const storedBasis = parseStoredBasis((workspace.audienceInsights as any)?.productsServicesIntel?.competitor_basis);
+    if (storedBasis) normalized.competitor_basis = storedBasis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },

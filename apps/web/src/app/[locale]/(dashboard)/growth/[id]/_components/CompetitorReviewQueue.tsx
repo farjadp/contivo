@@ -158,9 +158,13 @@ function ReviewCard({
   const { sources, sitePages } = splitEvidence(competitor.evidence);
   const hasSiteSummary = Boolean(competitor.positioning) || competitor.keyFeatures.length > 0 || sitePages.length > 0;
   const hasEvidence = queries.length > 0 || sources.length > 0 || hasSiteSummary;
+  // Named by a model at onboarding from a description of the business: no
+  // search, no evidence, no confidence. Shown as exactly that, with no
+  // confidence word and no "Why?" section that would imply evidence exists.
+  const isGuess = competitor.origin === 'initialGuess';
 
   return (
-    <li className="rounded-xl border border-rule bg-chalk p-4">
+    <li className={`rounded-xl border p-4 ${isGuess ? 'border-dashed border-rule-strong bg-chalk-raised' : 'border-rule bg-chalk'}`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 space-y-1">
           <p className="truncate text-sm font-bold text-moss">
@@ -191,7 +195,13 @@ function ReviewCard({
       </div>
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <ConfidenceWord band={competitor.confidenceBand} />
+        {isGuess ? (
+          <span className="rounded-full border border-dashed border-rule-strong bg-chalk px-2.5 py-0.5 text-[11px] font-semibold text-moss-muted">
+            {t('queue.initialGuessBadge')}
+          </span>
+        ) : (
+          <ConfidenceWord band={competitor.confidenceBand} />
+        )}
         <LabelChips labels={competitor.labels} />
         <TypeSelect id={`type-${competitor.id}`} value={competitor.type} saving={savingType} onChange={onType} />
       </div>
@@ -202,86 +212,92 @@ function ReviewCard({
         </p>
       ) : null}
 
-      <details className="group mt-3 border-t border-rule pt-3">
-        <summary className="cursor-pointer text-sm font-semibold text-moss-700 hover:text-moss">{t('queue.why')}</summary>
-        <div className="mt-3 space-y-4 text-sm">
-          {!hasEvidence ? <p className="text-moss-muted">{t('queue.noEvidence')}</p> : null}
+      {isGuess ? (
+        <p className="mt-3 border-t border-rule pt-3 text-xs leading-relaxed text-moss-muted">{t('queue.initialGuessNote')}</p>
+      ) : null}
 
-          {queries.length > 0 ? (
-            <section className="space-y-2">
-              <h5 className="text-xs font-bold text-moss-muted">{t('queue.queries')}</h5>
-              <ul className="flex flex-wrap gap-2">
-                {queries.map((query) => (
-                  <li key={query} dir="auto" className="rounded-full border border-rule bg-chalk-raised px-2.5 py-0.5 text-xs text-moss">
-                    {query}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+      {isGuess ? null : (
+        <details className="group mt-3 border-t border-rule pt-3">
+          <summary className="cursor-pointer text-sm font-semibold text-moss-700 hover:text-moss">{t('queue.why')}</summary>
+          <div className="mt-3 space-y-4 text-sm">
+            {!hasEvidence ? <p className="text-moss-muted">{t('queue.noEvidence')}</p> : null}
 
-          {sources.length > 0 ? (
-            <section className="space-y-2">
-              <h5 className="text-xs font-bold text-moss-muted">{t('queue.sources')}</h5>
-              <ul className="space-y-2">
-                {sources.map((item) => (
-                  <li key={item.id + item.url} className="space-y-0.5">
-                    <SafeExternalLink url={item.url} className="max-w-full text-sm font-semibold text-moss">
-                      <span dir="auto" className="break-words">
-                        {item.title || item.url}
-                      </span>
-                    </SafeExternalLink>
-                    {item.snippet ? (
-                      <p dir="auto" className="line-clamp-3 text-xs leading-relaxed text-moss-muted">
-                        {item.snippet}
-                      </p>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+            {queries.length > 0 ? (
+              <section className="space-y-2">
+                <h5 className="text-xs font-bold text-moss-muted">{t('queue.queries')}</h5>
+                <ul className="flex flex-wrap gap-2">
+                  {queries.map((query) => (
+                    <li key={query} dir="auto" className="rounded-full border border-rule bg-chalk-raised px-2.5 py-0.5 text-xs text-moss">
+                      {query}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-          {hasSiteSummary ? (
-            <section className="space-y-2">
-              <h5 className="text-xs font-bold text-moss-muted">{t('queue.site')}</h5>
-              {competitor.positioning ? (
-                <p dir="auto" className="leading-relaxed text-moss">
-                  {competitor.positioning}
-                </p>
-              ) : null}
-              {competitor.keyFeatures.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-moss-muted">{t('queue.features')}</p>
-                  <ul className="list-disc space-y-0.5 ps-5 text-moss">
-                    {competitor.keyFeatures.map((feature, index) => (
-                      <li key={`${index}-${feature}`} dir="auto">
-                        {feature}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-              {sitePages.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold text-moss-muted">{t('queue.sitePages')}</p>
-                  <ul className="space-y-1">
-                    {sitePages.map((page) => (
-                      <li key={page.id + page.url}>
-                        <SafeExternalLink url={page.url} className="max-w-full text-xs text-moss">
-                          <span dir="auto" className="break-all">
-                            {page.title || page.url}
-                          </span>
-                        </SafeExternalLink>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </section>
-          ) : null}
-        </div>
-      </details>
+            {sources.length > 0 ? (
+              <section className="space-y-2">
+                <h5 className="text-xs font-bold text-moss-muted">{t('queue.sources')}</h5>
+                <ul className="space-y-2">
+                  {sources.map((item) => (
+                    <li key={item.id + item.url} className="space-y-0.5">
+                      <SafeExternalLink url={item.url} className="max-w-full text-sm font-semibold text-moss">
+                        <span dir="auto" className="break-words">
+                          {item.title || item.url}
+                        </span>
+                      </SafeExternalLink>
+                      {item.snippet ? (
+                        <p dir="auto" className="line-clamp-3 text-xs leading-relaxed text-moss-muted">
+                          {item.snippet}
+                        </p>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
+            {hasSiteSummary ? (
+              <section className="space-y-2">
+                <h5 className="text-xs font-bold text-moss-muted">{t('queue.site')}</h5>
+                {competitor.positioning ? (
+                  <p dir="auto" className="leading-relaxed text-moss">
+                    {competitor.positioning}
+                  </p>
+                ) : null}
+                {competitor.keyFeatures.length > 0 ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-moss-muted">{t('queue.features')}</p>
+                    <ul className="list-disc space-y-0.5 ps-5 text-moss">
+                      {competitor.keyFeatures.map((feature, index) => (
+                        <li key={`${index}-${feature}`} dir="auto">
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+                {sitePages.length > 0 ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-semibold text-moss-muted">{t('queue.sitePages')}</p>
+                    <ul className="space-y-1">
+                      {sitePages.map((page) => (
+                        <li key={page.id + page.url}>
+                          <SafeExternalLink url={page.url} className="max-w-full text-xs text-moss">
+                            <span dir="auto" className="break-all">
+                              {page.title || page.url}
+                            </span>
+                          </SafeExternalLink>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </section>
+            ) : null}
+          </div>
+        </details>
+      )}
     </li>
   );
 }

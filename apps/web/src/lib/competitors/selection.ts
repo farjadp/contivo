@@ -2,6 +2,36 @@ import { confidenceBand } from './scoring';
 
 export type SelectionBasis = 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE';
 
+/** A `competitor_basis` value read back from a stored payload, or undefined when absent or unrecognised. */
+export function parseStoredBasis(value: unknown): SelectionBasis | undefined {
+  return value === 'ACCEPTED' || value === 'UNCONFIRMED_HIGH' || value === 'NONE' ? value : undefined;
+}
+
+/**
+ * Where a competitor row came from, as far as evidence goes:
+ *   - 'manual': the user added it by hand;
+ *   - 'initialGuess': named by a model from a description of the business,
+ *     with no search and no evidence. New rows carry
+ *     `source: 'ONBOARDING_GUESS'` (see ONBOARDING_GUESS_SOURCE). Rows from
+ *     before that marker existed carry `source: 'AI'` with no
+ *     `discoveryRunId`: every row the evidence pipeline writes or updates
+ *     sets `discoveryRunId`, so an AI row without one never went through it;
+ *   - 'evidence': saved (or re-found) by a discovery run, with evidence.
+ * A guess stays a guess (and `ONBOARDING_GUESS_SOURCE` stays on the row)
+ * until a discovery run attaches evidence to it.
+ */
+export const ONBOARDING_GUESS_SOURCE = 'ONBOARDING_GUESS';
+
+export type CompetitorOrigin = 'manual' | 'initialGuess' | 'evidence';
+
+export function competitorOrigin(row: { source: string | null; discoveryRunId: string | null }): CompetitorOrigin {
+  if (row.source === 'MANUAL') return 'manual';
+  // A run that saved or re-found this row attached evidence to it, whatever
+  // its origin was; only then does it stop being a guess.
+  if (row.discoveryRunId) return 'evidence';
+  return 'initialGuess';
+}
+
 export type CorroborationInput = {
   userDecision: string | null;
   confidence: number | null;

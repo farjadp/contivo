@@ -57,6 +57,7 @@ import { enrichCandidates, judgeCandidates } from '@/lib/competitors/judge';
 import { RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { confidenceBand } from '@/lib/competitors/scoring';
+import { competitorOrigin, type CompetitorOrigin } from '@/lib/competitors/selection';
 import { sanitizeUpstreamText } from '@/lib/competitors/redact';
 import { parseStoredEvidence, reapStaleRuns } from '@/lib/competitors/pipeline';
 import type {
@@ -151,6 +152,8 @@ export type CompetitorView = {
   userDecision: Decision;
   rejectionReason: string | null;
   source: string;
+  /** 'initialGuess' rows were named by a model with no search or evidence; the queue shows them as such. */
+  origin: CompetitorOrigin;
   sources: string[];
   labels: CompetitorLabel[];
   confidence: number | null;
@@ -209,6 +212,7 @@ type CompetitorRow = {
   positioning: string | null;
   keyFeatures: string[];
   evidence: unknown;
+  discoveryRunId: string | null;
   createdAt: Date;
 };
 
@@ -234,6 +238,7 @@ function toCompetitorView(row: CompetitorRow): CompetitorView {
     userDecision: normalizeStoredDecision(row.userDecision),
     rejectionReason: row.rejectionReason,
     source: row.source,
+    origin: competitorOrigin(row),
     sources: row.sources,
     labels: normalizeStoredLabels(row.labels),
     confidence: row.confidence,

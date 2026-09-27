@@ -238,8 +238,14 @@
         "features": "Main features",
         "sitePages": "Pages we read",
         "noEvidence": "No evidence was saved for this suggestion.",
+        "initialGuessBadge": "Initial guess, no evidence",
+        "initialGuessNote": "This name was suggested when your workspace was set up, from a description of your business, not from a web search. Nobody has checked that the company exists or that it competes with you. Look at its site yourself before you add it.",
         "decisionFailed": "That was not saved. Please try again.",
         "typeSaveFailed": "The type was not saved. Please try again."
+      },
+      "basis": {
+        "unconfirmed": "Based on unconfirmed competitors. You have not added any competitor to your list yet, so this uses companies that several separate searches found with high confidence. Review them in the competitor section to be sure.",
+        "legacy": "This analysis predates our record of which competitors it was built on. Generate it again if you want to be sure it uses the competitors you have confirmed."
       },
       "confidence": {
         "high": "High confidence",

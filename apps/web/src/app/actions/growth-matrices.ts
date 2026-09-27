@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
-import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { parseStoredBasis, selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
 
 type MatrixAxis = {
   x: string;
@@ -654,6 +654,12 @@ export async function saveWorkspaceCompetitiveMatricesEdits(
     });
     normalized.ai_estimated = true;
     normalized.source = 'MANUAL';
+    // A manual edit moves points; it does not change which competitors the
+    // matrices were built on. Carry the STORED basis through (never one sent
+    // by the client), so the "unconfirmed competitors" label survives an
+    // edit. A legacy payload with no basis stays without one.
+    const storedBasis = parseStoredBasis((workspace.audienceInsights as any)?.competitiveMatrices?.competitor_basis);
+    if (storedBasis) normalized.competitor_basis = storedBasis;
     normalized.token_usage = normalizeTokenUsage(
       payload?.token_usage || (workspace.audienceInsights as any)?.competitiveMatrices?.token_usage,
     );

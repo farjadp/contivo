@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectCompetitors } from './selection';
+import { competitorOrigin, ONBOARDING_GUESS_SOURCE, parseStoredBasis, selectCompetitors } from './selection';
 
 const c = (userDecision: string | null, confidence: number | null, id = '') => ({ userDecision, confidence, id });
 
@@ -35,5 +35,73 @@ describe('selectCompetitors', () => {
 
   it('never returns legacy pending rows with no confidence', () => {
     expect(selectCompetitors([c('PENDING', null, 'a')])).toEqual({ competitors: [], basis: 'NONE' });
+  });
+});
+
+describe('onboarding-seeded competitors (I4): an initial guess can never feed analysis', () => {
+  // Exactly the shape growth.ts's onboarding writes: a model-named row with
+  // no decision, no confidence, no evidence, no sources, no discovery run.
+  const guess = (id: string) => ({
+    id,
+    source: ONBOARDING_GUESS_SOURCE,
+    userDecision: null,
+    confidence: null,
+    sources: [] as string[],
+    evidence: null,
+    discoveryRunId: null,
+  });
+
+  it('is excluded when it is the only kind of competitor: basis NONE, nothing selected', () => {
+    const { competitors, basis } = selectCompetitors([guess('g1'), guess('g2'), guess('g3')]);
+    expect(basis).toBe('NONE');
+    expect(competitors).toEqual([]);
+  });
+
+  it('is excluded alongside high-confidence corroborated candidates, which are selected on their own', () => {
+    const candidate = {
+      id: 'real',
+      source: 'AI',
+      userDecision: 'PENDING',
+      confidence: 0.95,
+      sources: ['WEB_SEARCH'],
+      evidence: [{ query: 'q1' }, { query: 'q2' }],
+      discoveryRunId: 'run-1',
+    };
+    const { competitors, basis } = selectCompetitors([guess('g1'), candidate]);
+    expect(basis).toBe('UNCONFIRMED_HIGH');
+    expect(competitors.map((x) => x.id)).toEqual(['real']);
+  });
+
+  it('feeds analysis only once the user accepts it, like any competitor they confirm', () => {
+    const { competitors, basis } = selectCompetitors([{ ...guess('g1'), userDecision: 'ACCEPTED' }]);
+    expect(basis).toBe('ACCEPTED');
+    expect(competitors.map((x) => x.id)).toEqual(['g1']);
+  });
+});
+
+describe('competitorOrigin', () => {
+  it('marks onboarding-seeded rows as an initial guess', () => {
+    expect(competitorOrigin({ source: ONBOARDING_GUESS_SOURCE, discoveryRunId: null })).toBe('initialGuess');
+  });
+
+  it('marks pre-marker AI rows that never went through a discovery run as an initial guess', () => {
+    expect(competitorOrigin({ source: 'AI', discoveryRunId: null })).toBe('initialGuess');
+  });
+
+  it('marks rows a discovery run saved as evidence-backed, and manual rows as manual', () => {
+    expect(competitorOrigin({ source: 'AI', discoveryRunId: 'run-1' })).toBe('evidence');
+    expect(competitorOrigin({ source: ONBOARDING_GUESS_SOURCE, discoveryRunId: 'run-1' })).toBe('evidence');
+    expect(competitorOrigin({ source: 'MANUAL', discoveryRunId: null })).toBe('manual');
+  });
+});
+
+describe('parseStoredBasis', () => {
+  it('reads the three known values and nothing else', () => {
+    expect(parseStoredBasis('ACCEPTED')).toBe('ACCEPTED');
+    expect(parseStoredBasis('UNCONFIRMED_HIGH')).toBe('UNCONFIRMED_HIGH');
+    expect(parseStoredBasis('NONE')).toBe('NONE');
+    expect(parseStoredBasis(undefined)).toBeUndefined();
+    expect(parseStoredBasis('accepted')).toBeUndefined();
+    expect(parseStoredBasis(1)).toBeUndefined();
   });
 });
