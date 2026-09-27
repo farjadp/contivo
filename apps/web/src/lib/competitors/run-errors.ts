@@ -14,6 +14,8 @@ export const RUN_ERROR = {
   DISPATCH_FAILED: 'DISPATCH_FAILED',
   /** Every judge batch failed, so nothing could be assessed. */
   JUDGE_UNAVAILABLE: 'JUDGE_UNAVAILABLE',
+  /** Every web-search query failed, so no candidate ever reached judging. */
+  SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
 } as const;
 
 export function withRunErrorCode(code: string, detail: string | null | undefined): string {
@@ -21,7 +23,7 @@ export function withRunErrorCode(code: string, detail: string | null | undefined
   return text ? `${code}: ${text}` : code;
 }
 
-export type RunErrorKind = 'timedOut' | 'dispatch' | 'judgeOutage' | 'rateLimited' | 'generic';
+export type RunErrorKind = 'timedOut' | 'dispatch' | 'judgeOutage' | 'searchUnavailable' | 'rateLimited' | 'generic';
 
 /** A 429 anywhere in an upstream message ("... failed: 429 Rate limit ..."). */
 const RATE_LIMITED_RE = /\b429\b|rate limit/i;
@@ -38,5 +40,6 @@ export function classifyRunError(error: string | null | undefined): RunErrorKind
   if (text.startsWith(RUN_ERROR.DISPATCH_FAILED)) return 'dispatch';
   if (RATE_LIMITED_RE.test(text)) return 'rateLimited';
   if (text.startsWith(RUN_ERROR.JUDGE_UNAVAILABLE)) return 'judgeOutage';
+  if (text.startsWith(RUN_ERROR.SEARCH_UNAVAILABLE)) return 'searchUnavailable';
   return 'generic';
 }

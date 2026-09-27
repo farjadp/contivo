@@ -462,7 +462,16 @@ describe('runDiscoveryPipeline', () => {
   });
 
   it('marks tokens incomplete when a harvest promise rejects outright, not just when one resolves with tokens: null', async () => {
+    // The SERP source still contributes a candidate, so mergedCandidates is
+    // non-empty and this does not hit the "every web-search query failed"
+    // case (SEARCH_UNAVAILABLE, tested separately below) — this test is only
+    // about the tokens accounting for an outright reject.
     searchMock.harvestFromWebSearch.mockRejectedValue(new Error('network blew up'));
+    searchMock.harvestFromSerp.mockResolvedValue({
+      candidates: [{ domain: 'serp-found.com', frequency: 1, sources: ['SERP'], evidence: [] }],
+      tokens: 5,
+      errors: [],
+    });
 
     await runDiscoveryPipeline('run1');
 
@@ -696,6 +705,57 @@ describe('runDiscoveryPipeline', () => {
     const stats = failedCall!.data.sourceStats as Record<string, any>;
     expect(stats.judge).toMatchObject({ batches: 1, failedBatches: 1 });
     expect(stats.errors).toEqual(expect.arrayContaining(['Judge batch failed: 429 Rate limit reached']));
+  });
+
+  // -------------------------------------------------------------------------
+  // Search-stage mirror of I5: every web-search query failing must not read
+  // as "no competitors found" (EMPTY), which would send the user off to
+  // change a market that was never the problem.
+  // -------------------------------------------------------------------------
+
+  it('ends FAILED (not EMPTY) with a SEARCH_UNAVAILABLE error when every web-search query failed', async () => {
+    queriesMock.generateQueries.mockResolvedValue({ queries: ['q1', 'q2'], tokens: 10 });
+    searchMock.harvestFromWebSearch.mockResolvedValue({
+      candidates: [],
+      tokens: null,
+      errors: ['Search query failed for "q1": 500 boom', 'Search query failed for "q2": 500 boom'],
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY')).toBeUndefined();
+    expect(judgeMock.enrichCandidates).not.toHaveBeenCalled();
+    expect(judgeMock.judgeCandidates).not.toHaveBeenCalled();
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toMatch(/^SEARCH_UNAVAILABLE: Search query failed for "q1": 500/);
+    const stats = failedCall!.data.sourceStats as Record<string, any>;
+    expect(stats.search).toMatchObject({ webSearch: { harvested: 0, tokens: null, errors: 2 } });
+  });
+
+  it('ends FAILED with SEARCH_UNAVAILABLE when the web-search harvest throws outright (e.g. a missing API key)', async () => {
+    queriesMock.generateQueries.mockResolvedValue({ queries: ['q1'], tokens: 10 });
+    searchMock.harvestFromWebSearch.mockRejectedValue(new Error('OPENAI_API_KEY is not set — cannot harvest from web search'));
+
+    await runDiscoveryPipeline('run1');
+
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY')).toBeUndefined();
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toMatch(/^SEARCH_UNAVAILABLE: OPENAI_API_KEY is not set/);
+  });
+
+  it('does not fail the run when only some web-search queries fail, or when they succeed but simply find nothing', async () => {
+    queriesMock.generateQueries.mockResolvedValue({ queries: ['q1', 'q2'], tokens: 10 });
+    // Partial failure: one query failed, one succeeded with no candidates — a real EMPTY, not an outage.
+    searchMock.harvestFromWebSearch.mockResolvedValue({
+      candidates: [],
+      tokens: 5,
+      errors: ['Search query failed for "q1": 500 boom'],
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED')).toBeUndefined();
+    expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY')).toBeDefined();
   });
 
   it('records a partial judge failure in sourceStats and still finishes with what was judged', async () => {

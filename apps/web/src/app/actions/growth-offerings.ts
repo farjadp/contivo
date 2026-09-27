@@ -226,12 +226,29 @@ function uniqueList(values: unknown, max: number): string[] {
 }
 
 /**
+ * Overall wall-clock budget for reading the workspace's own site plus every
+ * competitor's site in one "generate offerings" call. Each fetch already has
+ * its own timeout inside the hardened client, but each path now tries https
+ * and then http (fix-wave re-review, "Overall time budget for the Keywords
+ * and Offerings site reads"), which roughly doubled the worst case per path.
+ * With 11 paths per site and up to 9 sites (the workspace's own plus up to 8
+ * competitors), an unbounded loop could hold this server action open for
+ * many minutes against sites a manual-add user controls. Once the budget is
+ * spent, no further site is read; the analysis runs on whatever was already
+ * collected.
+ */
+const OFFERINGS_ENRICH_BUDGET_MS = 90_000;
+
+/**
  * Reads a website (the workspace's own, or a competitor's) through the
  * hardened client in `@/lib/competitors/site-signals` (pinned DNS with a
  * private-address blocklist, per-hop redirect checks, capped bodies, bounded
  * parsing).
  */
-async function collectOfferingSignals(website: string): Promise<SiteSignals> {
+async function collectOfferingSignals(
+  website: string,
+  budget: { deadline?: number; now?: () => number } = {},
+): Promise<SiteSignals> {
   return collectSiteSignals(normalizeDomain(website), {
     paths: [
       '/',
@@ -248,6 +265,7 @@ async function collectOfferingSignals(website: string): Promise<SiteSignals> {
     ],
     linesPerPage: 50,
     maxLines: 350,
+    ...budget,
   });
 }
 
@@ -713,14 +731,21 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
       return { error: await actionError('needOneCompetitorOfferings') };
     }
 
-    const clientSignals = await collectOfferingSignals(workspace.websiteUrl || '');
+    const now = Date.now;
+    const deadline = now() + OFFERINGS_ENRICH_BUDGET_MS;
+
+    const clientSignals = await collectOfferingSignals(workspace.websiteUrl || '', { deadline, now });
     if (!clientSignals.evidence) {
       return { error: await actionError('notEnoughClientSignals') };
     }
 
     const competitorSignals = [];
     for (const competitor of competitors) {
-      const signal = await collectOfferingSignals(competitor.domain);
+      // Checked before starting each competitor's site, not just inside
+      // collectSiteSignals's own path loop: once the shared budget is
+      // spent, no further competitor is read at all.
+      if (now() >= deadline) break;
+      const signal = await collectOfferingSignals(competitor.domain, { deadline, now });
       if (!signal.evidence) continue;
       competitorSignals.push({
         competitor_name: competitor.name,

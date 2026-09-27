@@ -315,7 +315,11 @@ model Competitor {
 /// 20260927000000_competitor_discovery. `prisma migrate dev` / `migrate diff`
 /// will therefore propose `DROP INDEX "discovery_runs_one_active_per_workspace"`
 /// in any newly generated migration: delete that line before applying it, or
-/// two discovery runs can start at once for the same workspace.
+/// two discovery runs can start at once for the same workspace. `prisma db
+/// push` (this repo's local-dev command — see the local-dev memory) drops the
+/// same index silently, with no proposal to review: it just diffs the schema
+/// file, which has no record of this index, and removes it. Never `db push`
+/// this table without re-adding the index by hand afterwards.
 model DiscoveryRun {
   id          String    @id @default(cuid())
   workspaceId String

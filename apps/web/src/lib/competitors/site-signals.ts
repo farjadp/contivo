@@ -31,6 +31,19 @@ export type SiteSignalOptions = {
   linesPerPage: number;
   /** Stop scanning further paths once this many lines are collected. */
   maxLines: number;
+  /**
+   * Wall-clock deadline (in `now()` units), shared by a caller across one
+   * whole loop of `collectSiteSignals` calls (e.g. one call per competitor).
+   * Checked before every path, mirroring `collectWebsiteEvidence` in
+   * `./judge`: a call that starts just before the loop's overall budget runs
+   * out reads the page it is on and then stops, instead of still trying
+   * every remaining path — each of which retries https then http, so the
+   * unbounded worst case is large. Callers own the deadline (compute it once
+   * per loop, pass the same value into every call); this function never
+   * computes one on its own.
+   */
+  deadline?: number;
+  now?: () => number;
 };
 
 export type SiteSignals = {
@@ -44,10 +57,12 @@ export type SiteSignals = {
 export async function collectSiteSignals(domain: string, options: SiteSignalOptions): Promise<SiteSignals> {
   const pagesScanned: string[] = [];
   const lines: string[] = [];
+  const now = options.now ?? Date.now;
 
   if (!domain) return { domain, pages_scanned: pagesScanned, evidence: '' };
 
   for (const path of options.paths) {
+    if (options.deadline !== undefined && now() >= options.deadline) break;
     const response = await fetchHtmlForDomain(domain, path);
     if (!response) continue;
 

@@ -20,7 +20,7 @@
     "discoveryAlreadyRunning": "A discovery run is already in progress for this workspace.",
     "discoveryDispatchFailed": "Could not start the discovery run. Please try again.",
     "discoveryLimitReached": "You have used all of your discovery runs.",
-    "discoveryRetryLimitHours": "You have started {limit, number} searches in the last 24 hours that found nothing or did not finish. You can start the next one in {hours, plural, one {# hour} other {# hours}}.",
+    "discoveryRetryLimitHours": "You have started {limit, number} searches in the last 24 hours that found nothing or did not finish. You can start the next one in {hours, plural, one {# hour} other {# hours}}{minutes, plural, =0 {} other {, {minutes, plural, one {# minute} other {# minutes}}}}.",
     "discoveryRetryLimitMinutes": "You have started {limit, number} searches in the last 24 hours that found nothing or did not finish. You can start the next one in {minutes, plural, one {# minute} other {# minutes}}.",
     "keywordsFailed": "Could not analyze competitor keywords right now.",
     "manualCompetitorNotAMatch": "Our AI does not think this is a close competitor, but we saved it anyway.",

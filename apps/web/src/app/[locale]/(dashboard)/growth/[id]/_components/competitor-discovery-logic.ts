@@ -5,7 +5,7 @@
  * `@/app/actions/growth-competitors` and hand the results to these helpers.
  */
 
-import { classifyRunError, type RunErrorKind } from '@/lib/competitors/run-errors';
+import type { RunErrorKind } from '@/lib/competitors/run-errors';
 import { parseStoredBasis } from '@/lib/competitors/selection';
 import type { EvidenceItem, SourceStats, TargetMarket } from '@/lib/competitors/types';
 
@@ -88,7 +88,13 @@ export function runOutcome(
     status: string;
     stage: string | null;
     savedCount: number;
-    error: string | null;
+    /**
+     * Only the classification reaches this module, never the stored text
+     * (that can carry configuration detail such as "OPENAI_API_KEY is not
+     * set"). `errorKind` is computed server-side, in the action that builds
+     * `RunView`, via `classifyRunError`.
+     */
+    errorKind: RunErrorKind | null;
     sourceStats: SourceStats | null;
     queries?: string[];
     market?: TargetMarket | null;
@@ -113,7 +119,7 @@ export function runOutcome(
         market: run.market ?? null,
       };
     case 'FAILED':
-      return { kind: 'failed', errorKind: classifyRunError(run.error) };
+      return { kind: 'failed', errorKind: run.errorKind ?? 'generic' };
     default:
       return { kind: 'none' };
   }

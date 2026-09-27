@@ -138,6 +138,77 @@ describe('collectSiteSignals (Keywords / Offerings site reader)', () => {
 
     expect(result.evidence.length).toBe(MAX_SITE_SIGNAL_CHARS);
   });
+
+  describe('overall time budget (deadline / now)', () => {
+    it('stops reading further paths once the deadline has passed, without waiting for it in real time', async () => {
+      const started = await startServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(PAGE('Slow'));
+      });
+      servers.push(started.server);
+
+      // An injected clock that is already past the deadline on its very
+      // first read: proves the budget is enforced without any real wait.
+      const now = () => 1_000;
+      const result = await collectSiteSignals(`127.0.0.1:${started.port}`, {
+        paths: ['/', '/pricing', '/about'],
+        linesPerPage: 10,
+        maxLines: 100,
+        deadline: 500,
+        now,
+      });
+
+      expect(started.hits).toEqual([]);
+      expect(result.pages_scanned).toEqual([]);
+      expect(result.evidence).toBe('');
+    });
+
+    it('reads pages normally while the injected clock is still under the deadline', async () => {
+      const started = await startServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(PAGE('Fast'));
+      });
+      servers.push(started.server);
+
+      const now = () => 0; // always well under the deadline
+      const result = await collectSiteSignals(`127.0.0.1:${started.port}`, {
+        paths: ['/'],
+        linesPerPage: 10,
+        maxLines: 10,
+        deadline: 60_000,
+        now,
+      });
+
+      expect(started.hits).toEqual(['/']);
+      expect(result.pages_scanned).toEqual(['/']);
+      expect(result.evidence).toContain('Fast heading line');
+    });
+
+    it('stops mid-loop once a fake clock crosses the deadline between paths', async () => {
+      const started = await startServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end(PAGE('Mid'));
+      });
+      servers.push(started.server);
+
+      // Advances past the deadline after the first path is checked, so the
+      // second and third paths are never fetched — proving the deadline is
+      // re-checked before every path, not just once up front.
+      let calls = 0;
+      const now = () => (calls++ === 0 ? 0 : 10_000);
+
+      const result = await collectSiteSignals(`127.0.0.1:${started.port}`, {
+        paths: ['/', '/pricing', '/about'],
+        linesPerPage: 10,
+        maxLines: 100,
+        deadline: 5_000,
+        now,
+      });
+
+      expect(started.hits).toEqual(['/']);
+      expect(result.pages_scanned).toEqual(['/']);
+    });
+  });
 });
 
 describe('Keywords and Offerings read competitor sites only through collectSiteSignals', () => {
@@ -154,6 +225,23 @@ describe('Keywords and Offerings read competitor sites only through collectSiteS
       // The only fetch left in each file is the OpenAI call.
       const fetchTargets = [...source.matchAll(/fetch\(\s*([^,)]+)/g)].map((m) => m[1].trim());
       expect(fetchTargets.every((target) => target.startsWith("'https://api.openai.com/"))).toBe(true);
+    });
+  }
+
+  // Fix-wave re-review: "Overall time budget for the Keywords and Offerings
+  // site reads" — each collection loop must own a wall-clock budget and
+  // stop starting new fetches once it is spent, not just cap one fetch.
+  for (const file of ['growth-keywords.ts', 'growth-offerings.ts']) {
+    it(`${file} gives its site-read loop a named overall budget and honors it in the loop`, () => {
+      const source = readFileSync(path.join(__dirname, '../../app/actions', file), 'utf8');
+      // A named, module-scoped budget constant in milliseconds.
+      expect(source).toMatch(/const \w*ENRICH_BUDGET_MS\w* = \d[\d_]*;/);
+      // The loop checks the deadline before starting each site, not only
+      // inside collectSiteSignals's own per-path loop.
+      expect(source).toMatch(/if \(now\(\) >= deadline\) break;/);
+      // The deadline (and the same injectable `now`) is threaded into every
+      // collectSiteSignals call, not computed fresh per call.
+      expect(source).toMatch(/\{\s*deadline,\s*now\s*\}/);
     });
   }
 });

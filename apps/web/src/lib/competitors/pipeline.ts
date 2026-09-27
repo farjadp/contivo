@@ -285,6 +285,28 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
     const mergedCandidates = mergeCandidateLists(searchLists);
     sourceStats.search = { ...searchCounts, merged: mergedCandidates.length };
 
+    // I5's mirror: if every web-search query failed (401, 429, a timeout, or
+    // the harvest throwing outright — e.g. a missing OPENAI_API_KEY), no
+    // candidate ever reaches JUDGE, which then reports 0 batches. Without
+    // this check that looks identical to "the market has no competitors"
+    // and the run would end EMPTY, sending the user off to change a market
+    // that was never the problem. End FAILED (uncharged) instead, with the
+    // cause stored, exactly like a judge outage. SERP is not built yet (see
+    // `harvestFromSerp`'s doc comment) and never reports an error, so it
+    // cannot mask this: only the web-search outcome decides it. A partial
+    // failure (some queries failed, others returned results or simply found
+    // nothing) is not this case and falls through to EMPTY/DONE as before.
+    const webSearchErrorCount = webOutcome.status === 'rejected' ? queries.length : webOutcome.value.errors.length;
+    if (queries.length > 0 && mergedCandidates.length === 0 && webSearchErrorCount >= queries.length) {
+      const detail =
+        webOutcome.status === 'rejected'
+          ? webOutcome.reason instanceof Error
+            ? webOutcome.reason.message
+            : String(webOutcome.reason)
+          : webOutcome.value.errors[0];
+      throw new Error(withRunErrorCode(RUN_ERROR.SEARCH_UNAVAILABLE, detail));
+    }
+
     // --- ENRICH ---------------------------------------------------------
     await setStage(runId, 'ENRICH');
     const { enriched, skipped: enrichSkipped, budgetExceeded: enrichBudgetExceeded } =

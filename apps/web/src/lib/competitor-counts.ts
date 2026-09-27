@@ -24,3 +24,19 @@ export function countCompetitors(competitors: Array<{ userDecision?: string | nu
 export const COUNTED_COMPETITOR_WHERE = {
   OR: [{ userDecision: null }, { userDecision: { not: 'REJECTED' } }],
 } satisfies Prisma.CompetitorWhereInput;
+
+/**
+ * Which competitor rows still need a user decision. Same rule as the review
+ * queue's `normalizeStoredDecision` (growth-competitors.ts): anything that
+ * isn't ACCEPTED or REJECTED is PENDING, regardless of where the row came
+ * from (AI, ONBOARDING_GUESS, MANUAL, ...). Filtering by `source === 'AI'`
+ * used to hide onboarding-seeded guesses once they were marked
+ * ONBOARDING_GUESS instead of AI — this counts every origin.
+ */
+export function countsAsPendingCompetitor(competitor: { userDecision?: string | null }): boolean {
+  return competitor.userDecision !== 'ACCEPTED' && competitor.userDecision !== 'REJECTED';
+}
+
+export function countPendingCompetitors(competitors: Array<{ userDecision?: string | null }>): number {
+  return competitors.filter(countsAsPendingCompetitor).length;
+}

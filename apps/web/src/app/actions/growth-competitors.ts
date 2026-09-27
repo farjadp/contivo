@@ -54,7 +54,7 @@ import {
 import { normalizeCandidateDomain } from '@/lib/competitors/domains';
 import { buildBrandBrief } from '@/lib/competitors/queries';
 import { enrichCandidates, judgeCandidates } from '@/lib/competitors/judge';
-import { RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
+import { RUN_ERROR, classifyRunError, withRunErrorCode, type RunErrorKind } from '@/lib/competitors/run-errors';
 import { consumeRateLimit } from '@/lib/rate-limit';
 import { confidenceBand } from '@/lib/competitors/scoring';
 import { competitorOrigin, type CompetitorOrigin } from '@/lib/competitors/selection';
@@ -122,19 +122,25 @@ function isValidCountry(value: string | null): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Error-text hygiene — DiscoveryRun.error and .sourceStats are shown in the
-// UI through this module's serializers. `sanitizeUpstreamText` (shared with
-// the write sites in judge.ts, search.ts and queries.ts — see that module's
-// doc comment) is applied again here as defence in depth: a write site
-// added later that forgets to redact should not be the only thing standing
-// between a leaked value and the browser.
+// Error-text hygiene — DiscoveryRun.error and .sourceStats.errors can hold
+// configuration detail ("OPENAI_API_KEY is not set", raw upstream status
+// text). `sanitizeUpstreamText` (shared with the write sites in judge.ts,
+// search.ts and queries.ts) redacts hosts, but a non-admin client should
+// never see *any* of this raw text, redacted or not — the UI already maps
+// runs to translated copy through `errorKind`/`classifyRunError` alone. So
+// the views below drop `error` and `sourceStats.errors` entirely and expose
+// only the stable classification. Admin surfaces (the activity log) read
+// `DiscoveryRun` directly, not through this module, and keep the raw text.
 // ---------------------------------------------------------------------------
 
 function sanitizeSourceStats(value: unknown): SourceStats | null {
   if (!value || typeof value !== 'object') return null;
   const stats = value as SourceStats;
-  if (!Array.isArray(stats.errors)) return stats;
-  return { ...stats, errors: stats.errors.map((e) => sanitizeUpstreamText(e) ?? '') };
+  if (!('errors' in stats)) return stats;
+  // Never send raw upstream/config error text to a non-admin client.
+  const rest: SourceStats = { ...stats };
+  delete rest.errors;
+  return rest;
 }
 
 // ---------------------------------------------------------------------------
@@ -170,7 +176,12 @@ export type RunView = {
   stage: string | null;
   savedCount: number;
   tokensUsed: number;
-  error: string | null;
+  /**
+   * Never the raw stored text — that can carry configuration detail
+   * ("OPENAI_API_KEY is not set") or upstream status text. Only the stable
+   * classification `classifyRunError` maps to translated copy.
+   */
+  errorKind: RunErrorKind | null;
   sourceStats: SourceStats | null;
   /** The market this run searched — the snapshot taken when it started, not the workspace's current one. */
   market: TargetMarket | null;
@@ -186,7 +197,8 @@ export type RunHistoryItem = {
   stage: string | null;
   savedCount: number;
   tokensUsed: number;
-  error: string | null;
+  /** Same rule as `RunView.errorKind`: never the raw stored text. */
+  errorKind: RunErrorKind | null;
   market: TargetMarket | null;
   /** How many queries the run generated, or null when it never got that far. */
   queryCount: number | null;
@@ -305,7 +317,7 @@ function toRunView(run: {
     stage: run.stage,
     savedCount: run.savedCount,
     tokensUsed: run.tokensUsed,
-    error: sanitizeUpstreamText(run.error),
+    errorKind: run.status === 'FAILED' ? classifyRunError(run.error) : null,
     sourceStats: sanitizeSourceStats(run.sourceStats),
     market: parseStoredMarket(run.market),
     queries: parseStoredQueries(run.queries),
@@ -370,11 +382,21 @@ async function nonDoneRetryAt(workspaceId: string, now: Date = new Date()): Prom
   return new Date(oldest.getTime() + NON_DONE_WINDOW_MS);
 }
 
-/** The translated "try again in …" error for a wait of `ms`, in whole hours (or minutes under an hour). */
+/**
+ * The translated "try again in …" error for a wait of `ms`: minutes under
+ * an hour, or exact hours-and-minutes above it. Rounding up to whole hours
+ * used to overstate the wait by up to 59 minutes (a 1h01m wait read
+ * "2 hours"); this rounds the total up to the minute once, then splits it,
+ * so the number shown is never later than the real retry time.
+ */
 async function retryLimitError(ms: number): Promise<string> {
-  const minutes = Math.max(1, Math.ceil(ms / 60_000));
-  if (minutes < 60) return actionError('discoveryRetryLimitMinutes', { minutes, limit: MAX_NON_DONE_RUNS_PER_DAY });
-  return actionError('discoveryRetryLimitHours', { hours: Math.ceil(minutes / 60), limit: MAX_NON_DONE_RUNS_PER_DAY });
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60_000));
+  if (totalMinutes < 60) {
+    return actionError('discoveryRetryLimitMinutes', { minutes: totalMinutes, limit: MAX_NON_DONE_RUNS_PER_DAY });
+  }
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return actionError('discoveryRetryLimitHours', { hours, minutes, limit: MAX_NON_DONE_RUNS_PER_DAY });
 }
 
 // ---------------------------------------------------------------------------
@@ -753,7 +775,7 @@ export async function listDiscoveryRuns(workspaceId: string): Promise<RunHistory
     stage: run.stage,
     savedCount: run.savedCount,
     tokensUsed: run.tokensUsed,
-    error: sanitizeUpstreamText(run.error),
+    errorKind: run.status === 'FAILED' ? classifyRunError(run.error) : null,
     market: parseStoredMarket(run.market),
     queryCount: storedQueryCount(run.queries, run.sourceStats),
     foundCount: counts.get(run.id)?.found ?? 0,

@@ -177,15 +177,32 @@ function appendTokenUsage(
 }
 
 /**
+ * Overall wall-clock budget for reading every reviewed competitor's site in
+ * one "generate keywords" call. Each fetch already has its own timeout
+ * inside the hardened client, but each path now tries https and then http
+ * (fix-wave re-review, "Overall time budget for the Keywords and Offerings
+ * site reads"), which roughly doubled the worst case per path. With up to 8
+ * competitors and 6 paths each, an unbounded loop could hold this server
+ * action open for many minutes against sites a manual-add user controls.
+ * Once the budget is spent, no further competitor's site is read; the
+ * analysis runs on whatever was already collected.
+ */
+const KEYWORDS_ENRICH_BUDGET_MS = 90_000;
+
+/**
  * Reads a competitor's site through the hardened client in
  * `@/lib/competitors/site-signals` (pinned DNS with a private-address
  * blocklist, per-hop redirect checks, capped bodies, bounded parsing).
  */
-async function collectCompetitorSignals(domain: string): Promise<SiteSignals> {
+async function collectCompetitorSignals(
+  domain: string,
+  budget: { deadline?: number; now?: () => number } = {},
+): Promise<SiteSignals> {
   return collectSiteSignals(normalizeDomain(domain), {
     paths: ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'],
     linesPerPage: 55,
     maxLines: 320,
+    ...budget,
   });
 }
 
@@ -676,9 +693,15 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
       return { error: await actionError('needTwoReviewed') };
     }
 
+    const now = Date.now;
+    const deadline = now() + KEYWORDS_ENRICH_BUDGET_MS;
     const competitorSignals = [];
     for (const competitor of competitors) {
-      const signals = await collectCompetitorSignals(competitor.domain);
+      // Checked before starting each competitor's site, not just inside
+      // collectSiteSignals's own path loop: once the shared budget is
+      // spent, no further competitor is read at all.
+      if (now() >= deadline) break;
+      const signals = await collectCompetitorSignals(competitor.domain, { deadline, now });
       if (!signals.evidence) continue;
       competitorSignals.push({
         ...competitor,

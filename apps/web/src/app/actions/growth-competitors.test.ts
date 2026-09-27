@@ -463,7 +463,7 @@ describe('startCompetitorDiscovery', () => {
       const result = await startCompetitorDiscovery('ws-1');
 
       expect('error' in result && result.error).toMatch(/^discoveryRetryLimitHours /);
-      expect('error' in result && JSON.parse(result.error.replace(/^\S+ /, ''))).toEqual({ hours: 4, limit: 3 });
+      expect('error' in result && JSON.parse(result.error.replace(/^\S+ /, ''))).toEqual({ hours: 4, minutes: 0, limit: 3 });
       expect(prismaMock.discoveryRun.create).not.toHaveBeenCalled();
       expect(backgroundRunMock.triggerBackgroundRun).not.toHaveBeenCalled();
     });
@@ -474,6 +474,20 @@ describe('startCompetitorDiscovery', () => {
       const result = await startCompetitorDiscovery('ws-1');
 
       expect('error' in result && result.error).toMatch(/^discoveryRetryLimitMinutes /);
+    });
+
+    it('shows hours AND minutes for a wait over an hour, instead of rounding up to the whole hour', async () => {
+      // Oldest is 22h55m old, so the 24h window frees up in ~1h05m. Rounding
+      // up to whole hours would have overstated this as "2 hours" (up to 59
+      // minutes too long); it must read 1h05m instead.
+      prismaMock.discoveryRun.findMany.mockResolvedValue([hoursAgo(1), hoursAgo(2), hoursAgo(22 + 55 / 60)]);
+
+      const result = await startCompetitorDiscovery('ws-1');
+
+      expect('error' in result && result.error).toMatch(/^discoveryRetryLimitHours /);
+      const values = 'error' in result && JSON.parse(result.error.replace(/^\S+ /, ''));
+      expect(values.hours).toBe(1);
+      expect(values.minutes).toBe(5);
     });
 
     it('counts only non-DONE runs inside the last 24 hours, for this workspace', async () => {
