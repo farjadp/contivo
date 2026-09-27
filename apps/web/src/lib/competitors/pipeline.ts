@@ -257,8 +257,13 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
 
     // --- ENRICH ---------------------------------------------------------
     await setStage(runId, 'ENRICH');
-    const enriched = await enrichCandidates(mergedCandidates);
-    sourceStats.enrich = { input: mergedCandidates.length, enriched: enriched.length };
+    const { enriched, skipped: enrichSkipped, budgetExceeded: enrichBudgetExceeded } =
+      await enrichCandidates(mergedCandidates);
+    sourceStats.enrich = {
+      input: mergedCandidates.length,
+      enriched: enriched.length,
+      ...(enrichBudgetExceeded ? { budgetExceeded: true, skipped: enrichSkipped } : {}),
+    };
 
     // --- JUDGE ------------------------------------------------------------
     await setStage(runId, 'JUDGE');

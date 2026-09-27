@@ -544,15 +544,54 @@ function chunk<T>(items: T[], size: number): T[][] {
 // enrichCandidates
 // ---------------------------------------------------------------------------
 
-export async function enrichCandidates(candidates: Candidate[]): Promise<EnrichedCandidate[]> {
+/**
+ * Overall wall-clock budget for the enrich stage, in milliseconds. Each
+ * fetch already has its own `FETCH_TIMEOUT_MS` deadline, but with up to
+ * `MAX_ENRICHED` candidates, several paths scanned per candidate, and
+ * redirect hops on each, the worst case comfortably exceeds the background
+ * route's `maxDuration`. Vercel kills the function at that point and the
+ * run sits RUNNING until a reaper marks it FAILED — honest, but a long
+ * silent wait for the user. This budget stops the stage from ever getting
+ * that far: once it is spent, no new fetch is started, in-flight ones are
+ * left to hit their own per-fetch deadline, and the run proceeds with
+ * whatever was already enriched.
+ */
+export const ENRICH_BUDGET_MS = 90_000;
+
+export type EnrichResult = {
+  enriched: EnrichedCandidate[];
+  /** How many candidates were never started because the budget was already spent. */
+  skipped: number;
+  /** True when the budget ran out before every candidate was attempted. */
+  budgetExceeded: boolean;
+};
+
+export async function enrichCandidates(
+  candidates: Candidate[],
+  options: { budgetMs?: number; now?: () => number } = {},
+): Promise<EnrichResult> {
   const top = pickTopCandidates(candidates, MAX_ENRICHED);
+  const now = options.now ?? Date.now;
+  const budgetMs = options.budgetMs ?? ENRICH_BUDGET_MS;
+  const deadline = now() + budgetMs;
+
+  let skipped = 0;
 
   const results = await runWithConcurrency(top, ENRICH_CONCURRENCY, async (candidate) => {
+    // Checked per-item, right before starting its fetch: a fetch already
+    // in flight when the deadline passes is never cancelled here — it runs
+    // out its own `FETCH_TIMEOUT_MS` deadline instead, per the brief ("let
+    // in-flight ones hit their own deadlines").
+    if (now() >= deadline) {
+      skipped += 1;
+      return null;
+    }
     const site = await collectWebsiteEvidence(candidate.domain);
     return buildEnrichedCandidate(candidate, site);
   });
 
-  return results.filter((result): result is EnrichedCandidate => result !== null);
+  const enriched = results.filter((result): result is EnrichedCandidate => result !== null);
+  return { enriched, skipped, budgetExceeded: skipped > 0 };
 }
 
 // ---------------------------------------------------------------------------

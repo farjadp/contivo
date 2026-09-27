@@ -500,9 +500,13 @@ describe('addManualCompetitor', () => {
 
   it('saves the competitor as ACCEPTED even when the judge says it is not a match, and surfaces the reason as a warning', async () => {
     prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
-    judgeMock.enrichCandidates.mockResolvedValue([
-      { domain: 'notacompetitor.com', frequency: 1, sources: ['MANUAL'], evidence: [], siteTitle: null, siteEvidence: '', pageLanguage: 'en' },
-    ]);
+    judgeMock.enrichCandidates.mockResolvedValue({
+      enriched: [
+        { domain: 'notacompetitor.com', frequency: 1, sources: ['MANUAL'], evidence: [], siteTitle: null, siteEvidence: '', pageLanguage: 'en' },
+      ],
+      skipped: 0,
+      budgetExceeded: false,
+    });
     judgeMock.judgeCandidates.mockResolvedValue({
       judged: [
         {
@@ -559,7 +563,7 @@ describe('addManualCompetitor', () => {
 
   it('does not consume a discovery run', async () => {
     prismaMock.workspace.findFirst.mockResolvedValue(workspaceRow());
-    judgeMock.enrichCandidates.mockResolvedValue([]);
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [], skipped: 0, budgetExceeded: false });
     prismaMock.competitor.create.mockResolvedValue({
       id: 'new-comp',
       name: 'somesite.com',

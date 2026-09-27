@@ -301,7 +301,7 @@ describe('runDiscoveryPipeline', () => {
     queriesMock.generateQueries.mockResolvedValue({ queries: ['q1'], tokens: 10 });
     searchMock.harvestFromWebSearch.mockResolvedValue({ candidates: [], tokens: 5, errors: [] });
     searchMock.harvestFromSerp.mockResolvedValue({ candidates: [], tokens: 0, errors: [] });
-    judgeMock.enrichCandidates.mockResolvedValue([]);
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [], skipped: 0, budgetExceeded: false });
     judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 20 });
     scoringMock.rankAndKeep.mockReturnValue([]);
 

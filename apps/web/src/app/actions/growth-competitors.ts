@@ -664,7 +664,7 @@ export async function addManualCompetitor(
   });
 
   const candidate: Candidate = { domain, frequency: 1, sources: ['MANUAL'], evidence: [] };
-  const enriched = await enrichCandidates([candidate]);
+  const { enriched } = await enrichCandidates([candidate]);
 
   // No site could be scanned at all — there is nothing for the judge to
   // read, so it never runs. The competitor is still saved (the brief is

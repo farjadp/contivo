@@ -60,7 +60,14 @@ export type SourceStats = {
     serp?: SourceHarvestStats;
     merged?: number;
   };
-  enrich?: { input: number; enriched: number };
+  enrich?: {
+    input: number;
+    enriched: number;
+    /** True when the enrich stage's overall wall-clock budget ran out before every candidate was attempted. */
+    budgetExceeded?: boolean;
+    /** How many candidates were never started because the budget was already spent. */
+    skipped?: number;
+  };
   judge?: { input: number; judged: number; kept: number; tokens: number | null };
   save?: { saved: number };
   /**
