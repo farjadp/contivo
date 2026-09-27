@@ -344,7 +344,7 @@
       "readyToRefresh": "آمادهٔ به‌روزرسانی",
       "empty": "—",
       "sampleDataTitle": "دادهٔ نمونه، ذخیره نشد",
-      "sampleDataBody": "حالت DATAFORSEO_MOCK روشن است؛ این {count} ردیف را خود برنامه ساخته و واقعی نیست. چیزی ذخیره نشد و ماتریس‌ها و ایده‌پردازی آن را نمی‌بینند.",
+      "sampleDataBody": "حالت DATAFORSEO_ALLOW_MOCKS روشن است؛ این {count} ردیف را خود برنامه ساخته و واقعی نیست. چیزی ذخیره نشد و ماتریس‌ها و ایده‌پردازی آن را نمی‌بینند.",
       "notConfiguredTitle": "DataForSEO وصل نیست",
       "notConfiguredBody": "برای گرفتن دادهٔ زندهٔ کلیدواژه و نتایج گوگل، مقادیر DATAFORSEO_LOGIN و DATAFORSEO_PASSWORD را در محیط اجرا تنظیم کنید."
     },

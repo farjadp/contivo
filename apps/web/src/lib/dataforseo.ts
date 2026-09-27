@@ -16,7 +16,7 @@
  * flowed into stored keyword intelligence, matrices and eventually published
  * content. Now:
  *   - a failed or unauthenticated request throws DataForSEOError;
- *   - sample data is produced only when DATAFORSEO_MOCK=1 is set deliberately;
+ *   - sample data is produced only when DATAFORSEO_ALLOW_MOCKS=true is set deliberately, and never in production;
  *   - sample data is always labelled 'MOCK' and must never be persisted.
  */
 
@@ -59,10 +59,13 @@ export type DataForSEOResult<T> = {
 
 /**
  * Sample data is an explicit opt-in, never a silent consequence of a failure or
- * of running locally. Set DATAFORSEO_MOCK=1 to work on the UI without a key.
+ * of running locally, and never available in production whatever the env says.
+ * Set DATAFORSEO_ALLOW_MOCKS=true locally, and only locally, to work on the SEO
+ * UI without a key.
  */
 export function isMockModeEnabled(): boolean {
-  return process.env.DATAFORSEO_MOCK === '1';
+  if (process.env.NODE_ENV === 'production') return false;
+  return process.env.DATAFORSEO_ALLOW_MOCKS === 'true';
 }
 
 export function hasDataForSeoCredentials(): boolean {
@@ -146,7 +149,7 @@ export async function fetchDomainKeywords(
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
 
   if (isMockModeEnabled()) {
-    console.warn('[DataForSEO] DATAFORSEO_MOCK=1 — returning generated sample keywords for', cleanDomain);
+    console.warn('[DataForSEO] DATAFORSEO_ALLOW_MOCKS — returning generated sample keywords for', cleanDomain);
     return { items: generateMockKeywords(cleanDomain, limit), dataSource: 'MOCK' };
   }
 
@@ -198,7 +201,7 @@ export async function fetchSerpResults(
   keyword: string,
 ): Promise<DataForSEOResult<DataForSEOSerpItem>> {
   if (isMockModeEnabled()) {
-    console.warn('[DataForSEO] DATAFORSEO_MOCK=1 — returning generated sample SERP for', keyword);
+    console.warn('[DataForSEO] DATAFORSEO_ALLOW_MOCKS — returning generated sample SERP for', keyword);
     return { items: generateMockSerp(keyword), dataSource: 'MOCK' };
   }
 
@@ -237,7 +240,7 @@ export async function fetchSerpResults(
 
 // ----- Sample data generators ----------------------------------------------
 //
-// Reachable only through DATAFORSEO_MOCK=1. Everything below is invented: the
+// Reachable only through DATAFORSEO_ALLOW_MOCKS=true, never in production. Everything below is invented: the
 // volumes come from Math.sin and the SERP is a fixed list of US marketing
 // sites. Callers label it 'MOCK' and must never write it to the database.
 

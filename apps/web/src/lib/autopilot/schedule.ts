@@ -71,6 +71,42 @@ export function zonedTimeToUtc(
   return new Date(guess - offset2);
 }
 
+/**
+ * A `YYYY-MM-DD` date and an `HH:MM` time, both as the customer typed them in
+ * `timeZone`, as the UTC instant they mean. Null when either is unparseable.
+ *
+ * Exists because the two hand-scheduling paths each did this instead:
+ *
+ *   new Date(new Date(`${date}T${time}:00`).toLocaleString('en-US', { timeZone }))
+ *
+ * which parses the string in the *server's* zone, renders that instant in the
+ * target zone, then parses the rendering in the server's zone again. The
+ * offset lands twice, so a post asked for at 09:00 Toronto goes out hours off.
+ * It looked correct only when the server happened to run in the customer's
+ * own zone, which is why it survived.
+ */
+export function parseLocalDateTimeToUtc(
+  date: string,
+  time: string,
+  timeZone: string,
+): Date | null {
+  const d = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(date).trim());
+  const t = /^(\d{1,2}):(\d{2})$/.exec(String(time).trim());
+  if (!d || !t) return null;
+
+  const [year, month, day] = [Number(d[1]), Number(d[2]), Number(d[3])];
+  const [hour, minute] = [Number(t[1]), Number(t[2])];
+  if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || minute > 59) return null;
+
+  try {
+    const utc = zonedTimeToUtc({ year, month, day, hour, minute }, timeZone);
+    return Number.isNaN(utc.getTime()) ? null : utc;
+  } catch {
+    // An unknown IANA zone throws inside Intl rather than returning anything.
+    return null;
+  }
+}
+
 /** Local calendar date `dayOffset` days after `now` in `timeZone`. */
 function localDateAfter(now: Date, dayOffset: number, timeZone: string) {
   const p = partsInZone(now, timeZone);

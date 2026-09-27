@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * NOTE: migration `20260926000000_competitor_discovery` now carries a copy
+ * NOTE: migration `20260927000000_competitor_discovery` now carries a copy
  * of this same backfill (translated line for line into a raw `UPDATE`) so
  * that a fresh database which runs that migration for real — rather than
  * being baselined onto it, the way this repo's `db push`-built databases

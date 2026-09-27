@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * NOTE: migration `20260926000000_competitor_discovery` is now the source
+ * NOTE: migration `20260927000000_competitor_discovery` is now the source
  * of truth for this index — a fresh database (or `prisma migrate deploy`
  * in production) gets it from that migration file, not from running this
  * script. This script still exists for a database that already has the
@@ -12,7 +12,7 @@ const prisma = new PrismaClient();
  * added) but was never baselined onto it — running this script there is
  * equivalent to what the migration's own `CREATE UNIQUE INDEX IF NOT
  * EXISTS` statement would do, so it does not conflict with later running
- * `prisma migrate resolve --applied 20260926000000_competitor_discovery`
+ * `prisma migrate resolve --applied 20260927000000_competitor_discovery`
  * (or, on a database that runs the migration for real, `migrate deploy`)
  * on the same database.
  *

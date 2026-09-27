@@ -84,7 +84,7 @@
       "cadence": "Cadence",
       "cadenceValue": "1–14 posts a week, kept full 7 days ahead",
       "channels": "Channels",
-      "channelsValue": "LinkedIn · X · Instagram · your own site",
+      "channelsValue": "LinkedIn · X · your own site",
       "window": "Window",
       "windowValue": "The days and local hours you choose",
       "steering": "Steering",
@@ -94,7 +94,7 @@
     },
     "channels": {
       "headline": "Social through OAuth. Your own site through one key.",
-      "body": "Connect LinkedIn, X, Instagram, Facebook or TikTok once and Contivo posts to them on your behalf. For your own website — any stack, any host — you get an API key and your site reads its posts. Nothing is ever pushed into your codebase, and no plugin is installed.",
+      "body": "Connect LinkedIn or X once and Contivo posts to them on your behalf. For your own website — any stack, any host — you get an API key and your site reads its posts. Nothing is ever pushed into your codebase, and no plugin is installed. Instagram, Facebook and TikTok are not connected yet: each needs its platform's app review first.",
       "connect": "Connect",
       "connectBody": "One OAuth pass per network, or one key for your site.",
       "schedule": "Schedule",
@@ -144,7 +144,7 @@
           "name": "Ship",
           "short": "your channels",
           "title": "And it posts.",
-          "body": "1–14 posts a week, inside the days and hours you allow, on LinkedIn, X, Instagram or your own site."
+          "body": "1–14 posts a week, inside the days and hours you allow, on LinkedIn, X or your own site."
         },
         "learn": {
           "name": "Learn",
@@ -234,7 +234,7 @@
     "pricing": "Pricing",
     "publishesTitle": "Publishes to",
     "ownSite": "Your own website",
-    "socialCluster": "Instagram · TikTok · Facebook",
+    "socialCluster": "Instagram · TikTok · Facebook — soon",
     "accountTitle": "Account",
     "signIn": "Sign in",
     "createWorkspace": "Create a workspace",
