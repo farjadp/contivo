@@ -13,15 +13,15 @@ import { promises as dns } from 'node:dns';
  * hostname, hands each resolved address to `isBlockedAddress`, and refuses
  * to fetch at all if even one comes back blocked.
  *
- * This does not close every variant of this class of bug. In particular it
- * is not resistant to a DNS-rebinding attack where the name resolves to a
- * safe address for this check and a different, unsafe one microseconds
- * later when `fetch()` itself resolves it again — closing that fully would
- * mean pinning the connection to the address this module already resolved
- * (a custom `undici`/`http.Agent` dispatcher), which is a materially
- * bigger change than this fix. What this closes is the case the finding
- * actually described: a hostname that resolves directly to an internal
- * address, or a redirect chain that leads to one.
+ * `isHostnameSafeToFetch` below is a cheap up-front check only — it is NOT
+ * what closes DNS rebinding (a safe address here, a different unsafe one
+ * microseconds later when the actual connection resolves the hostname
+ * again). That is closed by `judge.ts`'s `pinnedLookup`, which uses
+ * `node:http`'s/`node:https`'s own `lookup` option to make this module's
+ * `isBlockedAddress` the *only* resolution the connection ever uses — no
+ * second, independent lookup exists for an attacker to win. This module
+ * stays the one place `isBlockedAddress`'s rules live, used both by that
+ * up-front check and by `pinnedLookup` itself.
  */
 
 const IPV4_LOOPBACK: [string, number] = ['127.0.0.0', 8];

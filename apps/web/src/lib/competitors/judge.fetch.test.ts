@@ -29,7 +29,7 @@ vi.mock('./network-guard', () => ({
   isHostnameSafeToFetch: (hostname: string) => isHostnameSafeToFetchMock(hostname),
 }));
 
-const { fetchHtmlForDomain, fetchSafeUrl, MAX_REDIRECTS, readCappedBody } = await import('./judge');
+const { fetchHtmlForDomain, fetchSafeUrl, FETCH_TIMEOUT_MS, MAX_REDIRECTS, readCappedBody } = await import('./judge');
 
 function startServer(handler: http.RequestListener): Promise<{ server: http.Server; port: number; hits: () => number }> {
   let hitCount = 0;
@@ -167,6 +167,45 @@ describe('fetchSafeUrl / fetchHtmlForDomain: redirects, hop limit, capping', () 
     expect(result).not.toBeNull();
     expect((result as string).length).toBeLessThanOrEqual(256 * 1024);
   });
+
+  it(
+    'abandons a server that trickles bytes forever, at the overall deadline, rather than hanging indefinitely',
+    async () => {
+      // A server that writes a few bytes just inside the socket-idle
+      // window, forever, defeats an *idle* timeout (it resets on every
+      // byte) but must not defeat an *overall* deadline. This is the
+      // regression this test guards: round 2 replaced round 1's
+      // `AbortSignal.timeout` with only an idle `timeout` option, and a
+      // server exactly like this one kept a read open past 8 seconds.
+      const { server, port } = await startServer((_req, res) => {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        const interval = setInterval(() => {
+          if (res.destroyed) {
+            clearInterval(interval);
+            return;
+          }
+          res.write('.');
+        }, 500); // well inside FETCH_TIMEOUT_MS, so an idle-only timer never fires
+        res.socket?.on('close', () => clearInterval(interval));
+      });
+      servers.push(server);
+
+      const startedAt = Date.now();
+      const result = await fetchSafeUrl(`http://127.0.0.1:${port}/`, MAX_REDIRECTS);
+      const elapsed = Date.now() - startedAt;
+
+      // Abandoned at (or shortly after) the overall deadline, not left
+      // open indefinitely. Generous upper bound (deadline + 3s) for CI
+      // scheduling noise, while still failing loud if this regresses to
+      // "never times out at all".
+      expect(elapsed).toBeLessThan(FETCH_TIMEOUT_MS + 3000);
+      expect(elapsed).toBeGreaterThanOrEqual(FETCH_TIMEOUT_MS - 500);
+      // The body never reached a terminal size — it was abandoned mid-read,
+      // not completed and then truncated by the byte cap.
+      expect(result).toBeNull();
+    },
+    FETCH_TIMEOUT_MS + 5000,
+  );
 
   it('fetchHtmlForDomain never attempts either https or http when the hostname fails validation', async () => {
     // `mockImplementationOnce` rather than `mockImplementation`: the latter

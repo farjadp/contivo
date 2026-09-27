@@ -36,7 +36,7 @@ const MAX_SITE_EVIDENCE_ITEMS = 3;
  */
 const MAX_RESPONSE_BYTES = 256 * 1024;
 export const MAX_REDIRECTS = 3;
-const FETCH_TIMEOUT_MS = 6000;
+export const FETCH_TIMEOUT_MS = 6000;
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
@@ -180,24 +180,50 @@ export function extractHtmlLangAttr(html: string): string | null {
  * connection code uses. There is no second lookup left for a rebinding
  * attacker to win.
  */
-const pinnedLookup: LookupFunction = (hostname, _options, callback) => {
+const pinnedLookup: LookupFunction = (hostname, options, callback) => {
+  // Node ≥ 20 enables `autoSelectFamily` (Happy Eyeballs) by default, and
+  // with it on, `net`'s connection code calls a custom `lookup` with
+  // `{ all: true }` and requires the *array* callback form —
+  // `callback(err, [{ address, family }, ...])` — not the single-address
+  // form. A `lookup` that always answers in the single form (as an earlier
+  // version of this function did) makes Node's own connection code throw
+  // `ERR_INVALID_IP_ADDRESS` on every real-hostname request — not a
+  // security hole (nothing gets through), but a total functional outage:
+  // every fetch to a real domain fails, every candidate gets zero pages,
+  // and discovery silently saves nothing. `options.all` says which shape
+  // the caller actually wants, and this must answer in that exact shape.
+  const wantsAll = options?.all === true;
+
   dnsPromises
     .lookup(hostname, { all: true, verbatim: true })
     .then((records) => {
       if (records.length === 0) {
-        callback(new Error(`getaddrinfo: no addresses found for ${hostname}`), '', 4);
+        callback(new Error(`getaddrinfo: no addresses found for ${hostname}`), wantsAll ? [] : '', 4);
         return;
       }
       const blocked = records.find((record) => isBlockedAddress(record.address));
       if (blocked) {
-        callback(new Error(`refusing to connect to ${hostname}: resolves to a blocked address`), '', 4);
+        callback(
+          new Error(`refusing to connect to ${hostname}: resolves to a blocked address`),
+          wantsAll ? [] : '',
+          4,
+        );
         return;
       }
+
+      if (wantsAll) {
+        callback(
+          null,
+          records.map((record) => ({ address: record.address, family: record.family })),
+        );
+        return;
+      }
+
       const chosen = records[0];
       callback(null, chosen.address, chosen.family);
     })
     .catch((error: unknown) => {
-      callback(error instanceof Error ? error : new Error(String(error)), '', 4);
+      callback(error instanceof Error ? error : new Error(String(error)), wantsAll ? [] : '', 4);
     });
 };
 
@@ -249,6 +275,18 @@ export function readCappedBody(res: IncomingMessage, maxBytes: number): Promise<
   });
 }
 
+/**
+ * `signal` on `http.request`/`https.request` bounds the *entire* request —
+ * DNS (via `pinnedLookup`), connect, TLS, headers, and (since the signal
+ * stays attached to the request/response pair for their whole lifecycle,
+ * not just to this function's own promise) the body as it's read afterward
+ * in `readCappedBody`. This replaces an idle-only `timeout` option a
+ * previous version of this function used, which resets on every byte
+ * received: a server that trickles one byte just inside the idle window
+ * could hold the read open indefinitely. `AbortSignal.timeout` fires once,
+ * on a wall-clock deadline, regardless of how much trickling activity kept
+ * an idle timer from ever firing.
+ */
 function requestOnce(target: URL): Promise<IncomingMessage> {
   return new Promise((resolve, reject) => {
     const requestFn = target.protocol === 'https:' ? nodeHttpsRequest : nodeHttpRequest;
@@ -259,7 +297,7 @@ function requestOnce(target: URL): Promise<IncomingMessage> {
         port: target.port ? Number(target.port) : target.protocol === 'https:' ? 443 : 80,
         path: `${target.pathname}${target.search}`,
         lookup: pinnedLookup,
-        timeout: FETCH_TIMEOUT_MS,
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: {
           'User-Agent': USER_AGENT,
           Accept: 'text/html,application/xhtml+xml',
@@ -268,7 +306,6 @@ function requestOnce(target: URL): Promise<IncomingMessage> {
       resolve,
     );
 
-    req.on('timeout', () => req.destroy(new Error(`Request to ${target.hostname} timed out`)));
     req.on('error', reject);
     req.end();
   });
@@ -359,7 +396,7 @@ type SiteEvidenceResult = {
   htmlLang: string | null;
 };
 
-async function collectWebsiteEvidence(domain: string): Promise<SiteEvidenceResult> {
+export async function collectWebsiteEvidence(domain: string): Promise<SiteEvidenceResult> {
   const normalizedDomain = normalizeDomain(domain);
   if (!normalizedDomain) {
     return { domain: '', pages: [], evidence: '', htmlLang: null };
@@ -677,6 +714,25 @@ export function stripForgedMarkers(text: string, nonce: string): string {
   return text.replace(MARKER_SHAPE_RE, '[stripped: resembled a data-boundary marker]').replace(nonceRe, '[stripped]');
 }
 
+/**
+ * A real BCP-47-ish language tag: 2-3 letter primary subtag, optionally
+ * followed by one or more `-` subtags of up to 8 alphanumerics each (e.g.
+ * `en`, `fa`, `en-US`, `zh-Hans-CN`). `pageLanguage` comes from
+ * `detectPageLanguage`, which for the `<html lang>` case is nothing more
+ * than `extractHtmlLangAttr`'s output lowercased — an attacker-controlled
+ * HTML attribute, not a value this codebase computed itself. Unlike
+ * `siteTitle`/`siteEvidence` (free text, handled by stripping anything
+ * marker-shaped), a language tag has no legitimate reason to be anything
+ * but this shape, so anything that doesn't match is dropped outright
+ * rather than partially cleaned.
+ */
+const PAGE_LANGUAGE_RE = /^[a-z]{2,3}(-[a-z0-9]{1,8})*$/i;
+
+export function sanitizePageLanguageForPrompt(pageLanguage: string | null): string | null {
+  if (!pageLanguage) return null;
+  return PAGE_LANGUAGE_RE.test(pageLanguage) ? pageLanguage : null;
+}
+
 export function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]): string {
   const nonce = generatePromptNonce();
 
@@ -710,12 +766,13 @@ export function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]):
   for (const candidate of batch) {
     const safeTitle = candidate.siteTitle ? stripForgedMarkers(candidate.siteTitle, nonce) : null;
     const safeEvidence = candidate.siteEvidence ? stripForgedMarkers(candidate.siteEvidence, nonce) : '';
+    const safeLanguage = sanitizePageLanguageForPrompt(candidate.pageLanguage);
 
     lines.push(
       `===== BEGIN CANDIDATE DATA [${nonce}] (domain: ${candidate.domain}) — untrusted, describes only this candidate =====`,
     );
     lines.push(`Site title: ${safeTitle ?? '(none)'}`);
-    lines.push(`Page language: ${candidate.pageLanguage ?? '(unknown)'}`);
+    lines.push(`Page language: ${safeLanguage ?? '(unknown)'}`);
     lines.push('Evidence:');
     lines.push(safeEvidence || '(no evidence text)');
     lines.push(`===== END CANDIDATE DATA [${nonce}] (domain: ${candidate.domain}) =====`);
