@@ -1,4 +1,3 @@
-import { hasDataForSeoCredentials } from '../dataforseo';
 import { normalizeCandidateDomain } from './domains';
 import { readTokenUsage } from './queries';
 import { sanitizeUpstreamText } from './redact';
@@ -248,15 +247,12 @@ export const harvestFromSerp: (
   market: TargetMarket,
   exclude: Set<string>,
 ) => Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }> = async () => {
-  // DataForSEO has no credentials in production and its client currently
-  // returns fabricated keywords and SERP rows when they are missing, so this
-  // source stays off until that is fixed. Returning nothing is the honest
-  // answer; returning mock data would poison discovery.
-  // Unlike a failed or skipped HTTP call, this stub never attempts a
-  // request in either branch — zero is a known fact here, not an unread
-  // usage figure, so it must not be reported as `null` ("unknown").
-  if (!hasDataForSeoCredentials()) {
-    return { candidates: [], tokens: 0, errors: [] };
-  }
-  return { candidates: [], tokens: 0, errors: ['SERP source not implemented yet'] };
+  // The SERP source (DataForSEO) is not built yet, so it stays off. A source
+  // that has not been built is off, not failed: it reports no error whether
+  // or not DataForSEO credentials exist (an error here put "SERP source not
+  // implemented yet" into every run's sourceStats once credentials were set).
+  // Returning nothing is the honest answer; mock data would poison discovery.
+  // This stub never attempts a request, so zero tokens is a known fact here,
+  // not an unread usage figure, and must not be reported as `null`.
+  return { candidates: [], tokens: 0, errors: [] };
 };

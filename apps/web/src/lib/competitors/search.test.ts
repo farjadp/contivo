@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { harvestFromWebSearch, mergeQueryResults, type QueryHarvestResult } from './search';
+import { harvestFromSerp, harvestFromWebSearch, mergeQueryResults, type QueryHarvestResult } from './search';
 
 describe('mergeQueryResults', () => {
   it('gives frequency 2 to a domain cited by two different queries', () => {
@@ -195,5 +195,29 @@ describe('harvestFromWebSearch error handling', () => {
 
     expect(candidates.map((c) => c.domain)).toEqual(['example-competitor.com']);
     expect(tokens).toBe(42);
+  });
+});
+
+describe('harvestFromSerp (unbuilt source)', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
+  it('reports no error when DataForSEO credentials exist: an unbuilt source is off, not failed', async () => {
+    vi.stubEnv('DATAFORSEO_LOGIN', 'login');
+    vi.stubEnv('DATAFORSEO_PASSWORD', 'password');
+
+    const result = await harvestFromSerp(['q'], { country: 'IR', language: 'fa' }, new Set());
+
+    expect(result).toEqual({ candidates: [], tokens: 0, errors: [] });
+  });
+
+  it('reports no error without credentials either', async () => {
+    vi.stubEnv('DATAFORSEO_LOGIN', '');
+    vi.stubEnv('DATAFORSEO_PASSWORD', '');
+
+    const result = await harvestFromSerp(['q'], { country: null, language: 'en' }, new Set());
+
+    expect(result.errors).toEqual([]);
   });
 });

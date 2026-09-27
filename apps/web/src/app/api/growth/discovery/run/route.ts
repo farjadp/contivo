@@ -38,7 +38,12 @@ import { runDiscoveryPipeline } from '@/lib/competitors/pipeline';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export const maxDuration = 300; // seconds; Vercel clamps to the plan limit
+// Only a serverless host enforces this. Production runs on Railway as one
+// long-lived Node process, where nothing kills the work after 300 s. What
+// actually bounds a run there: the timeouts on every OpenAI call, the enrich
+// budget, and `reapStaleRuns` (STALE_RUN_MINUTES), after which every pipeline
+// write is refused because they only apply while the run is still RUNNING.
+export const maxDuration = 300;
 
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;

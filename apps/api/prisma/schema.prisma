@@ -308,6 +308,14 @@ model Competitor {
   @@map("competitors")
 }
 
+/// WARNING: this table also carries a partial unique index,
+/// `discovery_runs_one_active_per_workspace` (unique on "workspaceId" WHERE
+/// status IN ('PENDING', 'RUNNING')). Prisma's schema language cannot express
+/// it, so it lives ONLY in the SQL of migration
+/// 20260927000000_competitor_discovery. `prisma migrate dev` / `migrate diff`
+/// will therefore propose `DROP INDEX "discovery_runs_one_active_per_workspace"`
+/// in any newly generated migration: delete that line before applying it, or
+/// two discovery runs can start at once for the same workspace.
 model DiscoveryRun {
   id          String    @id @default(cuid())
   workspaceId String
