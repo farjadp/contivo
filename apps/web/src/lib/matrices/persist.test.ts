@@ -14,7 +14,7 @@ vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 import { rebuildMatricesProjection } from './persist';
 
 function competitor(id: string, decision: string | null = 'ACCEPTED') {
-  return { id, userDecision: decision, confidence: 0.9, sources: [], evidence: null };
+  return { id, userDecision: decision, confidence: 0.9, sources: [], evidence: null as unknown };
 }
 
 function run(overrides: Record<string, unknown> = {}) {
@@ -53,11 +53,12 @@ function run(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function setup(opts: { run?: unknown; overrides?: unknown[]; competitors?: unknown[]; insights?: unknown } = {}) {
+function setup(opts: { run?: unknown; overrides?: unknown[]; competitors?: unknown[]; insights?: unknown; brandSummary?: unknown } = {}) {
   prismaMock.matrixRun.findFirst.mockResolvedValue('run' in opts ? opts.run : run());
   prismaMock.matrixOverride.findMany.mockResolvedValue(opts.overrides ?? []);
   prismaMock.competitor.findMany.mockResolvedValue(opts.competitors ?? [competitor('a'), competitor('b')]);
   prismaMock.workspace.findUnique.mockResolvedValue({
+    brandSummary: opts.brandSummary ?? null,
     audienceInsights: 'insights' in opts ? opts.insights : { other: { keep: true }, competitiveMatrices: { token_usage: 9, legacy: true } },
   });
   prismaMock.workspace.update.mockResolvedValue({});
@@ -92,6 +93,37 @@ describe('rebuildMatricesProjection', () => {
     expect(data.competitiveMatrices.run_id).toBe('run_1');
     expect(data.competitiveMatrices.token_usage).toBeUndefined();
     expect(data.competitiveMatrices.legacy).toBeUndefined();
+  });
+
+  it('resolves evidence refs against current competitor rows and the brand summary', async () => {
+    const r = run();
+    r.charts[0].scores[0].evidenceRefs = ['own:tagline'] as never;
+    r.charts[0].scores[1].evidenceRefs = ['ab12cd34'] as never;
+    r.charts[0].scores[2].evidenceRefs = ['dead0000'] as never;
+    setup({
+      run: r,
+      brandSummary: { tagline: '  We sell x  ' },
+      competitors: [
+        { ...competitor('a'), evidence: [{ id: 'ab12cd34', url: 'https://a.com/p', title: 'A page', kind: 'site' }] },
+        competitor('b'),
+      ],
+    });
+    const [us, a, b] = (await rebuildMatricesProjection('ws-1'))!.charts[0].companies;
+    expect(us.evidence).toEqual([{ id: 'own:tagline', url: '', title: 'We sell x' }]);
+    expect(a.evidence).toEqual([{ id: 'ab12cd34', url: 'https://a.com/p', title: 'A page' }]);
+    expect(b.evidence_missing).toBe(true);
+    expect(b.estimated).toBe(true);
+  });
+
+  it('returns null without writing when the run basis is not a valid one', async () => {
+    setup({ run: run({ basis: 'NONE' }) });
+    expect(await rebuildMatricesProjection('ws-1')).toBeNull();
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+  });
+
+  it('coerces a bad token count to 0', async () => {
+    setup({ run: run({ tokensUsed: null }) });
+    expect((await rebuildMatricesProjection('ws-1'))!.tokens_used).toBe(0);
   });
 
   it('writes when audienceInsights was empty', async () => {

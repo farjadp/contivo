@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildProjection, isStale, type ProjectionInput } from './projection';
 import type { MatrixOverride } from './types';
 
-function score(name: string, x: number, y: number, extra: Partial<{ competitorId: string | null; type: any; confidence: number; estimated: boolean }> = {}) {
+function score(name: string, x: number, y: number, extra: Partial<{ competitorId: string | null; type: any; confidence: number; estimated: boolean; evidenceRefs: string[] }> = {}) {
   return {
     competitorId: extra.competitorId === undefined ? name : extra.competitorId,
     name,
@@ -15,6 +15,7 @@ function score(name: string, x: number, y: number, extra: Partial<{ competitorId
     yReason: `${name} y reason`,
     confidence: extra.confidence ?? 0.93,
     estimated: extra.estimated ?? false,
+    evidenceRefs: extra.evidenceRefs ?? [],
   };
 }
 
@@ -42,6 +43,7 @@ function input(overrides: MatrixOverride[] = [], liveIds = ['rival-a', 'rival-b'
       },
     ],
     overrides,
+    evidenceById: {},
     liveCompetitorIds: liveIds,
     runCompetitorIds: ['rival-a', 'rival-b'],
     crossChartSummary: 'summary',
@@ -154,5 +156,62 @@ describe('isStale', () => {
     expect(isStale(['a', 'b'], ['a'])).toBe(true);
     expect(isStale(['a'], ['a', 'b'])).toBe(true);
     expect(isStale(['a', 'b'], ['a', 'c'])).toBe(true);
+  });
+});
+
+describe('evidence resolution', () => {
+  const ev = (id: string) => ({ id, url: `https://x.com/${id}`, title: `t-${id}` });
+
+  function withEvidence(refs: Record<string, string[]>, evidenceById: Record<string, Array<{ id: string; url: string; title: string }>>, estimated = false) {
+    const base = input();
+    for (const s of base.charts[0].scores) {
+      s.evidenceRefs = refs[s.competitorId ?? 'TARGET'] ?? [];
+      s.estimated = estimated;
+    }
+    base.evidenceById = evidenceById;
+    return buildProjection(base).charts[0].companies;
+  }
+
+  it('resolves every cited id, in cited order', () => {
+    const [, a] = withEvidence({ 'rival-a': ['e2', 'e1'] }, { 'rival-a': [ev('e1'), ev('e2')] });
+    expect(a.evidence.map((e) => e.id)).toEqual(['e2', 'e1']);
+    expect(a.evidence_missing).toBe(false);
+    expect(a.estimated).toBe(false);
+  });
+
+  it('drops only the unresolved ids when some resolve', () => {
+    const [, a] = withEvidence({ 'rival-a': ['e1', 'gone'] }, { 'rival-a': [ev('e1')] });
+    expect(a.evidence.map((e) => e.id)).toEqual(['e1']);
+    expect(a.evidence_missing).toBe(false);
+    expect(a.estimated).toBe(false);
+  });
+
+  it('forces estimated and flags the point when none resolve', () => {
+    const [, a] = withEvidence({ 'rival-a': ['gone'] }, { 'rival-a': [ev('e1')] });
+    expect(a.evidence).toEqual([]);
+    expect(a.evidence_missing).toBe(true);
+    expect(a.estimated).toBe(true);
+  });
+
+  it('leaves a point with no refs untouched', () => {
+    const [, a] = withEvidence({}, {}, false);
+    expect(a.evidence_missing).toBe(false);
+    expect(a.estimated).toBe(false);
+    const [, b] = withEvidence({}, {}, true);
+    expect(b.estimated).toBe(true);
+    expect(b.evidence_missing).toBe(false);
+  });
+
+  it('resolves the target own: ids from the TARGET key', () => {
+    const [us] = withEvidence({ TARGET: ['own:tagline'] }, { TARGET: [{ id: 'own:tagline', url: '', title: 'We sell x' }] });
+    expect(us.evidence).toEqual([{ id: 'own:tagline', url: '', title: 'We sell x' }]);
+    expect(us.evidence_missing).toBe(false);
+  });
+
+  it('does not resolve old refs for a competitor deleted and rediscovered under a new id', () => {
+    // The run cited rival-a's evidence e1; the rediscovered row is a different id with new evidence.
+    const [, a] = withEvidence({ 'rival-a': ['e1'] }, { 'rival-a-new': [ev('e1')], 'rival-a': [ev('n1')] });
+    expect(a.evidence).toEqual([]);
+    expect(a.evidence_missing).toBe(true);
   });
 });

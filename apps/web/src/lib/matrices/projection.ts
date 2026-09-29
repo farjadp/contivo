@@ -23,6 +23,8 @@ import type { ChartKind, CompanyType, MatrixOverride, MatrixScore } from './type
  *    the competitor comes back; applying would put a ghost on the chart.
  */
 
+export type ProjectedEvidence = { id: string; url: string; title: string };
+
 export type ProjectedCompany = {
   name: string;
   website: string;
@@ -34,6 +36,10 @@ export type ProjectedCompany = {
   confidence_score: number;
   confidence_band: 'high' | 'medium' | 'low';
   estimated: boolean;
+  /** Cited evidence that still exists, in cited order. */
+  evidence: ProjectedEvidence[];
+  /** True when the point cited evidence and none of it is available any more. */
+  evidence_missing: boolean;
   /** Present only when the user moved this point. */
   override?: { ai_x_score: number; ai_y_score: number; note: string | null };
 };
@@ -64,9 +70,11 @@ export type ProjectionInput = {
     marketPattern: string;
     opportunity: string;
     contentAngles: Array<{ angle: string; audienceSegment: string }>;
-    scores: Array<MatrixScore & { xReason: string; yReason: string }>;
+    scores: Array<MatrixScore & { xReason: string; yReason: string; evidenceRefs: string[] }>;
   }>;
   overrides: MatrixOverride[];
+  /** Evidence that exists right now, keyed by competitorId ('TARGET' for the target). */
+  evidenceById: Record<string, ProjectedEvidence[]>;
   /** Competitor ids that exist right now, for staleness and orphan overrides. */
   liveCompetitorIds: string[];
   /** The competitor ids the run was built from. */
@@ -134,6 +142,14 @@ export function buildProjection(input: ProjectionInput): Projection {
 
       const x = override?.xScore != null ? clampScore(override.xScore) : aiX;
       const y = override?.yScore != null ? clampScore(override.yScore) : aiY;
+      const available = new Map((input.evidenceById[score.competitorId ?? 'TARGET'] ?? []).map((e) => [e.id, e]));
+      const evidence: ProjectedEvidence[] = [];
+      for (const ref of score.evidenceRefs) {
+        const found = available.get(ref);
+        if (found) evidence.push(found);
+      }
+      // Cited something, none of it survives: the claim is now unsupported.
+      const evidenceMissing = score.evidenceRefs.length > 0 && evidence.length === 0;
       const moved = x !== aiX || y !== aiY;
 
       return {
@@ -146,7 +162,9 @@ export function buildProjection(input: ProjectionInput): Projection {
         y_reason: score.yReason,
         confidence_score: score.confidence,
         confidence_band: confidenceBand(score.confidence),
-        estimated: score.estimated,
+        estimated: score.estimated || evidenceMissing,
+        evidence,
+        evidence_missing: evidenceMissing,
         ...(override && moved
           ? { override: { ai_x_score: aiX, ai_y_score: aiY, note: override.note ?? null } }
           : {}),

@@ -50,7 +50,7 @@ function stringList(value: unknown): string[] {
 }
 
 /** A model will happily cite a field that is only whitespace, so empties never become evidence. */
-function ownEvidence(brandSummary: unknown): BundleEvidence[] {
+export function ownEvidence(brandSummary: unknown): BundleEvidence[] {
   if (!isRecord(brandSummary)) return [];
   const items: BundleEvidence[] = [];
   for (const [field, value] of Object.entries(brandSummary)) {
