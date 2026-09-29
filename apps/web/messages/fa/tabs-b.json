@@ -130,6 +130,7 @@
       "primary": "کلیدواژه‌های اصلی",
       "secondary": "کلیدواژه‌های فرعی",
       "intentTitle": "توزیع نیت جست‌وجو",
+      "intentUnknown": "شواهد کافی برای تخمین نیت جست‌وجوی این رقیب نبود.",
       "intent": {
         "informational": "اطلاعاتی",
         "commercial": "تجاری",
