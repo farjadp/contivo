@@ -54,7 +54,8 @@ export type CompetitorKeywordIntel = {
   primary_keywords: string[];
   secondary_keywords: string[];
   keyword_clusters: KeywordCluster[];
-  intent_distribution: IntentDistribution;
+  /** null when the model gave no usable split — never a guessed one. */
+  intent_distribution: IntentDistribution | null;
   content_strategy: {
     main_goal: string;
     secondary_goals: string[];
@@ -415,7 +416,7 @@ function uniqueKeywordList(values: unknown, limit: number): string[] {
   return out;
 }
 
-function normalizeIntentDistribution(value: any): IntentDistribution {
+function normalizeIntentDistribution(value: any): IntentDistribution | null {
   const raw = value && typeof value === 'object' ? value : {};
   const info = toNonNegativeInt(raw.informational);
   const comm = toNonNegativeInt(raw.commercial);
@@ -423,9 +424,7 @@ function normalizeIntentDistribution(value: any): IntentDistribution {
   const edu = toNonNegativeInt(raw.educational);
   const sum = info + comm + prod + edu;
 
-  if (sum === 0) {
-    return { informational: 55, commercial: 20, product: 15, educational: 10 };
-  }
+  if (sum === 0) return null;
 
   return {
     informational: Math.round((info / sum) * 100),
@@ -518,67 +517,8 @@ function buildKeywordHeatmap(competitors: CompetitorKeywordIntel[]): {
   };
 }
 
-function fallbackKeywordPayload(input: {
-  competitors: Array<{ name: string; domain: string; evidence: string }>;
-}): CompetitorKeywordsPayload {
-  const normalizedCompetitors: CompetitorKeywordIntel[] = input.competitors.map((item) => {
-    const tokens = item.evidence
-      .toLowerCase()
-      .split(/[^a-z0-9]+/g)
-      .filter((token) => token.length >= 4)
-      .slice(0, 80);
-    const primary = uniqueKeywordList(tokens.slice(0, 24), 12);
-    const secondary = uniqueKeywordList(tokens.slice(12, 80), 24);
-
-    return {
-      competitor: item.name,
-      domain: item.domain,
-      primary_keywords: primary,
-      secondary_keywords: secondary,
-      keyword_clusters: [
-        {
-          cluster: 'Estimated Theme',
-          keywords: primary.slice(0, 8),
-        },
-      ],
-      intent_distribution: { informational: 55, commercial: 20, product: 15, educational: 10 },
-      content_strategy: {
-        main_goal: 'traffic generation',
-        secondary_goals: ['product education'],
-        content_focus: 'Estimated from limited evidence',
-        publishing_style: 'Not enough data from public pages',
-      },
-      strategy_signals: {
-        content_themes: primary.slice(0, 5),
-        content_goal: 'SEO traffic',
-        funnel_distribution: {
-          top_of_funnel: primary.slice(0, 3),
-          middle_of_funnel: secondary.slice(0, 3),
-          bottom_of_funnel: secondary.slice(3, 6),
-        },
-        content_formats: ['blog articles', 'product pages'],
-        strategic_strength: 'Has visible recurring terms in navigation and page headings.',
-        strategic_weakness: 'Score estimated from limited evidence.',
-      },
-      data_quality_notes: ['score estimated from limited evidence', 'inferred from messaging, not explicit proof'],
-    };
-  });
-
-  return {
-    generated_at: new Date().toISOString(),
-    source: 'AI',
-    ai_estimated: true,
-    competitors: normalizedCompetitors,
-    content_gaps: [
-      {
-        topic: 'Strategic content planning for teams',
-        competitor_weakness: 'Competitors emphasize tools more than planning frameworks.',
-        audience_importance: 'Teams need process clarity before scaling content production.',
-      },
-    ],
-    keyword_heatmap: buildKeywordHeatmap(normalizedCompetitors),
-    token_usage: emptyTokenUsage(),
-  };
+function hasAnyKeyword(item: CompetitorKeywordIntel): boolean {
+  return item.primary_keywords.length > 0 || item.secondary_keywords.length > 0;
 }
 
 function normalizePayloadFromAi(raw: any, input: {
@@ -622,7 +562,7 @@ function normalizePayloadFromAi(raw: any, input: {
       primary_keywords: [],
       secondary_keywords: [],
       keyword_clusters: [],
-      intent_distribution: { informational: 55, commercial: 20, product: 15, educational: 10 },
+      intent_distribution: null,
       content_strategy: {
         main_goal: 'unknown',
         secondary_goals: [],
@@ -725,13 +665,23 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
     const payload =
       openAiResult?.parsed != null
         ? normalizePayloadFromAi(openAiResult.parsed, { competitorSignals })
-        : fallbackKeywordPayload({
-            competitors: competitorSignals.map((item) => ({
-              name: item.name,
-              domain: item.domain,
-              evidence: item.evidence,
-            })),
-          });
+        : null;
+
+    // A failed or empty analysis is never saved: the previous result stays
+    // as it was, and nothing downstream (content, narrative, report) is fed
+    // an answer the model did not give.
+    if (!payload || !payload.competitors.some(hasAnyKeyword)) {
+      await writeActivityLog({
+        userId: session.userId as string,
+        workspaceId: workspace.id,
+        action: 'COMPETITOR_KEYWORDS_FAILED',
+        detail: {
+          reason: payload ? 'no_keywords' : 'no_ai_result',
+          totalTokens: openAiResult?.usage?.total_tokens || 0,
+        },
+      });
+      return { error: await actionError('keywordsAiFailed') };
+    }
 
     const existingTokenUsage = normalizeTokenUsage(
       (workspace.audienceInsights as any)?.competitorKeywordsIntel?.token_usage,

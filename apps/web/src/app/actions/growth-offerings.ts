@@ -308,17 +308,6 @@ function defaultSummary(overr?: Partial<CompanyOfferings['summary']>): CompanyOf
   };
 }
 
-function defaultComparisonSummary(): ComparisonSummary {
-  return {
-    client_focus: '',
-    competitor_patterns: [],
-    white_space_opportunities: [],
-    offer_clarity_insight: '',
-    market_offer_pattern: '',
-    offer_gap_opportunity: '',
-  };
-}
-
 function defaultComparisonAnalysis(): OfferComparisonAnalysis {
   return {
     common_market_offerings: [],
@@ -589,53 +578,14 @@ async function callOpenAiJson(
   }
 }
 
-function fallbackPayload(input: {
+function normalizePayload(raw: any, input: {
   clientName: string;
   clientWebsite: string;
   competitors: Array<{ name: string; domain: string }>;
 }): ProductsServicesPayload {
-  const client_offerings: CompanyOfferings = {
-    company_name: input.clientName,
-    website: normalizeWebsite(input.clientWebsite),
-    offerings: [],
-    summary: defaultSummary({
-      main_business_model_guess: 'unknown',
-      main_offering_focus: 'Insufficient public evidence',
-    }),
-  };
-
-  const competitor_offerings = input.competitors.map((item) => ({
-    competitor_name: item.name,
-    website: normalizeWebsite(item.domain),
-    offerings: [] as OfferingItem[],
-    summary: defaultSummary({
-      main_business_model_guess: 'unknown',
-      main_offering_focus: 'Insufficient public evidence',
-    }),
-  }));
-
-  return {
-    generated_at: new Date().toISOString(),
-    source: 'AI',
-    ai_estimated: true,
-    client_offerings,
-    competitor_offerings,
-    comparison_summary: defaultComparisonSummary(),
-    comparison_analysis: defaultComparisonAnalysis(),
-    token_usage: emptyTokenUsage(),
-  };
-}
-
-function normalizePayload(raw: any, fallbackInput: {
-  clientName: string;
-  clientWebsite: string;
-  competitors: Array<{ name: string; domain: string }>;
-}): ProductsServicesPayload {
-  const fallback = fallbackPayload(fallbackInput);
-
   const client_offerings = normalizeCompanyOfferings(raw?.client_offerings, {
-    companyName: fallbackInput.clientName,
-    website: fallbackInput.clientWebsite,
+    companyName: input.clientName,
+    website: input.clientWebsite,
   });
 
   const competitorRaw = Array.isArray(raw?.competitor_offerings) ? raw.competitor_offerings : [];
@@ -661,7 +611,7 @@ function normalizePayload(raw: any, fallbackInput: {
     });
   }
 
-  for (const expected of fallbackInput.competitors) {
+  for (const expected of input.competitors) {
     const domain = normalizeDomain(expected.domain);
     if (!domain || seenDomains.has(domain)) continue;
     competitor_offerings.push({
@@ -680,9 +630,13 @@ function normalizePayload(raw: any, fallbackInput: {
     : {};
 
   return {
-    ...fallback,
+    generated_at: new Date().toISOString(),
+    source: 'AI',
+    ai_estimated: true,
     client_offerings,
     competitor_offerings,
+    comparison_analysis: defaultComparisonAnalysis(),
+    token_usage: emptyTokenUsage(),
     comparison_summary: {
       client_focus: trimTo(summaryRaw.client_focus, 220),
       competitor_patterns: uniqueList(summaryRaw.competitor_patterns, 10),
@@ -773,25 +727,38 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     });
 
     const extractResult = await callOpenAiJson(extractionPrompt);
-    const payload =
-      extractResult?.parsed != null
-        ? normalizePayload(extractResult.parsed, {
-            clientName: workspace.name,
-            clientWebsite: workspace.websiteUrl || '',
-            competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
-          })
-        : fallbackPayload({
-            clientName: workspace.name,
-            clientWebsite: workspace.websiteUrl || '',
-            competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
-          });
 
-    const comparePrompt = buildComparisonPrompt({
-      client_offerings: payload.client_offerings,
-      competitor_offerings: payload.competitor_offerings,
+    // A failed extraction is never saved and never fed to the comparison
+    // prompt: the previous result stays as it was.
+    if (extractResult?.parsed == null) {
+      await writeActivityLog({
+        userId: session.userId as string,
+        workspaceId: workspace.id,
+        action: 'PRODUCTS_SERVICES_INTEL_FAILED',
+        detail: { reason: 'no_ai_result', totalTokens: extractResult?.usage?.total_tokens || 0 },
+      });
+      return { error: await actionError('offeringsAiFailed') };
+    }
+
+    const payload = normalizePayload(extractResult.parsed, {
+      clientName: workspace.name,
+      clientWebsite: workspace.websiteUrl || '',
+      competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
     });
-    const compareResult = await callOpenAiJson(comparePrompt);
-    payload.comparison_analysis = normalizeComparisonAnalysis(compareResult?.parsed);
+
+    // With no offering on either side there is nothing to compare, and a
+    // comparison of nothing is advice invented from nothing.
+    const hasOfferings =
+      payload.client_offerings.offerings.length > 0 ||
+      payload.competitor_offerings.some((item) => item.offerings.length > 0);
+    let compareResult: Awaited<ReturnType<typeof callOpenAiJson>> = null;
+    if (hasOfferings) {
+      compareResult = await callOpenAiJson(buildComparisonPrompt({
+        client_offerings: payload.client_offerings,
+        competitor_offerings: payload.competitor_offerings,
+      }));
+      payload.comparison_analysis = normalizeComparisonAnalysis(compareResult?.parsed);
+    }
 
     const previousTokenUsage = normalizeTokenUsage(
       (workspace.audienceInsights as any)?.productsServicesIntel?.token_usage,

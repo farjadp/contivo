@@ -130,6 +130,7 @@
       "primary": "Primary Keywords",
       "secondary": "Secondary Keywords",
       "intentTitle": "Intent Distribution",
+      "intentUnknown": "Not enough evidence to estimate this competitor's search intent.",
       "intent": {
         "informational": "Informational",
         "commercial": "Commercial",
