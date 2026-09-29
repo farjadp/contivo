@@ -297,7 +297,12 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     ((workspace.audienceInsights as any)?.brandAssets as any) || null;
   const acceptedCompetitors = workspace.competitors.filter((item: any) => item.userDecision === 'ACCEPTED').length;
 
-  const matricesTokenUsage = (initialMatrices?.token_usage as TokenUsageLike) || null;
+  // The rebuilt pipeline stores one number per run (`tokens_used`); older blobs
+  // carry the lifetime `token_usage` object.
+  const matricesTokenUsage: TokenUsageLike =
+    typeof initialMatrices?.tokens_used === 'number'
+      ? { runs: 1, lifetime_total_tokens: initialMatrices.tokens_used }
+      : (initialMatrices?.token_usage as TokenUsageLike) || null;
   const keywordsTokenUsage = (initialKeywordPayload?.token_usage as TokenUsageLike) || null;
   const offeringsTokenUsage = (initialOfferingsPayload?.token_usage as TokenUsageLike) || null;
   const brandAssetsTokenUsage = (initialBrandAssetsPayload?.token_usage as TokenUsageLike) || null;

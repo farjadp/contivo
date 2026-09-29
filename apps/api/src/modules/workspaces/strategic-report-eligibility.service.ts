@@ -2,6 +2,9 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
+/** Keep in step with REQUIRED_MATRIX_CHARTS in apps/web/src/lib/report-readiness.ts. */
+const REQUIRED_MATRIX_CHARTS = 3;
+
 @Injectable()
 export class StrategicReportEligibilityService {
   constructor(private prisma: PrismaService) {}
@@ -68,10 +71,10 @@ export class StrategicReportEligibilityService {
       missingData.push('Brand Memory');
     }
 
-    if (insights?.competitiveMatrices?.charts?.length >= 5) {
+    if (insights?.competitiveMatrices?.charts?.length >= REQUIRED_MATRIX_CHARTS) {
       sectionsCompleted.push('Market Matrices');
     } else {
-      missingData.push('Market Matrices (need 5 charts)');
+      missingData.push(`Market Matrices (need ${REQUIRED_MATRIX_CHARTS} charts)`);
     }
 
     if (insights?.competitorKeywordsIntel?.competitors?.length > 0) {

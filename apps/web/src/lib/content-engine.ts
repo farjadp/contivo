@@ -12,6 +12,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { matricesGate } from '@/lib/report-readiness';
 import { parseLocalDateTimeToUtc } from '@/lib/autopilot/schedule';
 import { loadStorylineContext, storylinePromptBlock } from '@/lib/narrative/context';
 import {
@@ -220,12 +221,9 @@ export async function loadIdeationContext(actor: Actor) {
   const competitiveMatrices = audienceInsights.competitiveMatrices;
   const competitorKeywordsIntel = audienceInsights.competitorKeywordsIntel;
 
-  if (!Array.isArray(competitiveMatrices?.charts) || competitiveMatrices.charts.length === 0) {
-    return {
-      error:
-        'Market Metric data is required for ideation. Please run Competitive Landscape charts first.' as const,
-    };
-  }
+  const gate = matricesGate(competitiveMatrices);
+  if (!gate.ok) return { error: gate.reason };
+  const competitorBasis = gate.competitorBasis;
 
   if (
     !Array.isArray(competitorKeywordsIntel?.competitors) ||
@@ -237,14 +235,14 @@ export async function loadIdeationContext(actor: Actor) {
     };
   }
 
-  return { workspace, brandSummary, competitiveMatrices, competitorKeywordsIntel };
+  return { workspace, brandSummary, competitiveMatrices, competitorBasis, competitorKeywordsIntel };
 }
 
 export async function ideateForWorkspace(actor: Actor, options?: IdeationRequestOptions) {
   const ctx = await loadIdeationContext(actor);
   if ('error' in ctx) return { error: ctx.error };
 
-  const { brandSummary, competitiveMatrices, competitorKeywordsIntel } = ctx;
+  const { brandSummary, competitiveMatrices, competitorBasis, competitorKeywordsIntel } = ctx;
   const { userId, workspaceId } = actor;
 
   try {
@@ -272,6 +270,7 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
       imageCount,
       autoInsertToCalendar,
       marketMatrices: competitiveMatrices,
+      competitorBasis,
       competitorKeywordsIntel,
     });
     if (!ideation) {
