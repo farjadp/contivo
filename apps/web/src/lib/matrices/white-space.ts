@@ -105,5 +105,5 @@ export function findWhiteSpace(scores: MatrixScore[]): WhiteSpace | null {
 export function describeBand(band: 0 | 1 | 2, lowLabel: string, highLabel: string): string {
   if (band === 0) return `low ${lowLabel}`;
   if (band === 2) return `high ${highLabel}`;
-  return `middling ${highLabel}`;
+  return `between ${lowLabel} and ${highLabel}`;
 }

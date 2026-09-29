@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MIN_OPEN_DISTANCE, findWhiteSpace } from './white-space';
+import { MIN_OPEN_DISTANCE, describeBand, findWhiteSpace } from './white-space';
 import type { CompanyType, MatrixScore } from './types';
 
 function point(name: string, x: number, y: number, type: CompanyType = 'DIRECT'): MatrixScore {
@@ -101,5 +101,16 @@ describe('findWhiteSpace', () => {
     const first = findWhiteSpace(scores);
     const second = findWhiteSpace([...scores]);
     expect(first).toEqual(second);
+  });
+});
+
+describe('describeBand', () => {
+  it('names the low and high thirds by their own end', () => {
+    expect(describeBand(0, 'Cheap', 'Premium')).toBe('low Cheap');
+    expect(describeBand(2, 'Cheap', 'Premium')).toBe('high Premium');
+  });
+
+  it('reads the middle third neutrally, between both ends', () => {
+    expect(describeBand(1, 'Cheap', 'Premium')).toBe('between Cheap and Premium');
   });
 });
