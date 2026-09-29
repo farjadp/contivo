@@ -72,8 +72,8 @@
       },
       "matrices": {
         "name": "Positioning matrices",
-        "body": "Five charts. You and every confirmed competitor scored one to ten on two axes each, with the reasoning behind every score shown.",
-        "get": "Five charts showing where you actually sit, and which corners nobody is standing in."
+        "body": "Two fixed charts plus one to three chosen for your market. You and every confirmed competitor scored one to ten on two axes each, with the reasoning and evidence behind every score shown.",
+        "get": "Charts showing where you actually sit, and which corners nobody is standing in."
       },
       "keywords": {
         "name": "Competitor keywords",
@@ -203,7 +203,7 @@
     },
     "notes": {
       "estimated": "The scores are the model's reading of public evidence, not measured data. Each one shows its reasoning so you can disagree with it.",
-      "reportTime": "Takes under a minute to build. Needs your brand memory, the five matrices, keywords and your offerings to be filled in first.",
+      "reportTime": "Takes under a minute to build. Needs your brand memory, at least three positioning charts, keywords and your offerings to be filled in first.",
       "discoveryChecked": "“Checked” means the domain resolves and answers — that the company is real, not that it competes with you. That judgement stays yours."
     },
     "close": {

@@ -47,7 +47,7 @@ function normaliseMatrices(matrices: any): ScatterChart[] {
     companies: (chart.companies ?? []).map((c: any) => ({
       name: c.name ?? '',
       type: c.type ?? 'DIRECT',
-      domain: c.website,
+      domain: c.website ?? c.domain,
       xScore: Number(c.x_score),
       yScore: Number(c.y_score),
     })),

@@ -478,7 +478,7 @@
       "megabytes": "{value} MB",
       "missing": {
         "brandMemory": "Brand Memory",
-        "marketMatrices": "Market Matrices (5 charts required)",
+        "marketMatrices": "Market Matrices (at least 3 charts)",
         "competitorKeywords": "Competitor Keywords",
         "productsServices": "Products & Services"
       }

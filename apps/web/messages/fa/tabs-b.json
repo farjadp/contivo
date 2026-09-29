@@ -478,7 +478,7 @@
       "megabytes": "{value} مگابایت",
       "missing": {
         "brandMemory": "حافظهٔ برند",
-        "marketMatrices": "نمودارهای بازار (۵ نمودار لازم است)",
+        "marketMatrices": "نمودارهای بازار (دست‌کم ۳ نمودار)",
         "competitorKeywords": "کلیدواژه‌های رقبا",
         "productsServices": "محصولات و خدمات"
       }
