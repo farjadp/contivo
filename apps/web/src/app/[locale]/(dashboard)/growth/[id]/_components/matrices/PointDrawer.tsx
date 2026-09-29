@@ -137,14 +137,14 @@ export function PointDrawer({
   return (
     <aside
       aria-label={company.name}
-      className="flex flex-col gap-5 rounded-2xl border border-rule bg-chalk-raised p-5 shadow-sm"
+      className="flex w-full min-w-0 max-w-full flex-col gap-5 rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-w-0 items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           <p className="text-[10px] font-bold uppercase tracking-widest text-moss-muted">
             {tType(legendKeyForType(company.type))}
           </p>
-          <h4 ref={headingRef} tabIndex={-1} className="text-lg font-bold tracking-tight text-moss focus:outline-none">
+          <h4 ref={headingRef} tabIndex={-1} className="break-words text-lg font-bold tracking-tight text-moss focus:outline-none">
             <bdi>{company.name}</bdi>
           </h4>
           <p className="truncate text-[12px] text-moss-muted" dir="ltr">
@@ -166,15 +166,15 @@ export function PointDrawer({
         {company.estimated ? <span className="text-[12px] text-moss-muted">{t('drawer.estimated')}</span> : null}
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid min-w-0 grid-cols-1 gap-4">
         {rows.map((row) => (
-          <section key={row.axis} className="rounded-xl border border-rule bg-chalk p-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h5 className="text-[11px] font-bold uppercase tracking-widest text-moss-muted">
+          <section key={row.axis} className="min-w-0 rounded-xl border border-rule bg-chalk p-3 sm:p-4">
+            <div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
+              <h5 className="min-w-0 break-words text-[11px] font-bold uppercase tracking-widest text-moss-muted">
                 <bdi>{row.label}</bdi>
               </h5>
               {editable ? (
-                <div className="inline-flex items-center gap-1">
+                <div className="inline-flex shrink-0 items-center gap-1">
                   <button
                     type="button"
                     disabled={saving || row.score <= MIN}
@@ -201,7 +201,7 @@ export function PointDrawer({
                 <span className="text-[14px] font-bold text-moss">{t('drawer.score', { score: format.number(row.score), max: format.number(MAX) })}</span>
               )}
             </div>
-            <p className="mt-3 text-[13px] leading-6 text-moss" dir="auto">
+            <p className="mt-3 break-words text-[13px] leading-6 text-moss" dir="auto">
               {row.reason}
             </p>
             {row.ai !== null && row.ai !== row.score ? (
@@ -248,14 +248,14 @@ export function PointDrawer({
       </div>
 
       {showEvidence ? (
-        <section>
+        <section className="min-w-0">
           <h5 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-moss-muted">{t('drawer.evidence')}</h5>
           {evidence!.length > 0 ? (
             <ul className="space-y-1.5">
               {evidence!.map((item) => (
                 <li key={item.id} className="min-w-0 text-[13px] text-moss">
-                  <SafeExternalLink url={item.url} className="max-w-full">
-                    <bdi className="truncate">{item.title || compactDomain(item.url)}</bdi>
+                  <SafeExternalLink url={item.url} className="min-w-0 max-w-full">
+                    <bdi className="min-w-0 truncate">{item.title || compactDomain(item.url)}</bdi>
                   </SafeExternalLink>
                 </li>
               ))}
