@@ -62,12 +62,7 @@
       "subtitle": "Visualize your market position across {count} critical dimensions to find your strongest differentiation hook.",
       "hideDiagnostics": "Hide Diagnostics",
       "viewDiagnostics": "View Diagnostics",
-      "saveOverrides": "Save Overrides",
-      "generate": "Generate AI Matrices",
-      "generated": "Competitive matrices generated from public signals. Please review and adjust as needed.",
       "generateFailed": "Unexpected error while generating matrices.",
-      "saved": "Matrix edits saved.",
-      "saveFailed": "Unexpected error while saving matrix edits.",
       "lastRunData": "Last Run Data",
       "promptTokens": "Prompt Tokens:",
       "completionTokens": "Completion Tokens:",
@@ -99,13 +94,6 @@
       "actionableGap": "Actionable Gap",
       "plottedCompanies": "Plotted Companies",
       "companyTotal": "{count} total",
-      "fineTuneTitle": "Fine-tune Plotting Coordinates",
-      "fineTuneBody": "Override AI estimated scores below to manually correct the plotted outcomes for this chart.",
-      "closeEditor": "Close Coordinate Settings",
-      "openEditor": "Reveal Score Editor",
-      "competitorIdentity": "Competitor Identity",
-      "aiTrustScore": "AI Trust Score",
-      "confidenceScore": "Confidence Score",
       "coreAxes": {
         "offer_breadth_specialization": {
           "name": "Offer breadth and specialisation",
@@ -117,6 +105,67 @@
           "x": { "label": "Content presence", "low": "Almost none", "high": "Publishing machine" },
           "y": { "label": "Content focus", "low": "Scattered topics", "high": "Tightly themed" }
         }
+      },
+      "run": {
+        "start": "Build matrices",
+        "rebuild": "Rebuild matrices",
+        "axesButton": "Axes",
+        "loading": "Checking the last run",
+        "statusFailed": "Could not load the state of the last run. Reload the page to try again.",
+        "basis": {
+          "ACCEPTED": "competitors you confirmed",
+          "UNCONFIRMED_HIGH": "unconfirmed competitors",
+          "NONE": "No competitors to build on yet"
+        },
+        "competitorLine": "Built on {basis}: {count, plural, one {{formatted} competitor} other {{formatted} competitors}}",
+        "lastRun": "Last run {date}",
+        "stale": "A competitor changed after these matrices were built, so they may be out of date.",
+        "regenerate": "Rebuild now",
+        "legacy": "This matrix predates the evidence rule. Rebuild it to be sure it holds up.",
+        "stages": {
+          "AXES": "Choosing the axes",
+          "SCORE": "Scoring each competitor on the evidence",
+          "SUMMARISE": "Writing the summaries",
+          "SAVE": "Saving the matrices"
+        },
+        "stageDone": "done",
+        "stageCurrent": "in progress",
+        "starting": "Getting the run ready",
+        "leaveNote": "You don't need to stay on this page. The run keeps going, and the matrices will be here when you come back.",
+        "pollStopped": "This page stopped checking on the run. Reload to see where it is.",
+        "failed": {
+          "title": "The run did not finish",
+          "timedOut": "The run took too long and was stopped. Try again.",
+          "dispatch": "The run could not start because of a problem on our side. Try again in a moment.",
+          "generic": "Something went wrong in our system. Try again."
+        },
+        "empty": {
+          "competitors": {
+            "title": "No competitors to build on yet",
+            "body": "The matrices plot you against your competitors, so at least one is needed. Find or add some first.",
+            "link": "Go to the competitors section"
+          },
+          "brandSummary": {
+            "title": "Your brand memory is empty",
+            "body": "The matrices need to know what you sell and who you sell to. Fill in your brand memory first.",
+            "link": "Open brand memory"
+          }
+        }
+      },
+      "axes": {
+        "title": "Choose your market axes",
+        "intro": "Two core axes are always plotted. Pick up to {max} more that fit your market, and rename them if you like.",
+        "coreTitle": "Always included",
+        "locked": "always on",
+        "candidatesTitle": "Proposed for your market",
+        "selectedCount": "{count} of {max} chosen",
+        "maxReached": "That is the most you can plot ({max}). Turn one off to choose another.",
+        "chooseOne": "Choose at least one axis to continue.",
+        "labelX": "Horizontal axis name",
+        "labelY": "Vertical axis name",
+        "submit": "Build the charts",
+        "cancel": "Cancel",
+        "saveFailed": "Could not save the axes. Try again."
       }
     },
     "keywords": {

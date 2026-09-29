@@ -1,12 +1,21 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Loader2, Save, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
-import { startMatrixRun } from '@/app/actions/growth-matrices';
-import { CompetitorBasisNote } from './CompetitorBits';
+import {
+  getMatrixStatus,
+  startMatrixRun,
+  type MatrixRunView,
+  type MatrixStatus,
+} from '@/app/actions/growth-matrices';
+import { useRouter } from '@/i18n/navigation';
+import type { StoredMarketAxis } from '@/lib/matrices/axes';
 import { CompetitorMapManager } from './CompetitorMapManager';
+import { AxesChooser } from './matrices/AxesChooser';
+import { MatrixRunHeader } from './matrices/MatrixRunHeader';
+import { POLL_INTERVAL_MS, isMatrixRunActive, shouldKeepPolling } from './matrices/matrix-run-logic';
 
 type MatrixCompanyPoint = {
   name: string;
@@ -103,14 +112,10 @@ function scoreToPercent(score: number): number {
   return 10 + ((safe - 1) / 9) * 80;
 }
 
-function clampScore(score: number): number {
-  if (!Number.isFinite(score)) return 5;
-  return Math.max(1, Math.min(10, Math.round(score)));
-}
-
-function clampConfidence(value: number): number {
-  if (!Number.isFinite(value)) return 0.55;
-  return Math.max(0.3, Math.min(1, value));
+/** Proposed axes first, then any saved axis the proposal no longer lists. */
+function mergeAxisOptions(candidates: StoredMarketAxis[], saved: StoredMarketAxis[]): StoredMarketAxis[] {
+  const keys = new Set(candidates.map((axis) => axis.key));
+  return [...candidates, ...saved.filter((axis) => !keys.has(axis.key))];
 }
 
 export function CompetitiveMatricesTab({
@@ -132,86 +137,153 @@ export function CompetitiveMatricesTab({
   const [selectedKey, setSelectedKey] = useState<string>(
     initialMatrices?.charts?.[0]?.chart_key || 'price_value_depth',
   );
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  // UI Toggles for reducing clutter
+  // UI toggles for reducing clutter
   const [showTokens, setShowTokens] = useState(false);
-  const [showEditScores, setShowEditScores] = useState(false);
+  const [showAxes, setShowAxes] = useState(false);
+
+  const router = useRouter();
+  // Read through a ref inside the poll callback so a router object that
+  // changes identity between renders never restarts the interval.
+  const routerRef = useRef(router);
+  routerRef.current = router;
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // The page renders from `initialMatrices`; the run state below is fetched
+  // once on mount and polled only while a run is active.
+  const [status, setStatus] = useState<MatrixStatus | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [pollStopped, setPollStopped] = useState(false);
+  const runRef = useRef<MatrixRunView | null>(null);
+
+  // A router.refresh() re-renders the server page with the new saved result.
+  useEffect(() => {
+    setMatrices(initialMatrices);
+  }, [initialMatrices]);
 
   const selectedChart = useMemo(
     () => matrices?.charts.find((chart) => chart.chart_key === selectedKey) || null,
     [matrices, selectedKey],
   );
 
-  const generate = async () => {
-    setIsGenerating(true);
-    setError(null);
-    setSuccess(null);
-    try {
-      // TEMPORARY (Tasks 12-13 rewrite this tab): a run now happens in the
-      // background, so this only starts it and reports a refusal.
-      const result = await startMatrixRun(workspaceId);
-      if ('error' in result) {
-        setError(result.error);
+  const applyStatus = useCallback((next: MatrixStatus) => {
+    const wasActive = isMatrixRunActive(runRef.current?.status);
+    runRef.current = next.run;
+    setStatus(next);
+    if (wasActive && !isMatrixRunActive(next.run?.status)) {
+      // A run just finished while this page was watching it.
+      routerRef.current.refresh();
+    }
+  }, []);
+
+  /** Fetches and applies the status. Returns false when the request was refused. */
+  const fetchStatus = useCallback(async (): Promise<boolean> => {
+    const next = await getMatrixStatus(workspaceId);
+    if (!mountedRef.current) return true;
+    if ('error' in next) return false;
+    applyStatus(next);
+    return true;
+  }, [workspaceId, applyStatus]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const ok = await fetchStatus();
+        if (!cancelled) setLoadState(ok ? 'ready' : 'error');
+      } catch (loadError) {
+        console.error(loadError);
+        if (!cancelled) setLoadState('error');
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchStatus]);
+
+  // Poll only while the latest run is PENDING or RUNNING.
+  const runActive = isMatrixRunActive(status?.run?.status);
+  const runId = status?.run?.id;
+  useEffect(() => {
+    if (!runActive) return;
+    setPollStopped(false);
+    let cancelled = false;
+    let inFlight = false;
+    const timer = window.setInterval(async () => {
+      if (inFlight) return;
+      if (!shouldKeepPolling(runRef.current, Date.now())) {
+        window.clearInterval(timer);
+        if (!cancelled) setPollStopped(true);
         return;
       }
-    } catch (generateError) {
-      console.error(generateError);
-      setError(t('generateFailed'));
-    } finally {
-      setIsGenerating(false);
-    }
-  };
+      inFlight = true;
+      try {
+        if (cancelled) return;
+        const ok = await fetchStatus();
+        if (!ok) window.clearInterval(timer);
+      } catch (pollError) {
+        // One failed poll is not the end of the run; the next tick retries.
+        console.error(pollError);
+      } finally {
+        inFlight = false;
+      }
+    }, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [runActive, runId, fetchStatus]);
 
-  const saveEdits = async () => {
-    if (!matrices) return;
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
+  const startRun = async () => {
+    setStarting(true);
+    setStartError(null);
+    setShowAxes(false);
     try {
-      // TEMPORARY: the old whole-blob edit is gone; per-score overrides
-      // replace it in the rewritten tab (Tasks 12-13).
-      setError(t('saveFailed'));
-    } catch (saveError) {
-      console.error(saveError);
-      setError(t('saveFailed'));
+      const started = await startMatrixRun(workspaceId);
+      if ('error' in started) {
+        setStartError(started.error);
+        // A dispatch failure leaves a FAILED run behind; show it.
+        await fetchStatus().catch((refreshError) => console.error(refreshError));
+        return;
+      }
+      await fetchStatus();
+    } catch (startFailure) {
+      console.error(startFailure);
+      if (mountedRef.current) setStartError(t('generateFailed'));
     } finally {
-      setIsSaving(false);
+      if (mountedRef.current) setStarting(false);
     }
   };
 
-  const updateScore = (
-    chartKey: string,
-    companyName: string,
-    field: 'x_score' | 'y_score' | 'confidence_score',
-    value: number,
-  ) => {
-    if (!matrices) return;
-    setMatrices({
-      ...matrices,
-      charts: matrices.charts.map((chart) => {
-        if (chart.chart_key !== chartKey) return chart;
-        return {
-          ...chart,
-          companies: chart.companies.map((company) => {
-            if (company.name !== companyName) return company;
-            if (field === 'confidence_score') {
-              return { ...company, confidence_score: clampConfidence(value) };
-            }
-            return { ...company, [field]: clampScore(value) };
-          }),
-        };
-      }),
-    });
+  const onAxesSaved = async () => {
+    setShowAxes(false);
+    setStartError(null);
+    try {
+      await fetchStatus();
+    } catch (refreshError) {
+      console.error(refreshError);
+    }
   };
+
+  const run = status?.run ?? null;
+  const needsAxes = run?.status === 'NEEDS_AXES';
+  const axisOptions = needsAxes
+    ? run.axisCandidates
+    : mergeAxisOptions(run?.axisCandidates ?? [], status?.savedAxes ?? []);
+  const chooserOpen = (needsAxes || showAxes) && axisOptions.length > 0;
+  const hasAxesToEdit = !needsAxes && axisOptions.length > 0;
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 pb-12 w-full max-w-[1500px] mx-auto">
       {/* 1. Competitors Management Area */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-rule bg-chalk-raised shadow-sm">
+      <section id="matrices-competitors" className="relative overflow-hidden rounded-[2rem] border border-rule bg-chalk-raised shadow-sm">
         <div className="bg-gradient-to-r from-chalk/50 to-chalk-raised px-6 py-5 border-b border-rule flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-moss tracking-tight">{t('landscapeTitle')}</h2>
@@ -253,39 +325,41 @@ export function CompetitiveMatricesTab({
                 {showTokens ? t('hideDiagnostics') : t('viewDiagnostics')}
               </button>
             )}
-            <button
-              type="button"
-              onClick={saveEdits}
-              disabled={isSaving || !matrices}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-chalk-raised border border-rule px-4 py-2 text-[13px] font-bold text-moss transition hover:bg-chalk hover:border-rule-strong disabled:opacity-50"
-            >
-              {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 text-moss-muted" />}
-              {t('saveOverrides')}
-            </button>
-            <button
-              type="button"
-              onClick={generate}
-              disabled={isGenerating}
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-moss px-5 py-2 text-[13px] font-bold text-chalk transition hover:bg-moss disabled:opacity-50"
-            >
-              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
-              {t('generate')}
-            </button>
           </div>
         </div>
 
-        {matrices ? (
-          <div className="border-b border-rule px-6 py-3 empty:hidden">
-            <CompetitorBasisNote payload={matrices} />
+        <div className="border-b border-rule px-6 py-4">
+          <MatrixRunHeader
+            workspaceId={workspaceId}
+            status={status}
+            loadState={loadState}
+            matrices={matrices}
+            starting={starting}
+            startError={startError}
+            pollStopped={pollStopped}
+            hasAxesToEdit={hasAxesToEdit}
+            onStart={startRun}
+            onOpenAxes={() => setShowAxes(true)}
+          />
+        </div>
+
+        {chooserOpen ? (
+          <div className="border-b border-rule px-6 py-5">
+            <AxesChooser
+              key={run?.id ?? 'axes'}
+              workspaceId={workspaceId}
+              language={targetMarket.language}
+              candidates={axisOptions}
+              preselected={needsAxes ? undefined : status?.savedAxes.map((axis) => axis.key)}
+              onSaved={onAxesSaved}
+              onCancel={needsAxes ? undefined : () => setShowAxes(false)}
+            />
           </div>
         ) : null}
 
         {/* Global Notifications / Status */}
-        {(error || success || showTokens) && (
+        {showTokens && (
           <div className="px-6 py-4 border-b border-rule bg-chalk/30 space-y-3">
-            {error && <div className="rounded-xl border border-red-200 bg-red-50 text-red-700 p-3.5 text-[13px] font-medium shadow-sm">{error}</div>}
-            {success && <div className="rounded-xl border border-rule bg-chalk-sunk text-moss p-3.5 text-[13px] font-medium shadow-sm">{success}</div>}
-            
             {showTokens && matrices?.token_usage && (
               <div className="grid gap-4 pt-2 md:grid-cols-2">
                 <div className="rounded-2xl bg-chalk-raised p-5 border border-rule shadow-sm">
@@ -631,113 +705,6 @@ export function CompetitiveMatricesTab({
                           ))}
                         </div>
                       </div>
-                    </div>
-
-                    {/* Manual Score Editor Component */}
-                    <div className="mt-12 border border-rule rounded-[2rem] bg-chalk-raised overflow-hidden shadow-sm transition-all duration-300">
-                      <div className="px-7 py-5 flex flex-col sm:flex-row sm:items-center justify-between bg-chalk/50 border-b border-rule gap-4">
-                        <div>
-                          <h4 className="text-[14px] font-black text-moss tracking-tight">{t('fineTuneTitle')}</h4>
-                          <p className="text-[12px] text-moss-muted mt-1 font-medium max-w-lg">{t('fineTuneBody')}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setShowEditScores(!showEditScores)}
-                          className={`px-5 py-2.5 text-[13px] font-bold rounded-xl transition shadow-sm w-full sm:w-auto text-center border ${
-                            showEditScores 
-                            ? 'bg-chalk-sunk border-rule-strong text-moss hover:bg-chalk-sunk' 
-                            : 'bg-chalk-raised border-rule text-moss hover:bg-chalk hover:border-rule-strong'
-                          }`}
-                        >
-                          {showEditScores ? t('closeEditor') : t('openEditor')}
-                        </button>
-                      </div>
-
-                      {showEditScores && (
-                        <div className="p-7 space-y-3 bg-chalk-raised">
-                          <div className="grid gap-3 md:grid-cols-[1.5fr_1fr_1fr_1fr] px-4 hidden md:grid mb-2">
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-moss-muted">{t('competitorIdentity')}</div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-moss-muted"><bdi>{selectedChart.axes.x}</bdi></div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-moss-muted"><bdi>{selectedChart.axes.y}</bdi></div>
-                            <div className="text-[10px] font-bold uppercase tracking-widest text-moss-muted">{t('aiTrustScore')}</div>
-                          </div>
-                          
-                          <div className="space-y-3">
-                            {selectedChart.companies.map((company) => (
-                              <div
-                                key={`${selectedChart.chart_key}:edit:${company.name}:${company.website}`}
-                                className="grid gap-5 rounded-2xl border border-rule bg-chalk/60 p-5 md:grid-cols-[1.5fr_1fr_1fr_1fr] items-center transition hover:bg-chalk-raised hover:border-rule hover:shadow-sm"
-                              >
-                                <div className="min-w-0 pe-4 md:border-e md:border-rule">
-                                  <p className="truncate text-[15px] font-bold text-moss flex items-center gap-2 mb-1">
-                                    <span className={`h-3 w-3 shrink-0 rounded-full border ${colorForType(company.type)}`}></span>
-                                    <bdi>{company.name}</bdi>
-                                  </p>
-                                  <p className="truncate text-[12px] font-medium text-moss-muted ms-5" dir="ltr">{company.website.replace(/^https?:\/\//, '')}</p>
-                                </div>
-                                
-                                <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-moss-muted mb-1.5 md:hidden tracking-widest"><bdi>{selectedChart.axes.x}</bdi></span>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    value={company.x_score}
-                                    onChange={(event) =>
-                                      updateScore(
-                                        selectedChart.chart_key,
-                                        company.name,
-                                        'x_score',
-                                        Number(event.target.value),
-                                      )
-                                    }
-                                    className="w-full rounded-xl border border-rule bg-chalk-raised px-5 py-3 text-[15px] text-moss font-black transition focus:border-moss focus:ring-2 focus:ring-rule shadow-sm"
-                                  />
-                                </label>
-                                
-                                <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-moss-muted mb-1.5 md:hidden tracking-widest"><bdi>{selectedChart.axes.y}</bdi></span>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    max={10}
-                                    value={company.y_score}
-                                    onChange={(event) =>
-                                      updateScore(
-                                        selectedChart.chart_key,
-                                        company.name,
-                                        'y_score',
-                                        Number(event.target.value),
-                                      )
-                                    }
-                                    className="w-full rounded-xl border border-rule bg-chalk-raised px-5 py-3 text-[15px] text-moss font-black transition focus:border-moss focus:ring-2 focus:ring-rule shadow-sm"
-                                  />
-                                </label>
-                                
-                                <label className="flex flex-col md:block">
-                                  <span className="text-[10px] font-bold uppercase text-moss-muted mb-1.5 md:hidden tracking-widest">{t('confidenceScore')}</span>
-                                  <input
-                                    type="number"
-                                    min={0.3}
-                                    max={1}
-                                    step={0.01}
-                                    value={Number(company.confidence_score.toFixed(2))}
-                                    onChange={(event) =>
-                                      updateScore(
-                                        selectedChart.chart_key,
-                                        company.name,
-                                        'confidence_score',
-                                        Number(event.target.value),
-                                      )
-                                    }
-                                    className="w-full rounded-xl border border-rule bg-chalk-raised px-5 py-3 text-[15px] text-moss font-bold transition focus:border-moss focus:ring-2 focus:ring-rule shadow-sm"
-                                  />
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                 )}
