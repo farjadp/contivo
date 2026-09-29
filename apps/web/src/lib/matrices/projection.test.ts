@@ -134,6 +134,13 @@ describe('buildProjection', () => {
     expect(after.charts[0].white_space).toMatchObject({ xBand: 1, yBand: 1 });
   });
 
+  it('carries the competitor id so the drawer can address an override, null for the target', () => {
+    const p = buildProjection(input());
+    const byName = (name: string) => p.charts[0].companies.find((c) => c.name === name)!;
+    expect(byName('us').competitor_id).toBeNull();
+    expect(byName('rival-a').competitor_id).toBe('rival-a');
+  });
+
   it('carries the basis and the confidence word', () => {
     const p = buildProjection(input());
     expect(p.competitor_basis).toBe('ACCEPTED');

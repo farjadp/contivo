@@ -26,6 +26,8 @@ import type { ChartKind, CompanyType, MatrixOverride, MatrixScore } from './type
 export type ProjectedEvidence = { id: string; url: string; title: string };
 
 export type ProjectedCompany = {
+  /** The competitor row this point is, null for the target. What an override is addressed by. */
+  competitor_id: string | null;
   name: string;
   website: string;
   type: CompanyType;
@@ -153,6 +155,7 @@ export function buildProjection(input: ProjectionInput): Projection {
       const moved = x !== aiX || y !== aiY;
 
       return {
+        competitor_id: score.competitorId,
         name: score.name,
         website: score.domain ? `https://${score.domain}` : '',
         type: score.type,
