@@ -104,6 +104,7 @@
         "competitorLine": "Built on {basis}: {count, plural, one {{formatted} competitor} other {{formatted} competitors}}",
         "lastRun": "Last run {date}",
         "stale": "A competitor changed after these matrices were built, so they may be out of date.",
+        "skipped": "{count, plural, one {{formatted} competitor was left out because there was nothing on its site to score it on. Re-run competitor discovery to include it.} other {{formatted} competitors were left out because there was nothing on their site to score them on. Re-run competitor discovery to include them.}}",
         "regenerate": "Rebuild now",
         "legacy": "These charts were built before every score had to cite evidence. Rebuild them to be sure they hold up.",
         "stages": {
@@ -121,6 +122,7 @@
           "title": "The run did not finish",
           "timedOut": "The run took too long and was stopped. Try again.",
           "dispatch": "The run could not start because of a problem on our side. Try again in a moment.",
+          "notEnoughEvidence": "Fewer than two competitors have anything on their site to score them on. Re-run competitor discovery, then try again.",
           "generic": "Something went wrong in our system. Try again."
         },
         "empty": {

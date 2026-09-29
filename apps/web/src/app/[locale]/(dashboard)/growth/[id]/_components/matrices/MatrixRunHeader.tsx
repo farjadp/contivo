@@ -57,6 +57,7 @@ export function MatrixRunHeader({
   const currentStage = stageIndex(run?.stage);
   const lastRunAt = run?.status === 'DONE' ? run.finishedAt : null;
   const busy = starting || active;
+  const skippedCount = status?.skippedCount ?? 0;
 
   return (
     <div className="space-y-4">
@@ -143,7 +144,14 @@ export function MatrixRunHeader({
       ) : null}
 
       {notice === 'unconfirmed' ? <WarningNote>{tBasis('unconfirmed')}</WarningNote> : null}
-      {notice === 'legacy' ? (
+      {hasMatrices && skippedCount > 0 ? (
+        <p role="note" className="flex items-start gap-2 text-xs leading-relaxed text-moss-muted">
+          <Info aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          <span>{t('skipped', { count: skippedCount, formatted: format.number(skippedCount) })}</span>
+        </p>
+      ) : null}
+      {/* The legacy note is about the saved result; during a run it would contradict the rebuild in progress. */}
+      {notice === 'legacy' && !busy ? (
         <p role="note" className="flex items-start gap-2 text-xs leading-relaxed text-moss-muted">
           <Info aria-hidden className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           <span>{t('legacy')}</span>
