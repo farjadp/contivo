@@ -184,17 +184,33 @@ export async function runMatrixPipeline(runId: string): Promise<void> {
         });
         if (guarded.count === 0) throw new RunNoLongerActiveError(runId);
 
+        let deleted = false;
         for (const [id, items] of found) {
           // Re-read inside the transaction so a concurrent change to the
           // stored evidence is appended to, not overwritten.
           const row = await tx.competitor.findUnique({ where: { id }, select: { evidence: true } });
-          if (!row) continue;
+          if (!row) {
+            // Deleted mid-run: its site evidence has nowhere to be saved, so
+            // no score may cite it. Left out, like any competitor without evidence.
+            skippedIds.add(id);
+            deleted = true;
+            continue;
+          }
           const merged = mergeEvidence(row.evidence, items);
           await tx.competitor.update({
             where: { id },
             data: { evidence: merged as Prisma.InputJsonValue },
           });
           evidenceById.set(id, merged);
+        }
+
+        if (deleted) {
+          // Same transaction, run row still locked by the first write.
+          const marked = await tx.matrixRun.updateMany({
+            where: { id: runId, status: 'RUNNING' },
+            data: { competitorSet: markSkipped(storedCompetitorSet, skippedIds) as Prisma.InputJsonValue },
+          });
+          if (marked.count === 0) throw new RunNoLongerActiveError(runId);
         }
       });
     }

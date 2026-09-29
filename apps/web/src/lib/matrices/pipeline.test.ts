@@ -504,6 +504,25 @@ describe('runMatrixPipeline: evidence for competitors that have none (spec §15)
     expect(proposeMock.proposeMarketAxes).not.toHaveBeenCalled();
   });
 
+  it('treats a competitor deleted mid-run as skipped: no evidence write, not scored, marked skipped', async () => {
+    const competitors = [competitor('c1'), competitor('c2'), competitor('c3', { evidence: [] })];
+    // c3's row is gone by the time the transaction re-reads it
+    storedEvidenceFrom(competitors.filter((c) => c.id !== 'c3'));
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { competitors }, run: { competitorSet: THREE } }));
+    siteReads({ 'c3.com': 'A real line from the site' });
+
+    await runMatrixPipeline('run-1');
+
+    expect(prismaMock.competitor.update).not.toHaveBeenCalled();
+    const setWrites = runWrites().filter((w) => 'competitorSet' in w.data);
+    expect(setWrites.every((w) => w.where.status === 'RUNNING')).toBe(true);
+    expect(setWrites[setWrites.length - 1].data.competitorSet).toEqual([THREE[0], THREE[1], { ...THREE[2], skipped: true }]);
+
+    const bundle = scoreMock.scoreChart.mock.calls[0][0];
+    expect(bundle.competitors.map((c: { competitorId: string }) => c.competitorId)).toEqual(['c1', 'c2']);
+    expect(finalRunWrite().data.status).toBe('DONE');
+  });
+
   it('proposes axes from the competitors that have evidence only', async () => {
     const competitors = [competitor('c1'), competitor('c2'), competitor('c3', { evidence: [] })];
     storedEvidenceFrom(competitors);
