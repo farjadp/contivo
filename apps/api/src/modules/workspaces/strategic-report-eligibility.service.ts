@@ -5,6 +5,35 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 /** Keep in step with REQUIRED_MATRIX_CHARTS in apps/web/src/lib/report-readiness.ts. */
 const REQUIRED_MATRIX_CHARTS = 3;
 
+/**
+ * A local copy of isFabricatedLegacyMatrices in
+ * apps/web/src/lib/report-readiness.ts (the API has no shared import path);
+ * keep the two in step. The old matrix generator filled points it had no
+ * evidence for with this reason and a 0.42 confidence, and charts with this
+ * pattern. A legacy blob (no run_id) carrying either is invented data and must
+ * not count as completed matrices (spec M3).
+ */
+const FABRICATED_REASON = 'Score estimated from limited evidence and public positioning signals.';
+const FABRICATED_CONFIDENCE = 0.42;
+const FABRICATED_PATTERN = 'Estimated pattern from limited public signals.';
+
+function isFabricatedLegacyMatrices(matrices: unknown): boolean {
+  if (!matrices || typeof matrices !== 'object' || Array.isArray(matrices)) return false;
+  const m = matrices as Record<string, any>;
+  if (m.run_id || !Array.isArray(m.charts)) return false;
+  return m.charts.some((chart: any) => {
+    if (!chart || typeof chart !== 'object') return false;
+    if (chart.summary?.market_pattern === FABRICATED_PATTERN) return true;
+    return (
+      Array.isArray(chart.companies) &&
+      chart.companies.some(
+        (company: any) =>
+          company?.x_reason === FABRICATED_REASON && company?.confidence_score === FABRICATED_CONFIDENCE,
+      )
+    );
+  });
+}
+
 @Injectable()
 export class StrategicReportEligibilityService {
   constructor(private prisma: PrismaService) {}
@@ -71,7 +100,10 @@ export class StrategicReportEligibilityService {
       missingData.push('Brand Memory');
     }
 
-    if (insights?.competitiveMatrices?.charts?.length >= REQUIRED_MATRIX_CHARTS) {
+    if (
+      insights?.competitiveMatrices?.charts?.length >= REQUIRED_MATRIX_CHARTS &&
+      !isFabricatedLegacyMatrices(insights.competitiveMatrices)
+    ) {
       sectionsCompleted.push('Market Matrices');
     } else {
       missingData.push(`Market Matrices (need ${REQUIRED_MATRIX_CHARTS} charts)`);

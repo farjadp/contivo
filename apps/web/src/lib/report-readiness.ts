@@ -28,6 +28,34 @@ export const REQUIRED_MATRIX_CHARTS = 3;
 export type CompetitorBasis = 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'UNKNOWN';
 
 /**
+ * The old matrix generator, when it had nothing to go on, filled every point
+ * with this reason and a 0.42 confidence, and every chart with this pattern.
+ * A legacy blob (no `run_id`) carrying either signature is invented data and
+ * must not open any gate (spec M3). Keep in step with the copy in
+ * apps/api/src/modules/workspaces/strategic-report-eligibility.service.ts.
+ */
+const FABRICATED_REASON = 'Score estimated from limited evidence and public positioning signals.';
+const FABRICATED_CONFIDENCE = 0.42;
+const FABRICATED_PATTERN = 'Estimated pattern from limited public signals.';
+
+export function isFabricatedLegacyMatrices(matrices: unknown): boolean {
+  if (!matrices || typeof matrices !== 'object' || Array.isArray(matrices)) return false;
+  const m = matrices as Record<string, any>;
+  if (m.run_id || !Array.isArray(m.charts)) return false;
+  return m.charts.some((chart: any) => {
+    if (!chart || typeof chart !== 'object') return false;
+    if (chart.summary?.market_pattern === FABRICATED_PATTERN) return true;
+    return (
+      Array.isArray(chart.companies) &&
+      chart.companies.some(
+        (company: any) =>
+          company?.x_reason === FABRICATED_REASON && company?.confidence_score === FABRICATED_CONFIDENCE,
+      )
+    );
+  });
+}
+
+/**
  * Whether a stored positioning blob may feed ideation. A blob from the
  * current pipeline (it carries `run_id`) must also say which competitor set it
  * was built on. A legacy blob predates that field, so it passes on chart count
@@ -46,7 +74,16 @@ export function matricesGate(
         'Market Metric data is required for ideation. Please run Competitive Landscape charts first.',
     };
   }
-  if (!m.run_id) return { ok: true, competitorBasis: 'UNKNOWN' };
+  if (!m.run_id) {
+    if (isFabricatedLegacyMatrices(m)) {
+      return {
+        ok: false,
+        reason:
+          'Market Metric data was estimated without evidence. Please re-run Competitive Landscape charts.',
+      };
+    }
+    return { ok: true, competitorBasis: 'UNKNOWN' };
+  }
   if (m.competitor_basis === 'ACCEPTED' || m.competitor_basis === 'UNCONFIRMED_HIGH') {
     return { ok: true, competitorBasis: m.competitor_basis };
   }
@@ -72,7 +109,11 @@ export function missingReportRequirements(
 
   // DB key: competitiveMatrices.charts (array)
   const charts = insights?.competitiveMatrices?.charts;
-  if (!Array.isArray(charts) || charts.length < REQUIRED_MATRIX_CHARTS) {
+  if (
+    !Array.isArray(charts) ||
+    charts.length < REQUIRED_MATRIX_CHARTS ||
+    isFabricatedLegacyMatrices(insights?.competitiveMatrices)
+  ) {
     missing.push('marketMatrices');
   }
 

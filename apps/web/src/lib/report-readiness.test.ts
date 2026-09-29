@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   REQUIRED_MATRIX_CHARTS,
+  isFabricatedLegacyMatrices,
   matricesGate,
   missingReportRequirements,
 } from './report-readiness';
@@ -55,5 +56,56 @@ describe('matricesGate', () => {
     for (const v of [undefined, null, 'x', {}, { charts: 'no' }]) {
       expect(matricesGate(v).ok).toBe(false);
     }
+  });
+});
+
+const FALLBACK_REASON = 'Score estimated from limited evidence and public positioning signals.';
+const FALLBACK_PATTERN = 'Estimated pattern from limited public signals.';
+const genuineChart = () => ({
+  summary: { market_pattern: 'Everyone sells the suite.' },
+  companies: [{ x_reason: 'Sells one product.', confidence_score: 0.42 }],
+});
+
+describe('isFabricatedLegacyMatrices', () => {
+  it('flags a legacy blob carrying the old fallback reason and confidence', () => {
+    const blob = {
+      charts: [genuineChart(), { ...genuineChart(), companies: [{ x_reason: FALLBACK_REASON, confidence_score: 0.42 }] }, genuineChart()],
+    };
+    expect(isFabricatedLegacyMatrices(blob)).toBe(true);
+  });
+  it('flags a legacy blob carrying the old fallback market pattern', () => {
+    const blob = { charts: [genuineChart(), { ...genuineChart(), summary: { market_pattern: FALLBACK_PATTERN } }, genuineChart()] };
+    expect(isFabricatedLegacyMatrices(blob)).toBe(true);
+  });
+  it('needs both halves of the company signature', () => {
+    const blob = { charts: [{ ...genuineChart(), companies: [{ x_reason: FALLBACK_REASON, confidence_score: 0.9 }] }] };
+    expect(isFabricatedLegacyMatrices(blob)).toBe(false);
+  });
+  it('passes a genuine legacy blob and never flags a current-pipeline blob', () => {
+    expect(isFabricatedLegacyMatrices({ charts: [genuineChart(), genuineChart(), genuineChart()] })).toBe(false);
+    expect(
+      isFabricatedLegacyMatrices({ run_id: 'r', charts: [{ summary: { market_pattern: FALLBACK_PATTERN } }] }),
+    ).toBe(false);
+  });
+  it('is false for malformed input', () => {
+    for (const v of [undefined, null, 'x', {}, { charts: 'no' }, { charts: [null, 3] }]) {
+      expect(isFabricatedLegacyMatrices(v)).toBe(false);
+    }
+  });
+});
+
+describe('fabricated legacy blobs close the gates', () => {
+  const fabricated = {
+    charts: [genuineChart(), genuineChart(), { summary: { market_pattern: FALLBACK_PATTERN }, companies: [] }],
+  };
+  it('matricesGate refuses one', () => {
+    expect(matricesGate(fabricated).ok).toBe(false);
+    expect(matricesGate({ charts: [genuineChart(), genuineChart(), genuineChart()] })).toEqual({
+      ok: true,
+      competitorBasis: 'UNKNOWN',
+    });
+  });
+  it('missingReportRequirements lists market matrices for one', () => {
+    expect(missingReportRequirements({ a: 1 }, { ...full(3), competitiveMatrices: fabricated })).toEqual(['marketMatrices']);
   });
 });
