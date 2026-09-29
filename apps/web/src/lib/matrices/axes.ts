@@ -73,11 +73,16 @@ function slugify(raw: string): string {
  * to use as chart ids: unique, and never one of the core keys.
  */
 export function parseStoredMarketAxes(value: unknown): StoredMarketAxis[] {
+  return normaliseMarketAxes(value, MAX_MARKET_AXES);
+}
+
+/** The shared slug and validation rules, with the cap chosen by the caller (proposals keep 4). */
+export function normaliseMarketAxes(value: unknown, limit: number): StoredMarketAxis[] {
   if (!Array.isArray(value)) return [];
   const taken = new Set<string>(CORE_AXIS_KEYS);
   const out: StoredMarketAxis[] = [];
   for (const entry of value) {
-    if (out.length >= MAX_MARKET_AXES) break;
+    if (out.length >= limit) break;
     if (!isRecord(entry)) continue;
     const rawKey = text(entry.key);
     const x = parseEnd(entry.x);
