@@ -10,6 +10,7 @@ import {
   canSubmitAxes,
   emptyStateReason,
   isMatrixRunActive,
+  refusalDuplicatesRun,
   renameAxis,
   shouldKeepPolling,
   stageIndex,
@@ -129,5 +130,24 @@ describe('axes selection', () => {
       y: { label: 'New Y', low: 'lo', high: 'hi' },
     });
     expect(renamed[1]).toEqual(axis('b'));
+  });
+});
+
+describe('refusalDuplicatesRun', () => {
+  const failed = (id: string, errorKind: string | null) => ({ id, status: 'FAILED', errorKind });
+  it('keeps the error when an old failed run is on screen', () => {
+    expect(refusalDuplicatesRun(failed('old', 'dispatch'), 'old')).toBe(false);
+    expect(refusalDuplicatesRun(failed('old', 'generic'), 'old')).toBe(false);
+  });
+  it('drops the error for a new dispatch-failed run', () => {
+    expect(refusalDuplicatesRun(failed('new', 'dispatch'), 'old')).toBe(true);
+    expect(refusalDuplicatesRun(failed('new', 'dispatch'), null)).toBe(true);
+  });
+  it('keeps the error for a new run that failed some other way, or a non-failed run', () => {
+    expect(refusalDuplicatesRun(failed('new', 'generic'), 'old')).toBe(false);
+    expect(refusalDuplicatesRun({ id: 'new', status: 'DONE', errorKind: null }, 'old')).toBe(false);
+  });
+  it('keeps the error with no run', () => {
+    expect(refusalDuplicatesRun(null, 'old')).toBe(false);
   });
 });

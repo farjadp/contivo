@@ -79,3 +79,16 @@ export function renameAxis(
       : axis,
   );
 }
+
+/**
+ * Whether a refused start's message repeats the failure shown on screen: only
+ * when the displayed run is a dispatch failure that this start itself created
+ * (its id differs from the run shown before the start). An older FAILED run
+ * never hides a genuine refusal.
+ */
+export function refusalDuplicatesRun(
+  run: { id: string; status: string; errorKind: string | null } | null | undefined,
+  runIdBeforeStart: string | null,
+): boolean {
+  return !!run && run.status === 'FAILED' && run.errorKind === 'dispatch' && run.id !== runIdBeforeStart;
+}

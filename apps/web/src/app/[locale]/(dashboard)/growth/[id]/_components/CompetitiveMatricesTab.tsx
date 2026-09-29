@@ -15,7 +15,7 @@ import type { StoredMarketAxis } from '@/lib/matrices/axes';
 import { CompetitorMapManager } from './CompetitorMapManager';
 import { AxesChooser } from './matrices/AxesChooser';
 import { MatrixRunHeader } from './matrices/MatrixRunHeader';
-import { POLL_INTERVAL_MS, isMatrixRunActive, shouldKeepPolling } from './matrices/matrix-run-logic';
+import { POLL_INTERVAL_MS, isMatrixRunActive, refusalDuplicatesRun, shouldKeepPolling } from './matrices/matrix-run-logic';
 
 type MatrixCompanyPoint = {
   name: string;
@@ -248,12 +248,15 @@ export function CompetitiveMatricesTab({
     setStarting(true);
     setStartError(null);
     setShowAxes(false);
+    const runIdBeforeStart = runRef.current?.id ?? null;
     try {
       const started = await startMatrixRun(workspaceId);
       if ('error' in started) {
         setStartError(started.error);
-        // A dispatch failure leaves a FAILED run behind; show it.
+        // A dispatch failure leaves a FAILED run behind; show it, and drop the
+        // message only if it repeats that new run's failure.
         await fetchStatus().catch((refreshError) => console.error(refreshError));
+        if (mountedRef.current && refusalDuplicatesRun(runRef.current, runIdBeforeStart)) setStartError(null);
         return;
       }
       if (!(await fetchStatus())) setPollStopped(true);

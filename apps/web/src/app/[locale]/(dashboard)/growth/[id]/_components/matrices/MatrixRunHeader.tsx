@@ -104,7 +104,7 @@ export function MatrixRunHeader({
       </div>
 
       {loadState === 'error' ? <ErrorNote>{t('statusFailed')}</ErrorNote> : null}
-      {startError && run?.status !== 'FAILED' ? <ErrorNote>{startError}</ErrorNote> : null}
+      {startError ? <ErrorNote>{startError}</ErrorNote> : null}
 
       {missing ? (
         <div role="status" className="rounded-xl border border-rule bg-chalk-sunk px-4 py-3 text-sm text-moss">
