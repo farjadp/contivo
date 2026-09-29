@@ -74,6 +74,8 @@ export type ProjectionInput = {
   crossChartSummary: string;
   strongestDifferentiation: string;
   targetAudienceSegment: string;
+  /** Tokens the run spent; the old blob carried this and readers show it. */
+  tokensUsed: number;
 };
 
 export type Projection = {
@@ -87,6 +89,7 @@ export type Projection = {
   cross_chart_summary: string;
   strongest_differentiation_opportunity: string;
   target_audience_segment: string;
+  tokens_used: number;
 };
 
 function clampScore(value: number): number {
@@ -189,5 +192,6 @@ export function buildProjection(input: ProjectionInput): Projection {
     cross_chart_summary: input.crossChartSummary,
     strongest_differentiation_opportunity: input.strongestDifferentiation,
     target_audience_segment: input.targetAudienceSegment,
+    tokens_used: input.tokensUsed,
   };
 }

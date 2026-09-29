@@ -47,10 +47,15 @@ function input(overrides: MatrixOverride[] = [], liveIds = ['rival-a', 'rival-b'
     crossChartSummary: 'summary',
     strongestDifferentiation: 'differentiation',
     targetAudienceSegment: 'small agencies',
+    tokensUsed: 1234,
   };
 }
 
 describe('buildProjection', () => {
+  it('carries the run token count', () => {
+    expect(buildProjection(input()).tokens_used).toBe(1234);
+  });
+
   it('keeps the payload shape the existing readers expect', () => {
     const p = buildProjection(input());
     expect(Array.isArray(p.charts)).toBe(true);

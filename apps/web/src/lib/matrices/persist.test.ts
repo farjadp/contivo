@@ -1,0 +1,136 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const { prismaMock } = vi.hoisted(() => ({
+  prismaMock: {
+    matrixRun: { findFirst: vi.fn() },
+    matrixOverride: { findMany: vi.fn() },
+    competitor: { findMany: vi.fn() },
+    workspace: { findUnique: vi.fn(), update: vi.fn() },
+  },
+}));
+
+vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
+
+import { rebuildMatricesProjection } from './persist';
+
+function competitor(id: string, decision: string | null = 'ACCEPTED') {
+  return { id, userDecision: decision, confidence: 0.9, sources: [], evidence: null };
+}
+
+function run(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'run_1',
+    status: 'DONE',
+    basis: 'ACCEPTED',
+    language: 'en',
+    finishedAt: new Date('2026-09-29T10:00:00.000Z'),
+    startedAt: new Date('2026-09-29T09:00:00.000Z'),
+    tokensUsed: 4321,
+    competitorSet: [
+      { competitorId: 'a', domain: 'a.com', type: 'DIRECT' },
+      { competitorId: 'b', domain: 'b.com', type: 'DIRECT' },
+    ],
+    crossChart: { crossChartSummary: 'sum', strongestDifferentiation: 'diff', targetAudienceSegment: 'seg' },
+    charts: [
+      {
+        key: 'core',
+        kind: 'CORE',
+        order: 0,
+        name: 'Core chart',
+        xLabel: 'X',
+        yLabel: 'Y',
+        marketPattern: 'pattern',
+        opportunity: 'opp',
+        contentAngles: [{ angle: 'ang', audienceSegment: 'seg' }],
+        scores: [
+          { competitorId: null, name: 'us', domain: 'us.com', type: 'TARGET', xScore: 5, yScore: 5, xReason: 'r', yReason: 'r', evidenceRefs: [], confidence: 0.9, estimated: false },
+          { competitorId: 'a', name: 'A', domain: 'a.com', type: 'DIRECT', xScore: 2, yScore: 3, xReason: 'r', yReason: 'r', evidenceRefs: [], confidence: 0.9, estimated: false },
+          { competitorId: 'b', name: 'B', domain: 'b.com', type: 'DIRECT', xScore: 7, yScore: 8, xReason: 'r', yReason: 'r', evidenceRefs: [], confidence: 0.9, estimated: false },
+        ],
+      },
+    ],
+    ...overrides,
+  };
+}
+
+function setup(opts: { run?: unknown; overrides?: unknown[]; competitors?: unknown[]; insights?: unknown } = {}) {
+  prismaMock.matrixRun.findFirst.mockResolvedValue('run' in opts ? opts.run : run());
+  prismaMock.matrixOverride.findMany.mockResolvedValue(opts.overrides ?? []);
+  prismaMock.competitor.findMany.mockResolvedValue(opts.competitors ?? [competitor('a'), competitor('b')]);
+  prismaMock.workspace.findUnique.mockResolvedValue({
+    audienceInsights: 'insights' in opts ? opts.insights : { other: { keep: true }, competitiveMatrices: { token_usage: 9, legacy: true } },
+  });
+  prismaMock.workspace.update.mockResolvedValue({});
+}
+
+beforeEach(() => vi.clearAllMocks());
+
+describe('rebuildMatricesProjection', () => {
+  it('returns null and writes nothing when there is no DONE run', async () => {
+    setup({ run: null });
+    expect(await rebuildMatricesProjection('ws-1')).toBeNull();
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+    expect(prismaMock.matrixRun.findFirst.mock.calls[0][0].where).toMatchObject({ workspaceId: 'ws-1', status: 'DONE' });
+  });
+
+  it('applies an override and records the AI number', async () => {
+    setup({ overrides: [{ chartKey: 'core', competitorId: null, xScore: 9, yScore: null, note: 'mine' }] });
+    const result = await rebuildMatricesProjection('ws-1');
+    const us = result!.charts[0].companies[0];
+    expect(us.x_score).toBe(9);
+    expect(us.override).toEqual({ ai_x_score: 5, ai_y_score: 5, note: 'mine' });
+    expect(result!.tokens_used).toBe(4321);
+    expect(result!.stale).toBe(false);
+    expect(result!.cross_chart_summary).toBe('sum');
+  });
+
+  it('keeps other audienceInsights keys and replaces the legacy blob entirely', async () => {
+    setup();
+    await rebuildMatricesProjection('ws-1');
+    const data = prismaMock.workspace.update.mock.calls[0][0].data.audienceInsights;
+    expect(data.other).toEqual({ keep: true });
+    expect(data.competitiveMatrices.run_id).toBe('run_1');
+    expect(data.competitiveMatrices.token_usage).toBeUndefined();
+    expect(data.competitiveMatrices.legacy).toBeUndefined();
+  });
+
+  it('writes when audienceInsights was empty', async () => {
+    setup({ insights: null });
+    await rebuildMatricesProjection('ws-1');
+    const data = prismaMock.workspace.update.mock.calls[0][0].data.audienceInsights;
+    expect(Object.keys(data)).toEqual(['competitiveMatrices']);
+  });
+
+  it('ignores an override for a deleted competitor', async () => {
+    setup({
+      competitors: [competitor('b')],
+      overrides: [{ chartKey: 'core', competitorId: 'a', xScore: 9, yScore: 9, note: null }],
+    });
+    const result = await rebuildMatricesProjection('ws-1');
+    const a = result!.charts[0].companies.find((c) => c.name === 'A')!;
+    expect(a.x_score).toBe(2);
+    expect(a.override).toBeUndefined();
+  });
+
+  it('marks the projection stale when a competitor was accepted after the run', async () => {
+    setup({ competitors: [competitor('a'), competitor('b'), competitor('c')] });
+    expect((await rebuildMatricesProjection('ws-1'))!.stale).toBe(true);
+  });
+
+  it('turns malformed JSON columns into empty values instead of throwing', async () => {
+    setup({
+      run: run({
+        competitorSet: 'garbage',
+        crossChart: 42,
+        charts: [{ ...run().charts[0], contentAngles: { nope: true } }],
+      }),
+      competitors: [],
+    });
+    const result = await rebuildMatricesProjection('ws-1');
+    expect(result!.cross_chart_summary).toBe('');
+    expect(result!.strongest_differentiation_opportunity).toBe('');
+    expect(result!.target_audience_segment).toBe('');
+    expect(result!.charts[0].content_angles).toEqual([]);
+    expect(result!.stale).toBe(false);
+  });
+});
