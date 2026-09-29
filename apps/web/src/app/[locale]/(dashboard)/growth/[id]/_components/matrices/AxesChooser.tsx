@@ -129,7 +129,7 @@ export function AxesChooser({
                     {isOn ? <Check className="h-3.5 w-3.5" /> : null}
                   </span>
                   <bdi>
-                    {axis.y.label} / {axis.x.label}
+                    {axis.x.label} / {axis.y.label}
                   </bdi>
                 </button>
                 <p className="text-xs leading-relaxed text-moss-muted" dir="auto">
