@@ -152,13 +152,13 @@
       },
       "chart": {
         "plotLabel": "Positioning chart: {y} against {x}",
-        "pointLabel": "{name}: {xAxis} {x} out of 10, {yAxis} {y} out of 10",
-        "pointLabelEdited": "{name}: {xAxis} {x} out of 10, {yAxis} {y} out of 10. You moved this point.",
+        "pointLabel": "{name}: {xAxis} {x} of {max}, {yAxis} {y} of {max}",
+        "pointLabelEdited": "{name}: {xAxis} {x} of {max}, {yAxis} {y} of {max}. You moved this point.",
         "openGround": "Open ground"
       },
       "drawer": {
         "close": "Close",
-        "score": "{score} out of 10",
+        "score": "{score} of {max}",
         "lower": "Lower the {axis} score",
         "raise": "Raise the {axis} score",
         "aiScored": "The AI scored this {score}.",

@@ -14,7 +14,8 @@ type CompanyType = CompanyView['type'];
  * point (nothing citable behind it) is drawn hollow.
  */
 function dotClasses(type: CompanyType, estimated: boolean): string {
-  if (type === 'TARGET') return estimated ? 'bg-chalk-raised border-moss text-moss' : 'bg-saffron border-moss text-moss';
+  // An estimated target is hollow but stays saffron: it is still you.
+  if (type === 'TARGET') return estimated ? 'bg-chalk-raised border-saffron border-[3px] text-moss' : 'bg-saffron border-moss text-moss';
   if (type === 'INDIRECT') return 'bg-chalk-raised border-rival text-rival';
   if (type === 'ASPIRATIONAL') return estimated ? 'bg-chalk-raised border-moss-700 text-moss-700' : 'bg-moss-700 border-moss-700 text-chalk';
   return estimated ? 'bg-chalk-raised border-rival text-rival' : 'bg-rival border-rival text-chalk';
@@ -141,6 +142,7 @@ export function MatrixChart({
             yAxis: chart.axes.y,
             x: format.number(company.x_score),
             y: format.number(company.y_score),
+            max: format.number(10),
           });
           return (
             <div

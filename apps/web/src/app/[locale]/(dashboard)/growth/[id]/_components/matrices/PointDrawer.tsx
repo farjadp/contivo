@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Minus, Pencil, Plus, Undo2, X } from 'lucide-react';
 
@@ -43,6 +43,8 @@ export function PointDrawer({
   const [saving, setSaving] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
 
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
   const editable = canOverride(company);
   const competitorId = company.competitor_id ?? null;
   const pointKey = `${chart.chart_key}::${company.name}::${company.website}`;
@@ -50,6 +52,21 @@ export function PointDrawer({
   // A different point is a different conversation: drop the last notice.
   useEffect(() => {
     setNotice(null);
+  }, [pointKey]);
+
+  // The drawer is only mounted while open, so this Escape listener and the
+  // focus handling below exist only then. Focus goes to the heading on open
+  // and back to whatever opened the drawer when it closes.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    openerRef.current = opener;
+    return () => {
+      if (opener && opener.isConnected) opener.focus();
+    };
+  }, []);
+
+  useEffect(() => {
+    headingRef.current?.focus();
   }, [pointKey]);
 
   useEffect(() => {
@@ -127,7 +144,7 @@ export function PointDrawer({
           <p className="text-[10px] font-bold uppercase tracking-widest text-moss-muted">
             {tType(legendKeyForType(company.type))}
           </p>
-          <h4 className="text-lg font-bold tracking-tight text-moss">
+          <h4 ref={headingRef} tabIndex={-1} className="text-lg font-bold tracking-tight text-moss focus:outline-none">
             <bdi>{company.name}</bdi>
           </h4>
           <p className="truncate text-[12px] text-moss-muted" dir="ltr">
@@ -162,26 +179,26 @@ export function PointDrawer({
                     type="button"
                     disabled={saving || row.score <= MIN}
                     onClick={() => step(row.axis, -1)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rule bg-chalk-raised text-moss hover:border-rule-strong disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rule bg-chalk-raised text-moss hover:border-rule-strong disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Minus aria-hidden className="h-4 w-4" />
                     <span className="sr-only">{t('drawer.lower', { axis: row.label })}</span>
                   </button>
                   <span className="min-w-16 text-center text-[14px] font-bold text-moss" aria-live="polite">
-                    {t('drawer.score', { score: format.number(row.score) })}
+                    {t('drawer.score', { score: format.number(row.score), max: format.number(MAX) })}
                   </span>
                   <button
                     type="button"
                     disabled={saving || row.score >= MAX}
                     onClick={() => step(row.axis, 1)}
-                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-rule bg-chalk-raised text-moss hover:border-rule-strong disabled:cursor-not-allowed disabled:opacity-40"
+                    className="inline-flex h-11 w-11 items-center justify-center rounded-lg border border-rule bg-chalk-raised text-moss hover:border-rule-strong disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus aria-hidden className="h-4 w-4" />
                     <span className="sr-only">{t('drawer.raise', { axis: row.label })}</span>
                   </button>
                 </div>
               ) : (
-                <span className="text-[14px] font-bold text-moss">{t('drawer.score', { score: format.number(row.score) })}</span>
+                <span className="text-[14px] font-bold text-moss">{t('drawer.score', { score: format.number(row.score), max: format.number(MAX) })}</span>
               )}
             </div>
             <p className="mt-3 text-[13px] leading-6 text-moss" dir="auto">
