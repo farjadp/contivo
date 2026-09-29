@@ -356,6 +356,7 @@ model MatrixRun {
   axisCandidates Json? // [{ key, x, y, rationale }] when status = NEEDS_AXES
   crossChart     Json? // { crossChartSummary, strongestDifferentiation, targetAudienceSegment }
   tokensUsed     Int           @default(0)
+  model          String? // the OpenAI model the run used (spec §6.7)
   error          String?
   startedAt      DateTime      @default(now())
   finishedAt     DateTime?
@@ -387,6 +388,7 @@ model MatrixChart {
   scores        MatrixScore[]
 
   @@index([workspaceId, key])
+  @@index([runId])
   @@map("matrix_charts")
 }
 
@@ -406,6 +408,7 @@ model MatrixScore {
   estimated    Boolean     @default(false)
   chart        MatrixChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
 
+  @@index([chartId])
   @@map("matrix_scores")
 }
 
@@ -421,6 +424,11 @@ model MatrixOverride {
   updatedAt    DateTime  @updatedAt
   workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
+  // The migration drops the index Prisma generates for this @@unique and
+  // re-creates it with NULLS NOT DISTINCT (Postgres 15+), so two TARGET
+  // overrides (competitorId NULL) cannot coexist. Prisma cannot express that;
+  // remove any DROP/CREATE of matrix_overrides_workspaceId_chartKey_competitorId_key
+  // that a generated migration proposes, or it reverts to NULLs-distinct.
   @@unique([workspaceId, chartKey, competitorId])
   @@map("matrix_overrides")
 }
