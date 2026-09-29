@@ -38,19 +38,22 @@ const FABRICATED_REASON = 'Score estimated from limited evidence and public posi
 const FABRICATED_CONFIDENCE = 0.42;
 const FABRICATED_PATTERN = 'Estimated pattern from limited public signals.';
 
+const asRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
+
 export function isFabricatedLegacyMatrices(matrices: unknown): boolean {
-  if (!matrices || typeof matrices !== 'object' || Array.isArray(matrices)) return false;
-  const m = matrices as Record<string, any>;
-  if (m.run_id || !Array.isArray(m.charts)) return false;
-  return m.charts.some((chart: any) => {
-    if (!chart || typeof chart !== 'object') return false;
-    if (chart.summary?.market_pattern === FABRICATED_PATTERN) return true;
+  const m = asRecord(matrices);
+  if (!m || m.run_id || !Array.isArray(m.charts)) return false;
+  return m.charts.some((raw) => {
+    const chart = asRecord(raw);
+    if (!chart) return false;
+    if (asRecord(chart.summary)?.market_pattern === FABRICATED_PATTERN) return true;
     return (
       Array.isArray(chart.companies) &&
-      chart.companies.some(
-        (company: any) =>
-          company?.x_reason === FABRICATED_REASON && company?.confidence_score === FABRICATED_CONFIDENCE,
-      )
+      chart.companies.some((entry) => {
+        const company = asRecord(entry);
+        return company?.x_reason === FABRICATED_REASON && company?.confidence_score === FABRICATED_CONFIDENCE;
+      })
     );
   });
 }
