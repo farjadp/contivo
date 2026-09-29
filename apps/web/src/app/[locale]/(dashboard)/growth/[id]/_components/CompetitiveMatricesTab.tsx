@@ -4,10 +4,7 @@ import { useMemo, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { Loader2, Save, Sparkles } from 'lucide-react';
 
-import {
-  generateWorkspaceCompetitiveMatrices,
-  saveWorkspaceCompetitiveMatricesEdits,
-} from '@/app/actions/growth-matrices';
+import { startMatrixRun } from '@/app/actions/growth-matrices';
 import { CompetitorBasisNote } from './CompetitorBits';
 import { CompetitorMapManager } from './CompetitorMapManager';
 
@@ -154,16 +151,12 @@ export function CompetitiveMatricesTab({
     setError(null);
     setSuccess(null);
     try {
-      const result = await generateWorkspaceCompetitiveMatrices(workspaceId);
-      if (result?.error) {
+      // TEMPORARY (Tasks 12-13 rewrite this tab): a run now happens in the
+      // background, so this only starts it and reports a refusal.
+      const result = await startMatrixRun(workspaceId);
+      if ('error' in result) {
         setError(result.error);
         return;
-      }
-      if (result?.matrices) {
-        const next = result.matrices as CompetitiveMatrixPayload;
-        setMatrices(next);
-        setSelectedKey(next.charts?.[0]?.chart_key || 'price_value_depth');
-        setSuccess(t('generated'));
       }
     } catch (generateError) {
       console.error(generateError);
@@ -179,15 +172,9 @@ export function CompetitiveMatricesTab({
     setError(null);
     setSuccess(null);
     try {
-      const result = await saveWorkspaceCompetitiveMatricesEdits(workspaceId, matrices);
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-      if (result?.matrices) {
-        setMatrices(result.matrices as CompetitiveMatrixPayload);
-        setSuccess(t('saved'));
-      }
+      // TEMPORARY: the old whole-blob edit is gone; per-score overrides
+      // replace it in the rewritten tab (Tasks 12-13).
+      setError(t('saveFailed'));
     } catch (saveError) {
       console.error(saveError);
       setError(t('saveFailed'));
