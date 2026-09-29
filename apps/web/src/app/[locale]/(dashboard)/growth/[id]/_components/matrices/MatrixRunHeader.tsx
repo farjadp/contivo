@@ -55,7 +55,7 @@ export function MatrixRunHeader({
   const notice = hasMatrices ? basisNotice(matrices) : null;
   const stale = hasMatrices && isMatricesStale(matrices);
   const currentStage = stageIndex(run?.stage);
-  const lastRunAt = run?.finishedAt ?? null;
+  const lastRunAt = run?.status === 'DONE' ? run.finishedAt : null;
   const busy = starting || active;
 
   return (
@@ -104,7 +104,7 @@ export function MatrixRunHeader({
       </div>
 
       {loadState === 'error' ? <ErrorNote>{t('statusFailed')}</ErrorNote> : null}
-      {startError ? <ErrorNote>{startError}</ErrorNote> : null}
+      {startError && run?.status !== 'FAILED' ? <ErrorNote>{startError}</ErrorNote> : null}
 
       {missing ? (
         <div role="status" className="rounded-xl border border-rule bg-chalk-sunk px-4 py-3 text-sm text-moss">
@@ -157,6 +157,8 @@ export function MatrixRunHeader({
         </div>
       ) : null}
 
+      {pollStopped ? <WarningNote>{t('pollStopped')}</WarningNote> : null}
+
       {active || starting ? (
         <div className="space-y-3 border-t border-rule pt-4" aria-live="polite">
           <ol className="space-y-2">
@@ -186,7 +188,6 @@ export function MatrixRunHeader({
           </ol>
           {currentStage < 0 ? <p className="text-sm text-moss-muted">{t('starting')}</p> : null}
           <p className="text-xs text-moss-muted">{t('leaveNote')}</p>
-          {pollStopped ? <WarningNote>{t('pollStopped')}</WarningNote> : null}
         </div>
       ) : null}
     </div>

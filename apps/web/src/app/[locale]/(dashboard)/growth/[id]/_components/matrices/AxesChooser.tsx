@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useFormatter, useTranslations } from 'next-intl';
 import { Check, Loader2, Lock } from 'lucide-react';
 
 import { saveMatrixAxes } from '@/app/actions/growth-matrices';
@@ -31,6 +31,8 @@ export function AxesChooser({
   onCancel?: () => void;
 }) {
   const t = useTranslations('tabsB.matrices.axes');
+  const format = useFormatter();
+  const maxText = format.number(MAX_AXES_SELECTED);
   const core = useMemo(() => coreAxes(language), [language]);
 
   const [axes, setAxes] = useState<StoredMarketAxis[]>(candidates);
@@ -75,7 +77,7 @@ export function AxesChooser({
     <div className="space-y-5 rounded-2xl border border-rule bg-chalk-raised p-5">
       <div>
         <h3 className="text-base font-bold tracking-tight text-moss">{t('title')}</h3>
-        <p className="mt-1 max-w-2xl text-sm text-moss-muted">{t('intro', { max: MAX_AXES_SELECTED })}</p>
+        <p className="mt-1 max-w-2xl text-sm text-moss-muted">{t('intro', { max: maxText })}</p>
       </div>
 
       <div className="space-y-2">
@@ -98,7 +100,7 @@ export function AxesChooser({
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <p className="text-xs font-semibold text-moss-muted">{t('candidatesTitle')}</p>
           <p className="text-xs text-moss-muted" aria-live="polite">
-            {t('selectedCount', { count: selected.length, max: MAX_AXES_SELECTED })}
+            {t('selectedCount', { count: format.number(selected.length), max: maxText })}
           </p>
         </div>
         <ul className="grid gap-3 md:grid-cols-2">
@@ -165,7 +167,7 @@ export function AxesChooser({
             );
           })}
         </ul>
-        {atMax ? <p className="text-xs text-moss-muted">{t('maxReached', { max: MAX_AXES_SELECTED })}</p> : null}
+        {atMax ? <p className="text-xs text-moss-muted">{t('maxReached', { max: maxText })}</p> : null}
         {selected.length === 0 ? <p className="text-xs text-saffron-ink">{t('chooseOne')}</p> : null}
       </div>
 

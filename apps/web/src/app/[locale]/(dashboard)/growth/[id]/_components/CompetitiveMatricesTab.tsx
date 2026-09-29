@@ -227,7 +227,10 @@ export function CompetitiveMatricesTab({
       try {
         if (cancelled) return;
         const ok = await fetchStatus();
-        if (!ok) window.clearInterval(timer);
+        if (!ok) {
+          window.clearInterval(timer);
+          if (!cancelled) setPollStopped(true);
+        }
       } catch (pollError) {
         // One failed poll is not the end of the run; the next tick retries.
         console.error(pollError);
@@ -253,7 +256,7 @@ export function CompetitiveMatricesTab({
         await fetchStatus().catch((refreshError) => console.error(refreshError));
         return;
       }
-      await fetchStatus();
+      if (!(await fetchStatus())) setPollStopped(true);
     } catch (startFailure) {
       console.error(startFailure);
       if (mountedRef.current) setStartError(t('generateFailed'));
@@ -266,7 +269,7 @@ export function CompetitiveMatricesTab({
     setShowAxes(false);
     setStartError(null);
     try {
-      await fetchStatus();
+      if (!(await fetchStatus())) setPollStopped(true);
     } catch (refreshError) {
       console.error(refreshError);
     }

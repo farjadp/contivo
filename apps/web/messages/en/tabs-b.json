@@ -121,7 +121,7 @@
         "lastRun": "Last run {date}",
         "stale": "A competitor changed after these matrices were built, so they may be out of date.",
         "regenerate": "Rebuild now",
-        "legacy": "This matrix predates the evidence rule. Rebuild it to be sure it holds up.",
+        "legacy": "These charts were built before every score had to cite evidence. Rebuild them to be sure they hold up.",
         "stages": {
           "AXES": "Choosing the axes",
           "SCORE": "Scoring each competitor on the evidence",
