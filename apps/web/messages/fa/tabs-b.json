@@ -105,7 +105,19 @@
       "openEditor": "نمایش ویرایشگر امتیاز",
       "competitorIdentity": "هویت رقیب",
       "aiTrustScore": "امتیاز اطمینان هوش مصنوعی",
-      "confidenceScore": "امتیاز اطمینان"
+      "confidenceScore": "امتیاز اطمینان",
+      "coreAxes": {
+        "offer_breadth_specialization": {
+          "name": "گستره و تخصص پیشنهاد",
+          "x": { "label": "گسترهٔ پیشنهاد", "low": "فقط یک چیز", "high": "مجموعهٔ کامل" },
+          "y": { "label": "تخصص", "low": "همه‌کاره", "high": "متخصص یک حوزه" }
+        },
+        "content_presence_focus": {
+          "name": "حضور و تمرکز محتوایی",
+          "x": { "label": "حضور محتوایی", "low": "تقریباً هیچ", "high": "پرکار و مداوم" },
+          "y": { "label": "تمرکز محتوا", "low": "موضوع‌های پراکنده", "high": "یک موضوع روشن" }
+        }
+      }
     },
     "keywords": {
       "analyze": "تحلیل کلیدواژه‌های رقبا",

@@ -105,7 +105,19 @@
       "openEditor": "Reveal Score Editor",
       "competitorIdentity": "Competitor Identity",
       "aiTrustScore": "AI Trust Score",
-      "confidenceScore": "Confidence Score"
+      "confidenceScore": "Confidence Score",
+      "coreAxes": {
+        "offer_breadth_specialization": {
+          "name": "Offer breadth and specialisation",
+          "x": { "label": "Breadth of offer", "low": "One thing", "high": "Full suite" },
+          "y": { "label": "Specialisation", "low": "Generalist", "high": "Niche expert" }
+        },
+        "content_presence_focus": {
+          "name": "Content presence and focus",
+          "x": { "label": "Content presence", "low": "Almost none", "high": "Publishing machine" },
+          "y": { "label": "Content focus", "low": "Scattered topics", "high": "Tightly themed" }
+        }
+      }
     },
     "keywords": {
       "analyze": "Analyze Competitor Keywords",
