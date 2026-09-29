@@ -23,6 +23,12 @@ describe('classifyRunError', () => {
     );
   });
 
+  it('maps a matrix run that had too few competitors with evidence to notEnoughEvidence', () => {
+    expect(RUN_ERROR.NOT_ENOUGH_EVIDENCE).toBe('NOT_ENOUGH_EVIDENCE');
+    expect(classifyRunError('NOT_ENOUGH_EVIDENCE')).toBe('notEnoughEvidence');
+    expect(classifyRunError('NOT_ENOUGH_EVIDENCE: 1 of 9 competitors has site evidence')).toBe('notEnoughEvidence');
+  });
+
   it('recognises a 429 anywhere in the message as rate limiting, even under another prefix', () => {
     expect(classifyRunError('JUDGE_UNAVAILABLE: Judge batch failed: 429 Rate limit reached')).toBe('rateLimited');
     expect(classifyRunError('SEARCH_UNAVAILABLE: Search query failed for "x": 429 Too Many Requests')).toBe(
