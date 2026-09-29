@@ -216,6 +216,8 @@ describe('runMatrixPipeline', () => {
     ]);
     // 3 x 100 + null (unknown, skipped) + 4 x 10 + 5
     expect(done.data.tokensUsed).toBe(345);
+    // Spec §6.7: the run records which model produced it.
+    expect(done.data.model).toBe(process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1');
 
     expect(prismaMock.matrixChart.create).toHaveBeenCalledTimes(4);
     const charts = prismaMock.matrixChart.create.mock.calls.map((c) => c[0].data);

@@ -30,6 +30,7 @@ function run(overrides: Record<string, unknown> = {}) {
     finishedAt: new Date('2026-09-29T10:00:00.000Z'),
     startedAt: new Date('2026-09-29T09:00:00.000Z'),
     tokensUsed: 4321,
+    model: 'gpt-4.1',
     competitorSet: [
       { competitorId: 'a', domain: 'a.com', type: 'DIRECT' },
       { competitorId: 'b', domain: 'b.com', type: 'DIRECT' },
@@ -46,6 +47,7 @@ function run(overrides: Record<string, unknown> = {}) {
         marketPattern: 'pattern',
         opportunity: 'opp',
         contentAngles: [{ angle: 'ang', audienceSegment: 'seg' }],
+        whiteSpace: { xBand: 0, yBand: 2, nearestCompetitorDistance: 3.2 },
         scores: [
           { competitorId: null, name: 'us', domain: 'us.com', type: 'TARGET', xScore: 5, yScore: 5, xReason: 'r', yReason: 'r', evidenceRefs: [], confidence: 0.9, estimated: false },
           { competitorId: 'a', name: 'A', domain: 'a.com', type: 'DIRECT', xScore: 2, yScore: 3, xReason: 'r', yReason: 'r', evidenceRefs: [], confidence: 0.9, estimated: false },
@@ -151,6 +153,31 @@ describe('rebuildMatricesProjection', () => {
   it('marks the projection stale when a competitor was accepted after the run', async () => {
     setup({ competitors: [competitor('a'), competitor('b'), competitor('c')] });
     expect((await rebuildMatricesProjection('ws-1'))!.stale).toBe(true);
+  });
+
+  it('projects the stored white space and the run model', async () => {
+    setup({ overrides: [{ chartKey: 'core', competitorId: null, xScore: 1, yScore: 9, note: null }] });
+    const result = (await rebuildMatricesProjection('ws-1'))!;
+    expect(result.charts[0].white_space).toEqual({ xBand: 0, yBand: 2, nearestCompetitorDistance: 3.2 });
+    expect(result.model).toBe('gpt-4.1');
+  });
+
+  it('projects a malformed stored white space as none, and a missing model as null', async () => {
+    const bad = run({ model: null });
+    (bad.charts[0] as Record<string, unknown>).whiteSpace = { xBand: 7, yBand: 'x' };
+    setup({ run: bad });
+    const result = (await rebuildMatricesProjection('ws-1'))!;
+    expect(result.charts[0].white_space).toBeNull();
+    expect(result.model).toBeNull();
+  });
+
+  it('is not stale with 13 selected competitors when the run holds the capped 12', async () => {
+    const ids = Array.from({ length: 13 }, (_, i) => `c${String(i + 1).padStart(2, '0')}`);
+    setup({
+      run: run({ competitorSet: ids.slice(0, 12).map((id) => ({ competitorId: id, domain: `${id}.com`, type: 'DIRECT' })) }),
+      competitors: [...ids].reverse().map((id) => competitor(id)),
+    });
+    expect((await rebuildMatricesProjection('ws-1'))!.stale).toBe(false);
   });
 
   it('turns malformed JSON columns into empty values instead of throwing', async () => {

@@ -1,5 +1,6 @@
+import { snapshotCompetitorIds } from './competitor-set';
 import { confidenceBand } from './scoring';
-import { findWhiteSpace, type WhiteSpace } from './white-space';
+import type { WhiteSpace } from './white-space';
 import type { ChartKind, CompanyType, MatrixOverride, MatrixScore } from './types';
 
 /**
@@ -72,6 +73,8 @@ export type ProjectionInput = {
     marketPattern: string;
     opportunity: string;
     contentAngles: Array<{ angle: string; audienceSegment: string }>;
+    /** The open cell the run found and the summary put into words. */
+    whiteSpace: WhiteSpace | null;
     scores: Array<MatrixScore & { xReason: string; yReason: string; evidenceRefs: string[] }>;
   }>;
   overrides: MatrixOverride[];
@@ -86,6 +89,8 @@ export type ProjectionInput = {
   targetAudienceSegment: string;
   /** Tokens the run spent; the old blob carried this and readers show it. */
   tokensUsed: number;
+  /** The model the run used; null for runs written before it was recorded. */
+  model: string | null;
 };
 
 export type Projection = {
@@ -100,6 +105,7 @@ export type Projection = {
   strongest_differentiation_opportunity: string;
   target_audience_segment: string;
   tokens_used: number;
+  model: string | null;
 };
 
 function clampScore(value: number): number {
@@ -185,20 +191,10 @@ export function buildProjection(input: ProjectionInput): Projection {
         angle: item.angle,
         audience_segment: item.audienceSegment,
       })),
-      // Recomputed from the *shown* positions, so a user who moves a point
-      // sees the gap move with it rather than reading a stale claim.
-      white_space: findWhiteSpace(
-        companies.map((company) => ({
-          competitorId: null,
-          name: company.name,
-          domain: company.website,
-          type: company.type,
-          xScore: company.x_score,
-          yScore: company.y_score,
-          confidence: company.confidence_score,
-          estimated: company.estimated,
-        })),
-      ),
+      // The cell the run found and the summary described. Not recomputed from
+      // overridden positions: that moved the hatched cell away from the
+      // opportunity sentence, which kept describing the original one.
+      white_space: chart.whiteSpace,
     };
   });
 
@@ -208,11 +204,14 @@ export function buildProjection(input: ProjectionInput): Projection {
     source: 'AI',
     competitor_basis: input.competitorBasis,
     language: input.language,
-    stale: isStale(input.runCompetitorIds, input.liveCompetitorIds),
+    // The live side is capped exactly like the run's snapshot, or more than 12
+    // selected competitors would read as stale forever.
+    stale: isStale(input.runCompetitorIds, snapshotCompetitorIds(input.liveCompetitorIds)),
     charts,
     cross_chart_summary: input.crossChartSummary,
     strongest_differentiation_opportunity: input.strongestDifferentiation,
     target_audience_segment: input.targetAudienceSegment,
     tokens_used: input.tokensUsed,
+    model: input.model,
   };
 }

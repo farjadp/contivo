@@ -35,6 +35,7 @@ function input(overrides: MatrixOverride[] = [], liveIds = ['rival-a', 'rival-b'
         marketPattern: 'Everyone sells the full suite.',
         opportunity: 'The specialist corner is empty.',
         contentAngles: [{ angle: 'One job, done properly', audienceSegment: 'small agencies' }],
+        whiteSpace: { xBand: 2, yBand: 2, nearestCompetitorDistance: 6.5 },
         scores: [
           { ...score('us', 5, 5, { competitorId: null, type: 'TARGET' }) },
           { ...score('rival-a', 2, 2) },
@@ -50,6 +51,7 @@ function input(overrides: MatrixOverride[] = [], liveIds = ['rival-a', 'rival-b'
     strongestDifferentiation: 'differentiation',
     targetAudienceSegment: 'small agencies',
     tokensUsed: 1234,
+    model: 'gpt-4.1',
   };
 }
 
@@ -120,18 +122,27 @@ describe('buildProjection', () => {
     expect(rival.y_score).toBe(1);
   });
 
-  it('recomputes the white space from the positions actually shown', () => {
-    // Mid-chart, everything is within reach, so the emptiest corner wins.
-    const before = buildProjection(input());
-    expect(before.charts[0].white_space).toMatchObject({ xBand: 2, yBand: 2 });
+  it('projects the stored white space, the cell the summary described, even after an override', () => {
+    const stored = { xBand: 2, yBand: 2, nearestCompetitorDistance: 6.5 };
+    expect(buildProjection(input()).charts[0].white_space).toEqual(stored);
 
-    // Pinning the target into the crowded corner shrinks what it can reach,
-    // and the answer has to change with it rather than stay a stale claim.
+    // Moving the target used to recompute the gap, so the hatched cell moved
+    // while the opportunity sentence kept describing the old one.
     const after = buildProjection(
       input([{ chartKey: 'offer_breadth_specialization', competitorId: null, xScore: 1, yScore: 1, note: null }]),
     );
-    expect(after.charts[0].white_space).not.toEqual(before.charts[0].white_space);
-    expect(after.charts[0].white_space).toMatchObject({ xBand: 1, yBand: 1 });
+    expect(after.charts[0].white_space).toEqual(stored);
+  });
+
+  it('projects no white space when none was stored, rather than computing one', () => {
+    const base = input();
+    base.charts[0].whiteSpace = null;
+    expect(buildProjection(base).charts[0].white_space).toBeNull();
+  });
+
+  it('carries the model the run used, null when unknown', () => {
+    expect(buildProjection(input()).model).toBe('gpt-4.1');
+    expect(buildProjection({ ...input(), model: null }).model).toBeNull();
   });
 
   it('carries the competitor id so the drawer can address an override, null for the target', () => {
@@ -145,6 +156,14 @@ describe('buildProjection', () => {
     const p = buildProjection(input());
     expect(p.competitor_basis).toBe('ACCEPTED');
     expect(p.charts[0].companies[0].confidence_band).toBe('high');
+  });
+
+  it('is not stale forever when more than 12 competitors are selected', () => {
+    const live = Array.from({ length: 13 }, (_, i) => `c${String(i + 1).padStart(2, '0')}`);
+    const base = { ...input([], live), runCompetitorIds: live.slice(0, 12) };
+    expect(buildProjection(base).stale).toBe(false);
+    // A new competitor that sorts into the first 12 does change the run's set.
+    expect(buildProjection({ ...base, liveCompetitorIds: ['c00', ...live] }).stale).toBe(true);
   });
 
   it('flags staleness when the competitor set has moved', () => {

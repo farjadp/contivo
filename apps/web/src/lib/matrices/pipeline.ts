@@ -221,6 +221,8 @@ export async function runMatrixPipeline(runId: string): Promise<void> {
           axesUsed: axes.map((axis) => ({ key: axis.key, kind: axis.kind, x: axis.x, y: axis.y })),
           crossChart: crossChart as unknown as Prisma.InputJsonValue,
           tokensUsed,
+          // The same default the model calls use (openai.ts); spec §6.7.
+          model: process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1',
           finishedAt: new Date(),
         },
       });

@@ -3,8 +3,10 @@ import { parseStoredEvidence } from '@/lib/competitors/pipeline';
 import { parseStoredBasis, selectCompetitors } from '@/lib/competitors/selection';
 
 import { ownEvidence } from './bundle';
+import { parseRunCompetitorIds } from './competitor-set';
 import { buildProjection, type Projection, type ProjectedEvidence, type ProjectionInput } from './projection';
 import type { ChartKind, CompanyType } from './types';
+import type { WhiteSpace } from './white-space';
 
 /**
  * Writes the projection blob from the tables. The tables are the truth; the
@@ -20,14 +22,17 @@ function str(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
-function parseCompetitorIds(value: unknown): string[] {
-  if (!Array.isArray(value)) return [];
-  const ids: string[] = [];
-  for (const item of value) {
-    const id = asRecord(item).competitorId;
-    if (typeof id === 'string' && id) ids.push(id);
+const BANDS = [0, 1, 2] as const;
+const isBand = (value: unknown): value is 0 | 1 | 2 => (BANDS as readonly unknown[]).includes(value);
+
+/** The stored white space, or null when it is absent or not the shape the pipeline writes. */
+function parseWhiteSpace(value: unknown): WhiteSpace | null {
+  const row = asRecord(value);
+  const distance = row.nearestCompetitorDistance;
+  if (!isBand(row.xBand) || !isBand(row.yBand) || typeof distance !== 'number' || !Number.isFinite(distance)) {
+    return null;
   }
-  return ids;
+  return { xBand: row.xBand, yBand: row.yBand, nearestCompetitorDistance: distance };
 }
 
 function parseAngles(value: unknown): Array<{ angle: string; audienceSegment: string }> {
@@ -94,6 +99,7 @@ export async function rebuildMatricesProjection(workspaceId: string): Promise<Pr
       marketPattern: chart.marketPattern,
       opportunity: chart.opportunity,
       contentAngles: parseAngles(chart.contentAngles),
+      whiteSpace: parseWhiteSpace(chart.whiteSpace),
       scores: chart.scores.map((score) => ({
         competitorId: score.competitorId,
         name: score.name,
@@ -117,11 +123,12 @@ export async function rebuildMatricesProjection(workspaceId: string): Promise<Pr
     })),
     evidenceById,
     liveCompetitorIds: selectCompetitors(competitors).competitors.map((row) => row.id),
-    runCompetitorIds: parseCompetitorIds(run.competitorSet),
+    runCompetitorIds: parseRunCompetitorIds(run.competitorSet),
     crossChartSummary: str(cross.crossChartSummary),
     strongestDifferentiation: str(cross.strongestDifferentiation),
     targetAudienceSegment: str(cross.targetAudienceSegment),
     tokensUsed: Number(run.tokensUsed) || 0,
+    model: typeof run.model === 'string' && run.model ? run.model : null,
   };
 
   const projection = buildProjection(input);
