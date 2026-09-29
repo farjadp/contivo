@@ -45,16 +45,20 @@ export type StoredMarketAxis = {
 
 const MAX_MARKET_AXES = 3;
 const MAX_KEY_LENGTH = 60;
+/** Axis wording arrives from the client (the chooser) as well as the model, so it is bounded here. */
+const MAX_LABEL_LENGTH = 60;
+const MAX_RATIONALE_LENGTH = 300;
 
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
-const text = (v: unknown): string | null => (typeof v === 'string' && v.trim() ? v.trim() : null);
+const text = (v: unknown, max = Number.POSITIVE_INFINITY): string | null =>
+  typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
 
 function parseEnd(v: unknown): AxisEnd | null {
   if (!isRecord(v)) return null;
-  const label = text(v.label);
-  const low = text(v.low);
-  const high = text(v.high);
+  const label = text(v.label, MAX_LABEL_LENGTH);
+  const low = text(v.low, MAX_LABEL_LENGTH);
+  const high = text(v.high, MAX_LABEL_LENGTH);
   return label && low && high ? { label, low, high } : null;
 }
 
@@ -96,7 +100,7 @@ export function normaliseMarketAxes(value: unknown, limit: number): StoredMarket
       key = `${base.slice(0, MAX_KEY_LENGTH - suffix.length)}${suffix}`;
     }
     taken.add(key);
-    out.push({ key, x, y, rationale: text(entry.rationale) ?? '' });
+    out.push({ key, x, y, rationale: text(entry.rationale, MAX_RATIONALE_LENGTH) ?? '' });
   }
   return out;
 }

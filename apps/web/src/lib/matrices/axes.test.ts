@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { axesForRun, coreAxes, languageFromContent, parseStoredMarketAxes } from './axes';
+import { axesForRun, coreAxes, languageFromContent, normaliseMarketAxes, parseStoredMarketAxes } from './axes';
 
 const market = {
   key: 'Compliance Depth!',
@@ -30,6 +30,19 @@ describe('axes', () => {
   it('suffixes keys that slugify to the same value', () => {
     const parsed = parseStoredMarketAxes([market, market]);
     expect(parsed.map((a) => a.key)).toEqual(['compliance_depth', 'compliance_depth_2']);
+  });
+
+  it('caps label, low and high at 60 characters and the rationale at 300, after trimming', () => {
+    const long = {
+      key: 'long',
+      x: { label: `  ${'a'.repeat(80)}  `, low: 'b'.repeat(70), high: `${'c'.repeat(60)}   ` },
+      y: { label: 'Y', low: 'l', high: 'h' },
+      rationale: `  ${'r'.repeat(400)}`,
+    };
+    const [parsed] = normaliseMarketAxes([long], 4);
+    expect(parsed.x).toEqual({ label: 'a'.repeat(60), low: 'b'.repeat(60), high: 'c'.repeat(60) });
+    expect(parsed.y).toEqual({ label: 'Y', low: 'l', high: 'h' });
+    expect(parsed.rationale).toBe('r'.repeat(300));
   });
 
   it('returns nothing for a non-array', () => {
