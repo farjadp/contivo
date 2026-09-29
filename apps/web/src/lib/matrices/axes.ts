@@ -67,12 +67,19 @@ function parseEnd(v: unknown): AxisEnd | null {
  * already asks the model to avoid them; this enforces it. Only the axis labels
  * are judged, and only market axes pass through here, so the core axes are
  * never affected.
+ *
+ * Whole words only: "Infrastructure", "Executive" and «اجرایی» are concrete
+ * and stay. `\b` does not see Persian letters, so the Persian pattern uses
+ * a Unicode letter/mark/ZWNJ boundary instead.
  */
-const BANNED_LABEL_EN = /strateg|execut|creativ|structur/i;
-const BANNED_LABEL_FA = ['استراتژی', 'اجرا', 'خلاقیت', 'ساختار'];
+const BANNED_LABEL_EN = /\b(?:strateg(?:y|ies|ic|ically)|execution|creativ(?:e|ity)|structures?)\b/i;
+const BANNED_LABEL_FA = new RegExp(
+  '(?<![\\p{L}\\p{M}\\u200c])(?:استراتژی|اجرا|خلاقیت|ساختار)(?![\\p{L}\\p{M}\\u200c])',
+  'u',
+);
 
 function isBannedLabel(label: string): boolean {
-  return BANNED_LABEL_EN.test(label) || BANNED_LABEL_FA.some((word) => label.includes(word));
+  return BANNED_LABEL_EN.test(label) || BANNED_LABEL_FA.test(label);
 }
 
 function slugify(raw: string): string {

@@ -88,4 +88,21 @@ describe('axes', () => {
   it('leaves the core axes alone', () => {
     expect(axesForRun('fa', []).map((a) => a.key)).toEqual(['offer_breadth_specialization', 'content_presence_focus']);
   });
+
+  it('matches banned words as whole words only (en and fa)', () => {
+    const labelled = (key: string, xLabel: string) => ({ ...market, key, x: { ...market.x, label: xLabel } });
+    const parsed = normaliseMarketAxes(
+      [
+        labelled('infra', 'Infrastructure depth'),
+        labelled('exec', 'Executive reach'),
+        labelled('restr', 'Restructuring support'),
+        labelled('fa_exec', 'پشتیبانی اجرایی'),
+        labelled('sve', 'Strategy vs Execution'),
+        labelled('creative', 'Creative depth'),
+        labelled('fa_sve', 'استراتژی در برابر اجرا'),
+      ],
+      10,
+    );
+    expect(parsed.map((a) => a.key)).toEqual(['infra', 'exec', 'restr', 'fa_exec']);
+  });
 });
