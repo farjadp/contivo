@@ -35,7 +35,7 @@ export interface ReportWorkspaceData {
 }
 
 /**
- * The DB stores `chart_name`, `axes.x/y` and `x_score/y_score`. Earlier code
+ * The DB stores `chart_name`, `axes.x/y`, `x_score/y_score` and `website` (there is no `domain`). Earlier code
  * read `chart.name`, `chart.xAxis` and `c.x`, which were all undefined and put
  * the word "undefined" into finished PDFs.
  */
@@ -47,7 +47,7 @@ function normaliseMatrices(matrices: any): ScatterChart[] {
     companies: (chart.companies ?? []).map((c: any) => ({
       name: c.name ?? '',
       type: c.type ?? 'DIRECT',
-      domain: c.domain,
+      domain: c.website ?? c.domain,
       xScore: Number(c.x_score),
       yScore: Number(c.y_score),
     })),

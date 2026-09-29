@@ -1,688 +1,400 @@
 'use server';
 
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
-import { parseStoredBasis, selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { triggerBackgroundRun } from '@/lib/background-run';
+import { classifyRunError, RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
+import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import {
+  languageFromContent,
+  normaliseMarketAxes,
+  parseStoredMarketAxes,
+  type StoredMarketAxis,
+} from '@/lib/matrices/axes';
+import { hasBrandSummary } from '@/lib/matrices/bundle';
+import {
+  countSkipped,
+  parseRunCompetitorIds,
+  snapshotCompetitorIds,
+  snapshotCompetitors,
+} from '@/lib/matrices/competitor-set';
+import { rebuildMatricesProjection } from '@/lib/matrices/persist';
+import { reapStaleMatrixRuns } from '@/lib/matrices/pipeline';
+import { isStale } from '@/lib/matrices/projection';
 
-type MatrixAxis = {
-  x: string;
-  y: string;
+export type MatrixRunView = {
+  id: string;
+  status: 'PENDING' | 'RUNNING' | 'NEEDS_AXES' | 'DONE' | 'FAILED';
+  stage: string | null;
+  tokensUsed: number;
+  errorKind: 'timedOut' | 'dispatch' | 'notEnoughEvidence' | 'generic' | null;
+  axisCandidates: StoredMarketAxis[];
+  startedAt: string;
+  finishedAt: string | null;
 };
 
-type MatrixTokenUsageRun = {
-  model: string;
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-  created_at: string;
-};
-
-type MatrixTokenUsage = {
-  runs: number;
-  lifetime_prompt_tokens: number;
-  lifetime_completion_tokens: number;
-  lifetime_total_tokens: number;
-  last_run: MatrixTokenUsageRun | null;
-};
-
-export type MatrixCompanyPoint = {
-  name: string;
-  website: string;
-  type: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL' | 'TARGET';
-  x_score: number;
-  y_score: number;
-  x_reason: string;
-  y_reason: string;
-  confidence_score: number;
-};
-
-export type CompetitiveMatrixChart = {
-  chart_key: string;
-  chart_name: string;
-  axes: MatrixAxis;
-  companies: MatrixCompanyPoint[];
-  summary: {
-    market_pattern: string;
-    positioning_opportunity: string;
-  };
-};
-
-type CompetitiveMatrixPayload = {
-  generated_at: string;
-  ai_estimated: boolean;
-  source: 'AI' | 'MANUAL';
-  competitor_basis?: SelectionBasis;
-  charts: CompetitiveMatrixChart[];
-  cross_chart_summary: string;
-  strongest_differentiation_opportunity: string;
-  token_usage: MatrixTokenUsage;
-};
-
-const CHART_DEFINITIONS: Array<{ key: string; name: string; x: string; y: string }> = [
-  { key: 'price_value_depth', name: 'Price vs Value Depth', x: 'Price', y: 'Value Depth' },
-  {
-    key: 'audience_size_specialization',
-    name: 'Audience Size vs Specialization',
-    x: 'Audience Size',
-    y: 'Specialization',
-  },
-  {
-    key: 'content_volume_quality',
-    name: 'Content Volume vs Content Quality',
-    x: 'Content Volume',
-    y: 'Content Quality',
-  },
-  { key: 'strategy_execution', name: 'Strategy vs Execution', x: 'Execution', y: 'Strategy' },
-  { key: 'creativity_structure', name: 'Creativity vs Structure', x: 'Creativity', y: 'Structure' },
-];
-
-function trimTo(value: string | null | undefined, max = 500): string {
-  return String(value || '').trim().slice(0, max);
-}
-
-function normalizeDomain(value: string | null | undefined): string {
-  const raw = String(value || '').trim();
-  if (!raw) return '';
-  const withoutProtocol = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
-  return withoutProtocol.split('/')[0]?.toLowerCase().trim() || '';
-}
-
-function normalizeWebsite(value: string | null | undefined): string {
-  const domain = normalizeDomain(value);
-  return domain ? `https://${domain}` : '';
-}
-
-function normalizeType(value: string | null | undefined): MatrixCompanyPoint['type'] {
-  const normalized = String(value || '')
-    .trim()
-    .toUpperCase();
-
-  if (normalized === 'TARGET') return 'TARGET';
-  if (normalized === 'INDIRECT') return 'INDIRECT';
-  if (normalized === 'ASPIRATIONAL' || normalized === 'ADJACENT') return 'ASPIRATIONAL';
-  return 'DIRECT';
-}
-
-function clampScore(value: unknown): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 5;
-  return Math.max(1, Math.min(10, Math.round(parsed)));
-}
-
-function clampConfidence(value: unknown): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0.55;
-  return Math.max(0.3, Math.min(1, parsed));
-}
-
-function stripCodeFences(value: string): string {
-  return value
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
-}
-
-function toNonNegativeInt(value: unknown): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0;
-  return Math.max(0, Math.floor(parsed));
-}
-
-function emptyTokenUsage(): MatrixTokenUsage {
-  return {
-    runs: 0,
-    lifetime_prompt_tokens: 0,
-    lifetime_completion_tokens: 0,
-    lifetime_total_tokens: 0,
-    last_run: null,
-  };
-}
-
-function normalizeTokenUsage(value: any): MatrixTokenUsage {
-  const raw = value && typeof value === 'object' ? value : {};
-  const lastRunRaw = raw.last_run && typeof raw.last_run === 'object' ? raw.last_run : null;
-  const lastRun = lastRunRaw
-    ? {
-        model: trimTo(lastRunRaw.model, 120) || 'unknown',
-        prompt_tokens: toNonNegativeInt(lastRunRaw.prompt_tokens),
-        completion_tokens: toNonNegativeInt(lastRunRaw.completion_tokens),
-        total_tokens: toNonNegativeInt(lastRunRaw.total_tokens),
-        created_at: trimTo(lastRunRaw.created_at, 80) || new Date().toISOString(),
-      }
-    : null;
-
-  return {
-    runs: toNonNegativeInt(raw.runs),
-    lifetime_prompt_tokens: toNonNegativeInt(raw.lifetime_prompt_tokens),
-    lifetime_completion_tokens: toNonNegativeInt(raw.lifetime_completion_tokens),
-    lifetime_total_tokens: toNonNegativeInt(raw.lifetime_total_tokens),
-    last_run: lastRun,
-  };
-}
-
-function appendTokenUsage(
-  current: MatrixTokenUsage | null | undefined,
-  usage:
-    | {
-        model: string;
-        prompt_tokens: number;
-        completion_tokens: number;
-        total_tokens: number;
-      }
-    | null,
-): MatrixTokenUsage {
-  const base = normalizeTokenUsage(current);
-  if (!usage) return base;
-
-  return {
-    runs: base.runs + 1,
-    lifetime_prompt_tokens: base.lifetime_prompt_tokens + toNonNegativeInt(usage.prompt_tokens),
-    lifetime_completion_tokens:
-      base.lifetime_completion_tokens + toNonNegativeInt(usage.completion_tokens),
-    lifetime_total_tokens: base.lifetime_total_tokens + toNonNegativeInt(usage.total_tokens),
-    last_run: {
-      model: trimTo(usage.model, 120) || 'unknown',
-      prompt_tokens: toNonNegativeInt(usage.prompt_tokens),
-      completion_tokens: toNonNegativeInt(usage.completion_tokens),
-      total_tokens: toNonNegativeInt(usage.total_tokens),
-      created_at: new Date().toISOString(),
-    },
-  };
-}
-
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
-function heuristicPointScore(seed: string, base = 5): number {
-  const drift = (hashString(seed) % 5) - 2;
-  return Math.max(1, Math.min(10, base + drift));
-}
-
-function buildMatricesPrompt(input: {
-  companyName: string;
-  companyWebsite: string;
-  brandSummary: any;
-  competitors: Array<{
-    name: string;
-    website: string;
-    type: string;
-    description: string;
-    category: string;
-    audience: string;
-  }>;
-}): string {
-  return `
-You are a competitive landscape engine.
-
-Analyze the target company and its competitors across these 5 charts:
-1. Price vs Value Depth
-2. Audience Size vs Specialization
-3. Content Volume vs Content Quality
-4. Strategy vs Execution
-5. Creativity vs Structure
-
-You must:
-- score each axis from 1 to 10
-- CRITICAL: evaluate the true scale and maturity of the TARGET company. If they are an independent consultant, solopreneur, or early startup, their scores for "Audience Size", "Content Volume", and "Execution scale" MUST be realistically low (e.g., 1-4) compared to established industry leaders. DO NOT default the target company to the middle (5) or high if they are fundamentally small.
-- justify every score with concrete signals
-- lower confidence when evidence is weak
-- avoid confident guessing
-- include the target company as one plotted node in every chart (type: "target")
-
-Scoring bands:
-- 1-3 = low
-- 4-6 = medium
-- 7-8 = strong
-- 9-10 = dominant
-
-Confidence bands:
-- 0.80-1.00 = high confidence
-- 0.55-0.79 = medium confidence
-- 0.30-0.54 = low confidence
-
-When evidence is limited, explicitly say:
-- "score estimated from limited evidence"
-- "pricing not visible"
-- "inferred from messaging, not explicit proof"
-
-Target company:
-${JSON.stringify(
-    {
-      name: input.companyName,
-      website: input.companyWebsite,
-      brandSummary: input.brandSummary,
-    },
-    null,
-    2,
-  )}
-
-Competitors:
-${JSON.stringify(input.competitors, null, 2)}
-
-Output ONLY JSON with this schema:
-{
-  "charts": [
-    {
-      "chart_key": "price_value_depth|audience_size_specialization|content_volume_quality|strategy_execution|creativity_structure",
-      "chart_name": "string",
-      "axes": { "x": "string", "y": "string" },
-      "companies": [
-        {
-          "name": "string",
-          "website": "https://domain.com",
-          "type": "direct|indirect|aspirational|target",
-          "x_score": 1,
-          "y_score": 1,
-          "x_reason": "string",
-          "y_reason": "string",
-          "confidence_score": 0.0
-        }
-      ],
-      "summary": {
-        "market_pattern": "string",
-        "positioning_opportunity": "string"
-      }
-    }
-  ],
-  "cross_chart_summary": "string",
-  "strongest_differentiation_opportunity": "string"
-}
-`;
-}
-
-function fallbackMatrices(input: {
-  companyName: string;
-  companyWebsite: string;
-  competitors: Array<{ name: string; website: string; type: string; description: string }>;
-}): CompetitiveMatrixPayload {
-  const companies = [
-    {
-      name: input.companyName,
-      website: normalizeWebsite(input.companyWebsite),
-      type: 'TARGET' as const,
-      description: 'Target company',
-    },
-    ...input.competitors.map((item) => ({
-      name: item.name,
-      website: normalizeWebsite(item.website),
-      type: normalizeType(item.type),
-      description: item.description || '',
-    })),
-  ];
-
-  const charts: CompetitiveMatrixChart[] = CHART_DEFINITIONS.map((chart) => ({
-    chart_key: chart.key,
-    chart_name: chart.name,
-    axes: { x: chart.x, y: chart.y },
-    companies: companies.map((company) => {
-      const seed = `${chart.key}:${company.name}:${company.website}`;
-      return {
-        name: company.name,
-        website: company.website,
-        type: company.type,
-        x_score: heuristicPointScore(`${seed}:x`, company.type === 'TARGET' ? 6 : 5),
-        y_score: heuristicPointScore(`${seed}:y`, company.type === 'TARGET' ? 7 : 5),
-        x_reason: 'Score estimated from limited evidence and public positioning signals.',
-        y_reason: 'Inferred from messaging, not explicit proof.',
-        confidence_score: 0.42,
-      };
-    }),
-    summary: {
-      market_pattern: 'Estimated pattern from limited public signals.',
-      positioning_opportunity: 'Collect more explicit pricing/feature evidence to increase confidence.',
-    },
-  }));
-
-  return {
-    generated_at: new Date().toISOString(),
-    ai_estimated: true,
-    source: 'AI',
-    charts,
-    cross_chart_summary: 'These matrix scores are AI-estimated from public signals and include uncertainty.',
-    strongest_differentiation_opportunity:
-      'Differentiate with a stronger strategy-plus-execution narrative and proof-backed value depth.',
-    token_usage: emptyTokenUsage(),
-  };
-}
-
-function normalizeChartKey(value: string): string {
-  const direct = CHART_DEFINITIONS.find((item) => item.key === value);
-  if (direct) return direct.key;
-
-  const normalized = value.toLowerCase().replace(/[^a-z]+/g, '_');
-  if (normalized.includes('price') && normalized.includes('value')) return 'price_value_depth';
-  if (normalized.includes('audience') && normalized.includes('special')) return 'audience_size_specialization';
-  if (normalized.includes('content') && normalized.includes('quality')) return 'content_volume_quality';
-  if (normalized.includes('strategy') && normalized.includes('execution')) return 'strategy_execution';
-  if (normalized.includes('creativity') && normalized.includes('structure')) return 'creativity_structure';
-  return '';
-}
-
-function normalizeMatrixPayload(raw: any, input: {
-  companyName: string;
-  companyWebsite: string;
-  competitors: Array<{ name: string; website: string; type: string; description: string; category: string; audience: string }>;
-}): CompetitiveMatrixPayload {
-  const targetDomain = normalizeDomain(input.companyWebsite);
-  const sourceCharts = Array.isArray(raw?.charts) ? raw.charts : [];
-
-  const charts: CompetitiveMatrixChart[] = CHART_DEFINITIONS.map((definition) => {
-    const candidate = sourceCharts.find((item: any) => normalizeChartKey(String(item?.chart_key || item?.chart_name || '')) === definition.key) || {};
-    const companiesRaw = Array.isArray(candidate?.companies) ? candidate.companies : [];
-    const companies: MatrixCompanyPoint[] = [];
-    const seen = new Set<string>();
-
-    for (const companyRaw of companiesRaw) {
-      const name = trimTo(companyRaw?.name, 120);
-      const website = normalizeWebsite(companyRaw?.website);
-      if (!name || !website) continue;
-      const key = `${name.toLowerCase()}|${normalizeDomain(website)}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      const domain = normalizeDomain(website);
-      const isTarget = domain && targetDomain && domain === targetDomain;
-      companies.push({
-        name,
-        website,
-        type: isTarget ? 'TARGET' : normalizeType(companyRaw?.type),
-        x_score: clampScore(companyRaw?.x_score),
-        y_score: clampScore(companyRaw?.y_score),
-        x_reason: trimTo(companyRaw?.x_reason, 240) || 'Score estimated from limited evidence.',
-        y_reason: trimTo(companyRaw?.y_reason, 240) || 'Score estimated from limited evidence.',
-        confidence_score: clampConfidence(companyRaw?.confidence_score),
-      });
-    }
-
-    const targetExists = companies.some((item) => item.type === 'TARGET');
-    if (!targetExists) {
-      const seed = `${definition.key}:${input.companyName}:${input.companyWebsite}`;
-      companies.unshift({
-        name: input.companyName,
-        website: normalizeWebsite(input.companyWebsite),
-        type: 'TARGET',
-        x_score: heuristicPointScore(`${seed}:x`, 4),
-        y_score: heuristicPointScore(`${seed}:y`, 4),
-        x_reason: 'Target score estimated from current product positioning.',
-        y_reason: 'Target score estimated from current brand summary signals.',
-        confidence_score: 0.55,
-      });
-    }
-
-    return {
-      chart_key: definition.key,
-      chart_name: trimTo(candidate?.chart_name, 80) || definition.name,
-      axes: {
-        x: trimTo(candidate?.axes?.x, 40) || definition.x,
-        y: trimTo(candidate?.axes?.y, 40) || definition.y,
-      },
-      companies: companies.slice(0, 14),
-      summary: {
-        market_pattern:
-          trimTo(candidate?.summary?.market_pattern, 320) ||
-          'Market pattern inferred from competitor positioning signals.',
-        positioning_opportunity:
-          trimTo(candidate?.summary?.positioning_opportunity, 320) ||
-          'Positioning opportunity inferred from competitor score distribution.',
-      },
-    };
-  });
-
-  return {
-    generated_at: new Date().toISOString(),
-    ai_estimated: true,
-    source: 'AI',
-    charts,
-    cross_chart_summary:
-      trimTo(raw?.cross_chart_summary, 800) ||
-      'Cross-chart summary estimated from available public signals and competitor messaging.',
-    strongest_differentiation_opportunity:
-      trimTo(raw?.strongest_differentiation_opportunity, 420) ||
-      'Potential differentiation in combining strategic depth with reliable execution.',
-    token_usage: emptyTokenUsage(),
-  };
-}
-
-async function callOpenAiMatrices(
-  prompt: string,
-): Promise<{
-  parsed: any | null;
-  usage: {
-    model: string;
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  } | null;
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
-
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are a rigorous competitive intelligence analyst. Return only valid JSON and include uncertainty when evidence is weak.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error('OpenAI matrix generation error:', await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    const usage = {
-      model,
-      prompt_tokens: toNonNegativeInt(data?.usage?.prompt_tokens),
-      completion_tokens: toNonNegativeInt(data?.usage?.completion_tokens),
-      total_tokens: toNonNegativeInt(data?.usage?.total_tokens),
-    };
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') {
-      return { parsed: null, usage };
-    }
-
-    try {
-      return {
-        parsed: JSON.parse(stripCodeFences(content)),
-        usage,
-      };
-    } catch (parseError) {
-      console.error('OpenAI matrix JSON parse failed:', parseError);
-      return { parsed: null, usage };
-    }
-  } catch (error) {
-    console.error('OpenAI matrix parsing failed:', error);
-    return null;
-  }
-}
-
-function extractCompetitorInput(workspace: any): {
-  items: Array<{
-    name: string;
-    website: string;
-    type: string;
-    description: string;
-    category: string;
-    audience: string;
-  }>;
+export type MatrixStatus = {
+  run: MatrixRunView | null;
+  savedAxes: StoredMarketAxis[];
   basis: SelectionBasis;
-} {
-  const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
-  const { competitors, basis } = selectCompetitors(all);
+  competitorCount: number;
+  hasBrandSummary: boolean;
+  /**
+   * Whether the competitor set has moved since the latest DONE run, compared
+   * now (spec §4: on read), not when the blob was last written. False when
+   * there is no DONE run.
+   */
+  stale: boolean;
+  /**
+   * How many competitors the latest DONE run left out for having nothing on
+   * their site to score them on (spec §15 E2). 0 when there is no DONE run.
+   */
+  skippedCount: number;
+  matrices: unknown;
+};
 
-  const items = competitors.slice(0, 12).map((item: any) => ({
-    name: trimTo(item.name, 120),
-    website: normalizeWebsite(item.domain),
-    type: String(item.type || 'DIRECT'),
-    description: trimTo(item.description, 360),
-    category: trimTo(item.category, 120),
-    audience: trimTo(item.audienceGuess, 160),
-  }));
+/** A proposal offers four market axes; the chooser keeps three. */
+const MAX_AXIS_CANDIDATES = 4;
+const MAX_NOTE = 280;
+const RUN_STATUSES = ['PENDING', 'RUNNING', 'NEEDS_AXES', 'DONE', 'FAILED'] as const;
 
-  return { items, basis };
+type Owned = { userId: string; workspace: NonNullable<Awaited<ReturnType<typeof findOwned>>> };
+
+async function findOwned(workspaceId: string, userId: string) {
+  return prisma.workspace.findFirst({ where: { id: workspaceId, userId } });
 }
 
-function mergeCompetitiveMatricesInAudienceInsights(
-  currentAudienceInsights: any,
-  payload: CompetitiveMatrixPayload,
-): any {
-  const current = currentAudienceInsights && typeof currentAudienceInsights === 'object' ? currentAudienceInsights : {};
+/** Session + ownership. A missing workspace and someone else's look identical. */
+async function authorise(workspaceId: string): Promise<Owned | { error: string }> {
+  const session = await getSession();
+  if (!session) return { error: await actionError('notAuthenticated') };
+  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
+  const workspace = await findOwned(workspaceId, session.userId as string);
+  if (!workspace) return { error: await actionError('workspaceNotFound') };
+  return { userId: session.userId as string, workspace };
+}
+
+function toRunView(run: {
+  id: string;
+  status: string;
+  stage: string | null;
+  tokensUsed: number;
+  error: string | null;
+  axisCandidates: unknown;
+  startedAt: Date;
+  finishedAt: Date | null;
+}): MatrixRunView {
+  const kind = run.status === 'FAILED' ? classifyRunError(run.error) : null;
   return {
-    ...current,
-    competitiveMatrices: payload,
+    id: run.id,
+    status: (RUN_STATUSES as readonly string[]).includes(run.status) ? (run.status as MatrixRunView['status']) : 'FAILED',
+    stage: run.stage,
+    tokensUsed: run.tokensUsed,
+    // Only the kinds this surface has copy for; the raw error never leaves the server.
+    errorKind:
+      kind === null
+        ? null
+        : kind === 'timedOut' || kind === 'dispatch' || kind === 'notEnoughEvidence'
+          ? kind
+          : 'generic',
+    axisCandidates: normaliseMarketAxes(run.axisCandidates, MAX_AXIS_CANDIDATES),
+    startedAt: run.startedAt.toISOString(),
+    finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
   };
 }
 
-export async function generateWorkspaceCompetitiveMatrices(workspaceId: string) {
-  const session = await getSession();
-  if (!session) return { error: await actionError('notAuthenticated') };
-  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
+async function startRun(owned: Owned): Promise<{ runId: string } | { error: string }> {
+  const { userId, workspace } = owned;
+  const workspaceId = workspace.id;
 
+  // A run stuck past the stale window is presumed dead; reap it before the
+  // already-running check so it cannot block new runs forever.
+  await reapStaleMatrixRuns(workspaceId);
+
+  const active = await prisma.matrixRun.findFirst({
+    where: { workspaceId, status: { in: ['PENDING', 'RUNNING'] } },
+    select: { id: true },
+  });
+  if (active) return { error: await actionError('matrixAlreadyRunning') };
+
+  const rows = await prisma.competitor.findMany({ where: { workspaceId } });
+  const { competitors, basis } = selectCompetitors(rows);
+  if (basis === 'NONE' || competitors.length < 2) return { error: await actionError('needTwoReviewedMatrices') };
+  if (!hasBrandSummary(workspace.brandSummary)) return { error: await actionError('matrixNeedsBrandSummary') };
+
+  const competitorSet = snapshotCompetitors(competitors).map((c) => ({
+    competitorId: c.id,
+    domain: c.domain ?? '',
+    type: c.type ?? 'DIRECT',
+  }));
+
+  let run: { id: string };
   try {
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId, userId: session.userId as string },
-      include: { competitors: true },
-    });
-    if (!workspace) return { error: await actionError('workspaceNotFound') };
-
-    const { items: competitors, basis } = extractCompetitorInput(workspace);
-    if (competitors.length < 2) {
-      return { error: await actionError('needTwoReviewedMatrices') };
-    }
-
-    const prompt = buildMatricesPrompt({
-      companyName: workspace.name,
-      companyWebsite: workspace.websiteUrl || '',
-      brandSummary: workspace.brandSummary || {},
-      competitors,
-    });
-
-    const openAiResult = await callOpenAiMatrices(prompt);
-    const raw = openAiResult?.parsed ?? null;
-    const existingTokenUsage = normalizeTokenUsage(
-      (workspace.audienceInsights as any)?.competitiveMatrices?.token_usage,
-    );
-    const nextTokenUsage = appendTokenUsage(existingTokenUsage, openAiResult?.usage || null);
-    const payload =
-      raw != null
-        ? normalizeMatrixPayload(raw, {
-            companyName: workspace.name,
-            companyWebsite: workspace.websiteUrl || '',
-            competitors,
-          })
-        : fallbackMatrices({
-            companyName: workspace.name,
-            companyWebsite: workspace.websiteUrl || '',
-            competitors,
-          });
-    payload.token_usage = nextTokenUsage;
-    payload.competitor_basis = basis;
-
-    await prisma.workspace.update({
-      where: { id: workspace.id },
+    run = await prisma.matrixRun.create({
       data: {
-        audienceInsights: mergeCompetitiveMatricesInAudienceInsights(workspace.audienceInsights, payload),
+        workspaceId,
+        userId,
+        status: 'PENDING',
+        basis,
+        language: languageFromContent(workspace.contentLanguage),
+        competitorSet: competitorSet as unknown as Prisma.InputJsonValue,
       },
+      select: { id: true },
     });
-
-    await writeActivityLog({
-      userId: session.userId as string,
-      workspaceId: workspace.id,
-      action: 'COMPETITIVE_MATRICES_GENERATED',
-      detail: {
-        charts: payload.charts.length,
-        competitors: competitors.length,
-        promptTokens: payload.token_usage.last_run?.prompt_tokens || 0,
-        completionTokens: payload.token_usage.last_run?.completion_tokens || 0,
-        totalTokens: payload.token_usage.last_run?.total_tokens || 0,
-      },
-    });
-
-    return { success: true, matrices: payload };
   } catch (error) {
-    console.error('generateWorkspaceCompetitiveMatrices failed:', error);
-    return { error: await actionError('matricesFailed') };
+    // matrix_runs_one_active_per_workspace (partial unique index) is what
+    // actually stops two concurrent starts; this makes them agree on the error.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return { error: await actionError('matrixAlreadyRunning') };
+    }
+    throw error;
   }
+
+  await writeActivityLog({ userId, workspaceId, action: 'MATRICES_STARTED', detail: { runId: run.id, basis } });
+
+  const dispatch = await triggerBackgroundRun('/api/matrices/run', { runId: run.id });
+  if (!dispatch.ok) {
+    // Only while still PENDING: a timed-out trigger may still have reached the
+    // route, which then owns the run. In that case the run is live.
+    const failed = await prisma.matrixRun.updateMany({
+      where: { id: run.id, status: 'PENDING' },
+      data: {
+        status: 'FAILED',
+        error: withRunErrorCode(RUN_ERROR.DISPATCH_FAILED, dispatch.error),
+        finishedAt: new Date(),
+      },
+    });
+    if (failed.count === 0) return { runId: run.id };
+    await writeActivityLog({
+      userId,
+      workspaceId,
+      action: 'MATRICES_DISPATCH_FAILED',
+      detail: { runId: run.id, error: dispatch.error },
+    });
+    return { error: await actionError('matrixDispatchFailed') };
+  }
+
+  return { runId: run.id };
 }
 
-export async function saveWorkspaceCompetitiveMatricesEdits(
-  workspaceId: string,
-  payload: CompetitiveMatrixPayload,
-) {
-  const session = await getSession();
-  if (!session) return { error: await actionError('notAuthenticated') };
-  if (!workspaceId) return { error: await actionError('workspaceIdRequired') };
+export async function startMatrixRun(workspaceId: string): Promise<{ runId: string } | { error: string }> {
+  const owned = await authorise(workspaceId);
+  if ('error' in owned) return owned;
+  return startRun(owned);
+}
 
-  try {
-    const workspace = await prisma.workspace.findUnique({
-      where: { id: workspaceId, userId: session.userId as string },
-      include: { competitors: true },
-    });
-    if (!workspace) return { error: await actionError('workspaceNotFound') };
+function latestDoneRun(workspaceId: string) {
+  return prisma.matrixRun.findFirst({
+    where: { workspaceId, status: 'DONE' },
+    orderBy: [{ finishedAt: 'desc' }, { startedAt: 'desc' }],
+    select: { id: true, competitorSet: true },
+  });
+}
 
-    const { items: competitors } = extractCompetitorInput(workspace);
-    const normalized = normalizeMatrixPayload(payload, {
-      companyName: workspace.name,
-      companyWebsite: workspace.websiteUrl || '',
-      competitors,
-    });
-    normalized.ai_estimated = true;
-    normalized.source = 'MANUAL';
-    // A manual edit moves points; it does not change which competitors the
-    // matrices were built on. Carry the STORED basis through (never one sent
-    // by the client), so the "unconfirmed competitors" label survives an
-    // edit. A legacy payload with no basis stays without one.
-    const storedBasis = parseStoredBasis((workspace.audienceInsights as any)?.competitiveMatrices?.competitor_basis);
-    if (storedBasis) normalized.competitor_basis = storedBasis;
-    normalized.token_usage = normalizeTokenUsage(
-      payload?.token_usage || (workspace.audienceInsights as any)?.competitiveMatrices?.token_usage,
-    );
+function blobRunId(matrices: unknown): string | null {
+  if (!matrices || typeof matrices !== 'object' || Array.isArray(matrices)) return null;
+  const id = (matrices as Record<string, unknown>).run_id;
+  return typeof id === 'string' && id ? id : null;
+}
 
-    await prisma.workspace.update({
-      where: { id: workspace.id },
-      data: {
-        audienceInsights: mergeCompetitiveMatricesInAudienceInsights(workspace.audienceInsights, normalized),
-      },
-    });
+export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus | { error: string }> {
+  const owned = await authorise(workspaceId);
+  if ('error' in owned) return owned;
+  const { workspace } = owned;
 
-    await writeActivityLog({
-      userId: session.userId as string,
-      workspaceId: workspace.id,
-      action: 'COMPETITIVE_MATRICES_EDITED',
-      detail: {
-        charts: normalized.charts.length,
-      },
-    });
+  await reapStaleMatrixRuns(workspace.id);
 
-    return { success: true, matrices: normalized };
-  } catch (error) {
-    console.error('saveWorkspaceCompetitiveMatricesEdits failed:', error);
-    return { error: await actionError('matrixSaveFailed') };
+  const [latestRun, latestDone, rows] = await Promise.all([
+    prisma.matrixRun.findFirst({ where: { workspaceId: workspace.id }, orderBy: { startedAt: 'desc' } }),
+    latestDoneRun(workspace.id),
+    prisma.competitor.findMany({ where: { workspaceId: workspace.id } }),
+  ]);
+  const { competitors, basis } = selectCompetitors(rows);
+  const insights = workspace.audienceInsights;
+  let matrices =
+    insights && typeof insights === 'object' && !Array.isArray(insights)
+      ? ((insights as Record<string, unknown>).competitiveMatrices ?? null)
+      : null;
+
+  // Self-heal: the blob is a cache of the latest DONE run. If it is from some
+  // other run (a failed projection write, or an older read-modify-write that
+  // landed last), rebuild it from the tables now rather than show the wrong run.
+  // A failed rebuild keeps the stored blob: the status must still load.
+  if (latestDone && blobRunId(matrices) !== latestDone.id) {
+    try {
+      const rebuilt = await rebuildMatricesProjection(workspace.id);
+      if (rebuilt) matrices = rebuilt;
+    } catch (error) {
+      console.error(`[matrices] self-heal rebuild failed for workspace ${workspace.id}`, error);
+    }
   }
+
+  // Compared on read, with the live side capped exactly like the snapshot.
+  const stale = latestDone
+    ? isStale(parseRunCompetitorIds(latestDone.competitorSet), snapshotCompetitorIds(competitors.map((c) => c.id)))
+    : false;
+
+  return {
+    run: latestRun ? toRunView(latestRun) : null,
+    savedAxes: parseStoredMarketAxes(workspace.matrixAxes),
+    basis,
+    competitorCount: competitors.length,
+    hasBrandSummary: hasBrandSummary(workspace.brandSummary),
+    stale,
+    skippedCount: latestDone ? countSkipped(latestDone.competitorSet) : 0,
+    matrices,
+  };
+}
+
+export async function saveMatrixAxes(
+  workspaceId: string,
+  axes: StoredMarketAxis[],
+): Promise<{ runId: string } | { error: string }> {
+  const owned = await authorise(workspaceId);
+  if ('error' in owned) return owned;
+
+  const parsed = parseStoredMarketAxes(axes);
+  if (parsed.length === 0) return { error: await actionError('matrixAxesRequired') };
+
+  await prisma.workspace.update({
+    where: { id: owned.workspace.id },
+    data: { matrixAxes: parsed as unknown as Prisma.InputJsonValue },
+  });
+  return startRun(owned);
+}
+
+// ---------------------------------------------------------------------------
+// Overrides
+// ---------------------------------------------------------------------------
+
+function clampScore(value: number | null | undefined): number | null | undefined {
+  if (value === undefined || value === null) return value;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
+  return Math.max(1, Math.min(10, Math.round(value)));
+}
+
+/** null is the target; anything else must be a real, non-empty id. */
+function isCompetitorIdShape(competitorId: unknown): competitorId is string | null {
+  return competitorId === null || (typeof competitorId === 'string' && competitorId.length > 0);
+}
+
+async function latestDoneRunShape(workspaceId: string) {
+  return prisma.matrixRun.findFirst({
+    where: { workspaceId, status: 'DONE' },
+    orderBy: [{ finishedAt: 'desc' }, { startedAt: 'desc' }],
+    select: { id: true, charts: { select: { key: true, scores: { select: { competitorId: true } } } } },
+  });
+}
+
+export async function setMatrixOverride(
+  workspaceId: string,
+  chartKey: string,
+  competitorId: string | null,
+  patch: { xScore?: number | null; yScore?: number | null; note?: string | null },
+): Promise<{ matrices: unknown } | { error: string }> {
+  // Checked before anything reaches Prisma: an undefined competitorId in a
+  // where clause is dropped, which would widen the match to every row.
+  if (!isCompetitorIdShape(competitorId)) return { error: await actionError('matrixOverrideInvalid') };
+  const owned = await authorise(workspaceId);
+  if ('error' in owned) return owned;
+  const { userId } = owned;
+  const invalid = async () => ({ error: await actionError('matrixOverrideInvalid') });
+
+  if (!chartKey || typeof chartKey !== 'string' || !patch || typeof patch !== 'object') return invalid();
+
+  const rawNote = patch.note;
+  if (rawNote !== undefined && rawNote !== null && (typeof rawNote !== 'string' || rawNote.length > MAX_NOTE)) {
+    return invalid();
+  }
+  for (const v of [patch.xScore, patch.yScore]) {
+    if (v !== undefined && v !== null && (typeof v !== 'number' || !Number.isFinite(v))) return invalid();
+  }
+
+  const run = await latestDoneRunShape(workspaceId);
+  const chart = run?.charts.find((c) => c.key === chartKey);
+  if (!run || !chart) return invalid();
+  if (competitorId !== null && !chart.scores.some((s) => s.competitorId === competitorId)) return invalid();
+
+  const note = typeof rawNote === 'string' ? rawNote.trim() : rawNote;
+  const xScore = clampScore(patch.xScore);
+  const yScore = clampScore(patch.yScore);
+
+  // Everything unset or nulled is a clear, not an empty row.
+  const clearing = patch.xScore === null && patch.yScore === null && (note === null || note === undefined || note === '');
+  if (clearing) return removeOverride(workspaceId, userId, chartKey, competitorId);
+
+  if (xScore === undefined && yScore === undefined && note === undefined) return invalid();
+
+  const where = { workspaceId, chartKey, competitorId };
+  const data: { xScore?: number | null; yScore?: number | null; note?: string | null } = {};
+  if (xScore !== undefined) data.xScore = xScore;
+  if (yScore !== undefined) data.yScore = yScore;
+  if (note !== undefined) data.note = note === '' ? null : note;
+
+  // Prisma's compound-unique upsert rejects a null competitorId (the target),
+  // so find-then-write. The index is NULLS NOT DISTINCT: a race surfaces as
+  // P2002 on create, and the loser retries as an update once.
+  const write = () =>
+    prisma.$transaction(async (tx) => {
+      const existing = await tx.matrixOverride.findFirst({ where });
+      if (existing) return tx.matrixOverride.update({ where: { id: existing.id }, data });
+      return tx.matrixOverride.create({ data: { ...where, ...data } });
+    });
+  try {
+    await write();
+  } catch (error) {
+    if (!(error instanceof Prisma.PrismaClientKnownRequestError) || error.code !== 'P2002') throw error;
+    await write();
+  }
+
+  const matrices = await rebuildMatricesProjection(workspaceId);
+  await writeActivityLog({
+    userId,
+    workspaceId,
+    action: 'MATRIX_SCORE_OVERRIDDEN',
+    detail: { chartKey, competitorId },
+  });
+  return { matrices };
+}
+
+async function removeOverride(
+  workspaceId: string,
+  userId: string,
+  chartKey: string,
+  competitorId: string | null,
+): Promise<{ matrices: unknown }> {
+  await prisma.matrixOverride.deleteMany({ where: { workspaceId, chartKey, competitorId } });
+  const matrices = await rebuildMatricesProjection(workspaceId);
+  await writeActivityLog({
+    userId,
+    workspaceId,
+    action: 'MATRIX_SCORE_OVERRIDE_CLEARED',
+    detail: { chartKey, competitorId },
+  });
+  return { matrices };
+}
+
+export async function clearMatrixOverride(
+  workspaceId: string,
+  chartKey: string,
+  competitorId: string | null,
+): Promise<{ matrices: unknown } | { error: string }> {
+  const invalid = async () => ({ error: await actionError('matrixOverrideInvalid') });
+  // Before any Prisma call: deleteMany with competitorId undefined would clear
+  // every override on the chart.
+  if (!isCompetitorIdShape(competitorId)) return invalid();
+  const owned = await authorise(workspaceId);
+  if ('error' in owned) return owned;
+  if (!chartKey || typeof chartKey !== 'string') return invalid();
+  // The target (null) is on every chart; a competitor must be on this one.
+  if (competitorId !== null) {
+    const run = await latestDoneRunShape(workspaceId);
+    const chart = run?.charts.find((c) => c.key === chartKey);
+    if (!chart || !chart.scores.some((s) => s.competitorId === competitorId)) return invalid();
+  }
+  return removeOverride(workspaceId, owned.userId, chartKey, competitorId);
 }

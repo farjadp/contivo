@@ -486,9 +486,35 @@ function fallbackIdeas(brandSummary: any): ContentIdea[] {
   }));
 }
 
-function summarizeMarketMetricContext(marketMatrices: any): string {
+const BAND_LABEL = ['low', 'mid', 'high'] as const;
+
+function whiteSpaceNote(ws: any): string | null {
+  if (!ws || typeof ws !== 'object') return null;
+  const x = BAND_LABEL[Number(ws.xBand)];
+  const y = BAND_LABEL[Number(ws.yBand)];
+  if (!x || !y) return null;
+  const dist = Number(ws.nearestCompetitorDistance);
+  const tail = Number.isFinite(dist) ? `; nearest competitor is ${Math.round(dist * 10) / 10} away` : '';
+  return `Open space at ${x} on the x axis and ${y} on the y axis${tail}`;
+}
+
+export function summarizeMarketMetricContext(
+  marketMatrices: any,
+  competitorBasis?: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'UNKNOWN',
+): string {
   const charts = Array.isArray(marketMatrices?.charts) ? marketMatrices.charts : [];
   const summary = {
+    ...(competitorBasis === 'UNCONFIRMED_HIGH'
+      ? {
+          competitor_set_note:
+            'The competitor set behind these charts is unconfirmed by the user; treat comparisons as provisional.',
+        }
+      : competitorBasis === 'UNKNOWN'
+        ? {
+            competitor_set_note:
+              'These charts predate the evidence rule, so their competitor set was never verified; treat comparisons as provisional.',
+          }
+        : {}),
     strongest_differentiation_opportunity: sanitizeText(
       String(marketMatrices?.strongest_differentiation_opportunity || ''),
     ).slice(0, 320),
@@ -512,6 +538,15 @@ function summarizeMarketMetricContext(marketMatrices: any): string {
           confidence: Number(company?.confidence_score || 0),
         }));
 
+      const angles = (Array.isArray(chart?.content_angles) ? chart.content_angles : [])
+        .slice(0, 4)
+        .map((a: any) => ({
+          angle: sanitizeText(String(a?.angle || '')).slice(0, 200),
+          audience_segment: sanitizeText(String(a?.audience_segment || '')).slice(0, 80),
+        }))
+        .filter((a: any) => a.angle);
+      const wsNote = whiteSpaceNote(chart?.white_space);
+
       return {
         chart_name: sanitizeText(String(chart?.chart_name || '')).slice(0, 90),
         x_axis: sanitizeText(String(chart?.axes?.x || '')).slice(0, 40),
@@ -521,6 +556,8 @@ function summarizeMarketMetricContext(marketMatrices: any): string {
           String(chart?.summary?.positioning_opportunity || ''),
         ).slice(0, 260),
         top_competitor_signals: topSignals,
+        ...(angles.length > 0 ? { content_angles: angles } : {}),
+        ...(wsNote ? { white_space_note: wsNote } : {}),
       };
     }),
   };
@@ -891,6 +928,8 @@ export type IdeationRequestOptions = FrameworkSelectionInput & {
   imageCount?: number;
   autoInsertToCalendar?: boolean;
   marketMatrices?: any;
+  /** Which competitor set the matrices were built on (see matricesGate). */
+  competitorBasis?: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'UNKNOWN';
   competitorKeywordsIntel?: any;
   /** Free-form operator guidance (e.g. Autopilot topic hints / avoid list). */
   steeringNotes?: string | null;
@@ -1222,7 +1261,7 @@ export async function generateContentIdeasWithGemini(
   const steeringNotes = String(options?.steeringNotes || '').trim().slice(0, 1200) || null;
   const normalizedBrand = normalizeBrandSummary(brandSummary);
   const intelligenceContext = {
-    marketMetricContext: summarizeMarketMetricContext(marketMatrices),
+    marketMetricContext: summarizeMarketMetricContext(marketMatrices, options?.competitorBasis),
     competitorKeywordContext: summarizeCompetitorKeywordContext(competitorKeywordsIntel),
     defaultBrandAnchor: `Brand signal: ${sanitizeText(normalizedBrand.valueProposition).slice(0, 180)}`,
     defaultMarketAnchor: `Market signal: ${deriveMarketAnchor(marketMatrices)}`,

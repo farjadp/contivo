@@ -107,7 +107,7 @@
       "tabs": {
         "strategyLabel": "حافظهٔ برند",
         "strategyHelper": "{count, number} دارایی",
-        "matricesLabel": "ماتریس‌های بازار",
+        "matricesLabel": "نمودارهای بازار",
         "matricesHelper": "{count, number} نمودار",
         "keywordsLabel": "کلیدواژه‌های رقبا",
         "keywordsHelper": "{count, number} رقیب تحلیل‌شده",

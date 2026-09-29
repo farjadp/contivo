@@ -56,7 +56,7 @@
       "brandBody": "Paste a URL. Contivo pulls out the business summary, the value proposition, the audience it is actually written for and the tone it is written in — then lets you correct all of it. Every draft afterwards is built from this, not from your prompt.",
       "brandAlt": "Contivo's Brand Memory screen showing an extracted business summary, value proposition, target audience persona and brand tone tags.",
       "marketTitle": "The market, with you on it",
-      "marketBody": "It finds competitors at your scale, checks they exist, and lets you throw out the ones that are not really yours. What survives gets scored on five positioning charts — and you are plotted among them, not described in a paragraph.",
+      "marketBody": "It finds competitors at your scale, checks they exist, and lets you throw out the ones that are not really yours. What survives gets scored on positioning charts built for your market — and you are plotted among them, not described in a paragraph.",
       "marketAlt": "Contivo's competitive landscape chart plotting the customer's brand among discovered competitors by audience size and product sophistication."
     },
     "actTwo": {
@@ -127,7 +127,7 @@
           "name": "Watch",
           "short": "market map",
           "title": "The market, with you on it.",
-          "body": "Competitors at your scale, checked to exist, scored on five positioning charts with you plotted among them."
+          "body": "Competitors at your scale, checked to exist, scored on positioning charts built for your market with you plotted among them."
         },
         "think": {
           "name": "Think",
@@ -160,7 +160,7 @@
       "read": "Reading your pages",
       "memory": "Writing your brand memory",
       "competitors": "Finding competitors at your scale",
-      "charts": "Scoring five positioning charts"
+      "charts": "Scoring the positioning charts"
     },
     "tryIt": {
       "label": "Try it",

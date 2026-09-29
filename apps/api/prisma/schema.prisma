@@ -97,6 +97,8 @@ model Workspace {
   competitorKeywords   CompetitorKeyword[]
   competitors          Competitor[]
   discoveryRuns        DiscoveryRun[]
+  matrixRuns           MatrixRun[]
+  matrixOverrides      MatrixOverride[]
   contentItems         ContentItem[]
   contentJobs          ContentJob[]
   keywordOpportunities KeywordOpportunity[]
@@ -107,6 +109,7 @@ model Workspace {
   autopilotPolicies    AutopilotPolicy[]
   autopilotRuns        AutopilotRun[]
   siteConnections      SiteConnection[]
+  matrixAxes           Json?
   narrative            Narrative?
   evidence             Evidence[]
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -338,6 +341,96 @@ model DiscoveryRun {
 
   @@index([workspaceId, startedAt])
   @@map("discovery_runs")
+}
+
+model MatrixRun {
+  id             String        @id @default(cuid())
+  workspaceId    String
+  userId         String
+  status         String // PENDING | RUNNING | NEEDS_AXES | DONE | FAILED
+  stage          String? // AXES | SCORE | SUMMARISE | SAVE
+  basis          String // ACCEPTED | UNCONFIRMED_HIGH
+  language       String // "fa" | "en"
+  competitorSet  Json // [{ competitorId, domain, type }]
+  axesUsed       Json? // [{ key, kind, x, y }]
+  axisCandidates Json? // [{ key, x, y, rationale }] when status = NEEDS_AXES
+  crossChart     Json? // { crossChartSummary, strongestDifferentiation, targetAudienceSegment }
+  tokensUsed     Int           @default(0)
+  model          String? // the OpenAI model the run used (spec §6.7)
+  error          String?
+  startedAt      DateTime      @default(now())
+  finishedAt     DateTime?
+  workspace      Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  charts         MatrixChart[]
+
+  // A partial unique index (one PENDING/RUNNING run per workspace) exists in
+  // the migration and cannot be expressed here. Remove any DROP INDEX for
+  // matrix_runs_one_active_per_workspace that a generated migration proposes.
+  @@index([workspaceId, startedAt])
+  @@map("matrix_runs")
+}
+
+model MatrixChart {
+  id            String        @id @default(cuid())
+  runId         String
+  workspaceId   String
+  key           String
+  kind          String // CORE | MARKET
+  order         Int
+  name          String
+  xLabel        String
+  yLabel        String
+  marketPattern String
+  opportunity   String
+  contentAngles Json // [{ angle, audienceSegment }] max 3
+  whiteSpace    Json? // { xBand, yBand, nearestCompetitorDistance } or null
+  run           MatrixRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  scores        MatrixScore[]
+
+  @@index([workspaceId, key])
+  @@index([runId])
+  @@map("matrix_charts")
+}
+
+model MatrixScore {
+  id           String      @id @default(cuid())
+  chartId      String
+  competitorId String? // null = TARGET
+  name         String
+  domain       String
+  type         String // TARGET | DIRECT | INDIRECT | ASPIRATIONAL
+  xScore       Int
+  yScore       Int
+  xReason      String
+  yReason      String
+  evidenceRefs Json // string[]
+  confidence   Float
+  estimated    Boolean     @default(false)
+  chart        MatrixChart @relation(fields: [chartId], references: [id], onDelete: Cascade)
+
+  @@index([chartId])
+  @@map("matrix_scores")
+}
+
+model MatrixOverride {
+  id           String    @id @default(cuid())
+  workspaceId  String
+  chartKey     String
+  competitorId String? // null = TARGET
+  xScore       Int?
+  yScore       Int?
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // The migration drops the index Prisma generates for this @@unique and
+  // re-creates it with NULLS NOT DISTINCT (Postgres 15+), so two TARGET
+  // overrides (competitorId NULL) cannot coexist. Prisma cannot express that;
+  // remove any DROP/CREATE of matrix_overrides_workspaceId_chartKey_competitorId_key
+  // that a generated migration proposes, or it reverts to NULLs-distinct.
+  @@unique([workspaceId, chartKey, competitorId])
+  @@map("matrix_overrides")
 }
 
 model CompetitorKeyword {

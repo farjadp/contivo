@@ -12,6 +12,8 @@
  * about what the user should do next.
  */
 
+import { REQUIRED_MATRIX_CHARTS } from '@/lib/report-readiness';
+
 export type StepId = 'brand' | 'market' | 'keywords' | 'narrative' | 'channel' | 'autopilot';
 
 export type StepState = 'done' | 'current' | 'locked' | 'available';
@@ -247,6 +249,6 @@ export function tabGate(f: WorkspaceFacts): Record<string, Msg | undefined> {
           : g('narrative')
         : g('matricesAndKeywords'),
     reports:
-      f.matrixCharts >= 5 && f.keywordCompetitors > 0 ? undefined : g('fullIntelligence'),
+      f.matrixCharts >= REQUIRED_MATRIX_CHARTS && f.keywordCompetitors > 0 ? undefined : g('fullIntelligence'),
   };
 }

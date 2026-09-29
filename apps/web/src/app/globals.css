@@ -215,3 +215,18 @@
     accent-color: #2f4a3a;
   }
 }
+
+/*
+  The white-space cell on a positioning chart: saffron hatching for "open
+  ground you could take". A gradient can't be written as a Tailwind class
+  without pasting the hex, so it lives here and reads the token.
+*/
+@layer components {
+  .hatch-saffron {
+    background-image: repeating-linear-gradient(
+      135deg,
+      theme('colors.saffron.DEFAULT') 0 1.5px,
+      transparent 1.5px 9px
+    );
+  }
+}

@@ -16,6 +16,11 @@ export const RUN_ERROR = {
   JUDGE_UNAVAILABLE: 'JUDGE_UNAVAILABLE',
   /** Every web-search query failed, so no candidate ever reached judging. */
   SEARCH_UNAVAILABLE: 'SEARCH_UNAVAILABLE',
+  /**
+   * A matrix run: after reading the sites of competitors with no stored
+   * evidence, fewer than two had anything to be scored on.
+   */
+  NOT_ENOUGH_EVIDENCE: 'NOT_ENOUGH_EVIDENCE',
 } as const;
 
 export function withRunErrorCode(code: string, detail: string | null | undefined): string {
@@ -23,7 +28,14 @@ export function withRunErrorCode(code: string, detail: string | null | undefined
   return text ? `${code}: ${text}` : code;
 }
 
-export type RunErrorKind = 'timedOut' | 'dispatch' | 'judgeOutage' | 'searchUnavailable' | 'rateLimited' | 'generic';
+export type RunErrorKind =
+  | 'timedOut'
+  | 'dispatch'
+  | 'judgeOutage'
+  | 'searchUnavailable'
+  | 'rateLimited'
+  | 'notEnoughEvidence'
+  | 'generic';
 
 /** A 429 anywhere in an upstream message ("... failed: 429 Rate limit ..."). */
 const RATE_LIMITED_RE = /\b429\b|rate limit/i;
@@ -38,6 +50,7 @@ export function classifyRunError(error: string | null | undefined): RunErrorKind
   if (!text) return 'generic';
   if (text === RUN_ERROR.TIMED_OUT || text.startsWith(`${RUN_ERROR.TIMED_OUT}:`)) return 'timedOut';
   if (text.startsWith(RUN_ERROR.DISPATCH_FAILED)) return 'dispatch';
+  if (text.startsWith(RUN_ERROR.NOT_ENOUGH_EVIDENCE)) return 'notEnoughEvidence';
   if (RATE_LIMITED_RE.test(text)) return 'rateLimited';
   if (text.startsWith(RUN_ERROR.JUDGE_UNAVAILABLE)) return 'judgeOutage';
   if (text.startsWith(RUN_ERROR.SEARCH_UNAVAILABLE)) return 'searchUnavailable';
