@@ -1,7 +1,7 @@
 # Positioning Matrices — Redesign
 
 - **Date:** 2026-09-26
-- **Status:** Draft for review. **Do not implement until the competitor-discovery redesign has landed** (see §11).
+- **Status:** Approved 29 Sep 2026 (all open questions answered, §13). Discovery landed on `main` 29 Sep (PR #4); implementation on branch `matrices-rebuild`.
 - **Branch:** `competitor-discovery-redesign` (spec only); implementation on its own branch after discovery.
 - **Depends on:** `2026-09-26-competitor-discovery-design.md` (§4 Competitor fields, §7 selector, §5.0 async run pattern). Final names from the discovery session (2026-09-26): `selectCompetitors()` in `apps/web/src/lib/competitors/selection.ts` returning `{ competitors, basis: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE' }`; `triggerBackgroundRun(path, body)` in `apps/web/src/lib/background-run.ts`, which returns `{ ok, error }` and has a 10s dispatch timeout; evidence items carry a stable `id` (requested, agreed); confidence bands shared: high ≥ 0.8, medium ≥ 0.6, shown as a word never a percentage; `Workspace.targetLanguage` exists separately from `contentLanguage`..
 
@@ -25,15 +25,15 @@ Today (`generateWorkspaceCompetitiveMatrices`, `apps/web/src/app/actions/growth-
 | # | Decision | Status |
 |---|---|---|
 | M1 | Rebuild on evidence + structured storage (options B + D from the brainstorm). Cosmetic prompt polish alone is rejected: it makes guesses look better. | **approved 27 Sep** |
-| M2 | **Axes = 2 core + 1–3 market-specific** (3–5 charts). Core charts are identical across workspaces so downstream code can rely on them; market charts are proposed by the model from the brand brief and competitor positioning, and the user picks/renames them. | proposed |
+| M2 | **Axes = 2 core + 1–3 market-specific** (3–5 charts). Core charts are identical across workspaces so downstream code can rely on them; market charts are proposed by the model from the brand brief and competitor positioning, and the user picks/renames them. | **approved 29 Sep** |
 | M3 | **Fail closed.** No heuristic fallback. A failed run saves nothing; the ideation gate stays shut with a clear message. Farjad accepted the consequence: workspaces that were riding the fabricated fallback stop until a run succeeds. | **approved 27 Sep** |
 | M4 | Manual score edits live in an **override layer** that survives regeneration, is visible on the chart, and can be reset per point. | approved (Q4) |
 | M5 | Competitor input comes only from `selectCompetitors` (discovery §7). `basis` is stored on the run, mirrored as `competitor_basis` on the projection (the key discovery already writes), and shown in the UI. Note the landed contract is stricter than first agreed: `UNCONFIRMED_HIGH` needs high confidence **and** corroboration (citations from at least 2 distinct queries, or more than one source), so a matrix run can legitimately refuse where the old filter would have proceeded. | proposed |
 | M6 | Evidence bundle is limited to what the app already holds: discovery `evidence`, `positioning`, `keyFeatures`, `labels`, `confidence`, own-site `brandSummary`, and `competitorKeywordsIntel` when present. **No new crawling or paid data in this iteration** (Q3). Deferred items are tracked in Notion Mission Control. | approved (Q3) |
 | M7 | Output language = workspace `contentLanguage` (the content is for the customer's audience; `targetLanguage` is the search language and is passed to the prompt only as market context). Core axis labels come from i18n, never from the model. | proposed |
-| M8 | The token-usage panel leaves the main UI and becomes a collapsed technical disclosure. | proposed |
+| M8 | The token-usage panel leaves the main UI and becomes a collapsed technical disclosure. | **approved 29 Sep** |
 | M9 | **approved 27 Sep. Certainty is an enum, not a self-reported float.** The scorer returns `certain` / `likely` / `unsure`, mapped in code to 0.9 / 0.7 / 0.5, then adjusted only by deterministic signals. Measured live in discovery (2026-09-26), a model's own 0-1 confidence pinned at 1.0 for every candidate including ones it rejected, so the number carried no information. | proposed |
-| M10 | **approved 27 Sep. Every fabricating fallback in the intelligence actions goes**, not just the matrices one: `fallbackMatrices`, `fallbackKeywordPayload` (growth-keywords.ts) and `fallbackPayload` (growth-offerings.ts) all invent output when the OpenAI call fails, with real competitors attached, and it reads as genuine analysis. Verified still live on `competitor-discovery-redesign` at 7a035f8. | proposed |
+| M10 | **approved 27 Sep; keywords and offerings done 29 Sep in PR #5 (`2026-09-29-no-fabricated-fallbacks-design.md`), only `fallbackMatrices` remains here.** Every fabricating fallback in the intelligence actions goes**, not just the matrices one: `fallbackMatrices`, `fallbackKeywordPayload` (growth-keywords.ts) and `fallbackPayload` (growth-offerings.ts) all invent output when the OpenAI call fails, with real competitors attached, and it reads as genuine analysis. Verified still live on `competitor-discovery-redesign` at 7a035f8. | proposed |
 | M11 | Schema changes ship as a **migration file**, not `db push`: production is migrated, and the branch already carries `20260926000000_competitor_discovery`. | proposed |
 
 ## 3. Axes
@@ -45,7 +45,7 @@ Chosen because both ends can be argued from evidence the app already has.
 | key | X | Y | Evidence sources |
 |---|---|---|---|
 | `offer_breadth_specialization` | Breadth of offer (1 = one thing, 10 = full suite) | Specialization (1 = generalist, 10 = niche expert) | `keyFeatures`, `positioning`, site headings, brandSummary offers |
-| `content_presence_focus` | Content presence (1 = almost none, 10 = publishing machine) | Content focus (1 = scattered topics, 10 = tightly themed) | Site evidence (blog/nav headings, discovery `site` items). `competitorKeywordsIntel` is used **only** once it carries a provenance flag proving it came from live DataForSEO: today `lib/dataforseo.ts` returns unmarked mock data whenever `NODE_ENV === 'development'` or credentials are missing (verified 2026-09-26, `serp_analyses` empty locally), and the stored intel has no source field. Until the DataForSEO fix adds `data_source: 'LIVE' \| 'MOCK'`, treat keyword intel as absent. If no site evidence exists either, the point is `estimated` (§5.4). |
+| `content_presence_focus` | Content presence (1 = almost none, 10 = publishing machine) | Content focus (1 = scattered topics, 10 = tightly themed) | Site evidence (blog/nav headings, discovery `site` items) and `competitorKeywordsIntel` when present. **Corrected 29 Sep:** `competitorKeywordsIntel` does not come from DataForSEO — `generateWorkspaceCompetitorKeywords` has the model read each competitor's own pages — and since PR #5 a failed call writes nothing, so a stored result is the model's real reading and may be used. Treat a competitor whose `intent_distribution` is `null` or whose keyword lists are empty as having no keyword evidence. If no evidence exists at all, the point is `estimated` (§5.4). |
 
 ### 3.2 Market (kind `MARKET`, 1–3 charts, default 2)
 
@@ -57,7 +57,7 @@ Rules for candidates: both ends must be observable in the evidence bundle; no ax
 
 A run needs ≥ 2 usable competitors and produces ≥ 3 charts (2 core + ≥ 1 market). `REQUIRED_MATRIX_CHARTS` in `report-readiness.ts` goes from 5 to 3.
 
-## 4. Data model (Prisma, `db push`)
+## 4. Data model (Prisma, shipped as a migration — M11)
 
 ```prisma
 model MatrixRun {
@@ -229,11 +229,11 @@ Answered by Farjad on 27 Sep 2026:
 1. **M1 and M3 approved.** Rebuild on evidence, fail closed, and accept that ideation stops for workspaces that were relying on the fabricated fallback.
 2. **M10 approved.** All three fabricating fallbacks go together: matrices, keyword intelligence and offerings.
 
-Still open, and not blocking the pure-function work:
+Answered by Farjad on 29 Sep 2026 ("all approved"):
 
-3. The two core axes in section 3.1 — confirm or swap one.
-4. The minimum of 3 charts, which lowers `REQUIRED_MATRIX_CHARTS` from 5 to 3.
-5. M8, the token panel becoming a collapsed disclosure.
+3. **The two core axes in §3.1 are confirmed**, with the keyword-evidence correction recorded there.
+4. **Minimum of 3 charts approved:** `REQUIRED_MATRIX_CHARTS` goes from 5 to 3.
+5. **M8 approved:** the token panel becomes a collapsed technical disclosure.
 
 ## 14. Build order
 
