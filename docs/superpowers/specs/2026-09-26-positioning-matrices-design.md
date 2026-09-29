@@ -246,3 +246,12 @@ Landed 27 Sep on this branch, in `apps/web/src/lib/matrices/` with 36 tests, cho
 
 Still to build, and waiting on the discovery branch going final because they share files:
 the Prisma models and their migration, the run action and its `/api/matrices/run` route, the axis, score and summary prompts, the UI, and the removal of the three fallbacks (M10).
+
+## 15. Addendum, 29 Sep 2026 — evidence for competitors that have none (live test)
+
+The first live run (9 accepted competitors, all from before the discovery rebuild, none with stored evidence) produced 9 of 10 points per chart `estimated`, scored low for lack of anything to read, and summaries telling the target it "stands alone" — a flattering story built on missing evidence. Farjad chose **option 2** (29 Sep):
+
+- **E1 — Read the site before scoring.** In the pipeline, before `SCORE`, every selected competitor with zero stored evidence items gets its own site read with the existing `collectSiteSignals` (shared time budget 60 s, concurrency 3). Each signal line becomes a real `EvidenceItem` `{ id: 8-hex sha256(domain + text), kind: 'site', url: 'https://<domain>', snippet: <line ≤ 300> }`, **merged into that competitor's stored `evidence`** (append only; existing items and ids untouched), so scores can cite it and the projection can resolve it. Writes happen only while the run is RUNNING.
+- **E2 — Drop, don't guess.** A competitor that still has no evidence after E1 is not scored. It stays in the run's `competitorSet` marked `skipped: true` (so staleness does not fire forever), is not plotted, and the header says how many were skipped and why. If fewer than 2 competitors remain, the run fails with a distinct error kind `notEnoughEvidence` whose message tells the user to re-run competitor discovery.
+- **E3 — Opportunity is prose.** `opportunity` must be one or two full sentences that say why the cell is open and what the target could claim there — not the cell's coordinates. Code rejects an opportunity that is under 8 words or equal to the white-space description; one retry of that chart's summary, then the run fails.
+- **E4 — Banned abstractions are enforced in code.** Market-axis candidates whose labels contain strategy / execution / creativity / structure (en) or استراتژی / اجرا / خلاقیت / ساختار (fa) are dropped by the normaliser, not only discouraged in the prompt.
