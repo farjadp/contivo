@@ -70,6 +70,14 @@ describe('proposeMarketAxes', () => {
     );
   });
 
+  it('throws when banned abstractions leave fewer than two usable candidates', async () => {
+    const labelled = (key: string, label: string) => ({ ...cand(key), x: { label, low: 'low', high: 'high' } });
+    reply([labelled('s', 'Marketing strategy'), labelled('e', 'Execution'), labelled('f', 'ساختار'), cand('ok')]);
+    await expect(proposeMarketAxes(bundle, 'en', brief)).rejects.toThrow(
+      'axis proposal returned fewer than 2 usable candidates',
+    );
+  });
+
   it('carries tokens on the failure', async () => {
     reply([cand('a')]);
     await expect(proposeMarketAxes(bundle, 'en', brief)).rejects.toMatchObject({ tokens: 42 });

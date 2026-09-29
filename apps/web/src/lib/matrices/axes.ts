@@ -62,6 +62,19 @@ function parseEnd(v: unknown): AxisEnd | null {
   return label && low && high ? { label, low, high } : null;
 }
 
+/**
+ * Abstractions a reader cannot see on a website (spec §15 E4). The prompt
+ * already asks the model to avoid them; this enforces it. Only the axis labels
+ * are judged, and only market axes pass through here, so the core axes are
+ * never affected.
+ */
+const BANNED_LABEL_EN = /strateg|execut|creativ|structur/i;
+const BANNED_LABEL_FA = ['استراتژی', 'اجرا', 'خلاقیت', 'ساختار'];
+
+function isBannedLabel(label: string): boolean {
+  return BANNED_LABEL_EN.test(label) || BANNED_LABEL_FA.some((word) => label.includes(word));
+}
+
 function slugify(raw: string): string {
   return raw
     .toLowerCase()
@@ -92,6 +105,7 @@ export function normaliseMarketAxes(value: unknown, limit: number): StoredMarket
     const x = parseEnd(entry.x);
     const y = parseEnd(entry.y);
     if (!rawKey || !x || !y) continue;
+    if (isBannedLabel(x.label) || isBannedLabel(y.label)) continue;
     const base = slugify(rawKey);
     if (!base || (CORE_AXIS_KEYS as readonly string[]).includes(base)) continue;
     let key = base;

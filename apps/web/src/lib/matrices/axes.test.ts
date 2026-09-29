@@ -55,4 +55,37 @@ describe('axes', () => {
     expect(axes.map((a) => a.kind)).toEqual(['CORE', 'CORE', 'MARKET']);
     expect(axes[2].name).toBe('Compliance depth / Ease of use');
   });
+
+  it('drops a market axis whose x or y label names a banned abstraction (en and fa), keeping the rest', () => {
+    const banned = (key: string, xLabel: string, yLabel = 'Ease of use') => ({
+      ...market,
+      key,
+      x: { ...market.x, label: xLabel },
+      y: { ...market.y, label: yLabel },
+    });
+    const parsed = normaliseMarketAxes(
+      [
+        banned('s', 'Content Strategy'),
+        banned('e', 'Speed', 'Execution quality'),
+        banned('c', 'CREATIVITY'),
+        banned('st', 'Site structure'),
+        banned('f1', 'استراتژی محتوا'),
+        banned('f2', 'کیفیت', 'سرعت اجرا'),
+        banned('f3', 'خلاقیت'),
+        banned('f4', 'ساختار سایت'),
+        banned('ok', 'Compliance depth'),
+      ],
+      4,
+    );
+    expect(parsed.map((a) => a.key)).toEqual(['ok']);
+  });
+
+  it('judges only the labels: a banned word at an axis end does not drop it', () => {
+    const parsed = normaliseMarketAxes([{ ...market, x: { ...market.x, low: 'No strategy' } }], 4);
+    expect(parsed).toHaveLength(1);
+  });
+
+  it('leaves the core axes alone', () => {
+    expect(axesForRun('fa', []).map((a) => a.key)).toEqual(['offer_breadth_specialization', 'content_presence_focus']);
+  });
 });
