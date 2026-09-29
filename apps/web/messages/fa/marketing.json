@@ -9,7 +9,8 @@
     "autopilot": "اتوپایلت",
     "pricing": "تعرفه‌ها",
     "signIn": "ورود",
-    "startFree": "شروع رایگان"
+    "startFree": "شروع رایگان",
+    "features": "امکانات"
   },
   "localeSwitcher": {
     "label": "زبان",
@@ -234,11 +235,19 @@
     "pricing": "تعرفه‌ها",
     "publishesTitle": "انتشار در",
     "ownSite": "سایت خودتان",
-    "socialCluster": "اینستاگرام · تیک‌تاک · فیسبوک — به‌زودی",
     "accountTitle": "حساب کاربری",
     "signIn": "ورود",
     "createWorkspace": "ساختن فضای کاری",
     "copyright": "© {year} Contivo",
-    "standBehind": "چیزی منتشر نمی‌شود که دروازهٔ کیفیت پایش نایستد."
+    "companyTitle": "شرکت",
+    "about": "دربارهٔ ما",
+    "contact": "تماس با ما",
+    "privacy": "حریم خصوصی",
+    "terms": "شرایط استفاده",
+    "socialSoon": "اینستاگرام · تیک‌تاک · فیسبوک",
+    "soon": "به‌زودی",
+    "writeTo": "نامه‌تان را یک آدم می‌خواند",
+    "navLabel": "نقشهٔ سایت",
+    "features": "امکانات"
   }
 }

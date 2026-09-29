@@ -111,6 +111,12 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
         sweep: { from: { backgroundSize: '0% 34%' }, to: { backgroundSize: '100% 34%' } },
+        /* Text arriving out of focus rather than out of nowhere: a short rise
+           with a blur that clears as it lands. Used for staggered lines. */
+        'blur-rise': {
+          from: { opacity: '0', transform: 'translateY(12px)', filter: 'blur(6px)' },
+          to: { opacity: '1', transform: 'none', filter: 'blur(0)' },
+        },
         draw: { from: { strokeDashoffset: '461' }, to: { strokeDashoffset: '0' } },
         ripple: {
           '0%': { transform: 'scale(1)', opacity: '.7' },
@@ -141,6 +147,7 @@ const config: Config = {
         'fade-in': 'fade-in .5s ease both',
         pop: 'pop .55s cubic-bezier(.2,.7,.2,1) both',
         sweep: 'sweep .8s .9s cubic-bezier(.2,.7,.2,1) both',
+        'blur-rise': 'blur-rise .7s cubic-bezier(.22,1,.36,1) both',
         draw: 'draw 1.6s .5s cubic-bezier(.6,0,.2,1) both',
         ripple: 'ripple 1.8s ease-out 2s infinite',
         shake: 'shake .5s cubic-bezier(.36,.07,.19,.97)',

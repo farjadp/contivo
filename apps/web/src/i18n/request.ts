@@ -21,6 +21,9 @@ import { routing } from './routing';
 const NAMESPACES = [
   'marketing',
   'pricing',
+  'legal',
+  'company',
+  'features',
   'auth',
   'onboarding',
   'shell',

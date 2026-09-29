@@ -43,55 +43,54 @@ const RTL_STYLE = `
 `;
 
 /**
- * Injects the Tailwind CDN script into the HTML so classes resolve at render time.
- * We deliberately do NOT ask the AI to include this tag to keep its output clean;
- * we add it here where we control the surrounding shell.
+ * Adds only what a print engine needs that the document itself cannot express:
+ * exact colour reproduction and page-break behaviour.
+ *
+ * It used to inject `cdn.tailwindcss.com` here, because the AI-authored HTML
+ * was a soup of Tailwind classes with no stylesheet. That made every report
+ * depend on a third-party CDN at render time and left the `.html` copy saved
+ * beside the PDF completely unstyled. The template now ships its own CSS, so
+ * this shell stays out of the document's way.
  */
 function wrapWithShell(html: string, language: ContentLanguage): string {
   const rtl = isRtlContentLanguage(language);
   const lang = rtl ? 'fa' : 'en';
   const dir = rtl ? 'rtl' : 'ltr';
   const rtlStyle = rtl ? RTL_STYLE : '';
-  // If the AI already returned a full document, inject Tailwind into <head>.
-  // Otherwise, wrap the fragment in a minimal shell.
-  const hasHead = /<head[\s>]/i.test(html);
 
-  if (hasHead) {
-    return html.replace(
-      /<head([^>]*)>/i,
-      `<head$1>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <script src="https://cdn.tailwindcss.com"></script>
+  const printStyle = `
   <style>
-    /* Ensure color utilities print accurately in Chrome/Puppeteer */
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    /* Each section marked .page-break will start on a fresh PDF page */
     .page-break { page-break-after: always; break-after: page; }
-    /* Prevent orphaned headings at the bottom of a page */
     h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
+    /* A figure or a card is a unit and should not be split. A long table is
+       not: forcing a ten-row table onto one page pushed it whole onto the next
+       sheet and left half a page blank behind it. Let it break, and repeat the
+       header so the rows after the break still have their column names. */
+    .figure, .card { page-break-inside: avoid; break-inside: avoid; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
 ${rtlStyle}
-  </style>`,
-    ).replace(/<html([^>]*)>/i, `<html$1 lang="${lang}" dir="${dir}">`);
+  </style>`;
+
+  if (/<head[\s>]/i.test(html)) {
+    return html.replace(/<\/head>/i, `${printStyle}\n</head>`);
   }
 
-  // Fragment fallback — wrap in a minimal document
   return `<!DOCTYPE html>
 <html lang="${lang}" dir="${dir}">
-<head>
-  <meta charset="UTF-8">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-    .page-break { page-break-after: always; break-after: page; }
-    h1, h2, h3 { page-break-after: avoid; break-after: avoid; }
-${rtlStyle}
-  </style>
-</head>
-<body class="bg-[#fafaf9] text-slate-900 font-sans">
-  ${html}
-</body>
+<head><meta charset="UTF-8">${printStyle}</head>
+<body>${html}</body>
 </html>`;
+}
+
+/** The footer template is raw HTML handed to Chromium, so its values are escaped. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -100,11 +99,20 @@ ${rtlStyle}
  * @param html        Raw HTML string (from generateReportHTML)
  * @param outputPath  Absolute file path where the PDF should be written
  */
+export interface PdfFooter {
+  /** Printed bottom-left on every page, so a loose page still names its source. */
+  brand: string;
+  /** The report's human reference, bottom-centre. */
+  reference: string;
+}
+
 export async function convertHtmlToPdf(
   html: string,
   outputPath: string,
   /** The report's language. Decides direction and the embedded font stack. */
   language: ContentLanguage = 'EN',
+  /** Omit for no running footer. */
+  footer?: PdfFooter,
 ): Promise<void> {
   const browser = await puppeteer.launch({
     headless: true,
@@ -128,11 +136,34 @@ export async function convertHtmlToPdf(
     // before Puppeteer takes the PDF snapshot
     await page.setContent(wrappedHtml, { waitUntil: 'networkidle0', timeout: 30_000 });
 
+    /*
+      A report gets forwarded, printed and pulled apart. Chromium's own running
+      footer is the only way to put the source on every page including ones the
+      document never knew it would break onto, so identity lives here rather
+      than in a div at the end of the body.
+
+      Chromium renders these templates in a separate document with no access to
+      the page's styles or fonts, and it defaults them to 8px unstyled — hence
+      the inline font stack and explicit size.
+    */
+    const footerTemplate = footer
+      ? `<div style="width:100%;margin:0 12mm;font-family:'Vazirmatn',system-ui,sans-serif;font-size:7.5pt;color:#4A544D;display:flex;justify-content:space-between;">
+           <span>${escapeHtml(footer.brand)}</span>
+           <span>${escapeHtml(footer.reference)}</span>
+           <span><span class="pageNumber"></span>/<span class="totalPages"></span></span>
+         </div>`
+      : '<span></span>';
+
     await page.pdf({
       path: outputPath,
       format: 'A4',
       printBackground: true, // Required to render colored backgrounds
-      margin: { top: '18mm', right: '14mm', bottom: '18mm', left: '14mm' },
+      displayHeaderFooter: Boolean(footer),
+      headerTemplate: '<span></span>',
+      footerTemplate,
+      // The bottom margin has to leave room for the running footer, or
+      // Chromium prints it over the last line of body text.
+      margin: { top: '16mm', right: '14mm', bottom: footer ? '20mm' : '18mm', left: '14mm' },
     });
   } finally {
     // Always close the browser even if an error occurs to avoid zombie processes
