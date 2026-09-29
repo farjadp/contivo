@@ -24,6 +24,7 @@ import { companyKey, compactDomain, type ChartView, type MatrixView } from './ma
 import {
   POLL_INTERVAL_MS,
   isMatrixRunActive,
+  healedMatrices,
   refusalDuplicatesRun,
   selectChart,
   shouldKeepPolling,
@@ -119,6 +120,8 @@ export function CompetitiveMatricesTab({
     const wasActive = isMatrixRunActive(runRef.current?.status);
     runRef.current = next.run;
     setStatus(next);
+    // The server may have rebuilt a blob from the wrong run; show it now.
+    setMatrices((current) => (healedMatrices(current, next.matrices) as MatrixView | null) ?? current);
     if (wasActive && !isMatrixRunActive(next.run?.status)) {
       // A run just finished while this page was watching it.
       routerRef.current.refresh();

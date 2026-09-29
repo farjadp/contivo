@@ -208,9 +208,14 @@ export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus
   // Self-heal: the blob is a cache of the latest DONE run. If it is from some
   // other run (a failed projection write, or an older read-modify-write that
   // landed last), rebuild it from the tables now rather than show the wrong run.
+  // A failed rebuild keeps the stored blob: the status must still load.
   if (latestDone && blobRunId(matrices) !== latestDone.id) {
-    const rebuilt = await rebuildMatricesProjection(workspace.id);
-    if (rebuilt) matrices = rebuilt;
+    try {
+      const rebuilt = await rebuildMatricesProjection(workspace.id);
+      if (rebuilt) matrices = rebuilt;
+    } catch (error) {
+      console.error(`[matrices] self-heal rebuild failed for workspace ${workspace.id}`, error);
+    }
   }
 
   // Compared on read, with the live side capped exactly like the snapshot.

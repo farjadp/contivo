@@ -11,6 +11,7 @@ import {
   emptyStateReason,
   isMatrixRunActive,
   matricesStale,
+  healedMatrices,
   runModel,
   selectChart,
   refusalDuplicatesRun,
@@ -187,5 +188,19 @@ describe('runModel', () => {
     expect(runModel({ model: 'gpt-4.1', token_usage: { last_run: { model: 'old' } } })).toBe('gpt-4.1');
     expect(runModel({ model: null, token_usage: { last_run: { model: 'old' } } })).toBe('old');
     expect(runModel({})).toBeNull();
+  });
+});
+
+describe('healedMatrices', () => {
+  it('returns the status blob when it is from a different run than the one shown', () => {
+    const healed = { run_id: 'r2', charts: [] };
+    expect(healedMatrices({ run_id: 'r1', charts: [] }, healed)).toBe(healed);
+    expect(healedMatrices(null, healed)).toBe(healed);
+    expect(healedMatrices({ charts: [] }, healed)).toBe(healed);
+  });
+  it('is null when the run is the same or the status carries no current-pipeline blob', () => {
+    expect(healedMatrices({ run_id: 'r1' }, { run_id: 'r1' })).toBeNull();
+    expect(healedMatrices({ run_id: 'r1' }, null)).toBeNull();
+    expect(healedMatrices({ run_id: 'r1' }, { charts: [] })).toBeNull();
   });
 });

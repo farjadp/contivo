@@ -272,6 +272,18 @@ describe('getMatrixStatus', () => {
     expect(status.matrices).toMatchObject({ run_id: 'done-1' });
   });
 
+  it('keeps the saved result and still returns a status when the rebuild throws', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-2', ['c1', 'c2']), doneRun('done-2', ['c1', 'c2']));
+    persistMock.rebuildMatricesProjection.mockRejectedValue(new Error('db down'));
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.matrices).toMatchObject({ run_id: 'done-1' });
+    expect(errorSpy).toHaveBeenCalled();
+    errorSpy.mockRestore();
+  });
+
   it('keeps the saved result when a rebuild produces nothing', async () => {
     withBlob('done-1');
     runs(doneRun('done-2', ['c1', 'c2']), doneRun('done-2', ['c1', 'c2']));

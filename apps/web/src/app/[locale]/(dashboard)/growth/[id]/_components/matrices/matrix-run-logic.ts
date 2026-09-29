@@ -83,6 +83,17 @@ export function runModel(matrices: {
   return matrices.model || matrices.token_usage?.last_run?.model || null;
 }
 
+/**
+ * The blob to show after a status read, when the server healed it: a
+ * current-pipeline blob from a different run than the one on screen. Null
+ * means keep what is shown.
+ */
+export function healedMatrices(current: unknown, incoming: unknown): Record<string, unknown> | null {
+  if (!isRecord(incoming) || typeof incoming.run_id !== 'string' || incoming.run_id === '') return null;
+  const shownRunId = isRecord(current) ? current.run_id : undefined;
+  return incoming.run_id === shownRunId ? null : incoming;
+}
+
 /** Adds or removes a key; a fourth selection is ignored. */
 export function toggleAxis(selected: readonly string[], key: string): string[] {
   if (selected.includes(key)) return selected.filter((k) => k !== key);
