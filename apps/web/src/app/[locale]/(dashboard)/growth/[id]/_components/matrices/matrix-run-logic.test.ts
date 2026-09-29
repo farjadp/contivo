@@ -28,6 +28,7 @@ const status = (over: Partial<MatrixStatus>): MatrixStatus => ({
   competitorCount: 3,
   hasBrandSummary: true,
   stale: false,
+  skippedCount: 0,
   matrices: null,
   ...over,
 });

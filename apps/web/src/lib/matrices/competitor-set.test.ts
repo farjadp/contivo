@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_SNAPSHOT, parseRunCompetitorIds, snapshotCompetitorIds, snapshotCompetitors } from './competitor-set';
+import { MAX_SNAPSHOT, countSkipped, parseRunCompetitorIds, snapshotCompetitorIds, snapshotCompetitors } from './competitor-set';
 
 const ids = (n: number) => Array.from({ length: n }, (_, i) => `c${String(i + 1).padStart(2, '0')}`);
 
@@ -19,5 +19,23 @@ describe('the run competitor set', () => {
   it('reads competitor ids back out of a stored snapshot, skipping junk', () => {
     expect(parseRunCompetitorIds([{ competitorId: 'a' }, { competitorId: '' }, null, 'x', { competitorId: 'b' }])).toEqual(['a', 'b']);
     expect(parseRunCompetitorIds('garbage')).toEqual([]);
+  });
+
+  it('keeps skipped competitors in the ids, so leaving one out never makes the run stale (spec §15 E2)', () => {
+    const stored = [{ competitorId: 'a' }, { competitorId: 'b', skipped: true }];
+    expect(parseRunCompetitorIds(stored)).toEqual(['a', 'b']);
+  });
+
+  it('counts the entries marked skipped, and nothing else', () => {
+    expect(
+      countSkipped([
+        { competitorId: 'a', skipped: true },
+        { competitorId: 'b', skipped: false },
+        { competitorId: 'c', skipped: 'yes' },
+        { skipped: true },
+        { competitorId: 'd', skipped: true },
+      ]),
+    ).toBe(2);
+    expect(countSkipped(null)).toBe(0);
   });
 });

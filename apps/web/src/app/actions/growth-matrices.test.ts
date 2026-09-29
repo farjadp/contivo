@@ -235,6 +235,45 @@ describe('getMatrixStatus', () => {
     expect(status.competitorCount).toBe(13);
   });
 
+  it('counts the competitors the latest DONE run left out, and is not stale for skipping them', async () => {
+    withBlob('done-1');
+    const done = doneRun('done-1', ['c1', 'c2']);
+    done.competitorSet[1] = { ...done.competitorSet[1], skipped: true } as (typeof done.competitorSet)[number];
+    runs(done, done);
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.skippedCount).toBe(1);
+    expect(status.stale).toBe(false);
+  });
+
+  it('reports a skippedCount of 0 when there is no DONE run', async () => {
+    withBlob(undefined);
+    runs(null, null);
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.skippedCount).toBe(0);
+  });
+
+  it('maps a NOT_ENOUGH_EVIDENCE failure to the notEnoughEvidence kind', async () => {
+    withBlob(undefined);
+    runs(
+      {
+        id: 'r',
+        status: 'FAILED',
+        stage: null,
+        tokensUsed: 0,
+        error: 'NOT_ENOUGH_EVIDENCE: 1 of 9 competitors have evidence to score',
+        axisCandidates: null,
+        startedAt: new Date('2026-09-29T00:00:00Z'),
+        finishedAt: new Date('2026-09-29T00:01:00Z'),
+      },
+      null,
+    );
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.run?.errorKind).toBe('notEnoughEvidence');
+  });
+
   it('is not stale when there is no DONE run', async () => {
     withBlob(undefined);
     runs(null, null);

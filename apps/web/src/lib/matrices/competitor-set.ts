@@ -34,3 +34,19 @@ export function parseRunCompetitorIds(value: unknown): string[] {
   }
   return ids;
 }
+
+/**
+ * How many entries of a stored `MatrixRun.competitorSet` the run left out for
+ * having no evidence (spec §15 E2). Skipped entries stay in the set, and in
+ * `parseRunCompetitorIds`, so skipping never makes a run look stale.
+ */
+export function countSkipped(value: unknown): number {
+  if (!Array.isArray(value)) return 0;
+  let count = 0;
+  for (const item of value) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const record = item as Record<string, unknown>;
+    if (typeof record.competitorId === 'string' && record.competitorId && record.skipped === true) count += 1;
+  }
+  return count;
+}

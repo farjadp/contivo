@@ -16,7 +16,12 @@ import {
   type StoredMarketAxis,
 } from '@/lib/matrices/axes';
 import { hasBrandSummary } from '@/lib/matrices/bundle';
-import { parseRunCompetitorIds, snapshotCompetitorIds, snapshotCompetitors } from '@/lib/matrices/competitor-set';
+import {
+  countSkipped,
+  parseRunCompetitorIds,
+  snapshotCompetitorIds,
+  snapshotCompetitors,
+} from '@/lib/matrices/competitor-set';
 import { rebuildMatricesProjection } from '@/lib/matrices/persist';
 import { reapStaleMatrixRuns } from '@/lib/matrices/pipeline';
 import { isStale } from '@/lib/matrices/projection';
@@ -26,7 +31,7 @@ export type MatrixRunView = {
   status: 'PENDING' | 'RUNNING' | 'NEEDS_AXES' | 'DONE' | 'FAILED';
   stage: string | null;
   tokensUsed: number;
-  errorKind: 'timedOut' | 'dispatch' | 'generic' | null;
+  errorKind: 'timedOut' | 'dispatch' | 'notEnoughEvidence' | 'generic' | null;
   axisCandidates: StoredMarketAxis[];
   startedAt: string;
   finishedAt: string | null;
@@ -44,6 +49,11 @@ export type MatrixStatus = {
    * there is no DONE run.
    */
   stale: boolean;
+  /**
+   * How many competitors the latest DONE run left out for having nothing on
+   * their site to score them on (spec §15 E2). 0 when there is no DONE run.
+   */
+  skippedCount: number;
   matrices: unknown;
 };
 
@@ -85,7 +95,12 @@ function toRunView(run: {
     stage: run.stage,
     tokensUsed: run.tokensUsed,
     // Only the kinds this surface has copy for; the raw error never leaves the server.
-    errorKind: kind === null ? null : kind === 'timedOut' || kind === 'dispatch' ? kind : 'generic',
+    errorKind:
+      kind === null
+        ? null
+        : kind === 'timedOut' || kind === 'dispatch' || kind === 'notEnoughEvidence'
+          ? kind
+          : 'generic',
     axisCandidates: normaliseMarketAxes(run.axisCandidates, MAX_AXIS_CANDIDATES),
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
@@ -230,6 +245,7 @@ export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus
     competitorCount: competitors.length,
     hasBrandSummary: hasBrandSummary(workspace.brandSummary),
     stale,
+    skippedCount: latestDone ? countSkipped(latestDone.competitorSet) : 0,
     matrices,
   };
 }
