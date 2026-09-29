@@ -88,7 +88,11 @@ export function hasBrandSummary(brandSummary: unknown): boolean {
   return ownEvidence(brandSummary).length > 0;
 }
 
-function competitorEvidence(stored: unknown): BundleEvidence[] {
+/**
+ * The stored evidence a score can cite: items with some text, at most 12. A
+ * competitor for whom this is empty has nothing to be scored on (spec §15).
+ */
+export function competitorEvidence(stored: unknown): BundleEvidence[] {
   const items: BundleEvidence[] = [];
   for (const item of parseStoredEvidence(stored)) {
     const text = [item.title, item.snippet].filter(Boolean).join(' — ').slice(0, MAX_TEXT);
