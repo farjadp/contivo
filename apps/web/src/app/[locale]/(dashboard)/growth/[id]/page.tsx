@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { getSession } from '@/lib/auth';
 import { getWorkspaceArchiveState } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
+import { matricesTokenUsage as matricesTokenUsageFor } from '@/lib/matrices/token-usage';
 import { notFound } from 'next/navigation';
 import { redirect, Link } from '@/i18n/navigation';
 import {
@@ -217,7 +218,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const [reportsThisMonth, reportHistory] = await Promise.all([
+  const [reportsThisMonth, reportHistory, matrixRunTokens] = await Promise.all([
     prisma.strategicReport.count({
       where: { userId: session.userId as string, reportDate: { gte: startOfMonth } },
     }),
@@ -225,6 +226,12 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       where: { workspaceId: workspace.id },
       orderBy: { reportDate: 'desc' },
       take: 20,
+    }),
+    // Runs that spent tokens, summed: the blob only holds the latest run's count.
+    prisma.matrixRun.aggregate({
+      where: { workspaceId: workspace.id, tokensUsed: { gt: 0 } },
+      _count: { _all: true },
+      _sum: { tokensUsed: true },
     }),
   ]);
 
@@ -297,12 +304,12 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     ((workspace.audienceInsights as any)?.brandAssets as any) || null;
   const acceptedCompetitors = workspace.competitors.filter((item: any) => item.userDecision === 'ACCEPTED').length;
 
-  // The rebuilt pipeline stores one number per run (`tokens_used`); older blobs
-  // carry the lifetime `token_usage` object.
-  const matricesTokenUsage: TokenUsageLike =
-    typeof initialMatrices?.tokens_used === 'number'
-      ? { runs: 1, lifetime_total_tokens: initialMatrices.tokens_used }
-      : (initialMatrices?.token_usage as TokenUsageLike) || null;
+  // The rebuilt pipeline records tokens per run, so the workspace's runs are
+  // summed; a blob from before the rebuild carries the lifetime object itself.
+  const matricesTokenUsage = matricesTokenUsageFor(
+    { runs: matrixRunTokens._count._all, tokens: matrixRunTokens._sum.tokensUsed ?? 0 },
+    initialMatrices,
+  ) as TokenUsageLike;
   const keywordsTokenUsage = (initialKeywordPayload?.token_usage as TokenUsageLike) || null;
   const offeringsTokenUsage = (initialOfferingsPayload?.token_usage as TokenUsageLike) || null;
   const brandAssetsTokenUsage = (initialBrandAssetsPayload?.token_usage as TokenUsageLike) || null;
