@@ -1,5 +1,5 @@
 import type { AxisDefinition, MatrixLanguage } from './axes';
-import { evidenceIdsFor, type BundleCompany, type EvidenceBundle } from './bundle';
+import { type BundleCompany, type EvidenceBundle } from './bundle';
 import { MatrixAiError, callStructured } from './openai';
 import { axisThird, finalConfidence, isEstimated, normalizeCertainty } from './scoring';
 import type { Certainty, MatrixScore } from './types';
@@ -43,7 +43,13 @@ export const SCORE_SCHEMA = {
 
 const LANGUAGE_NAME: Record<MatrixLanguage, string> = { fa: 'Persian', en: 'English' };
 
+/** The one place that decides which evidence the model sees; citations are checked against the same list. */
+function shownEvidence(c: BundleCompany) {
+  return c.evidence.slice(0, MAX_EVIDENCE_PER_COMPANY);
+}
+
 function describeCompany(c: BundleCompany): string {
+  const shown = shownEvidence(c);
   return [
     `## company_id: ${c.companyId} — ${c.name} (${c.domain}) [${c.type}]`,
     `Positioning: ${c.positioning ?? 'none'}`,
@@ -51,9 +57,7 @@ function describeCompany(c: BundleCompany): string {
     `Labels: ${c.labels.join(', ') || 'none'}`,
     `Keyword themes: ${c.keywordThemes.join(', ') || 'none'}`,
     'Evidence (cite the id in brackets):',
-    ...(c.evidence.length
-      ? c.evidence.slice(0, MAX_EVIDENCE_PER_COMPANY).map((e) => `- [${e.id}] (${e.kind}) ${e.text}`)
-      : ['- none']),
+    ...(shown.length ? shown.map((e) => `- [${e.id}] (${e.kind}) ${e.text}`) : ['- none']),
   ].join('\n');
 }
 
@@ -130,7 +134,7 @@ export async function scoreChart(
     if (!validScore(row.x_score) || !validScore(row.y_score)) {
       throw new MatrixAiError(`chart scoring gave company ${company.companyId} a score outside 1-10`, tokens);
     }
-    const allowed = evidenceIdsFor(bundle, company.companyId);
+    const allowed = new Set(shownEvidence(company).map((e) => e.id));
     const refs = [
       ...new Set(
         (Array.isArray(row.evidence_refs) ? row.evidence_refs : []).filter(

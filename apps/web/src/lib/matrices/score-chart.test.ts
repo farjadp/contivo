@@ -78,6 +78,32 @@ describe('scoreChart', () => {
     expect(r.type).toBe('DIRECT');
   });
 
+  it('drops a ref to evidence the prompt never showed (13th item)', async () => {
+    const big = {
+      target: bundle.target,
+      competitors: [company('r1', 'DIRECT', Array.from({ length: 13 }, (_, i) => `e${i + 1}`))],
+    } as unknown as EvidenceBundle;
+    reply([row('TARGET'), row('r1', { evidence_refs: ['e13'] })]);
+    const out = await scoreChart(big, axis, 'en');
+    expect(mocked.mock.calls[0][0].user).not.toContain('[e13]');
+    expect(out.scores[1].evidenceRefs).toEqual([]);
+    expect(out.scores[1].estimated).toBe(true);
+  });
+
+  it('a competitor cannot cite the target evidence', async () => {
+    reply([row('TARGET'), row('r1', { evidence_refs: ['own:a'], certainty: 'certain' })]);
+    const out = await scoreChart(bundle, axis, 'en');
+    expect(out.scores[1].evidenceRefs).toEqual([]);
+    expect(out.scores[1].estimated).toBe(true);
+  });
+
+  it('the target cannot cite a competitor evidence', async () => {
+    reply([row('TARGET', { evidence_refs: ['e1'] }), row('r1')]);
+    const out = await scoreChart(bundle, axis, 'en');
+    expect(out.scores[0].evidenceRefs).toEqual([]);
+    expect(out.scores[0].estimated).toBe(true);
+  });
+
   it('maps likely and unsure to their floors', async () => {
     reply([row('TARGET', { certainty: 'unsure', evidence_refs: ['own:a'] }), row('r1', { certainty: 'likely', evidence_refs: ['e1'] })]);
     const out = await scoreChart(bundle, axis, 'en');
