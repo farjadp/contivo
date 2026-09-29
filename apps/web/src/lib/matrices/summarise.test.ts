@@ -54,7 +54,7 @@ const chartReply = (over: Record<string, unknown> = {}) =>
   mocked.mockResolvedValueOnce({
     data: {
       market_pattern: 'Most rivals cluster high.',
-      opportunity: 'One thing-side, niche expert.',
+      opportunity: 'No rival sells one narrow thing to niche experts, so Acme could claim that specialist corner.',
       content_angles: [{ angle: 'a1', audience_segment: 's1' }],
       ...over,
     },
@@ -129,6 +129,62 @@ describe('summariseChart', () => {
   it('throws with tokens when marketPattern is empty', async () => {
     chartReply({ market_pattern: '' });
     await expect(summariseChart(axis, scores, null, 'en')).rejects.toMatchObject({ name: 'MatrixAiError', tokens: 11 });
+  });
+});
+
+describe('summariseChart opportunity prose (spec §15 E3)', () => {
+  beforeEach(() => mocked.mockReset());
+  const ws = { xBand: 0 as const, yBand: 2 as const, nearestCompetitorDistance: 5 };
+  const cell = 'Breadth of offer: low One thing; Specialisation: high Niche expert';
+
+  it('asks for one or two full sentences on why the cell is open and what the target could claim', async () => {
+    chartReply();
+    await summariseChart(axis, scores, ws, 'en');
+    const { system } = mocked.mock.calls[0][0];
+    expect(system).toMatch(/one or two full sentences/i);
+    expect(system).toMatch(/why/i);
+    expect(system).toMatch(/could claim/i);
+  });
+
+  it('retries once when the opportunity is under 8 words, counting both calls\' tokens', async () => {
+    chartReply({ opportunity: 'Low breadth, high specialisation.' });
+    mocked.mockResolvedValueOnce({
+      data: {
+        market_pattern: 'Most rivals cluster high.',
+        opportunity: 'Nobody offers one focused product for niche experts, so Acme could own that promise.',
+        content_angles: [],
+      },
+      tokens: 7,
+    });
+    const out = await summariseChart(axis, scores, ws, 'en');
+    expect(mocked).toHaveBeenCalledTimes(2);
+    expect(out.summary.opportunity).toMatch(/^Nobody offers/);
+    expect(out.tokens).toBe(18);
+  });
+
+  it('rejects an opportunity that only repeats the white-space cell (case-insensitive, trimmed)', async () => {
+    const padded = `  ${cell.toUpperCase()}  `;
+    chartReply({ opportunity: padded });
+    chartReply({ opportunity: cell });
+    await expect(summariseChart(axis, scores, ws, 'en')).rejects.toMatchObject({ name: 'MatrixAiError', tokens: 22 });
+    expect(mocked).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails after the one retry when the opportunity is still too short', async () => {
+    chartReply({ opportunity: 'Niche.' });
+    mocked.mockResolvedValueOnce({
+      data: { market_pattern: 'p', opportunity: 'Still short here.', content_angles: [] },
+      tokens: null,
+    });
+    await expect(summariseChart(axis, scores, null, 'en')).rejects.toMatchObject({ name: 'MatrixAiError', tokens: 11 });
+    expect(mocked).toHaveBeenCalledTimes(2);
+  });
+
+  it('counts Persian words by whitespace', async () => {
+    chartReply({ opportunity: 'هیچ رقیبی یک محصول متمرکز برای متخصصان ندارد و اکمی می‌تواند این جایگاه را بگیرد.' });
+    const out = await summariseChart(axis, scores, ws, 'fa');
+    expect(mocked).toHaveBeenCalledTimes(1);
+    expect(out.tokens).toBe(11);
   });
 });
 
