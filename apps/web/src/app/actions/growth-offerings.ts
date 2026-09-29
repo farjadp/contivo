@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
+import { parseStoredBasis, selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { collectSiteSignals, type SiteSignals } from '@/lib/competitors/site-signals';
 
 type TokenUsageRun = {
   model: string;
@@ -77,6 +79,7 @@ export type ProductsServicesPayload = {
   generated_at: string;
   source: 'AI' | 'MANUAL';
   ai_estimated: boolean;
+  competitor_basis?: SelectionBasis;
   client_offerings: CompanyOfferings;
   competitor_offerings: Array<{
     competitor_name: string;
@@ -103,10 +106,6 @@ function normalizeDomain(value: string | null | undefined): string {
 function normalizeWebsite(value: string | null | undefined): string {
   const domain = normalizeDomain(value);
   return domain ? `https://${domain}` : '';
-}
-
-function sanitizeText(input: string): string {
-  return input.replace(/\s+/g, ' ').trim();
 }
 
 function stripCodeFences(value: string): string {
@@ -188,16 +187,6 @@ function appendTokenUsage(
   };
 }
 
-function decodeHtmlEntities(input: string): string {
-  return input
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>');
-}
-
 function normalizeOfferingType(value: string | null | undefined): OfferingItem['type'] {
   const normalized = String(value || '')
     .trim()
@@ -236,111 +225,63 @@ function uniqueList(values: unknown, max: number): string[] {
   return out;
 }
 
-function extractSignalsFromHtml(html: string): string[] {
-  const out: string[] = [];
+/**
+ * Overall wall-clock budget for reading the workspace's own site plus every
+ * competitor's site in one "generate offerings" call. Each fetch already has
+ * its own timeout inside the hardened client, but each path now tries https
+ * and then http (fix-wave re-review, "Overall time budget for the Keywords
+ * and Offerings site reads"), which roughly doubled the worst case per path.
+ * With 11 paths per site and up to 9 sites (the workspace's own plus up to 8
+ * competitors), an unbounded loop could hold this server action open for
+ * many minutes against sites a manual-add user controls. Once the budget is
+ * spent, no further site is read; the analysis runs on whatever was already
+ * collected.
+ */
+const OFFERINGS_ENRICH_BUDGET_MS = 90_000;
 
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
-  if (title) out.push(sanitizeText(decodeHtmlEntities(title)));
-
-  const description =
-    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1] ||
-    html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1];
-  if (description) out.push(sanitizeText(decodeHtmlEntities(description)));
-
-  const regex = /<(h1|h2|h3|a|li)[^>]*>([\s\S]*?)<\/\1>/gi;
-  let match: RegExpExecArray | null = regex.exec(html);
-  while (match) {
-    const text = sanitizeText(decodeHtmlEntities(String(match[2] || '').replace(/<[^>]+>/g, ' ')));
-    if (text.length >= 8) out.push(text);
-    if (out.length >= 260) break;
-    match = regex.exec(html);
-  }
-
-  const unique = new Set<string>();
-  const filtered: string[] = [];
-  for (const line of out) {
-    const key = line.toLowerCase();
-    if (!line || key.length < 6) continue;
-    if (unique.has(key)) continue;
-    unique.add(key);
-    filtered.push(line);
-    if (filtered.length >= 180) break;
-  }
-  return filtered;
+/**
+ * Reads a website (the workspace's own, or a competitor's) through the
+ * hardened client in `@/lib/competitors/site-signals` (pinned DNS with a
+ * private-address blocklist, per-hop redirect checks, capped bodies, bounded
+ * parsing).
+ */
+async function collectOfferingSignals(
+  website: string,
+  budget: { deadline?: number; now?: () => number } = {},
+): Promise<SiteSignals> {
+  return collectSiteSignals(normalizeDomain(website), {
+    paths: [
+      '/',
+      '/products',
+      '/product',
+      '/services',
+      '/solutions',
+      '/features',
+      '/pricing',
+      '/use-cases',
+      '/about',
+      '/platform',
+      '/resources',
+    ],
+    linesPerPage: 50,
+    maxLines: 350,
+    ...budget,
+  });
 }
 
-async function fetchHtml(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(7000),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    });
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
-async function collectOfferingSignals(website: string): Promise<{
-  domain: string;
-  pages_scanned: string[];
-  evidence: string;
-}> {
-  const domain = normalizeDomain(website);
-  const paths = [
-    '/',
-    '/products',
-    '/product',
-    '/services',
-    '/solutions',
-    '/features',
-    '/pricing',
-    '/use-cases',
-    '/about',
-    '/platform',
-    '/resources',
-  ];
-
-  const pages_scanned: string[] = [];
-  const evidenceLines: string[] = [];
-
-  for (const path of paths) {
-    const url = `https://${domain}${path}`;
-    const html = await fetchHtml(url);
-    if (!html) continue;
-    const lines = extractSignalsFromHtml(html);
-    if (lines.length === 0) continue;
-    pages_scanned.push(path);
-    evidenceLines.push(...lines.slice(0, 50));
-    if (evidenceLines.length >= 350) break;
-  }
-
-  return {
-    domain,
-    pages_scanned,
-    evidence: evidenceLines.join('\n').slice(0, 12000),
-  };
-}
-
-function pickCompetitors(workspace: any): Array<{
-  name: string;
-  domain: string;
-  type: string;
-  description: string;
-}> {
+function pickCompetitors(workspace: any): {
+  items: Array<{
+    name: string;
+    domain: string;
+    type: string;
+    description: string;
+  }>;
+  basis: SelectionBasis;
+} {
   const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
-  const accepted = all.filter((item: any) => item.userDecision === 'ACCEPTED');
-  const fallback = all.filter((item: any) => item.userDecision !== 'REJECTED');
-  const source = accepted.length > 0 ? accepted : fallback;
+  const { competitors, basis } = selectCompetitors(all);
 
-  return source
+  const items = competitors
     .map((item: any) => ({
       name: trimTo(item.name, 120),
       domain: normalizeDomain(item.domain),
@@ -349,6 +290,8 @@ function pickCompetitors(workspace: any): Array<{
     }))
     .filter((item: { name: string; domain: string }) => item.name && item.domain)
     .slice(0, 8);
+
+  return { items, basis };
 }
 
 function defaultSummary(overr?: Partial<CompanyOfferings['summary']>): CompanyOfferings['summary'] {
@@ -362,17 +305,6 @@ function defaultSummary(overr?: Partial<CompanyOfferings['summary']>): CompanyOf
     main_positioning_angle: overr?.main_positioning_angle || 'unknown',
     main_offer_focus: overr?.main_offer_focus || 'unknown',
     product_service_ratio: overr?.product_service_ratio || 'unknown',
-  };
-}
-
-function defaultComparisonSummary(): ComparisonSummary {
-  return {
-    client_focus: '',
-    competitor_patterns: [],
-    white_space_opportunities: [],
-    offer_clarity_insight: '',
-    market_offer_pattern: '',
-    offer_gap_opportunity: '',
   };
 }
 
@@ -646,53 +578,14 @@ async function callOpenAiJson(
   }
 }
 
-function fallbackPayload(input: {
+function normalizePayload(raw: any, input: {
   clientName: string;
   clientWebsite: string;
   competitors: Array<{ name: string; domain: string }>;
 }): ProductsServicesPayload {
-  const client_offerings: CompanyOfferings = {
-    company_name: input.clientName,
-    website: normalizeWebsite(input.clientWebsite),
-    offerings: [],
-    summary: defaultSummary({
-      main_business_model_guess: 'unknown',
-      main_offering_focus: 'Insufficient public evidence',
-    }),
-  };
-
-  const competitor_offerings = input.competitors.map((item) => ({
-    competitor_name: item.name,
-    website: normalizeWebsite(item.domain),
-    offerings: [] as OfferingItem[],
-    summary: defaultSummary({
-      main_business_model_guess: 'unknown',
-      main_offering_focus: 'Insufficient public evidence',
-    }),
-  }));
-
-  return {
-    generated_at: new Date().toISOString(),
-    source: 'AI',
-    ai_estimated: true,
-    client_offerings,
-    competitor_offerings,
-    comparison_summary: defaultComparisonSummary(),
-    comparison_analysis: defaultComparisonAnalysis(),
-    token_usage: emptyTokenUsage(),
-  };
-}
-
-function normalizePayload(raw: any, fallbackInput: {
-  clientName: string;
-  clientWebsite: string;
-  competitors: Array<{ name: string; domain: string }>;
-}): ProductsServicesPayload {
-  const fallback = fallbackPayload(fallbackInput);
-
   const client_offerings = normalizeCompanyOfferings(raw?.client_offerings, {
-    companyName: fallbackInput.clientName,
-    website: fallbackInput.clientWebsite,
+    companyName: input.clientName,
+    website: input.clientWebsite,
   });
 
   const competitorRaw = Array.isArray(raw?.competitor_offerings) ? raw.competitor_offerings : [];
@@ -718,7 +611,7 @@ function normalizePayload(raw: any, fallbackInput: {
     });
   }
 
-  for (const expected of fallbackInput.competitors) {
+  for (const expected of input.competitors) {
     const domain = normalizeDomain(expected.domain);
     if (!domain || seenDomains.has(domain)) continue;
     competitor_offerings.push({
@@ -737,9 +630,13 @@ function normalizePayload(raw: any, fallbackInput: {
     : {};
 
   return {
-    ...fallback,
+    generated_at: new Date().toISOString(),
+    source: 'AI',
+    ai_estimated: true,
     client_offerings,
     competitor_offerings,
+    comparison_analysis: defaultComparisonAnalysis(),
+    token_usage: emptyTokenUsage(),
     comparison_summary: {
       client_focus: trimTo(summaryRaw.client_focus, 220),
       competitor_patterns: uniqueList(summaryRaw.competitor_patterns, 10),
@@ -783,19 +680,26 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     });
     if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-    const competitors = pickCompetitors(workspace);
+    const { items: competitors, basis } = pickCompetitors(workspace);
     if (competitors.length < 1) {
       return { error: await actionError('needOneCompetitorOfferings') };
     }
 
-    const clientSignals = await collectOfferingSignals(workspace.websiteUrl || '');
+    const now = Date.now;
+    const deadline = now() + OFFERINGS_ENRICH_BUDGET_MS;
+
+    const clientSignals = await collectOfferingSignals(workspace.websiteUrl || '', { deadline, now });
     if (!clientSignals.evidence) {
       return { error: await actionError('notEnoughClientSignals') };
     }
 
     const competitorSignals = [];
     for (const competitor of competitors) {
-      const signal = await collectOfferingSignals(competitor.domain);
+      // Checked before starting each competitor's site, not just inside
+      // collectSiteSignals's own path loop: once the shared budget is
+      // spent, no further competitor is read at all.
+      if (now() >= deadline) break;
+      const signal = await collectOfferingSignals(competitor.domain, { deadline, now });
       if (!signal.evidence) continue;
       competitorSignals.push({
         competitor_name: competitor.name,
@@ -823,25 +727,38 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     });
 
     const extractResult = await callOpenAiJson(extractionPrompt);
-    const payload =
-      extractResult?.parsed != null
-        ? normalizePayload(extractResult.parsed, {
-            clientName: workspace.name,
-            clientWebsite: workspace.websiteUrl || '',
-            competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
-          })
-        : fallbackPayload({
-            clientName: workspace.name,
-            clientWebsite: workspace.websiteUrl || '',
-            competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
-          });
 
-    const comparePrompt = buildComparisonPrompt({
-      client_offerings: payload.client_offerings,
-      competitor_offerings: payload.competitor_offerings,
+    // A failed extraction is never saved and never fed to the comparison
+    // prompt: the previous result stays as it was.
+    if (extractResult?.parsed == null) {
+      await writeActivityLog({
+        userId: session.userId as string,
+        workspaceId: workspace.id,
+        action: 'PRODUCTS_SERVICES_INTEL_FAILED',
+        detail: { reason: 'no_ai_result', totalTokens: extractResult?.usage?.total_tokens || 0 },
+      });
+      return { error: await actionError('offeringsAiFailed') };
+    }
+
+    const payload = normalizePayload(extractResult.parsed, {
+      clientName: workspace.name,
+      clientWebsite: workspace.websiteUrl || '',
+      competitors: competitors.map((item) => ({ name: item.name, domain: item.domain })),
     });
-    const compareResult = await callOpenAiJson(comparePrompt);
-    payload.comparison_analysis = normalizeComparisonAnalysis(compareResult?.parsed);
+
+    // With no offering on either side there is nothing to compare, and a
+    // comparison of nothing is advice invented from nothing.
+    const hasOfferings =
+      payload.client_offerings.offerings.length > 0 ||
+      payload.competitor_offerings.some((item) => item.offerings.length > 0);
+    let compareResult: Awaited<ReturnType<typeof callOpenAiJson>> = null;
+    if (hasOfferings) {
+      compareResult = await callOpenAiJson(buildComparisonPrompt({
+        client_offerings: payload.client_offerings,
+        competitor_offerings: payload.competitor_offerings,
+      }));
+      payload.comparison_analysis = normalizeComparisonAnalysis(compareResult?.parsed);
+    }
 
     const previousTokenUsage = normalizeTokenUsage(
       (workspace.audienceInsights as any)?.productsServicesIntel?.token_usage,
@@ -851,6 +768,7 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     payload.generated_at = new Date().toISOString();
     payload.source = 'AI';
     payload.ai_estimated = true;
+    payload.competitor_basis = basis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },
@@ -901,6 +819,11 @@ export async function saveWorkspaceProductsServicesIntelEdits(
     normalized.token_usage = normalizeTokenUsage(
       payload?.token_usage || (workspace.audienceInsights as any)?.productsServicesIntel?.token_usage,
     );
+    // Same rule as the matrices edit path: an edit does not change which
+    // competitors the analysis was built on, so the STORED basis (never the
+    // client's) is carried through; a legacy payload without one stays so.
+    const storedBasis = parseStoredBasis((workspace.audienceInsights as any)?.productsServicesIntel?.competitor_basis);
+    if (storedBasis) normalized.competitor_basis = storedBasis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },

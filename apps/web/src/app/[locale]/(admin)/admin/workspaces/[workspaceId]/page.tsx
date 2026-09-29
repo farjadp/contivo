@@ -17,6 +17,7 @@ import {
   StatusBadge,
   createAdminFormat,
 } from '../../_components/AdminUi';
+import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
 
 type Props = {
   params: Promise<{ workspaceId: string }>;
@@ -62,7 +63,7 @@ export default async function AdminWorkspaceDetailPage({ params }: Props) {
       },
       _count: {
         select: {
-          competitors: true,
+          competitors: { where: COUNTED_COMPETITOR_WHERE },
           contentItems: true,
           strategyRuns: true,
           competitorKeywords: true,

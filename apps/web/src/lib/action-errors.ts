@@ -11,7 +11,7 @@ import { getTranslations } from 'next-intl/server';
  * if at all — a crash in the unattended publisher is a worse outcome than an
  * untranslated line in a log.
  */
-export async function actionError(key: string): Promise<string> {
+export async function actionError(key: string, values?: Record<string, string | number>): Promise<string> {
   const t = await getTranslations('errors');
-  return t(key);
+  return values ? t(key, values) : t(key);
 }

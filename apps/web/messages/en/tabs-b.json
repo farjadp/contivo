@@ -107,53 +107,6 @@
       "aiTrustScore": "AI Trust Score",
       "confidenceScore": "Confidence Score"
     },
-    "competitorMap": {
-      "unsavedTitle": "You have unsaved text edits.",
-      "unsavedBody": "Accept and Reject save on click, but changes to a competitor's name, domain or type need this save.",
-      "saveNow": "Save now",
-      "discover": "Discover Competitors with AI",
-      "saveTextEdits": "Save text edits",
-      "savedLabel": "Saved",
-      "counts": "{active} active / {accepted} accepted",
-      "runs": "Discovery runs: {used}/{max}",
-      "decisionFailed": "Could not save that decision.",
-      "discoverFailed": "Unexpected error while discovering competitors.",
-      "discovered": "We found potential competitors for your business. Please review and confirm them.",
-      "savedMessage": "Competitor decisions saved.",
-      "saveFailed": "Unexpected error while saving edits.",
-      "axisSophistication": "Product Sophistication",
-      "axisAudience": "Audience Size",
-      "yourBrand": "Your Brand",
-      "legend": {
-        "direct": "Direct",
-        "indirect": "Indirect",
-        "aspirational": "Aspirational"
-      },
-      "topTitle": "Top Competitors by Brand Position",
-      "topEmpty": "No accepted competitors yet.",
-      "noDomain": "No domain",
-      "scorePair": "Audience {audience} / Sophistication {sophistication}",
-      "addTitle": "Add Competitor Manually",
-      "manualNamePlaceholder": "Competitor name",
-      "manualDomainPlaceholder": "competitor.com",
-      "manualFallbackName": "Manual Competitor",
-      "manualDescription": "Manually added competitor",
-      "add": "Add",
-      "namePlaceholder": "Name",
-      "domainPlaceholder": "Domain",
-      "types": {
-        "DIRECT": "Direct",
-        "INDIRECT": "Indirect",
-        "ASPIRATIONAL": "Aspirational"
-      },
-      "accept": "Accept",
-      "reject": "Reject",
-      "undecided": "Undecided",
-      "decisionSaved": "Saved",
-      "archiveTitle": "Discovery Archive",
-      "archiveEmpty": "No discovery runs yet.",
-      "archiveRun": "Run #{number} ({count} competitors)"
-    },
     "keywords": {
       "analyze": "Analyze Competitor Keywords",
       "generated": "Competitor keyword intelligence generated from competitor content signals.",
@@ -177,6 +130,7 @@
       "primary": "Primary Keywords",
       "secondary": "Secondary Keywords",
       "intentTitle": "Intent Distribution",
+      "intentUnknown": "Not enough evidence to estimate this competitor's search intent.",
       "intent": {
         "informational": "Informational",
         "commercial": "Commercial",
@@ -389,7 +343,11 @@
       "analyzedOn": "Analyzed {date} · ",
       "refreshIn": "Refresh in {hours}h",
       "readyToRefresh": "Ready to refresh",
-      "empty": "—"
+      "empty": "—",
+      "sampleDataTitle": "Sample data, not saved",
+      "sampleDataBody": "DATAFORSEO_ALLOW_MOCKS is on, so these {count} rows are generated locally and are not real. Nothing was saved, and matrices and ideation will not see them.",
+      "notConfiguredTitle": "DataForSEO is not connected",
+      "notConfiguredBody": "Add DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD to the environment to pull live keyword and SERP data."
     },
     "rescrape": {
       "history": "History ({count})",

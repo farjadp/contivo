@@ -85,12 +85,18 @@ model Workspace {
   /// a US market reads the dashboard in Persian and publishes in English, and
   /// tying the two together would make that impossible.
   contentLanguage      ContentLanguage      @default(EN)
+  /// Where this workspace competes, which is not where it writes from: a
+  /// Tehran founder selling into the US searches en/US while publishing
+  /// Persian. Discovery searches here; null country means global.
+  targetCountry        String?
+  targetLanguage       String               @default("en")
   rescrapeCount        Int                  @default(0)
   archivedSummaries    Json?
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   competitorKeywords   CompetitorKeyword[]
   competitors          Competitor[]
+  discoveryRuns        DiscoveryRun[]
   contentItems         ContentItem[]
   contentJobs          ContentJob[]
   keywordOpportunities KeywordOpportunity[]
@@ -276,22 +282,62 @@ model StrategicReport {
 }
 
 model Competitor {
-  id            String    @id @default(cuid())
-  workspaceId   String
-  name          String
-  domain        String?
-  description   String?
-  category      String?
-  audienceGuess String?
-  source        String    @default("AI")
-  type          String?
-  userDecision  String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  workspace     Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  id              String    @id @default(cuid())
+  workspaceId     String
+  name            String
+  domain          String?
+  description     String?
+  category        String?
+  audienceGuess   String?
+  source          String    @default("AI")
+  type            String?
+  userDecision    String?
+  confidence      Float?
+  labels          String[]  @default([])
+  sources         String[]  @default([])
+  evidence        Json?
+  positioning     String?
+  keyFeatures     String[]  @default([])
+  rejectionReason String?
+  discoveryRunId  String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
   @@index([workspaceId])
   @@map("competitors")
+}
+
+/// WARNING: this table also carries a partial unique index,
+/// `discovery_runs_one_active_per_workspace` (unique on "workspaceId" WHERE
+/// status IN ('PENDING', 'RUNNING')). Prisma's schema language cannot express
+/// it, so it lives ONLY in the SQL of migration
+/// 20260927000000_competitor_discovery. `prisma migrate dev` / `migrate diff`
+/// will therefore propose `DROP INDEX "discovery_runs_one_active_per_workspace"`
+/// in any newly generated migration: delete that line before applying it, or
+/// two discovery runs can start at once for the same workspace. `prisma db
+/// push` (this repo's local-dev command — see the local-dev memory) drops the
+/// same index silently, with no proposal to review: it just diffs the schema
+/// file, which has no record of this index, and removes it. Never `db push`
+/// this table without re-adding the index by hand afterwards.
+model DiscoveryRun {
+  id          String    @id @default(cuid())
+  workspaceId String
+  userId      String
+  status      String // PENDING | RUNNING | DONE | EMPTY | FAILED
+  stage       String? // QUERIES | SEARCH | ENRICH | JUDGE | SAVE
+  market      Json // { country, language } snapshot
+  queries     Json? // string[]
+  sourceStats Json? // per source: harvested, after filter, enriched, judged, kept
+  savedCount  Int       @default(0)
+  tokensUsed  Int       @default(0)
+  error       String?
+  startedAt   DateTime  @default(now())
+  finishedAt  DateTime?
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId, startedAt])
+  @@map("discovery_runs")
 }
 
 model CompetitorKeyword {

@@ -59,6 +59,7 @@ import { getAutopilotState } from '@/app/actions/autopilot';
 import { getNarrative } from '@/app/actions/narrative';
 import { getFormatter, getLocale } from 'next-intl/server';
 import { missingReportRequirements } from '@/lib/report-readiness';
+import { countCompetitors } from '@/lib/competitor-counts';
 
 export async function generateMetadata() {
   const t = await getTranslations('growth.workspace');
@@ -258,7 +259,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     workspaceId: workspace.id,
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: workspace.competitors.filter((c: any) => c.userDecision === 'ACCEPTED').length,
-    totalCompetitors: workspace.competitors.length,
+    totalCompetitors: countCompetitors(workspace.competitors),
     matrixCharts: Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts)
       ? (workspace.audienceInsights as any).competitiveMatrices.charts.length
       : 0,
@@ -452,7 +453,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   // from Market Matrices fixes the competitor warning, and a banner that stays
   // after the problem is gone is just noise.
   const extractionWarnings = activeSetupWarnings((insights as any)?.extraction?.warnings, {
-    competitorCount: workspace.competitors.length,
+    competitorCount: countCompetitors(workspace.competitors),
   });
 
   return (
@@ -638,17 +639,10 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <CompetitiveMatricesTab
             workspaceId={workspace.id}
             initialMatrices={initialMatrices}
-            initialCompetitors={workspace.competitors.map((item: any) => ({
-              id: item.id,
-              name: item.name,
-              domain: item.domain,
-              description: item.description,
-              category: item.category,
-              audienceGuess: item.audienceGuess,
-              type: item.type,
-              userDecision: item.userDecision,
-              source: item.source,
-            }))}
+            targetMarket={{
+              country: workspace.targetCountry,
+              language: workspace.targetLanguage === 'fa' ? 'fa' : 'en',
+            }}
             discoveryMeta={{
               usedRuns: discoveryStats.usedRuns,
               remainingRuns: discoveryStats.remainingRuns,

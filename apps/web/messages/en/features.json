@@ -1,0 +1,221 @@
+{
+  "features": {
+    "meta": {
+      "title": "Features — Contivo",
+      "description": "Everything Contivo does, stage by stage: brand memory, a competitive map, a narrative, drafts that pass a quality gate, and publishing on your own channels."
+    },
+    "headline": "Everything you get, and <accent>what it is for</accent>.",
+    "intro": "{count, number} things Contivo does, in the order you meet them. Each one says what it does and what you end up holding. Anything not built yet is marked as such.",
+    "jumpLabel": "Jump to a stage",
+    "soon": "Soon",
+    "youGet": "You get:",
+    "stages": {
+      "know": {
+        "title": "It starts with your website.",
+        "body": "One URL. Contivo reads it and builds the memory that everything after this is written from.",
+        "alt": "The Brand Memory tab in Contivo: business summary, value proposition, target audience persona and brand tone tags, pulled from a website."
+      },
+      "watch": {
+        "title": "Then it maps the market.",
+        "body": "Competitors at your scale, checked to exist, scored — and you on the same chart as them.",
+        "alt": "A competitive landscape chart in Contivo placing a brand next to its discovered competitors, by audience size and product complexity."
+      },
+      "think": {
+        "title": "Then it refuses to write.",
+        "body": "Ideation stays locked until the intelligence underneath it exists. That refusal is the reason the output is worth reading.",
+        "alt": "The setup chain for a real workspace in Contivo: brand memory, market map, competitor keywords and a publishing channel all done."
+      },
+      "make": {
+        "title": "Then it writes.",
+        "body": "Drafts in your own voice, put through a gate that was built to reject them.",
+        "alt": "The content pipeline of a real workspace in Contivo: LinkedIn posts it wrote, two published and one draft with its scheduled time."
+      },
+      "ship": {
+        "title": "And it publishes.",
+        "body": "Your channels, your hours, your rhythm — and nothing goes out unreviewed."
+      },
+      "learn": {
+        "title": "And it shows its work.",
+        "body": "Every run, every refusal and every number is on the record, so you can tell a good week from a lucky one."
+      }
+    },
+    "items": {
+      "brandMemory": {
+        "name": "Brand Memory",
+        "body": "Paste your address. Contivo reads the site and writes back what your business does, what it promises, who it is for and how it sounds — then hands it to you to correct.",
+        "get": "An editable page: business summary, value proposition, audience persona and tone tags."
+      },
+      "brandAssets": {
+        "name": "Brand assets",
+        "body": "The same pass collects the colours, logos and phrases your site already uses. Each one waits for your yes or no rather than being used behind your back.",
+        "get": "A reviewed set of colours, logos, messaging and voice notes — plus anything you upload yourself."
+      },
+      "language": {
+        "name": "Persian or English",
+        "body": "Each brand writes in its own language. Persian output is written as Persian, not translated from an English draft, and the quality gate judges it by Persian word ranges.",
+        "get": "A per-brand setting that every post, report and image headline follows."
+      },
+      "brands": {
+        "name": "Separate brands",
+        "body": "Each brand keeps its own memory, competitors, narrative, calendar and channels. Nothing leaks from one into another.",
+        "get": "Workspaces you can run side by side."
+      },
+      "discovery": {
+        "name": "Competitor discovery",
+        "body": "Contivo looks for companies at your scale rather than the famous names in your category, and checks each one actually exists before it shows it to you.",
+        "get": "A list of real competitors, each with the evidence it was found on."
+      },
+      "validation": {
+        "name": "You decide who counts",
+        "body": "Accept, reject or add a competitor by hand. One you add yourself is read from its own site, so it arrives with the same evidence as the rest.",
+        "get": "A confirmed competitor set — the thing every later stage is built on."
+      },
+      "matrices": {
+        "name": "Positioning matrices",
+        "body": "Five charts. You and every confirmed competitor scored one to ten on two axes each, with the reasoning behind every score shown.",
+        "get": "Five charts showing where you actually sit, and which corners nobody is standing in."
+      },
+      "keywords": {
+        "name": "Competitor keywords",
+        "body": "What your competitors rank for, grouped into clusters and split by what the searcher actually wants — and which of it they have left open.",
+        "get": "Keyword clusters, the intent behind each, and a gap list worth writing against."
+      },
+      "offerings": {
+        "name": "Products and services, side by side",
+        "body": "What each competitor sells, next to what you sell.",
+        "get": "A comparison of your offer against theirs, and what is missing on both sides."
+      },
+      "monitoring": {
+        "name": "Weekly competitor watch",
+        "body": "A weekly re-read of every confirmed competitor, telling you when their site, their pricing or their positioning moves.",
+        "get": "A weekly list of what changed, per competitor."
+      },
+      "lock": {
+        "name": "The lock",
+        "body": "Ideation will not run until brand memory, the matrices and competitor keywords all exist. Neither you nor the model can talk it round.",
+        "get": "A refusal — and the reason the ideas are worth reading once it lifts."
+      },
+      "narrative": {
+        "name": "Narrative",
+        "body": "Three or four durable claims your content has to advance, drafted from the intelligence Contivo already computed and then corrected by you.",
+        "get": "Storylines, each with its claim, its audience, the competitor gap it exploits, the evidence it may use, and a list of things it must never claim."
+      },
+      "ideation": {
+        "name": "Ideation",
+        "body": "Ideas that come from a keyword gap or a position on a matrix, each one bound to a storyline and to a writing framework chosen for the goal and the platform.",
+        "get": "A batch of ideas, each carrying the storyline it advances and why it was picked."
+      },
+      "drafts": {
+        "name": "Drafts",
+        "body": "Full posts written to your tone, in a framework suited to the channel, inside a word range you set per platform.",
+        "get": "A finished draft for every idea you send through, scheduled and ready to review."
+      },
+      "sources": {
+        "name": "Your own material",
+        "body": "Add notes, or attach a PDF, transcript or spec, and the post is written from what you supplied instead of from the model's guesswork.",
+        "get": "Drafts grounded in your material, with the source recorded against the post."
+      },
+      "humanize": {
+        "name": "The machine tells, removed",
+        "body": "A second pass over every draft strips the phrasing that gives AI writing away.",
+        "get": "Copy that does not open with “In today’s fast-paced world”."
+      },
+      "gate": {
+        "name": "The quality gate",
+        "body": "Hard checks first: the platform's own limit, the word range you set, leftover template scaffolding, and the topics you said never to touch. Then a judge scores brand fit, factual safety and clarity out of ten — and can veto.",
+        "get": "Only the posts that passed. A rejected one goes back to draft with the reason named, and if no model can review it, nothing is published at all."
+      },
+      "images": {
+        "name": "Images",
+        "body": "An image art-directed from the post itself rather than pulled from a stock library, with the clichés ruled out in the brief.",
+        "get": "One image per post, with alt text written for a screen reader."
+      },
+      "imageTemplate": {
+        "name": "Brand template on images",
+        "body": "Headline and logo drawn on top of the image in your brand’s colour and a real font, so the text is correct — including Persian, which image models always mangle.",
+        "get": "Images that look like they came from one brand, with a headline you can rewrite for free."
+      },
+      "imageQuality": {
+        "name": "Choose your image quality",
+        "body": "Pick fast, standard or HD per image and spend your allowance accordingly, instead of paying the same for a throwaway and a hero shot.",
+        "get": "Control over what each image costs you out of your monthly allowance."
+      },
+      "instant": {
+        "name": "Instant Content",
+        "body": "One post, right now, without setting up a brand first. The fast way to see what the writing is like.",
+        "get": "A draft for LinkedIn, X, Instagram, email or a blog, in seconds."
+      },
+      "pipeline": {
+        "name": "Pipeline",
+        "body": "Every idea and draft in one place with its state, its channel and its word target.",
+        "get": "A board you can edit, reschedule or publish straight from."
+      },
+      "calendar": {
+        "name": "Calendar",
+        "body": "What is going out, and when.",
+        "get": "List and week views of everything scheduled."
+      },
+      "website": {
+        "name": "Your own website",
+        "body": "One key, any stack, any host. Your site asks Contivo for its posts — Contivo never touches your codebase, your deploy or your CMS.",
+        "get": "A read-only content API, plus a webhook that clears your cache the moment a post goes live."
+      },
+      "social": {
+        "name": "LinkedIn and X",
+        "body": "Connect an account once and Contivo posts on your behalf, inside the days and hours you allow. It posts to your own LinkedIn profile, not to a company page.",
+        "get": "Scheduled publishing to LinkedIn and X, with every attempt recorded."
+      },
+      "socialMore": {
+        "name": "Instagram, Facebook and TikTok",
+        "body": "The three networks Contivo can not yet post to. Each one needs its platform's app review before anybody but us can connect an account, so they are listed here rather than promised above.",
+        "get": "The same scheduling and quality gate, on three more networks."
+      },
+      "autopilot": {
+        "name": "Autopilot",
+        "body": "Set a rhythm and it keeps the next seven days full on its own: it ideates, drafts, checks and schedules without being asked.",
+        "get": "1–14 posts a week in your window, steered by a goal, topics to favour and topics to never touch."
+      },
+      "video": {
+        "name": "Video scripts and template videos",
+        "body": "A hook, a script, a shot list and a caption built from the gaps your competitors left — and a carousel turned into a Reel with animated text.",
+        "get": "Scripts you can shoot, and short videos rendered without a camera."
+      },
+      "runLog": {
+        "name": "Every run on the record",
+        "body": "Each Autopilot run is logged step by step, including what it refused and the score it refused on.",
+        "get": "A full run history per agent, so a quiet week has an explanation."
+      },
+      "report": {
+        "name": "Strategy report",
+        "body": "Everything Contivo has worked out about your market, written up as a document you can hand to someone else.",
+        "get": "A PDF: executive summary, brand profile, competitive landscape, positioning matrices, keyword intelligence, products and services, and recommendations."
+      },
+      "whiteLabel": {
+        "name": "White-label reports",
+        "body": "The same strategy report, carrying your agency’s brand instead of ours.",
+        "get": "A report you can send a client under your own name."
+      },
+      "shareLinks": {
+        "name": "Client share links",
+        "body": "A link a client can open to see their own workspace’s report, without an account.",
+        "get": "One link per client, revocable."
+      }
+    },
+    "notes": {
+      "estimated": "The scores are the model's reading of public evidence, not measured data. Each one shows its reasoning so you can disagree with it.",
+      "reportTime": "Takes under a minute to build. Needs your brand memory, the five matrices, keywords and your offerings to be filled in first.",
+      "discoveryChecked": "“Checked” means the domain resolves and answers — that the company is real, not that it competes with you. That judgement stays yours."
+    },
+    "close": {
+      "headline": "Free while it is in <accent>early access</accent>.",
+      "cta": "Start free",
+      "pricing": "See pricing"
+    },
+    "eyebrow": "Features",
+    "stats": {
+      "live": "working today",
+      "soon": "marked as not built yet",
+      "stages": "stages, same as the app"
+    }
+  }
+}

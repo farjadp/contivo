@@ -11,11 +11,22 @@
  * Rate limits (enforced via DB timestamp, no Redis required):
  *   - Competitor scan: max 1 per domain per 7 days
  *   - SERP analysis:   max 1 per keyword per 24 hours
+ *
+ * Provenance rule: generated sample data (DATAFORSEO_MOCK=1) is returned to the
+ * caller labelled 'MOCK' and is never written to the database. Anything stored
+ * in competitor_keywords or serp_analyses is therefore live by construction,
+ * which is what lets matrices and ideation trust it.
  */
 
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { fetchDomainKeywords, fetchSerpResults } from '@/lib/dataforseo';
+import {
+  DataForSEOError,
+  fetchDomainKeywords,
+  fetchSerpResults,
+  hasDataForSeoCredentials,
+  type DataForSEODataSource,
+} from '@/lib/dataforseo';
 import { asContentLanguage } from '@/lib/content-language';
 import { actionError } from '@/lib/action-errors';
 
@@ -38,6 +49,17 @@ async function resolveWorkspace(workspaceId: string) {
   if (!workspace) throw new Error('Workspace not found');
 
   return { session, workspace };
+}
+
+/** Turn a client failure into something the user can act on, never into data. */
+function describeDataForSeoFailure(err: unknown): string {
+  if (err instanceof DataForSEOError && err.reason === 'MISSING_CREDENTIALS') {
+    return 'DataForSEO is not configured. Set DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD, then try again.';
+  }
+  if (err instanceof DataForSEOError) {
+    return `The DataForSEO request failed: ${err.message.slice(0, 200)}`;
+  }
+  throw err;
 }
 
 // ─── Module 1: Competitor Keyword Scan ────────────────────────────────────────
@@ -78,13 +100,32 @@ export async function scanCompetitorKeywords(
   }
 
   // ── Fetch from DataForSEO ─────────────────────────────────────────────────
-  const keywords = await fetchDomainKeywords(cleanDomain, MAX_KEYWORDS_PER_COMPETITOR);
+  let keywords: Awaited<ReturnType<typeof fetchDomainKeywords>>;
+  try {
+    keywords = await fetchDomainKeywords(cleanDomain, MAX_KEYWORDS_PER_COMPETITOR);
+  } catch (err) {
+    // A failed lookup is reported as a failure. It used to become mock rows.
+    return { success: false, error: describeDataForSeoFailure(err), count: 0 };
+  }
 
-  if (keywords.length === 0) {
+  if (keywords.items.length === 0) {
     return {
       success: false,
       error: `No keyword data found for domain "${cleanDomain}". It may not be indexed by DataForSEO yet.`,
       count: 0,
+    };
+  }
+
+  if (keywords.dataSource === 'MOCK') {
+    // Shown for UI work, never stored: stored keyword data is what matrices and
+    // ideation treat as evidence, and sample numbers would poison both.
+    return {
+      success: true,
+      stored: false,
+      dataSource: 'MOCK' as DataForSEODataSource,
+      domain: cleanDomain,
+      count: keywords.items.length,
+      keywords: keywords.items,
     };
   }
 
@@ -94,7 +135,7 @@ export async function scanCompetitorKeywords(
   });
 
   await prisma.competitorKeyword.createMany({
-    data: keywords.map((kw) => ({
+    data: keywords.items.map((kw) => ({
       workspaceId,
       competitorDomain: cleanDomain,
       keyword: kw.keyword,
@@ -108,8 +149,10 @@ export async function scanCompetitorKeywords(
 
   return {
     success: true,
+    stored: true,
+    dataSource: 'LIVE' as DataForSEODataSource,
     domain: cleanDomain,
-    count: keywords.length,
+    count: keywords.items.length,
   };
 }
 
@@ -230,7 +273,14 @@ export async function analyzeSerpForKeyword(
   }
 
   // ── Fetch SERP results from DataForSEO ────────────────────────────────────
-  const serpItems = await fetchSerpResults(normalizedKeyword);
+  let serp: Awaited<ReturnType<typeof fetchSerpResults>>;
+  try {
+    serp = await fetchSerpResults(normalizedKeyword);
+  } catch (err) {
+    return { success: false, error: describeDataForSeoFailure(err) };
+  }
+
+  const serpItems = serp.items;
 
   if (serpItems.length === 0) {
     return {
@@ -255,17 +305,23 @@ export async function analyzeSerpForKeyword(
   }
 
   // ── Persist results ───────────────────────────────────────────────────────
-  await prisma.serpAnalysis.create({
-    data: {
-      workspaceId,
-      keyword: normalizedKeyword,
-      rawResults: serpItems as any,
-      analysis,
-    },
-  });
+  // Sample SERPs are never stored, so a saved analysis always rests on a real
+  // search. The cooldown is not consumed either, since nothing was recorded.
+  if (serp.dataSource === 'LIVE') {
+    await prisma.serpAnalysis.create({
+      data: {
+        workspaceId,
+        keyword: normalizedKeyword,
+        rawResults: serpItems as any,
+        analysis,
+      },
+    });
+  }
 
   return {
     success: true,
+    stored: serp.dataSource === 'LIVE',
+    dataSource: serp.dataSource,
     keyword: normalizedKeyword,
     serpCount: serpItems.length,
     analysis,
@@ -274,6 +330,18 @@ export async function analyzeSerpForKeyword(
 }
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
+
+/**
+ * Whether live SEO lookups are possible at all, so the UI can say "not
+ * configured" instead of letting the user spend a click on a guaranteed error.
+ */
+export async function getSeoDataSourceStatus() {
+  await getSession();
+  return {
+    configured: hasDataForSeoCredentials(),
+    mockMode: process.env.DATAFORSEO_MOCK === '1',
+  };
+}
 
 /** Load all SEO intelligence data for the workspace dashboard. */
 export async function loadSeoIntelligence(workspaceId: string) {

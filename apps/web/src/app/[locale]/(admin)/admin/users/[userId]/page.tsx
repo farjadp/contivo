@@ -16,6 +16,7 @@ import {
 } from '../../_components/AdminUi';
 import { listUserActivityLogs } from '@/lib/activity-log';
 import { prisma } from '@/lib/db';
+import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
 
 type Props = {
   params: Promise<{ userId: string }>;
@@ -37,7 +38,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
         include: {
           _count: {
             select: {
-              competitors: true,
+              competitors: { where: COUNTED_COMPETITOR_WHERE },
               contentItems: true,
             },
           },

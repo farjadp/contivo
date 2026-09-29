@@ -20,6 +20,12 @@ export function GlobalHeader() {
     '/settings',
     '/pricing',
     '/docs',
+    '/features',
+    '/privacy',
+    '/terms',
+    '/contact',
+    '/about',
+    '/sample-report',
     // These carry their own brand mark, and a "Sign up" button on the sign-up
     // page is worse than no header at all.
     '/sign-in',

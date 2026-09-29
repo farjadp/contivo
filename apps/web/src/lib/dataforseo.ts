@@ -6,8 +6,18 @@
  * Never call these functions from the browser — server-only.
  *
  * Usage:
- *   const keywords = await fetchDomainKeywords('hubspot.com', 200);
- *   const serp = await fetchSerpResults('content marketing tools');
+ *   const { items, dataSource } = await fetchDomainKeywords('hubspot.com', 200);
+ *   const { items } = await fetchSerpResults('content marketing tools');
+ *
+ * Provenance is not optional. Every call returns `dataSource`, and a caller must
+ * decide what to do with 'MOCK' rather than being handed invented numbers that
+ * look real. This module used to fall back to generated data whenever a request
+ * failed *or* NODE_ENV was 'development', unlabelled, and that fabricated data
+ * flowed into stored keyword intelligence, matrices and eventually published
+ * content. Now:
+ *   - a failed or unauthenticated request throws DataForSEOError;
+ *   - sample data is produced only when DATAFORSEO_ALLOW_MOCKS=true is set deliberately, and never in production;
+ *   - sample data is always labelled 'MOCK' and must never be persisted.
  */
 
 const DATAFORSEO_BASE = 'https://api.dataforseo.com';
@@ -18,12 +28,48 @@ function buildBasicAuthHeader(): string {
   const login = process.env.DATAFORSEO_LOGIN;
   const password = process.env.DATAFORSEO_PASSWORD;
   if (!login || !password) {
-    throw new Error(
+    throw new DataForSEOError(
+      'MISSING_CREDENTIALS',
       'DataForSEO credentials are missing. Set DATAFORSEO_LOGIN and DATAFORSEO_PASSWORD in your environment.',
     );
   }
   const encoded = Buffer.from(`${login}:${password}`).toString('base64');
   return `Basic ${encoded}`;
+}
+
+// ----- Errors and provenance ------------------------------------------------
+
+export class DataForSEOError extends Error {
+  readonly reason: 'MISSING_CREDENTIALS' | 'REQUEST_FAILED';
+
+  constructor(reason: 'MISSING_CREDENTIALS' | 'REQUEST_FAILED', message: string) {
+    super(message);
+    this.name = 'DataForSEOError';
+    this.reason = reason;
+  }
+}
+
+/** Where a result came from. 'MOCK' data is generated locally and is not real. */
+export type DataForSEODataSource = 'LIVE' | 'MOCK';
+
+export type DataForSEOResult<T> = {
+  items: T[];
+  dataSource: DataForSEODataSource;
+};
+
+/**
+ * Sample data is an explicit opt-in, never a silent consequence of a failure or
+ * of running locally, and never available in production whatever the env says.
+ * Set DATAFORSEO_ALLOW_MOCKS=true locally, and only locally, to work on the SEO
+ * UI without a key.
+ */
+export function isMockModeEnabled(): boolean {
+  if (process.env.NODE_ENV === 'production') return false;
+  return process.env.DATAFORSEO_ALLOW_MOCKS === 'true';
+}
+
+export function hasDataForSeoCredentials(): boolean {
+  return Boolean(process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD);
 }
 
 // ----- Types ---------------------------------------------------------------
@@ -65,7 +111,8 @@ async function dataForSeoPost<T = unknown>(
 
   if (!res.ok) {
     const text = await res.text().catch(() => '');
-    throw new Error(
+    throw new DataForSEOError(
+      'REQUEST_FAILED',
       `DataForSEO API error ${res.status} at ${path}: ${text.slice(0, 300)}`,
     );
   }
@@ -73,7 +120,8 @@ async function dataForSeoPost<T = unknown>(
   const data = await res.json();
   // DataForSEO wraps everything in tasks[].result[]
   if (data?.status_code !== 20000) {
-    throw new Error(
+    throw new DataForSEOError(
+      'REQUEST_FAILED',
       `DataForSEO task error: ${data?.status_message || 'unknown error'}`,
     );
   }
@@ -84,7 +132,12 @@ async function dataForSeoPost<T = unknown>(
 
 /**
  * Fetch top N keywords for a given competitor domain.
- * Uses the DataForSEO Labs - domain_keywords/live endpoint.
+ * Uses the DataForSEO Labs - ranked_keywords/live endpoint.
+ *
+ * The path used to be `domain_keywords/live`, which DataForSEO does not have:
+ * every live call came back 404, and the old catch block turned that 404 into
+ * generated keywords. `ranked_keywords` is the endpoint whose response this
+ * function has always parsed (`keyword_data` plus `ranked_serp_element`).
  *
  * @param domain  Plain domain, e.g. "hubspot.com"
  * @param limit   Maximum rows to retrieve (default 200)
@@ -92,8 +145,13 @@ async function dataForSeoPost<T = unknown>(
 export async function fetchDomainKeywords(
   domain: string,
   limit = 200,
-): Promise<DataForSEOKeyword[]> {
+): Promise<DataForSEOResult<DataForSEOKeyword>> {
   const cleanDomain = domain.replace(/^https?:\/\//, '').replace(/\/.*$/, '').toLowerCase();
+
+  if (isMockModeEnabled()) {
+    console.warn('[DataForSEO] DATAFORSEO_ALLOW_MOCKS — returning generated sample keywords for', cleanDomain);
+    return { items: generateMockKeywords(cleanDomain, limit), dataSource: 'MOCK' };
+  }
 
   const payload = [
     {
@@ -102,35 +160,33 @@ export async function fetchDomainKeywords(
       language_code: 'en',
       limit,
       order_by: ['keyword_data.keyword_info.search_volume,desc'],
+      // Own organic positions only; paid placements are not what we compare on.
+      item_types: ['organic'],
     },
   ];
 
-  let data: any;
-  try {
-    data = await dataForSeoPost(
-      '/v3/dataforseo_labs/google/domain_keywords/live',
-      payload,
-    );
-  } catch (err: any) {
-    console.error('[DataForSEO] fetchDomainKeywords error:', err.message);
-    if (mocksAllowed(err)) {
-      console.warn('[DataForSEO] returning MOCK keyword data for', domain);
-      return generateMockKeywords(domain, limit);
-    }
-    return [];
-  }
+  // No try/catch: a DataForSEOError propagates so the caller can tell the user
+  // that the lookup failed. Swallowing it here is what produced silent mocks.
+  const data: any = await dataForSeoPost(
+    '/v3/dataforseo_labs/google/ranked_keywords/live',
+    payload,
+  );
 
   const items: any[] =
     data?.tasks?.[0]?.result?.[0]?.items ?? [];
 
-  return items.map((item: any): DataForSEOKeyword => ({
-    keyword: String(item?.keyword_data?.keyword || item?.keyword || ''),
-    search_volume: Number(item?.keyword_data?.keyword_info?.search_volume ?? 0),
-    keyword_difficulty: Number(item?.keyword_data?.keyword_properties?.keyword_difficulty ?? 0),
-    competition: Number(item?.keyword_data?.keyword_info?.competition ?? 0),
-    ranking_position: item?.ranked_serp_element?.serp_item?.rank_absolute ?? null,
-    ranking_url: item?.ranked_serp_element?.serp_item?.url ?? null,
-  })).filter((kw) => kw.keyword.length > 0);
+  const mapped = items
+    .map((item: any): DataForSEOKeyword => ({
+      keyword: String(item?.keyword_data?.keyword || item?.keyword || ''),
+      search_volume: Number(item?.keyword_data?.keyword_info?.search_volume ?? 0),
+      keyword_difficulty: Number(item?.keyword_data?.keyword_properties?.keyword_difficulty ?? 0),
+      competition: Number(item?.keyword_data?.keyword_info?.competition ?? 0),
+      ranking_position: item?.ranked_serp_element?.serp_item?.rank_absolute ?? null,
+      ranking_url: item?.ranked_serp_element?.serp_item?.url ?? null,
+    }))
+    .filter((kw) => kw.keyword.length > 0);
+
+  return { items: mapped, dataSource: 'LIVE' };
 }
 
 // ----- Module 2: SERP Results ----------------------------------------------
@@ -143,7 +199,12 @@ export async function fetchDomainKeywords(
  */
 export async function fetchSerpResults(
   keyword: string,
-): Promise<DataForSEOSerpItem[]> {
+): Promise<DataForSEOResult<DataForSEOSerpItem>> {
+  if (isMockModeEnabled()) {
+    console.warn('[DataForSEO] DATAFORSEO_ALLOW_MOCKS — returning generated sample SERP for', keyword);
+    return { items: generateMockSerp(keyword), dataSource: 'MOCK' };
+  }
+
   const payload = [
     {
       keyword,
@@ -154,25 +215,16 @@ export async function fetchSerpResults(
     },
   ];
 
-  let data: any;
-  try {
-    data = await dataForSeoPost(
-      '/v3/serp/google/organic/live/regular',
-      payload,
-    );
-  } catch (err: any) {
-    console.error('[DataForSEO] fetchSerpResults error:', err.message);
-    if (mocksAllowed(err)) {
-      console.warn('[DataForSEO] returning MOCK SERP data for', keyword);
-      return generateMockSerp(keyword);
-    }
-    return [];
-  }
+  // See fetchDomainKeywords: errors propagate rather than becoming fake data.
+  const data: any = await dataForSeoPost(
+    '/v3/serp/google/organic/live/regular',
+    payload,
+  );
 
   const items: any[] =
     data?.tasks?.[0]?.result?.[0]?.items ?? [];
 
-  return items
+  const mapped = items
     .filter((item: any) => item?.type === 'organic')
     .slice(0, 10)
     .map((item: any): DataForSEOSerpItem => ({
@@ -182,29 +234,15 @@ export async function fetchSerpResults(
       description: item?.description ? String(item.description) : null,
       domain: String(item?.domain || ''),
     }));
+
+  return { items: mapped, dataSource: 'LIVE' };
 }
 
-/**
- * Whether this process may answer with invented data.
- *
- * It used to be "the credentials are missing, or NODE_ENV is development" —
- * which meant an unconfigured production returned `Math.sin()` search volumes
- * and a hardcoded hubspot/g2/forbes SERP, written into `competitor_keywords`
- * with no flag saying they were made up, under a tab headed "Powered by real
- * DataForSEO API data — NOT AI-estimated". A customer could act on numbers
- * nobody measured.
- *
- * Now it takes a deliberate `DATAFORSEO_ALLOW_MOCKS=true`, and never in
- * production whatever that says. Missing credentials give an empty result,
- * which the callers already treat as "no data" and surface honestly.
- */
-function mocksAllowed(err: { message?: string }): boolean {
-  if (process.env.NODE_ENV === 'production') return false;
-  if (process.env.DATAFORSEO_ALLOW_MOCKS !== 'true') return false;
-  return Boolean(err?.message?.includes('credentials are missing'));
-}
-
-// ----- Mock Data Generators -----------------------------------------------
+// ----- Sample data generators ----------------------------------------------
+//
+// Reachable only through DATAFORSEO_ALLOW_MOCKS=true, never in production. Everything below is invented: the
+// volumes come from Math.sin and the SERP is a fixed list of US marketing
+// sites. Callers label it 'MOCK' and must never write it to the database.
 
 function generateMockKeywords(domain: string, limit: number): DataForSEOKeyword[] {
   const seed = domain.length;

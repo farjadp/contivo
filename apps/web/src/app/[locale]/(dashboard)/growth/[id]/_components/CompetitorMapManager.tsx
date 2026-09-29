@@ -1,755 +1,509 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { Check, Loader2, Plus, Save, Sparkles, Target } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
 
 import {
-  discoverWorkspaceCompetitors,
-  saveWorkspaceCompetitorEdits,
+  addManualCompetitor,
+  getDiscoveryStatus,
+  listDiscoveryRuns,
+  removeCompetitor,
   setCompetitorDecision,
+  startCompetitorDiscovery,
+  updateCompetitorType,
 } from '@/app/actions/growth-competitors';
+import type {
+  CompetitorView,
+  DiscoveryMeta,
+  DiscoveryStatus,
+  RunHistoryItem,
+  RunView,
+} from '@/app/actions/growth-competitors';
+import type { CompetitorType } from '@/lib/competitors/types';
+import { ErrorNote } from './CompetitorBits';
+import { CompetitorDiscoveryPanel, type TargetMarketView } from './CompetitorDiscoveryPanel';
+import { CompetitorList, ManualCompetitorForm, RunHistory, type LegacyRun } from './CompetitorList';
+import { CompetitorReviewQueue, DecisionUndoBar, type LastDecision } from './CompetitorReviewQueue';
+import {
+  POLL_INTERVAL_MS,
+  changesAcceptedSet,
+  isRunActive,
+  isStaleForRows,
+  mergeCompetitors,
+  shouldKeepPolling,
+  sortByConfidence,
+  type RejectionReasonChip,
+} from './competitor-discovery-logic';
 
-type CompetitorItem = {
-  id: string;
-  name: string;
-  domain?: string | null;
-  description?: string | null;
-  category?: string | null;
-  audienceGuess?: string | null;
-  type?: string | null;
-  userDecision?: string | null;
-  source?: string | null;
-};
-
-type DiscoveryMeta = {
-  usedRuns: number;
-  remainingRuns: number;
-  maxRuns: number;
-};
-
-type DiscoveryArchiveItem = {
-  id: string;
-  runNumber: number;
-  source: string;
-  discoveredCount: number;
-  createdAt: string | Date;
-};
-
-type CompetitiveMatrixPayload = {
-  generated_at: string;
-  ai_estimated: boolean;
-  source: 'AI' | 'MANUAL';
-  charts: Array<{
-    chart_key: string;
-    chart_name: string;
-    axes: { x: string; y: string };
-    companies: Array<{
-      name: string;
-      website: string;
-      type: 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL' | 'TARGET';
-      x_score: number;
-      y_score: number;
-      x_reason: string;
-      y_reason: string;
-      confidence_score: number;
-    }>;
-    summary: {
-      market_pattern: string;
-      positioning_opportunity: string;
-    };
-  }>;
-  cross_chart_summary: string;
-  strongest_differentiation_opportunity: string;
-  token_usage: {
-    runs: number;
-    lifetime_prompt_tokens: number;
-    lifetime_completion_tokens: number;
-    lifetime_total_tokens: number;
-    last_run: {
-      model: string;
-      prompt_tokens: number;
-      completion_tokens: number;
-      total_tokens: number;
-      created_at: string;
-    } | null;
-  };
-};
-
-function isSyntheticCompetitor(item: { name?: string | null; domain?: string | null }): boolean {
-  const name = String(item.name || '').toLowerCase().trim();
-  const domain = String(item.domain || '').toLowerCase().trim();
-  const syntheticNames = ['nova labs', 'pulse works', 'axis growth', 'summit metrics', 'clarity forge'];
-
-  if (!name && !domain) return true;
-  if (syntheticNames.includes(name)) return true;
-  if (/^market\d+\.com$/.test(domain)) return true;
-
-  return false;
-}
-
-function hashString(input: string): number {
-  let hash = 0;
-  for (let i = 0; i < input.length; i += 1) {
-    hash = (hash * 31 + input.charCodeAt(i)) >>> 0;
-  }
-  return hash;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function computeKeywordScore(text: string, rules: Array<{ pattern: RegExp; delta: number }>, initial = 50): number {
-  return rules.reduce((score, rule) => (rule.pattern.test(text) ? score + rule.delta : score), initial);
-}
-
-function estimateAudienceSizeScore(item: CompetitorItem): number {
-  const text = `${item.name} ${item.domain || ''} ${item.description || ''} ${item.category || ''} ${item.audienceGuess || ''}`.toLowerCase();
-
-  let score = computeKeywordScore(
-    text,
-    [
-      { pattern: /\b(enterprise|global|fortune|mid[-\s]?market)\b/, delta: 14 },
-      { pattern: /\b(platform|marketplace|network|suite|all[-\s]?in[-\s]?one)\b/, delta: 9 },
-      { pattern: /\b(smb|small business|startup|local|niche)\b/, delta: -10 },
-      { pattern: /\b(agency|boutique|consulting|freelance)\b/, delta: -8 },
-      { pattern: /\b(consumer|b2c|mass market)\b/, delta: 6 },
-    ],
-    50,
-  );
-
-  if (item.type === 'INDIRECT') score += 4;
-  if (item.type === 'ASPIRATIONAL') score += 7;
-
-  return clamp(score, 10, 90);
-}
-
-function estimateSophisticationScore(item: CompetitorItem): number {
-  const text = `${item.name} ${item.domain || ''} ${item.description || ''} ${item.category || ''}`.toLowerCase();
-
-  let score = computeKeywordScore(
-    text,
-    [
-      { pattern: /\b(ai|machine learning|predictive|automation|workflow)\b/, delta: 14 },
-      { pattern: /\b(api|infrastructure|platform|analytics|orchestration)\b/, delta: 10 },
-      { pattern: /\b(enterprise|security|compliance|integrations?)\b/, delta: 8 },
-      { pattern: /\b(agency|service|consulting|done[-\s]?for[-\s]?you)\b/, delta: -9 },
-      { pattern: /\b(template|simple|starter|basic)\b/, delta: -7 },
-    ],
-    50,
-  );
-
-  if (item.type === 'ASPIRATIONAL') score += 10;
-  if (item.type === 'INDIRECT') score -= 3;
-
-  return clamp(score, 10, 90);
-}
-
-function computeCompetitorPoint(item: CompetitorItem): { x: number; y: number; distanceToBrand: number } {
-  const audienceScore = estimateAudienceSizeScore(item);
-  const sophisticationScore = estimateSophisticationScore(item);
-  const seed = `${item.id}:${item.name}:${item.domain || ''}`;
-  const jitter = ((hashString(seed) % 7) - 3) * 0.8;
-
-  const x = clamp(audienceScore + jitter, 12, 88);
-  const y = clamp(100 - sophisticationScore + jitter, 12, 88);
-  const distanceToBrand = Math.sqrt((x - 50) ** 2 + (y - 50) ** 2);
-
-  return { x, y, distanceToBrand };
-}
-
-function getTypeStyles(type?: string | null): string {
-  // Rival blue for every competitor, told apart by fill (see the matrix tab).
-  if (type === 'DIRECT') return 'bg-rival border-rival';
-  if (type === 'INDIRECT') return 'bg-chalk-raised border-rival';
-  return 'bg-moss-700 border-moss-700';
-}
-
+/**
+ * The competitors section of the Growth workspace: a run panel, a review
+ * queue of PENDING suggestions with their evidence, and the accepted list.
+ *
+ * The name is kept from the scatter-map component this replaces so the tab
+ * that renders it did not need restructuring. The map is gone on purpose: it
+ * positioned competitors from regex guesses over their descriptions, which
+ * presented invented numbers as a chart.
+ *
+ * Every change saves the moment it is made. There is no draft state and no
+ * save button; accept and reject offer an undo instead.
+ */
 export function CompetitorMapManager({
   workspaceId,
-  initialCompetitors,
   initialMeta,
   initialArchive,
-  onMatricesUpdated,
+  initialMarket,
 }: {
   workspaceId: string;
-  initialCompetitors: CompetitorItem[];
-  initialMeta?: DiscoveryMeta;
-  initialArchive?: DiscoveryArchiveItem[];
-  onMatricesUpdated?: (matrices: CompetitiveMatrixPayload | null) => void;
+  initialMeta: DiscoveryMeta;
+  initialArchive?: LegacyRun[];
+  initialMarket: TargetMarketView;
 }) {
-  const t = useTranslations('tabsB.competitorMap');
+  const t = useTranslations('growth.competitors');
   const format = useFormatter();
   const router = useRouter();
-  const [competitors, setCompetitors] = useState<CompetitorItem[]>(
-    initialCompetitors
-      .filter((item) => !isSyntheticCompetitor(item))
-      .map((item) => ({
-        ...item,
-        type: item.type || 'DIRECT',
-        userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-      })),
-  );
-  // Accept/reject happens in local state; nothing reaches the database until
-  // the save button is pressed. Users changed dropdowns, navigated away, and
-  // silently lost the decisions — so track what is actually persisted.
-  const [savedSnapshot, setSavedSnapshot] = useState(() =>
-    JSON.stringify(
-      initialCompetitors
-        .filter((item) => !isSyntheticCompetitor(item))
-        .map((item) => ({
-          id: item.id,
-          // Decisions save on click, so they are not part of the dirty state —
-          // only the free-text fields need an explicit save.
-          type: item.type || 'DIRECT',
-          name: item.name,
-          domain: item.domain ?? '',
-        })),
-    ),
-  );
-  // Decisions save the instant they are clicked, so this tracks which rows
-  // are mid-flight rather than a whole-form dirty state.
-  const [savingDecisionIds, setSavingDecisionIds] = useState<string[]>([]);
-  const [manualName, setManualName] = useState('');
-  const [manualDomain, setManualDomain] = useState('');
-  const [isDiscovering, setIsDiscovering] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [discoveryMeta, setDiscoveryMeta] = useState<DiscoveryMeta>(
-    initialMeta || { usedRuns: 0, remainingRuns: 3, maxRuns: 3 },
-  );
-  const [discoveryArchive, setDiscoveryArchive] = useState<DiscoveryArchiveItem[]>(
-    initialArchive || [],
-  );
+  // Read through a ref inside the load and poll callbacks, so a router object
+  // that changes identity between renders can never re-trigger the initial
+  // load or restart the poll interval.
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
-  const applyDecision = async (competitorId: string, decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => {
-    const previous = competitors.find((c) => c.id === competitorId)?.userDecision;
-    if (previous === decision) return;
+  const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [run, setRun] = useState<RunView | null>(null);
+  const [meta, setMeta] = useState<DiscoveryMeta>(initialMeta);
+  const [competitors, setCompetitors] = useState<CompetitorView[]>([]);
+  const [history, setHistory] = useState<RunHistoryItem[]>([]);
+  const [market, setMarket] = useState<TargetMarketView>(initialMarket);
+  const [signedOut, setSignedOut] = useState(false);
 
-    // Optimistic: the button reflects the choice immediately, and rolls back
-    // if the write fails, so the screen never claims something the DB refused.
-    updateCompetitor(competitorId, { userDecision: decision });
-    setError(null);
+  const [starting, setStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
+  const [pollStopped, setPollStopped] = useState(false);
 
-    // Rows created locally have no database row yet — they persist via the
-    // bulk save, which is what creates them.
-    if (competitorId.startsWith('temp-')) return;
+  const [savingDecisionIds, setSavingDecisionIds] = useState<ReadonlySet<string>>(new Set());
+  const [savingTypeIds, setSavingTypeIds] = useState<ReadonlySet<string>>(new Set());
+  const [removingIds, setRemovingIds] = useState<ReadonlySet<string>>(new Set());
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [lastDecision, setLastDecision] = useState<LastDecision | null>(null);
 
-    setSavingDecisionIds((ids) => [...ids, competitorId]);
-    try {
-      const result = await setCompetitorDecision(workspaceId, competitorId, decision);
-      if (result && 'error' in result && result.error) {
-        updateCompetitor(competitorId, { userDecision: previous });
-        setError(result.error);
-      }
-    } catch (err) {
-      console.error(err);
-      updateCompetitor(competitorId, { userDecision: previous });
-      setError(t('decisionFailed'));
-    } finally {
-      setSavingDecisionIds((ids) => ids.filter((id) => id !== competitorId));
-      router.refresh();
-    }
+  const [adding, setAdding] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addedName, setAddedName] = useState<string | null>(null);
+  const [addWarning, setAddWarning] = useState<string | null>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
+
+  // Rows with a write in flight. A poll that lands mid-save keeps the local
+  // copy of these rather than flipping them back to what the server had a
+  // moment ago. A ref, not state: the poll callback reads it asynchronously.
+  const inFlightRef = useRef<Set<string>>(new Set());
+  // Counts writes that have finished. A status request remembers the value
+  // when it is sent; if it changed by the time the answer arrives, a write
+  // completed in between and the answer's rows may predate it.
+  const writeSeqRef = useRef(0);
+  const noteWriteDone = () => {
+    writeSeqRef.current += 1;
   };
-
-  const visibleCompetitors = useMemo(
-    () =>
-      competitors.filter(
-        (item) => item.userDecision !== 'REJECTED' && !isSyntheticCompetitor(item),
-      ),
-    [competitors],
-  );
-  const currentSnapshot = useMemo(
-    () =>
-      JSON.stringify(
-        competitors.map((item) => ({
-          id: item.id,
-          type: item.type,
-          name: item.name,
-          domain: item.domain ?? '',
-        })),
-      ),
-    [competitors],
-  );
-  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
-
-  // Browsers only allow the leave-confirmation from a listener registered
-  // while changes are pending, so keep it attached only in that state.
-  const unsavedRef = useRef(hasUnsavedChanges);
-  unsavedRef.current = hasUnsavedChanges;
+  const runRef = useRef<RunView | null>(null);
+  const mountedRef = useRef(true);
   useEffect(() => {
-    if (!hasUnsavedChanges) return undefined;
-    const warn = (e: BeforeUnloadEvent) => {
-      if (!unsavedRef.current) return;
-      e.preventDefault();
-      e.returnValue = '';
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
     };
-    window.addEventListener('beforeunload', warn);
-    return () => window.removeEventListener('beforeunload', warn);
-  }, [hasUnsavedChanges]);
+  }, []);
 
-  const acceptedCount = useMemo(
-    () => competitors.filter((item) => item.userDecision === 'ACCEPTED').length,
+  const addTo = (setter: typeof setSavingDecisionIds, id: string) =>
+    setter((prev) => new Set(prev).add(id));
+  const removeFrom = (setter: typeof setSavingDecisionIds, id: string) =>
+    setter((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+
+  const refreshHistory = useCallback(async () => {
+    try {
+      const runs = await listDiscoveryRuns(workspaceId);
+      if (mountedRef.current) setHistory(runs);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [workspaceId]);
+
+  const applyStatus = useCallback(
+    (status: DiscoveryStatus, applyRows: boolean) => {
+      const wasActive = isRunActive(runRef.current?.status);
+      runRef.current = status.run;
+      setRun(status.run);
+      setMeta(status.meta);
+      if (applyRows) setCompetitors((prev) => mergeCompetitors(status.competitors, prev, inFlightRef.current));
+      if (wasActive && !isRunActive(status.run?.status)) {
+        // A run just finished while this page was watching it.
+        void refreshHistory();
+        routerRef.current.refresh();
+      }
+    },
+    [refreshHistory],
+  );
+
+  /**
+   * Fetches and applies the discovery status. Returns false when the session
+   * is gone. Rows from an answer that a completed write may have overtaken
+   * are dropped; if no poll is coming to correct them, fetch again.
+   */
+  const fetchStatus = useCallback(async (): Promise<boolean> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const seqAtRequest = writeSeqRef.current;
+      const status = await getDiscoveryStatus(workspaceId);
+      if (!mountedRef.current) return true;
+      if ('error' in status) {
+        setSignedOut(true);
+        return false;
+      }
+      const stale = isStaleForRows(seqAtRequest, writeSeqRef.current);
+      applyStatus(status, !stale);
+      if (!stale || isRunActive(status.run?.status)) return true;
+    }
+    return true;
+  }, [workspaceId, applyStatus]);
+
+  const load = useCallback(async () => {
+    setLoadState('loading');
+    try {
+      const [ok, runs] = await Promise.all([fetchStatus(), listDiscoveryRuns(workspaceId)]);
+      if (!mountedRef.current || !ok) return;
+      setHistory(runs);
+      setLoadState('ready');
+    } catch (error) {
+      console.error(error);
+      if (mountedRef.current) setLoadState('error');
+    }
+  }, [workspaceId, fetchStatus]);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  // Poll only while the latest run is PENDING or RUNNING. When a poll comes
+  // back DONE, EMPTY or FAILED, `runActive` flips and this effect's cleanup
+  // clears the interval; unmounting clears it too.
+  const runActive = isRunActive(run?.status);
+  const runId = run?.id;
+  useEffect(() => {
+    if (!runActive) return;
+    setPollStopped(false);
+    let cancelled = false;
+    let inFlight = false;
+    const timer = window.setInterval(async () => {
+      if (inFlight) return;
+      if (!shouldKeepPolling(runRef.current, Date.now())) {
+        window.clearInterval(timer);
+        if (!cancelled) setPollStopped(true);
+        return;
+      }
+      inFlight = true;
+      try {
+        if (cancelled) return;
+        const ok = await fetchStatus();
+        if (!ok) window.clearInterval(timer);
+      } catch (error) {
+        // One failed poll is not the end of the run; the next tick retries.
+        console.error(error);
+      } finally {
+        inFlight = false;
+      }
+    }, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [runActive, runId, fetchStatus]);
+
+  const startRun = async () => {
+    setStarting(true);
+    setStartError(null);
+    try {
+      const started = await startCompetitorDiscovery(workspaceId);
+      if ('error' in started) {
+        if (started.meta) setMeta(started.meta);
+        setStartError(started.error);
+        // A dispatch failure leaves a FAILED run behind; show it.
+        try {
+          await fetchStatus();
+        } catch (error) {
+          console.error(error);
+        }
+        return;
+      }
+      await fetchStatus();
+      void refreshHistory();
+    } catch (error) {
+      console.error(error);
+      if (mountedRef.current) setStartError(t('run.startFailed'));
+    } finally {
+      if (mountedRef.current) setStarting(false);
+    }
+  };
+
+  const patchLocal = (id: string, patch: Partial<CompetitorView>) =>
+    setCompetitors((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+
+  /** Saves a decision immediately, optimistically, rolling back on failure. Returns whether it saved. */
+  const saveDecision = async (
+    competitor: CompetitorView,
+    decision: 'ACCEPTED' | 'REJECTED' | 'PENDING',
+    reason?: RejectionReasonChip,
+  ): Promise<boolean> => {
+    const previous = { userDecision: competitor.userDecision, rejectionReason: competitor.rejectionReason };
+    patchLocal(competitor.id, { userDecision: decision, rejectionReason: decision === 'REJECTED' ? reason ?? null : null });
+    setActionError(null);
+    inFlightRef.current.add(competitor.id);
+    addTo(setSavingDecisionIds, competitor.id);
+    try {
+      const result = await setCompetitorDecision(workspaceId, competitor.id, decision, reason);
+      if ('error' in result) {
+        patchLocal(competitor.id, previous);
+        setActionError(result.error);
+        return false;
+      }
+      // Only a change to the accepted set affects the rest of the page (the
+      // journey guide's counts); anything else would re-run it for nothing.
+      if (changesAcceptedSet(previous.userDecision, decision)) router.refresh();
+      return true;
+    } catch (error) {
+      console.error(error);
+      patchLocal(competitor.id, previous);
+      setActionError(t('queue.decisionFailed'));
+      return false;
+    } finally {
+      noteWriteDone();
+      inFlightRef.current.delete(competitor.id);
+      removeFrom(setSavingDecisionIds, competitor.id);
+    }
+  };
+
+  const decide = async (competitor: CompetitorView, decision: 'ACCEPTED' | 'REJECTED') => {
+    const saved = await saveDecision(competitor, decision);
+    if (saved) {
+      setLastDecision({ id: competitor.id, name: competitor.name, kind: decision, previous: 'PENDING', reason: null, busy: false });
+    }
+  };
+
+  const undo = async () => {
+    if (!lastDecision) return;
+    const competitor = competitors.find((item) => item.id === lastDecision.id);
+    if (!competitor) {
+      setLastDecision(null);
+      return;
+    }
+    setLastDecision({ ...lastDecision, busy: true });
+    const saved = await saveDecision(competitor, lastDecision.previous);
+    if (saved) setLastDecision(null);
+    else {
+      setLastDecision({ ...lastDecision, busy: false });
+      setActionError(t('undo.undoFailed'));
+    }
+  };
+
+  const chooseReason = async (reason: RejectionReasonChip) => {
+    if (!lastDecision || lastDecision.kind === 'ACCEPTED') return;
+    const competitor = competitors.find((item) => item.id === lastDecision.id);
+    if (!competitor) return;
+    setLastDecision({ ...lastDecision, busy: true });
+    const saved = await saveDecision(competitor, 'REJECTED', reason);
+    setLastDecision((current) =>
+      current && current.id === lastDecision.id
+        ? { ...current, busy: false, reason: saved ? reason : current.reason }
+        : current,
+    );
+  };
+
+  const changeType = async (competitor: CompetitorView, type: CompetitorType) => {
+    if (competitor.type === type) return;
+    const previous = competitor.type;
+    patchLocal(competitor.id, { type });
+    setActionError(null);
+    inFlightRef.current.add(competitor.id);
+    addTo(setSavingTypeIds, competitor.id);
+    try {
+      const result = await updateCompetitorType(workspaceId, competitor.id, type);
+      if ('error' in result) {
+        patchLocal(competitor.id, { type: previous });
+        setActionError(result.error);
+      }
+    } catch (error) {
+      console.error(error);
+      patchLocal(competitor.id, { type: previous });
+      setActionError(t('queue.typeSaveFailed'));
+    } finally {
+      noteWriteDone();
+      inFlightRef.current.delete(competitor.id);
+      removeFrom(setSavingTypeIds, competitor.id);
+    }
+  };
+
+  /** Takes a competitor off the accepted list. The server sets it aside (REJECTED); it is not deleted. */
+  const remove = async (competitor: CompetitorView) => {
+    setActionError(null);
+    inFlightRef.current.add(competitor.id);
+    addTo(setRemovingIds, competitor.id);
+    try {
+      const result = await removeCompetitor(workspaceId, competitor.id);
+      if ('error' in result) {
+        setActionError(result.error);
+        return;
+      }
+      patchLocal(competitor.id, { userDecision: 'REJECTED', rejectionReason: null });
+      setLastDecision({ id: competitor.id, name: competitor.name, kind: 'REMOVED', previous: 'ACCEPTED', reason: null, busy: false });
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      setActionError(t('list.removeFailed'));
+    } finally {
+      noteWriteDone();
+      inFlightRef.current.delete(competitor.id);
+      removeFrom(setRemovingIds, competitor.id);
+    }
+  };
+
+  const addManual = async (domain: string): Promise<boolean> => {
+    setAdding(true);
+    setAddError(null);
+    setAddedName(null);
+    setAddWarning(null);
+    try {
+      const result = await addManualCompetitor(workspaceId, domain);
+      if ('error' in result) {
+        setAddError(result.error);
+        return false;
+      }
+      setCompetitors((prev) => [...prev, result.competitor]);
+      setAddedName(result.competitor.name);
+      setAddWarning(result.judgeWarning);
+      router.refresh();
+      return true;
+    } catch (error) {
+      console.error(error);
+      setAddError(t('add.failed'));
+      return false;
+    } finally {
+      noteWriteDone();
+      setAdding(false);
+    }
+  };
+
+  const focusManualAdd = () => {
+    const input = manualInputRef.current;
+    if (!input) return;
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  };
+
+  const pending = useMemo(
+    () => sortByConfidence(competitors.filter((item) => item.userDecision === 'PENDING')),
     [competitors],
   );
-  const positionedCompetitors = useMemo(
-    () =>
-      visibleCompetitors
-        .map((item) => ({ ...item, point: computeCompetitorPoint(item) }))
-        .sort((a, b) => a.point.distanceToBrand - b.point.distanceToBrand),
-    [visibleCompetitors],
-  );
-  const topCompetitors = useMemo(() => positionedCompetitors.slice(0, 10), [positionedCompetitors]);
+  const accepted = useMemo(() => competitors.filter((item) => item.userDecision === 'ACCEPTED'), [competitors]);
+  const rejected = useMemo(() => competitors.filter((item) => item.userDecision === 'REJECTED'), [competitors]);
 
-  const updateCompetitor = (id: string, patch: Partial<CompetitorItem>) => {
-    setCompetitors((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
-  };
+  if (signedOut) {
+    return <ErrorNote>{t('signedOut')}</ErrorNote>;
+  }
 
-  const addManualCompetitor = () => {
-    const name = manualName.trim();
-    const domain = manualDomain.trim();
-    if (!name && !domain) return;
+  if (loadState === 'loading') {
+    return (
+      <div className="flex items-center gap-2 py-6 text-sm text-moss-muted" role="status">
+        <Loader2 aria-hidden className="h-4 w-4 animate-spin" />
+        {t('loading')}
+      </div>
+    );
+  }
 
-    const inferredName =
-      name || domain.replace(/^https?:\/\//i, '').replace(/^www\./i, '').split('/')[0] || t('manualFallbackName');
-    const id = `temp-${Date.now()}`;
-
-    setCompetitors((prev) => [
-      ...prev,
-      {
-        id,
-        name: inferredName,
-        domain: domain || null,
-        description: t('manualDescription'),
-        category: null,
-        audienceGuess: null,
-        type: 'DIRECT',
-        userDecision: 'ACCEPTED',
-        source: 'MANUAL',
-      },
-    ]);
-
-    setManualName('');
-    setManualDomain('');
-    setError(null);
-    setSuccess(null);
-  };
-
-  const runAiDiscovery = async () => {
-    setIsDiscovering(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await discoverWorkspaceCompetitors(workspaceId);
-      if (result?.meta) {
-        setDiscoveryMeta(result.meta);
-      }
-      if (Array.isArray(result?.archive)) {
-        setDiscoveryArchive(result.archive);
-      }
-
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-
-      if (result?.competitors) {
-        setCompetitors(
-          result.competitors
-            .filter((item: CompetitorItem) => !isSyntheticCompetitor(item))
-            .map((item: CompetitorItem) => ({
-              ...item,
-              type: item.type || 'DIRECT',
-              userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-            })),
-        );
-        setSuccess(
-          result.message || t('discovered'),
-        );
-        router.refresh();
-      }
-    } catch (discoverError) {
-      console.error(discoverError);
-      setError(t('discoverFailed'));
-    } finally {
-      setIsDiscovering(false);
-    }
-  };
-
-  const saveEdits = async () => {
-    setIsSaving(true);
-    setError(null);
-    setSuccess(null);
-
-    try {
-      const result = await saveWorkspaceCompetitorEdits(workspaceId, competitors);
-      if (result?.meta) {
-        setDiscoveryMeta(result.meta);
-      }
-      if (Array.isArray(result?.archive)) {
-        setDiscoveryArchive(result.archive);
-      }
-
-      if (result?.error) {
-        setError(result.error);
-        return;
-      }
-
-      if (result?.competitors) {
-        setCompetitors(
-          result.competitors
-            .filter((item: CompetitorItem) => !isSyntheticCompetitor(item))
-            .map((item: CompetitorItem) => ({
-              ...item,
-              type: item.type || 'DIRECT',
-              userDecision: item.userDecision || (item.source === 'AI' ? 'PENDING' : 'ACCEPTED'),
-            })),
-        );
-        if (result?.matrices) {
-          onMatricesUpdated?.(result.matrices as CompetitiveMatrixPayload);
-        }
-        setSavedSnapshot(
-          JSON.stringify(
-            (result?.competitors ?? competitors).map((item: any) => ({
-              id: item.id,
-              type: item.type || 'DIRECT',
-              name: item.name,
-              domain: item.domain ?? '',
-            })),
-          ),
-        );
-        setSuccess(result?.message || t('savedMessage'));
-        router.refresh();
-      }
-    } catch (saveError) {
-      console.error(saveError);
-      setError(t('saveFailed'));
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  return (
-    <div className="space-y-5">
-      {hasUnsavedChanges && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-saffron bg-saffron-soft/50 px-4 py-3">
-          <p className="text-sm text-moss">
-            <span className="font-bold">{t('unsavedTitle')}</span> {t('unsavedBody')}
-          </p>
-          <button
-            type="button"
-            onClick={saveEdits}
-            disabled={isSaving}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-saffron px-3.5 py-2 text-sm font-bold text-moss hover:bg-saffron-soft disabled:opacity-60"
-          >
-            {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-            {t('saveNow')}
-          </button>
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-3">
+  if (loadState === 'error') {
+    return (
+      <div className="space-y-3">
+        <ErrorNote>{t('loadFailed')}</ErrorNote>
         <button
           type="button"
-          onClick={runAiDiscovery}
-          disabled={isDiscovering || discoveryMeta.remainingRuns <= 0}
-          className="inline-flex items-center gap-2 rounded-xl bg-moss px-4 py-2.5 text-sm font-bold text-chalk transition hover:bg-moss-700 disabled:opacity-60"
+          onClick={() => void load()}
+          className="rounded-lg border border-rule-strong bg-chalk-raised px-4 py-2 text-sm font-semibold text-moss transition hover:bg-chalk-sunk"
         >
-          {isDiscovering ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 text-saffron" />}
-          {t('discover')}
+          {t('retry')}
         </button>
-
-        <button
-          type="button"
-          onClick={saveEdits}
-          disabled={isSaving}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition disabled:opacity-60 ${
-            hasUnsavedChanges
-              ? 'bg-saffron text-moss hover:bg-saffron-soft'
-              : 'border border-rule-strong bg-chalk-raised text-moss hover:bg-chalk'
-          }`}
-        >
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {hasUnsavedChanges ? t('saveTextEdits') : t('savedLabel')}
-        </button>
-
-        <span className="text-xs font-semibold text-moss-muted">
-          {t('counts', {
-            active: format.number(visibleCompetitors.length),
-            accepted: format.number(acceptedCount),
-          })}
-        </span>
-        <span className="text-xs font-semibold text-moss-700">
-          {t('runs', {
-            used: format.number(discoveryMeta.usedRuns),
-            max: format.number(discoveryMeta.maxRuns),
-          })}
-        </span>
       </div>
-
-      {error ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>
-      ) : null}
-      {success ? (
-        <div className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">{success}</div>
-      ) : null}
-
-      {/*
-        Same decision as the admin console's charts and the positioning
-        matrix above: the plot area is pinned to `ltr` so the axes keep
-        their low-to-high reading and every point stays where its score
-        puts it. The axis captions and the brand pin inside are translated;
-        only the frame is physical.
-      */}
-      <div
-        dir="ltr"
-        className="relative w-full h-[300px] sm:h-[360px] border-l-2 border-b-2 border-rule bg-chalk/50 rounded-tr-lg rounded-bl-lg overflow-visible"
-      >
-        <span className="absolute -left-14 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
-          {t('axisSophistication')}
-        </span>
-        <span className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-[10px] font-bold text-moss-muted uppercase tracking-widest whitespace-nowrap">
-          {t('axisAudience')}
-        </span>
-
-        <div className="absolute left-[50%] top-[50%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
-          <div className="h-8 w-8 rounded-full bg-saffron border-2 border-moss shadow-xl z-20 flex items-center justify-center">
-            <Target className="w-4 h-4 text-moss" />
-          </div>
-          <span className="mt-2 text-xs font-bold text-moss bg-chalk-sunk border border-rule px-2 py-0.5 rounded shadow-sm">
-            {t('yourBrand')}
-          </span>
-        </div>
-
-        {positionedCompetitors.map((competitor) => {
-          return (
-            <div
-              key={competitor.id}
-              className="absolute flex flex-col items-center group transition-all duration-200 hover:z-40"
-              style={{
-                left: `${competitor.point.x}%`,
-                top: `${competitor.point.y}%`,
-                transform: 'translate(-50%, -50%)',
-              }}
-            >
-              <div className={`h-4 w-4 rounded-full border-2 shadow-sm z-10 transition-transform group-hover:scale-150 ${getTypeStyles(competitor.type)}`} />
-              <span className="mt-1.5 text-[10px] font-bold text-moss bg-chalk-raised border border-rule px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-30">
-                {/* Competitor names are data, never translated. */}
-                <bdi>{competitor.name}</bdi>
-              </span>
-            </div>
-          );
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-6 pt-6 text-xs font-semibold text-moss-muted">
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('DIRECT')}`} /> {t('legend.direct')}</div>
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('INDIRECT')}`} /> {t('legend.indirect')}</div>
-        <div className="flex items-center gap-2"><div className={`w-3 h-3 rounded-full border-2 ${getTypeStyles('ASPIRATIONAL')}`} /> {t('legend.aspirational')}</div>
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">
-          {t('topTitle')}
-        </h4>
-        {topCompetitors.length === 0 ? (
-          <p className="text-sm text-moss-muted">{t('topEmpty')}</p>
-        ) : (
-          <div className="space-y-2">
-            {topCompetitors.map((competitor, index) => (
-              <div
-                key={competitor.id}
-                className="flex items-center justify-between gap-3 rounded-lg border border-rule bg-chalk px-3 py-2"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-moss truncate">
-                    {format.number(index + 1)}. <bdi>{competitor.name}</bdi>
-                  </p>
-                  <p className="text-xs text-moss-muted truncate">
-                    <bdi>{competitor.domain || t('noDomain')}</bdi>
-                    {competitor.type
-                      ? ` · ${t(`types.${competitor.type as 'DIRECT' | 'INDIRECT' | 'ASPIRATIONAL'}`)}`
-                      : ''}
-                  </p>
-                </div>
-                <span className="shrink-0 text-xs text-moss-muted">
-                  {t('scorePair', {
-                    audience: format.number(Math.round(competitor.point.x)),
-                    sophistication: format.number(Math.round(100 - competitor.point.y)),
-                  })}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('addTitle')}</h4>
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
-          <input
-            type="text"
-            value={manualName}
-            onChange={(event) => setManualName(event.target.value)}
-            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
-            placeholder={t('manualNamePlaceholder')}
-          />
-          <input
-            type="text"
-            value={manualDomain}
-            onChange={(event) => setManualDomain(event.target.value)}
-            className="w-full rounded-lg border border-rule-strong bg-chalk-raised px-3 py-2 text-sm text-moss focus:border-moss focus:outline-none"
-            placeholder={t('manualDomainPlaceholder')}
-            dir="ltr"
-          />
-          <button
-            type="button"
-            onClick={addManualCompetitor}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-chalk-raised px-4 py-2 text-sm font-bold text-moss border border-rule-strong hover:bg-chalk-sunk"
-          >
-            <Plus className="h-4 w-4" />
-            {t('add')}
-          </button>
-        </div>
-      </div>
-
-      <div className="grid gap-3 md:grid-cols-2">
-        {competitors.map((competitor) => (
-          <div key={competitor.id} className="rounded-xl border border-rule bg-chalk-raised p-4 space-y-3">
-            <div className="grid gap-2 sm:grid-cols-2">
-              <input
-                type="text"
-                value={competitor.name}
-                onChange={(event) => updateCompetitor(competitor.id, { name: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
-                placeholder={t('namePlaceholder')}
-              />
-              <input
-                type="text"
-                value={competitor.domain || ''}
-                onChange={(event) => updateCompetitor(competitor.id, { domain: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
-                placeholder={t('domainPlaceholder')}
-                dir="ltr"
-              />
-            </div>
-
-            <div className="grid gap-2 sm:grid-cols-2">
-              <select
-                value={competitor.type || 'DIRECT'}
-                onChange={(event) => updateCompetitor(competitor.id, { type: event.target.value })}
-                className="w-full rounded-lg border border-rule-strong px-3 py-2 text-sm focus:border-moss focus:outline-none"
-              >
-                <option value="DIRECT">{t('types.DIRECT')}</option>
-                <option value="INDIRECT">{t('types.INDIRECT')}</option>
-                <option value="ASPIRATIONAL">{t('types.ASPIRATIONAL')}</option>
-              </select>
-
-              <DecisionButtons
-                value={competitor.userDecision || (competitor.source === 'AI' ? 'PENDING' : 'ACCEPTED')}
-                saving={savingDecisionIds.includes(competitor.id)}
-                onChange={(d) => applyDecision(competitor.id, d)}
-              />
-            </div>
-
-            {competitor.description ? (
-              <p className="rounded-md border border-rule bg-chalk px-3 py-2 text-xs leading-relaxed text-moss-muted">
-                {competitor.description}
-              </p>
-            ) : null}
-            {(competitor.category || competitor.audienceGuess) && (
-              <div className="flex flex-wrap gap-2">
-                {competitor.category ? (
-                  <span className="rounded-full border border-rule bg-chalk-sunk px-2.5 py-1 text-[11px] font-semibold text-moss">
-                    {competitor.category}
-                  </span>
-                ) : null}
-                {competitor.audienceGuess ? (
-                  <span className="rounded-full border border-rule bg-chalk px-2.5 py-1 text-[11px] font-semibold text-moss-muted">
-                    {competitor.audienceGuess}
-                  </span>
-                ) : null}
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="rounded-2xl border border-rule bg-chalk-raised p-4">
-        <h4 className="mb-3 text-xs font-bold uppercase tracking-widest text-moss">{t('archiveTitle')}</h4>
-        {discoveryArchive.length === 0 ? (
-          <p className="text-sm text-moss-muted">{t('archiveEmpty')}</p>
-        ) : (
-          <div className="space-y-2">
-            {discoveryArchive.map((run) => (
-              <div key={run.id} className="flex items-center justify-between gap-4 rounded-lg border border-rule bg-chalk px-3 py-2">
-                <div className="text-sm font-medium text-moss">
-                  {t('archiveRun', {
-                    number: format.number(run.runNumber),
-                    count: format.number(run.discoveredCount),
-                  })}
-                </div>
-                <div className="text-xs text-moss-muted">
-                  {format.dateTime(new Date(run.createdAt), {
-                    dateStyle: 'medium',
-                    timeStyle: 'short',
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function DecisionButtons({
-  value,
-  saving,
-  onChange,
-}: {
-  value: string;
-  saving: boolean;
-  onChange: (decision: 'ACCEPTED' | 'REJECTED' | 'PENDING') => void;
-}) {
-  const t = useTranslations('tabsB.competitorMap');
-  const options: Array<{ key: 'ACCEPTED' | 'REJECTED'; label: string; on: string }> = [
-    { key: 'ACCEPTED', label: t('accept'), on: 'bg-moss text-chalk border-moss' },
-    { key: 'REJECTED', label: t('reject'), on: 'bg-red-600 text-chalk border-red-600' },
-  ];
+    );
+  }
 
   return (
-    <div className="flex items-center gap-1.5">
-      {options.map((o) => {
-        const active = value === o.key;
-        return (
-          <button
-            key={o.key}
-            type="button"
-            disabled={saving}
-            // Clicking the active choice clears it back to undecided.
-            onClick={() => onChange(active ? 'PENDING' : o.key)}
-            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-semibold transition disabled:opacity-60 ${
-              active ? o.on : 'border-rule-strong bg-chalk-raised text-moss-muted hover:bg-chalk'
-            }`}
-          >
-            {active && <Check className="h-3.5 w-3.5" />}
-            {o.label}
-          </button>
-        );
-      })}
-      {saving ? (
-        <Loader2 className="h-3.5 w-3.5 animate-spin text-moss-muted" />
-      ) : value === 'PENDING' ? (
-        <span className="text-xs text-moss-muted">{t('undecided')}</span>
-      ) : (
-        <span className="text-xs text-moss-700">{t('decisionSaved')}</span>
-      )}
+    <div className="space-y-6">
+      <CompetitorDiscoveryPanel
+        workspaceId={workspaceId}
+        meta={meta}
+        run={run}
+        market={market}
+        starting={starting}
+        startError={startError}
+        pollStopped={pollStopped}
+        pendingCount={pending.length}
+        onStart={startRun}
+        onMarketSaved={setMarket}
+        onAddManual={focusManualAdd}
+      />
+
+      {actionError ? <ErrorNote>{actionError}</ErrorNote> : null}
+
+      {lastDecision ? (
+        <DecisionUndoBar
+          last={lastDecision}
+          onUndo={() => void undo()}
+          onReason={(reason) => void chooseReason(reason)}
+          onDismiss={() => setLastDecision(null)}
+        />
+      ) : null}
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold text-moss">
+          {t('queue.title')}
+          {pending.length > 0 ? (
+            <span className="ms-2 rounded-full bg-saffron-soft px-2 py-0.5 text-xs font-bold text-saffron-ink">
+              {format.number(pending.length)}
+            </span>
+          ) : null}
+        </h3>
+        <CompetitorReviewQueue
+          competitors={pending}
+          savingDecisionIds={savingDecisionIds}
+          savingTypeIds={savingTypeIds}
+          onDecision={(competitor, decision) => void decide(competitor, decision)}
+          onType={(competitor, type) => void changeType(competitor, type)}
+        />
+      </section>
+
+      <section className="space-y-3">
+        <h3 className="text-sm font-bold text-moss">{t('list.title')}</h3>
+        <CompetitorList
+          accepted={accepted}
+          rejected={rejected}
+          savingTypeIds={savingTypeIds}
+          savingDecisionIds={savingDecisionIds}
+          removingIds={removingIds}
+          onType={(competitor, type) => void changeType(competitor, type)}
+          onRemove={(competitor) => void remove(competitor)}
+          onBackToReview={(competitor) => void saveDecision(competitor, 'PENDING')}
+          addSlot={
+            <ManualCompetitorForm
+              ref={manualInputRef}
+              adding={adding}
+              error={addError}
+              addedName={addedName}
+              warning={addWarning}
+              onAdd={addManual}
+            />
+          }
+        />
+        <RunHistory runs={history} legacy={initialArchive ?? []} />
+      </section>
     </div>
   );
 }

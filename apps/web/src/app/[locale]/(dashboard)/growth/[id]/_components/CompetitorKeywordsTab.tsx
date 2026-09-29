@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Loader2, Sparkles } from 'lucide-react';
 
 import { generateWorkspaceCompetitorKeywords } from '@/app/actions/growth-keywords';
+import { CompetitorBasisNote } from './CompetitorBits';
 
 type KeywordCluster = {
   cluster: string;
@@ -17,12 +18,13 @@ type CompetitorKeywordIntel = {
   primary_keywords: string[];
   secondary_keywords: string[];
   keyword_clusters: KeywordCluster[];
+  /** null when the analysis had no evidence for a split. */
   intent_distribution: {
     informational: number;
     commercial: number;
     product: number;
     educational: number;
-  };
+  } | null;
   content_strategy: {
     main_goal: string;
     secondary_goals: string[];
@@ -169,6 +171,8 @@ export function CompetitorKeywordsTab({
         {t('disclaimer')}
       </div>
 
+      <CompetitorBasisNote payload={payload} />
+
       {payload?.token_usage ? (
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
@@ -279,32 +283,28 @@ export function CompetitorKeywordsTab({
               </div>
               <div className="md:col-span-2 rounded-2xl border border-rule bg-chalk-raised p-4">
                 <h3 className="text-xs font-bold uppercase tracking-widest text-moss">{t('intentTitle')}</h3>
-                <div className="mt-3 grid gap-3 sm:grid-cols-4">
-                  <IntentCard
-                    label={t('intent.informational')}
-                    value={t('percent', {
-                      value: format.number(selectedCompetitor.intent_distribution.informational),
-                    })}
-                  />
-                  <IntentCard
-                    label={t('intent.commercial')}
-                    value={t('percent', {
-                      value: format.number(selectedCompetitor.intent_distribution.commercial),
-                    })}
-                  />
-                  <IntentCard
-                    label={t('intent.product')}
-                    value={t('percent', {
-                      value: format.number(selectedCompetitor.intent_distribution.product),
-                    })}
-                  />
-                  <IntentCard
-                    label={t('intent.educational')}
-                    value={t('percent', {
-                      value: format.number(selectedCompetitor.intent_distribution.educational),
-                    })}
-                  />
-                </div>
+                {selectedCompetitor.intent_distribution ? (
+                  <div className="mt-3 grid gap-3 sm:grid-cols-4">
+                    <IntentCard
+                      label={t('intent.informational')}
+                      value={t('percent', { value: format.number(selectedCompetitor.intent_distribution.informational) })}
+                    />
+                    <IntentCard
+                      label={t('intent.commercial')}
+                      value={t('percent', { value: format.number(selectedCompetitor.intent_distribution.commercial) })}
+                    />
+                    <IntentCard
+                      label={t('intent.product')}
+                      value={t('percent', { value: format.number(selectedCompetitor.intent_distribution.product) })}
+                    />
+                    <IntentCard
+                      label={t('intent.educational')}
+                      value={t('percent', { value: format.number(selectedCompetitor.intent_distribution.educational) })}
+                    />
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-moss-muted">{t('intentUnknown')}</p>
+                )}
               </div>
             </div>
           ) : null}

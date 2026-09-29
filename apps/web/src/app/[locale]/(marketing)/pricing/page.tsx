@@ -12,6 +12,7 @@ import { useTranslations } from 'next-intl';
 import { getTranslations } from 'next-intl/server';
 
 import { Link } from '@/i18n/navigation';
+import { pageAlternates } from '@/lib/page-metadata';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
@@ -24,7 +25,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'pricing.meta' });
-  return { title: t('title') };
+  return { title: t('title'), alternates: pageAlternates(locale, '/pricing') };
 }
 
 /**

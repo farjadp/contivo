@@ -28,6 +28,7 @@ import { tmpdir } from 'os';
 import fs from 'fs/promises';
 import { asContentLanguage } from '@/lib/content-language';
 import { missingReportRequirements } from '@/lib/report-readiness';
+import { reportReference } from '@/lib/report/format';
 
 // How many reports a user may generate per calendar month
 const MONTHLY_LIMIT = 5;
@@ -149,16 +150,19 @@ export async function generateStrategicReport(workspaceId: string) {
   const htmlPath = path.join(SCRATCH_DIR, `${baseFilename}.html`);
   const pdfPath = path.join(SCRATCH_DIR, `${baseFilename}.pdf`);
 
-  // Step 1 — AI designs the report as HTML
-  console.log('[strategic-reports] Generating HTML with AI...');
+  // Step 1 — render the report: our template, the model's prose.
+  // The date is formatted inside the template, from `generatedAt` and the
+  // workspace's own language. Formatting it here with a hardcoded 'en-US'
+  // was how Persian reports ended up carrying an English date in Latin digits.
+  console.log('[strategic-reports] Rendering report...');
+  const generatedAt = new Date(timestamp);
   const reportHTML = await generateReportHTML({
     companyName: brandSummary?.businessName || workspace.name || 'Your Company',
     websiteUrl: workspace.websiteUrl,
-    reportDate: new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    }),
+    // The DB row does not exist yet, so the run's timestamp identifies it. It
+    // is unique per generation and, unlike the row's cuid, safe to print.
+    reportId: String(timestamp),
+    generatedAt,
     brandSummary,
     competitors: workspace.competitors,
     matrices: insights?.competitiveMatrices ?? null,
@@ -172,7 +176,10 @@ export async function generateStrategicReport(workspaceId: string) {
 
   // Step 3 — Convert to PDF via Puppeteer
   console.log('[strategic-reports] Converting to PDF with Puppeteer...');
-  await convertHtmlToPdf(reportHTML, pdfPath, asContentLanguage(workspace.contentLanguage));
+  await convertHtmlToPdf(reportHTML, pdfPath, asContentLanguage(workspace.contentLanguage), {
+    brand: 'Contivo · contivo.app',
+    reference: reportReference(String(timestamp), generatedAt),
+  });
 
   // Step 4 — Record the report, bytes and all, then delete the scratch files.
   const pdfBytes = await fs.readFile(pdfPath);
