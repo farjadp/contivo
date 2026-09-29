@@ -10,6 +10,9 @@ import {
   canSubmitAxes,
   emptyStateReason,
   isMatrixRunActive,
+  matricesStale,
+  runModel,
+  selectChart,
   refusalDuplicatesRun,
   renameAxis,
   shouldKeepPolling,
@@ -23,6 +26,7 @@ const status = (over: Partial<MatrixStatus>): MatrixStatus => ({
   basis: 'ACCEPTED',
   competitorCount: 3,
   hasBrandSummary: true,
+  stale: false,
   matrices: null,
   ...over,
 });
@@ -149,5 +153,39 @@ describe('refusalDuplicatesRun', () => {
   });
   it('keeps the error with no run', () => {
     expect(refusalDuplicatesRun(null, 'old')).toBe(false);
+  });
+});
+
+describe('matricesStale', () => {
+  it('trusts the status, which compares the competitor set on read', () => {
+    expect(matricesStale({ stale: true }, { stale: false })).toBe(true);
+    expect(matricesStale({ stale: false }, { stale: true })).toBe(false);
+  });
+  it('falls back to the saved blob only when there is no status yet', () => {
+    expect(matricesStale(null, { stale: true })).toBe(true);
+    expect(matricesStale(null, {})).toBe(false);
+  });
+});
+
+describe('selectChart', () => {
+  const charts = [{ chart_key: 'a' }, { chart_key: 'b' }];
+  it('returns the chart the user picked', () => {
+    expect(selectChart(charts, 'b')).toEqual({ chart_key: 'b' });
+  });
+  it('falls back to the first chart when the picked key is not in this result', () => {
+    // After the first run (key was a placeholder) or a regenerate over a legacy blob.
+    expect(selectChart(charts, 'price_value_depth')).toEqual({ chart_key: 'a' });
+  });
+  it('is null with no charts', () => {
+    expect(selectChart([], 'a')).toBeNull();
+    expect(selectChart(undefined, 'a')).toBeNull();
+  });
+});
+
+describe('runModel', () => {
+  it('prefers the model the projection carries, then the legacy last-run model', () => {
+    expect(runModel({ model: 'gpt-4.1', token_usage: { last_run: { model: 'old' } } })).toBe('gpt-4.1');
+    expect(runModel({ model: null, token_usage: { last_run: { model: 'old' } } })).toBe('old');
+    expect(runModel({})).toBeNull();
   });
 });

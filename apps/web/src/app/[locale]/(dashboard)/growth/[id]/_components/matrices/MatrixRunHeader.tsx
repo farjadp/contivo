@@ -10,7 +10,7 @@ import {
   MATRIX_STAGE_ORDER,
   basisNotice,
   emptyStateReason,
-  isMatricesStale,
+  matricesStale,
   isMatrixRunActive,
   stageIndex,
 } from './matrix-run-logic';
@@ -53,7 +53,7 @@ export function MatrixRunHeader({
   const missing = status ? emptyStateReason(status) : null;
   const hasMatrices = matrices != null;
   const notice = hasMatrices ? basisNotice(matrices) : null;
-  const stale = hasMatrices && isMatricesStale(matrices);
+  const stale = hasMatrices && matricesStale(status, matrices);
   const currentStage = stageIndex(run?.stage);
   const lastRunAt = run?.status === 'DONE' ? run.finishedAt : null;
   const busy = starting || active;

@@ -56,6 +56,33 @@ export function isMatricesStale(matrices: unknown): boolean {
   return isRecord(matrices) && matrices.stale === true;
 }
 
+/**
+ * Whether to show the stale note. The status compares the competitor set on
+ * read (spec §4); the blob's own flag is only as fresh as its last write, so it
+ * is used only until the first status arrives.
+ */
+export function matricesStale(status: { stale: boolean } | null, matrices: unknown): boolean {
+  return status ? status.stale : isMatricesStale(matrices);
+}
+
+/**
+ * The chart to draw: the one picked, else the first. The picked key can be
+ * missing from the result (a placeholder before the first run, or a legacy
+ * chart key after regenerating), and "missing" must not mean a blank chart.
+ */
+export function selectChart<T extends { chart_key: string }>(charts: T[] | null | undefined, key: string): T | null {
+  if (!charts || charts.length === 0) return null;
+  return charts.find((chart) => chart.chart_key === key) ?? charts[0];
+}
+
+/** The model the run used: the projection's own field, else the legacy blob's last run. */
+export function runModel(matrices: {
+  model?: string | null;
+  token_usage?: { last_run?: { model?: string } | null } | null;
+}): string | null {
+  return matrices.model || matrices.token_usage?.last_run?.model || null;
+}
+
 /** Adds or removes a key; a fourth selection is ignored. */
 export function toggleAxis(selected: readonly string[], key: string): string[] {
   if (selected.includes(key)) return selected.filter((k) => k !== key);

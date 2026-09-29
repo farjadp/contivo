@@ -60,6 +60,7 @@
       "title": "Positioning Matrices",
       "aiBadge": "AI Generated",
       "subtitle": "Visualize your market position across {count} critical dimensions to find your strongest differentiation hook.",
+      "subtitleNoCount": "Visualize your market position to find your strongest differentiation hook.",
       "generateFailed": "Unexpected error while generating matrices.",
       "emptyTitle": "No Matrices Generated",
       "emptyBody": "Generate market matrices to automatically analyze and plot your competitive positioning across dimensions.",

@@ -2,6 +2,7 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 
+import { runModel } from './matrix-run-logic';
 import type { MatrixView } from './matrix-view';
 
 /**
@@ -15,7 +16,7 @@ export function TechnicalDetails({ matrices }: { matrices: MatrixView }) {
 
   const lastRun = matrices.token_usage?.last_run ?? null;
   const tokens = matrices.tokens_used ?? lastRun?.total_tokens;
-  const model = lastRun?.model;
+  const model = runModel(matrices);
   const generatedAt = matrices.generated_at ? new Date(matrices.generated_at) : null;
 
   const rows: Array<{ label: string; value: string; raw?: boolean }> = [];

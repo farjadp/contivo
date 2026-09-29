@@ -19,9 +19,19 @@ export type ChartView = Omit<ProjectedChart, 'companies' | 'chart_kind' | 'conte
 
 export type MatrixView = Omit<
   Projection,
-  'charts' | 'run_id' | 'tokens_used' | 'stale' | 'language' | 'target_audience_segment' | 'competitor_basis' | 'source'
+  | 'charts'
+  | 'run_id'
+  | 'tokens_used'
+  | 'stale'
+  | 'language'
+  | 'target_audience_segment'
+  | 'competitor_basis'
+  | 'source'
+  | 'model'
 > &
-  Partial<Pick<Projection, 'run_id' | 'tokens_used' | 'stale' | 'language' | 'target_audience_segment' | 'competitor_basis'>> & {
+  Partial<
+    Pick<Projection, 'run_id' | 'tokens_used' | 'stale' | 'language' | 'target_audience_segment' | 'competitor_basis' | 'model'>
+  > & {
     charts: ChartView[];
     /** Written by the previous generator; the only place a model name survives. */
     token_usage?: { last_run?: { model?: string; total_tokens?: number } | null } | null;

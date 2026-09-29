@@ -21,7 +21,13 @@ import { PointDrawer } from './matrices/PointDrawer';
 import { TechnicalDetails } from './matrices/TechnicalDetails';
 import type { AxisEnds } from './matrices/chart-geometry';
 import { companyKey, compactDomain, type ChartView, type MatrixView } from './matrices/matrix-view';
-import { POLL_INTERVAL_MS, isMatrixRunActive, refusalDuplicatesRun, shouldKeepPolling } from './matrices/matrix-run-logic';
+import {
+  POLL_INTERVAL_MS,
+  isMatrixRunActive,
+  refusalDuplicatesRun,
+  selectChart,
+  shouldKeepPolling,
+} from './matrices/matrix-run-logic';
 
 type DiscoveryMeta = {
   usedRuns: number;
@@ -59,9 +65,7 @@ export function CompetitiveMatricesTab({
   const t = useTranslations('tabsB.matrices');
   const format = useFormatter();
   const [matrices, setMatrices] = useState<MatrixView | null>(initialMatrices);
-  const [selectedKey, setSelectedKey] = useState<string>(
-    initialMatrices?.charts?.[0]?.chart_key || 'price_value_depth',
-  );
+  const [selectedKey, setSelectedKey] = useState<string>(initialMatrices?.charts?.[0]?.chart_key ?? '');
   const [showAxes, setShowAxes] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState<string | null>(null);
 
@@ -93,10 +97,7 @@ export function CompetitiveMatricesTab({
   }, [initialMatrices]);
 
   const tAxes = useTranslations('tabsB.matrices.coreAxes');
-  const selectedChart = useMemo(
-    () => matrices?.charts.find((chart) => chart.chart_key === selectedKey) || null,
-    [matrices, selectedKey],
-  );
+  const selectedChart = useMemo(() => selectChart(matrices?.charts, selectedKey), [matrices, selectedKey]);
 
   // Wording for the four corners. Core charts read it from the catalogue; a
   // market chart reads it from the axes the run saved. Neither: no labels.
@@ -259,7 +260,9 @@ export function CompetitiveMatricesTab({
               </span>
             </div>
             <p className="max-w-xl text-[13px] text-moss-muted mt-1">
-              {t('subtitle', { count: format.number(matrices?.charts.length || 5) })}
+              {matrices?.charts.length
+                ? t('subtitle', { count: format.number(matrices.charts.length) })
+                : t('subtitleNoCount')}
             </p>
           </div>
         </div>
@@ -315,13 +318,13 @@ export function CompetitiveMatricesTab({
                     <button
                       key={chart.chart_key}
                       type="button"
-                      aria-pressed={selectedKey === chart.chart_key}
+                      aria-pressed={selectedChart?.chart_key === chart.chart_key}
                       onClick={() => {
                         setSelectedKey(chart.chart_key);
                         setSelectedPoint(null);
                       }}
                       className={`w-full rounded-lg px-4 py-3 text-start text-[13px] font-bold transition-all duration-200 ${
-                        selectedKey === chart.chart_key
+                        selectedChart?.chart_key === chart.chart_key
                           ? 'bg-chalk-raised text-moss shadow-sm ring-1 ring-rule'
                           : 'text-moss-muted hover:bg-chalk-raised hover:text-moss'
                       }`}
