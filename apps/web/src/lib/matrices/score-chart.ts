@@ -41,7 +41,7 @@ export const SCORE_SCHEMA = {
   },
 } as const satisfies Record<string, unknown>;
 
-const LANGUAGE_NAME: Record<MatrixLanguage, string> = { fa: 'Persian', en: 'English' };
+export const LANGUAGE_NAME: Record<MatrixLanguage, string> = { fa: 'Persian', en: 'English' };
 
 /** The one place that decides which evidence the model sees; citations are checked against the same list. */
 function shownEvidence(c: BundleCompany) {
