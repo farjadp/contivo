@@ -14,11 +14,12 @@ import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import { isStaleRun } from '@/lib/competitors/pipeline';
 import { sanitizeUpstreamText } from '@/lib/competitors/redact';
-import { RUN_ERROR } from '@/lib/competitors/run-errors';
+import { RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
 import { runWithConcurrency } from '@/lib/run-with-concurrency';
 
 import { axesForRun, parseStoredMarketAxes, type AxisDefinition, type MatrixLanguage } from './axes';
-import { buildEvidenceBundle, hasBrandSummary } from './bundle';
+import { buildEvidenceBundle, competitorEvidence, hasBrandSummary } from './bundle';
+import { MATRIX_ENRICH_BUDGET_MS, enrichEvidenceLessCompetitors, mergeEvidence } from './enrich';
 import { MatrixAiError } from './openai';
 import { rebuildMatricesProjection } from './persist';
 import { proposeMarketAxes } from './propose-axes';
@@ -77,6 +78,18 @@ function parseCompetitorSet(value: unknown): SnapshotEntry[] {
   return out;
 }
 
+/** The stored snapshot with `skipped: true` on the given ids; every other field and entry as stored. */
+function markSkipped(value: unknown, skippedIds: Set<string>): unknown[] {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return item;
+    const record = item as Record<string, unknown>;
+    return typeof record.competitorId === 'string' && skippedIds.has(record.competitorId)
+      ? { ...record, skipped: true }
+      : record;
+  });
+}
+
 /**
  * Sums every call's token count. A call whose count is unknown (`null`) adds
  * nothing, so the stored figure is the sum of the known ones: a floor. A
@@ -121,6 +134,7 @@ export async function runMatrixPipeline(runId: string): Promise<void> {
     if (claimed.count === 0) return;
 
     const workspace = run.workspace;
+    const storedCompetitorSet = run.competitorSet;
     // Snapshotted when the run was created; never re-read from the workspace.
     const language: MatrixLanguage = run.language === 'fa' ? 'fa' : 'en';
 
@@ -146,6 +160,57 @@ export async function runMatrixPipeline(runId: string): Promise<void> {
     if (competitors.length < MIN_COMPETITORS) throw new Error('not enough competitors');
     if (!hasBrandSummary(workspace.brandSummary)) throw new Error('no brand summary');
 
+    // --- EVIDENCE (spec §15 E1/E2) ---------------------------------------
+    // A competitor with nothing citable stored gets its own site read; one
+    // that still has nothing afterwards is left out, never scored from air.
+    const now = Date.now;
+    const found = await enrichEvidenceLessCompetitors(competitors, {
+      deadline: now() + MATRIX_ENRICH_BUDGET_MS,
+      now,
+    });
+    const evidenceById = new Map<string, unknown>(competitors.map((c) => [c.id, c.evidence]));
+    for (const [id, items] of found) evidenceById.set(id, mergeEvidence(evidenceById.get(id), items));
+    const skippedIds = new Set(
+      competitors.filter((c) => competitorEvidence(evidenceById.get(c.id)).length === 0).map((c) => c.id),
+    );
+
+    if (found.size > 0 || skippedIds.size > 0) {
+      await prisma.$transaction(async (tx) => {
+        // First statement is the guarded run write: a reaped run matches
+        // nothing and no competitor's evidence is touched.
+        const guarded = await tx.matrixRun.updateMany({
+          where: { id: runId, status: 'RUNNING' },
+          data: { competitorSet: markSkipped(storedCompetitorSet, skippedIds) as Prisma.InputJsonValue },
+        });
+        if (guarded.count === 0) throw new RunNoLongerActiveError(runId);
+
+        for (const [id, items] of found) {
+          // Re-read inside the transaction so a concurrent change to the
+          // stored evidence is appended to, not overwritten.
+          const row = await tx.competitor.findUnique({ where: { id }, select: { evidence: true } });
+          if (!row) continue;
+          const merged = mergeEvidence(row.evidence, items);
+          await tx.competitor.update({
+            where: { id },
+            data: { evidence: merged as Prisma.InputJsonValue },
+          });
+          evidenceById.set(id, merged);
+        }
+      });
+    }
+
+    const usable = competitors
+      .filter((c) => !skippedIds.has(c.id))
+      .map((c) => ({ ...c, evidence: evidenceById.get(c.id) }));
+    if (usable.length < MIN_COMPETITORS) {
+      throw new Error(
+        withRunErrorCode(
+          RUN_ERROR.NOT_ENOUGH_EVIDENCE,
+          `${usable.length} of ${competitors.length} competitors have evidence to score`,
+        ),
+      );
+    }
+
     const bundle = buildEvidenceBundle({
       workspace: {
         name: workspace.name,
@@ -153,7 +218,7 @@ export async function runMatrixPipeline(runId: string): Promise<void> {
         brandSummary: workspace.brandSummary,
         audienceInsights: workspace.audienceInsights,
       },
-      competitors,
+      competitors: usable,
     });
 
     // --- AXES -----------------------------------------------------------

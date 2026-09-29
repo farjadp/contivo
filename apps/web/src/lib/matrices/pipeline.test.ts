@@ -1,11 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { prismaMock, activityLogMock, proposeMock, scoreMock, summariseMock, persistMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, proposeMock, scoreMock, summariseMock, persistMock, siteSignalsMock } = vi.hoisted(() => ({
   prismaMock: {
     matrixRun: {
       findUnique: vi.fn(),
       findMany: vi.fn(),
       updateMany: vi.fn(),
+    },
+    competitor: {
+      findUnique: vi.fn(),
+      update: vi.fn(),
     },
     matrixChart: {
       create: vi.fn(),
@@ -17,6 +21,7 @@ const { prismaMock, activityLogMock, proposeMock, scoreMock, summariseMock, pers
   scoreMock: { scoreChart: vi.fn(), applyCoreAgreement: vi.fn() },
   summariseMock: { summariseChart: vi.fn(), summariseAcrossCharts: vi.fn() },
   persistMock: { rebuildMatricesProjection: vi.fn() },
+  siteSignalsMock: { collectSiteSignals: vi.fn() },
 }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
@@ -25,6 +30,9 @@ vi.mock('./propose-axes', () => proposeMock);
 vi.mock('./score-chart', () => scoreMock);
 vi.mock('./summarise', () => summariseMock);
 vi.mock('./persist', () => persistMock);
+vi.mock('@/lib/competitors/site-signals', () => siteSignalsMock);
+
+import { classifyRunError } from '@/lib/competitors/run-errors';
 
 import { MatrixAiError } from './openai';
 import {
@@ -139,6 +147,12 @@ beforeEach(() => {
   summariseMock.summariseChart.mockResolvedValue({ summary: CHART_SUMMARY, tokens: 10 });
   summariseMock.summariseAcrossCharts.mockResolvedValue({ summary: CROSS, tokens: 5 });
   persistMock.rebuildMatricesProjection.mockResolvedValue({});
+  siteSignalsMock.collectSiteSignals.mockImplementation(async (domain: string) => ({
+    domain,
+    pages_scanned: [],
+    evidence: '',
+  }));
+  prismaMock.competitor.update.mockResolvedValue({});
   proposeMock.proposeMarketAxes.mockResolvedValue({
     candidates: [...MARKET_AXES, { ...MARKET_AXES[0], key: 'a3' }, { ...MARKET_AXES[1], key: 'a4' }],
     tokens: 40,
@@ -361,6 +375,148 @@ describe('runMatrixPipeline', () => {
 
     await expect(runMatrixPipeline('run-1')).resolves.toBeUndefined();
     errorSpy.mockRestore();
+  });
+});
+
+describe('runMatrixPipeline: evidence for competitors that have none (spec §15)', () => {
+  const THREE = [
+    { competitorId: 'c1', domain: 'c1.com', type: 'DIRECT' },
+    { competitorId: 'c2', domain: 'c2.com', type: 'DIRECT' },
+    { competitorId: 'c3', domain: 'c3.com', type: 'INDIRECT' },
+  ];
+
+  /** Stored evidence as the transaction re-reads it: whatever the workspace row holds. */
+  function storedEvidenceFrom(competitors: Array<{ id: string; evidence: unknown }>) {
+    prismaMock.competitor.findUnique.mockImplementation(async ({ where }: { where: { id: string } }) => {
+      const row = competitors.find((c) => c.id === where.id);
+      return row ? { evidence: row.evidence } : null;
+    });
+  }
+
+  function siteReads(byDomain: Record<string, string>) {
+    siteSignalsMock.collectSiteSignals.mockImplementation(async (domain: string) => ({
+      domain,
+      pages_scanned: byDomain[domain] ? ['/'] : [],
+      evidence: byDomain[domain] ?? '',
+    }));
+  }
+
+  it('reads nothing and writes nothing extra when every competitor already has evidence', async () => {
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun());
+
+    await runMatrixPipeline('run-1');
+
+    expect(siteSignalsMock.collectSiteSignals).not.toHaveBeenCalled();
+    expect(prismaMock.competitor.update).not.toHaveBeenCalled();
+    expect(runWrites().some((w) => 'competitorSet' in w.data)).toBe(false);
+    expect(finalRunWrite().data.status).toBe('DONE');
+  });
+
+  it('reads the site of a competitor with no evidence, appends it to its stored evidence, and scores it on it', async () => {
+    const legacy = [{ id: 'old00001', kind: 'citation', url: 'https://c1.com/x' }]; // no text: nothing citable
+    const competitors = [competitor('c1', { evidence: legacy }), competitor('c2'), competitor('c3')];
+    storedEvidenceFrom(competitors);
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { competitors } }));
+    siteReads({ 'c1.com': 'Accounting for bakeries\nFrom $9 a month' });
+
+    await runMatrixPipeline('run-1');
+
+    expect(siteSignalsMock.collectSiteSignals).toHaveBeenCalledTimes(1);
+    expect(siteSignalsMock.collectSiteSignals.mock.calls[0][0]).toBe('c1.com');
+    expect(typeof siteSignalsMock.collectSiteSignals.mock.calls[0][1].deadline).toBe('number');
+
+    // the write is guarded on the run still RUNNING, before the competitor is touched
+    const guardIndex = runWrites().findIndex((w) => 'competitorSet' in w.data);
+    expect(guardIndex).toBeGreaterThan(0);
+    expect(runWrites()[guardIndex].where).toEqual({ id: 'run-1', status: 'RUNNING' });
+    expect(prismaMock.matrixRun.updateMany.mock.invocationCallOrder[guardIndex]).toBeLessThan(
+      prismaMock.competitor.update.mock.invocationCallOrder[0],
+    );
+
+    expect(prismaMock.competitor.update).toHaveBeenCalledTimes(1);
+    const update = prismaMock.competitor.update.mock.calls[0][0];
+    expect(update.where).toEqual({ id: 'c1' });
+    expect(update.data.evidence[0]).toEqual(legacy[0]);
+    expect(update.data.evidence.slice(1).map((e: { snippet: string }) => e.snippet)).toEqual([
+      'Accounting for bakeries',
+      'From $9 a month',
+    ]);
+    expect(update.data.evidence[1]).toMatchObject({ kind: 'site', url: 'https://c1.com' });
+
+    // the scorer sees the new items under their stored ids
+    const bundle = scoreMock.scoreChart.mock.calls[0][0];
+    const c1 = bundle.competitors.find((c: { competitorId: string }) => c.competitorId === 'c1');
+    expect(c1.evidence.map((e: { id: string }) => e.id)).toEqual(update.data.evidence.slice(1).map((e: { id: string }) => e.id));
+    expect(finalRunWrite().data.status).toBe('DONE');
+  });
+
+  it('leaves out a competitor still without evidence, marks it skipped in the competitor set, and finishes', async () => {
+    const competitors = [competitor('c1'), competitor('c2'), competitor('c3', { evidence: [] })];
+    storedEvidenceFrom(competitors);
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { competitors }, run: { competitorSet: THREE } }));
+    siteReads({});
+
+    await runMatrixPipeline('run-1');
+
+    const setWrite = runWrites().find((w) => 'competitorSet' in w.data);
+    expect(setWrite.where).toEqual({ id: 'run-1', status: 'RUNNING' });
+    expect(setWrite.data.competitorSet).toEqual([THREE[0], THREE[1], { ...THREE[2], skipped: true }]);
+    expect(prismaMock.competitor.update).not.toHaveBeenCalled();
+
+    const bundle = scoreMock.scoreChart.mock.calls[0][0];
+    expect(bundle.competitors.map((c: { competitorId: string }) => c.competitorId)).toEqual(['c1', 'c2']);
+    expect(finalRunWrite().data.status).toBe('DONE');
+  });
+
+  it('fails with NOT_ENOUGH_EVIDENCE when fewer than two competitors have evidence after reading their sites', async () => {
+    const competitors = [competitor('c1'), competitor('c2', { evidence: null }), competitor('c3', { evidence: [] })];
+    storedEvidenceFrom(competitors);
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { competitors }, run: { competitorSet: THREE } }));
+    siteReads({});
+
+    await runMatrixPipeline('run-1');
+
+    const setWrite = runWrites().find((w) => 'competitorSet' in w.data);
+    expect(setWrite.data.competitorSet.filter((e: { skipped?: boolean }) => e.skipped).length).toBe(2);
+
+    const failed = finalRunWrite();
+    expect(failed.data.status).toBe('FAILED');
+    expect(failed.data.error).toMatch(/^NOT_ENOUGH_EVIDENCE/);
+    expect(classifyRunError(failed.data.error)).toBe('notEnoughEvidence');
+    expect(proposeMock.proposeMarketAxes).not.toHaveBeenCalled();
+    expect(scoreMock.scoreChart).not.toHaveBeenCalled();
+    expect(prismaMock.matrixChart.create).not.toHaveBeenCalled();
+  });
+
+  it('writes no evidence and stops when the run is no longer RUNNING after the site reads', async () => {
+    const competitors = [competitor('c1', { evidence: [] }), competitor('c2'), competitor('c3')];
+    storedEvidenceFrom(competitors);
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { competitors } }));
+    siteReads({ 'c1.com': 'Real line from the site' });
+    // claim succeeds, the guarded write before the evidence finds nothing
+    prismaMock.matrixRun.updateMany.mockResolvedValueOnce({ count: 1 }).mockResolvedValueOnce({ count: 0 });
+
+    await runMatrixPipeline('run-1');
+
+    expect(prismaMock.competitor.update).not.toHaveBeenCalled();
+    expect(runWrites().some((w) => w.data.status === 'FAILED')).toBe(false);
+    expect(scoreMock.scoreChart).not.toHaveBeenCalled();
+    expect(proposeMock.proposeMarketAxes).not.toHaveBeenCalled();
+  });
+
+  it('proposes axes from the competitors that have evidence only', async () => {
+    const competitors = [competitor('c1'), competitor('c2'), competitor('c3', { evidence: [] })];
+    storedEvidenceFrom(competitors);
+    prismaMock.matrixRun.findUnique.mockResolvedValue(
+      makeRun({ workspace: { competitors, matrixAxes: null }, run: { competitorSet: THREE } }),
+    );
+    siteReads({});
+
+    await runMatrixPipeline('run-1');
+
+    const bundle = proposeMock.proposeMarketAxes.mock.calls[0][0];
+    expect(bundle.competitors.map((c: { competitorId: string }) => c.competitorId)).toEqual(['c1', 'c2']);
+    expect(finalRunWrite().data.status).toBe('NEEDS_AXES');
   });
 });
 
