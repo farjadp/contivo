@@ -1,10 +1,14 @@
+import { createHash } from 'node:crypto';
+
 import { describe, expect, it, vi } from 'vitest';
 
 // pipeline.ts imports prisma; the bundle only needs its pure parser.
 vi.mock('@/lib/db', () => ({ prisma: {} }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: vi.fn() }));
 
-import { buildEvidenceBundle, evidenceIdsFor, hasBrandSummary } from './bundle';
+import { buildEvidenceBundle, evidenceIdsFor, hasBrandSummary, ownEvidence, ownEvidenceId } from './bundle';
+
+const ownId = (text: string) => `own:${createHash('sha256').update(text).digest('hex').slice(0, 8)}`;
 
 const workspace = {
   name: 'Acme',
@@ -46,12 +50,15 @@ describe('buildEvidenceBundle', () => {
     expect(b.competitors[0].type).toBe('DIRECT');
   });
 
-  it('prefixes target evidence ids with own: and normalises the target domain', () => {
+  it('ids target evidence by its text (own: + 8 hex of sha256) and normalises the target domain', () => {
     const b = buildEvidenceBundle({ workspace, competitors: [] });
     expect(b.target.companyId).toBe('TARGET');
     expect(b.target.competitorId).toBeNull();
     expect(b.target.domain).toBe('acme.com');
-    expect(b.target.evidence.map((e) => e.id).sort()).toEqual(['own:offers:0', 'own:offers:1', 'own:tagline']);
+    expect(b.target.evidence.map((e) => e.id).sort()).toEqual(
+      [ownId('Fast CRM'), ownId('Cheap CRM'), ownId('Sell more')].sort(),
+    );
+    expect(b.target.evidence.every((e) => /^own:[0-9a-f]{8}$/.test(e.id))).toBe(true);
     expect(b.target.evidence.every((e) => e.kind === 'own')).toBe(true);
   });
 
@@ -72,6 +79,22 @@ describe('buildEvidenceBundle', () => {
   });
 });
 
+describe('ownEvidence ids', () => {
+  it('are stable when the brand summary is reordered', () => {
+    const before = ownEvidence({ offers: ['A', 'B'], tagline: 'T' });
+    const after = ownEvidence({ tagline: 'T', offers: ['B', 'A'] });
+    const idOf = (items: typeof before, text: string) => items.find((e) => e.text === text)!.id;
+    for (const text of ['A', 'B', 'T']) expect(idOf(after, text)).toBe(idOf(before, text));
+    expect(idOf(before, 'A')).toBe(ownEvidenceId('A'));
+  });
+
+  it('collapse duplicate texts to one item', () => {
+    const items = ownEvidence({ tagline: 'Same', offers: ['  Same ', 'Other'] });
+    expect(items.map((e) => e.text)).toEqual(['Same', 'Other']);
+    expect(new Set(items.map((e) => e.id)).size).toBe(2);
+  });
+});
+
 describe('hasBrandSummary', () => {
   it('is false for null and true when any string exists', () => {
     expect(hasBrandSummary(null)).toBe(false);
@@ -84,7 +107,7 @@ describe('evidenceIdsFor', () => {
   it('returns the ids for one company', () => {
     const b = buildEvidenceBundle({ workspace, competitors: [rival] });
     expect(evidenceIdsFor(b, 'c1')).toEqual(new Set(['abcd1234']));
-    expect(evidenceIdsFor(b, 'TARGET').has('own:tagline')).toBe(true);
+    expect(evidenceIdsFor(b, 'TARGET').has(ownId('Sell more'))).toBe(true);
     expect(evidenceIdsFor(b, 'nope').size).toBe(0);
   });
 });

@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { prismaMock } = vi.hoisted(() => ({
@@ -12,6 +14,8 @@ const { prismaMock } = vi.hoisted(() => ({
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 
 import { rebuildMatricesProjection } from './persist';
+
+const ownId = (text: string) => `own:${createHash('sha256').update(text).digest('hex').slice(0, 8)}`;
 
 function competitor(id: string, decision: string | null = 'ACCEPTED') {
   return { id, userDecision: decision, confidence: 0.9, sources: [], evidence: null as unknown };
@@ -97,7 +101,7 @@ describe('rebuildMatricesProjection', () => {
 
   it('resolves evidence refs against current competitor rows and the brand summary', async () => {
     const r = run();
-    r.charts[0].scores[0].evidenceRefs = ['own:tagline'] as never;
+    r.charts[0].scores[0].evidenceRefs = [ownId('We sell x')] as never;
     r.charts[0].scores[1].evidenceRefs = ['ab12cd34'] as never;
     r.charts[0].scores[2].evidenceRefs = ['dead0000'] as never;
     setup({
@@ -109,7 +113,7 @@ describe('rebuildMatricesProjection', () => {
       ],
     });
     const [us, a, b] = (await rebuildMatricesProjection('ws-1'))!.charts[0].companies;
-    expect(us.evidence).toEqual([{ id: 'own:tagline', url: '', title: 'We sell x' }]);
+    expect(us.evidence).toEqual([{ id: ownId('We sell x'), url: '', title: 'We sell x' }]);
     expect(a.evidence).toEqual([{ id: 'ab12cd34', url: 'https://a.com/p', title: 'A page' }]);
     expect(b.evidence_missing).toBe(true);
     expect(b.estimated).toBe(true);

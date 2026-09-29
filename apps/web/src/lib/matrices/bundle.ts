@@ -5,6 +5,8 @@
  * either the stable ones stored on the competitor's evidence or `own:` ids
  * derived from the workspace's brand summary. Nothing here is invented.
  */
+import { createHash } from 'node:crypto';
+
 import { parseStoredEvidence } from '@/lib/competitors/pipeline';
 
 import type { CompanyType } from './types';
@@ -49,20 +51,35 @@ function stringList(value: unknown): string[] {
   return value.filter((v): v is string => typeof v === 'string' && v.trim().length > 0);
 }
 
-/** A model will happily cite a field that is only whitespace, so empties never become evidence. */
+/**
+ * A brand-summary item's id is its content, not its position: `own:` plus the
+ * first 8 hex of sha256(text). A positional id (`own:offers:1`) pointed at a
+ * different sentence as soon as the summary was reordered or edited, so an old
+ * score would quietly cite something it never read.
+ */
+export function ownEvidenceId(text: string): string {
+  return `own:${createHash('sha256').update(text).digest('hex').slice(0, 8)}`;
+}
+
+/**
+ * A model will happily cite a field that is only whitespace, so empties never
+ * become evidence; the same sentence in two fields is one item.
+ */
 export function ownEvidence(brandSummary: unknown): BundleEvidence[] {
   if (!isRecord(brandSummary)) return [];
   const items: BundleEvidence[] = [];
-  for (const [field, value] of Object.entries(brandSummary)) {
-    if (typeof value === 'string') {
-      if (value.trim()) items.push({ id: `own:${field}`, kind: 'own', text: value.trim() });
-    } else if (Array.isArray(value)) {
-      value.forEach((entry, index) => {
-        if (typeof entry === 'string' && entry.trim()) {
-          items.push({ id: `own:${field}:${index}`, kind: 'own', text: entry.trim() });
-        }
-      });
-    }
+  const seen = new Set<string>();
+  const add = (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    const id = ownEvidenceId(text);
+    if (seen.has(id)) return;
+    seen.add(id);
+    items.push({ id, kind: 'own', text });
+  };
+  for (const value of Object.values(brandSummary)) {
+    if (typeof value === 'string') add(value);
+    else if (Array.isArray(value)) for (const entry of value) if (typeof entry === 'string') add(entry);
   }
   return items.slice(0, MAX_EVIDENCE);
 }
