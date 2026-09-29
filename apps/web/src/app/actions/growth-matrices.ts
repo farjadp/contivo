@@ -9,10 +9,17 @@ import { actionError } from '@/lib/action-errors';
 import { triggerBackgroundRun } from '@/lib/background-run';
 import { classifyRunError, RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
 import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
-import { languageFromContent, parseStoredMarketAxes, type StoredMarketAxis } from '@/lib/matrices/axes';
+import {
+  languageFromContent,
+  normaliseMarketAxes,
+  parseStoredMarketAxes,
+  type StoredMarketAxis,
+} from '@/lib/matrices/axes';
 import { hasBrandSummary } from '@/lib/matrices/bundle';
+import { parseRunCompetitorIds, snapshotCompetitorIds, snapshotCompetitors } from '@/lib/matrices/competitor-set';
 import { rebuildMatricesProjection } from '@/lib/matrices/persist';
 import { reapStaleMatrixRuns } from '@/lib/matrices/pipeline';
+import { isStale } from '@/lib/matrices/projection';
 
 export type MatrixRunView = {
   id: string;
@@ -31,10 +38,17 @@ export type MatrixStatus = {
   basis: SelectionBasis;
   competitorCount: number;
   hasBrandSummary: boolean;
+  /**
+   * Whether the competitor set has moved since the latest DONE run, compared
+   * now (spec §4: on read), not when the blob was last written. False when
+   * there is no DONE run.
+   */
+  stale: boolean;
   matrices: unknown;
 };
 
-const MAX_SNAPSHOT = 12;
+/** A proposal offers four market axes; the chooser keeps three. */
+const MAX_AXIS_CANDIDATES = 4;
 const MAX_NOTE = 280;
 const RUN_STATUSES = ['PENDING', 'RUNNING', 'NEEDS_AXES', 'DONE', 'FAILED'] as const;
 
@@ -72,7 +86,7 @@ function toRunView(run: {
     tokensUsed: run.tokensUsed,
     // Only the kinds this surface has copy for; the raw error never leaves the server.
     errorKind: kind === null ? null : kind === 'timedOut' || kind === 'dispatch' ? kind : 'generic',
-    axisCandidates: parseStoredMarketAxes(run.axisCandidates),
+    axisCandidates: normaliseMarketAxes(run.axisCandidates, MAX_AXIS_CANDIDATES),
     startedAt: run.startedAt.toISOString(),
     finishedAt: run.finishedAt ? run.finishedAt.toISOString() : null,
   };
@@ -97,7 +111,7 @@ async function startRun(owned: Owned): Promise<{ runId: string } | { error: stri
   if (basis === 'NONE' || competitors.length < 2) return { error: await actionError('needTwoReviewedMatrices') };
   if (!hasBrandSummary(workspace.brandSummary)) return { error: await actionError('matrixNeedsBrandSummary') };
 
-  const competitorSet = competitors.slice(0, MAX_SNAPSHOT).map((c) => ({
+  const competitorSet = snapshotCompetitors(competitors).map((c) => ({
     competitorId: c.id,
     domain: c.domain ?? '',
     type: c.type ?? 'DIRECT',
@@ -158,6 +172,20 @@ export async function startMatrixRun(workspaceId: string): Promise<{ runId: stri
   return startRun(owned);
 }
 
+function latestDoneRun(workspaceId: string) {
+  return prisma.matrixRun.findFirst({
+    where: { workspaceId, status: 'DONE' },
+    orderBy: [{ finishedAt: 'desc' }, { startedAt: 'desc' }],
+    select: { id: true, competitorSet: true },
+  });
+}
+
+function blobRunId(matrices: unknown): string | null {
+  if (!matrices || typeof matrices !== 'object' || Array.isArray(matrices)) return null;
+  const id = (matrices as Record<string, unknown>).run_id;
+  return typeof id === 'string' && id ? id : null;
+}
+
 export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus | { error: string }> {
   const owned = await authorise(workspaceId);
   if ('error' in owned) return owned;
@@ -165,16 +193,30 @@ export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus
 
   await reapStaleMatrixRuns(workspace.id);
 
-  const [latestRun, rows] = await Promise.all([
+  const [latestRun, latestDone, rows] = await Promise.all([
     prisma.matrixRun.findFirst({ where: { workspaceId: workspace.id }, orderBy: { startedAt: 'desc' } }),
+    latestDoneRun(workspace.id),
     prisma.competitor.findMany({ where: { workspaceId: workspace.id } }),
   ]);
   const { competitors, basis } = selectCompetitors(rows);
   const insights = workspace.audienceInsights;
-  const matrices =
+  let matrices =
     insights && typeof insights === 'object' && !Array.isArray(insights)
       ? ((insights as Record<string, unknown>).competitiveMatrices ?? null)
       : null;
+
+  // Self-heal: the blob is a cache of the latest DONE run. If it is from some
+  // other run (a failed projection write, or an older read-modify-write that
+  // landed last), rebuild it from the tables now rather than show the wrong run.
+  if (latestDone && blobRunId(matrices) !== latestDone.id) {
+    const rebuilt = await rebuildMatricesProjection(workspace.id);
+    if (rebuilt) matrices = rebuilt;
+  }
+
+  // Compared on read, with the live side capped exactly like the snapshot.
+  const stale = latestDone
+    ? isStale(parseRunCompetitorIds(latestDone.competitorSet), snapshotCompetitorIds(competitors.map((c) => c.id)))
+    : false;
 
   return {
     run: latestRun ? toRunView(latestRun) : null,
@@ -182,6 +224,7 @@ export async function getMatrixStatus(workspaceId: string): Promise<MatrixStatus
     basis,
     competitorCount: competitors.length,
     hasBrandSummary: hasBrandSummary(workspace.brandSummary),
+    stale,
     matrices,
   };
 }
@@ -213,6 +256,11 @@ function clampScore(value: number | null | undefined): number | null | undefined
   return Math.max(1, Math.min(10, Math.round(value)));
 }
 
+/** null is the target; anything else must be a real, non-empty id. */
+function isCompetitorIdShape(competitorId: unknown): competitorId is string | null {
+  return competitorId === null || (typeof competitorId === 'string' && competitorId.length > 0);
+}
+
 async function latestDoneRunShape(workspaceId: string) {
   return prisma.matrixRun.findFirst({
     where: { workspaceId, status: 'DONE' },
@@ -227,6 +275,9 @@ export async function setMatrixOverride(
   competitorId: string | null,
   patch: { xScore?: number | null; yScore?: number | null; note?: string | null },
 ): Promise<{ matrices: unknown } | { error: string }> {
+  // Checked before anything reaches Prisma: an undefined competitorId in a
+  // where clause is dropped, which would widen the match to every row.
+  if (!isCompetitorIdShape(competitorId)) return { error: await actionError('matrixOverrideInvalid') };
   const owned = await authorise(workspaceId);
   if ('error' in owned) return owned;
   const { userId } = owned;
@@ -311,8 +362,18 @@ export async function clearMatrixOverride(
   chartKey: string,
   competitorId: string | null,
 ): Promise<{ matrices: unknown } | { error: string }> {
+  const invalid = async () => ({ error: await actionError('matrixOverrideInvalid') });
+  // Before any Prisma call: deleteMany with competitorId undefined would clear
+  // every override on the chart.
+  if (!isCompetitorIdShape(competitorId)) return invalid();
   const owned = await authorise(workspaceId);
   if ('error' in owned) return owned;
-  if (!chartKey || typeof chartKey !== 'string') return { error: await actionError('matrixOverrideInvalid') };
+  if (!chartKey || typeof chartKey !== 'string') return invalid();
+  // The target (null) is on every chart; a competitor must be on this one.
+  if (competitorId !== null) {
+    const run = await latestDoneRunShape(workspaceId);
+    const chart = run?.charts.find((c) => c.key === chartKey);
+    if (!chart || !chart.scores.some((s) => s.competitorId === competitorId)) return invalid();
+  }
   return removeOverride(workspaceId, owned.userId, chartKey, competitorId);
 }

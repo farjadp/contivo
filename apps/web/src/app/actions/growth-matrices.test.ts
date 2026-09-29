@@ -183,6 +183,103 @@ describe('getMatrixStatus', () => {
     prismaMock.workspace.findFirst.mockResolvedValue(null);
     expect(await getMatrixStatus('ws-x')).toEqual({ error: 'workspaceNotFound' });
   });
+
+  /** latest = the newest run of any status; done = the newest DONE run. */
+  function runs(latest: unknown, done: unknown) {
+    prismaMock.matrixRun.findFirst.mockImplementation(async (args: { where: { status?: string } }) =>
+      args.where.status === 'DONE' ? done : latest,
+    );
+  }
+  const doneRun = (id: string, ids: string[]) => ({
+    id,
+    status: 'DONE',
+    stage: null,
+    tokensUsed: 10,
+    error: null,
+    axisCandidates: null,
+    startedAt: new Date('2026-09-29T00:00:00Z'),
+    finishedAt: new Date('2026-09-29T00:01:00Z'),
+    competitorSet: ids.map((competitorId) => ({ competitorId, domain: `${competitorId}.com`, type: 'DIRECT' })),
+  });
+  const withBlob = (runId: string | undefined) =>
+    prismaMock.workspace.findFirst.mockResolvedValue({
+      ...workspace,
+      matrixAxes: null,
+      audienceInsights: { competitiveMatrices: { run_id: runId, charts: [], stale: false } },
+    });
+
+  it('reports stale when a competitor was accepted after the latest DONE run', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-1', ['c1']), doneRun('done-1', ['c1']));
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.stale).toBe(true);
+  });
+
+  it('is not stale when the live set matches the run, in any order', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-1', ['c2', 'c1']), doneRun('done-1', ['c2', 'c1']));
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.stale).toBe(false);
+  });
+
+  it('is not stale with 13 selected competitors when the run holds the capped 12', async () => {
+    const ids = Array.from({ length: 13 }, (_, i) => `c${String(i + 1).padStart(2, '0')}`);
+    prismaMock.competitor.findMany.mockResolvedValue([...ids].reverse().map(competitor));
+    withBlob('done-1');
+    runs(doneRun('done-1', ids.slice(0, 12)), doneRun('done-1', ids.slice(0, 12)));
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.stale).toBe(false);
+    expect(status.competitorCount).toBe(13);
+  });
+
+  it('is not stale when there is no DONE run', async () => {
+    withBlob(undefined);
+    runs(null, null);
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.stale).toBe(false);
+    expect(persistMock.rebuildMatricesProjection).not.toHaveBeenCalled();
+  });
+
+  it('shows all four proposed axes to the chooser', async () => {
+    withBlob(undefined);
+    const candidates = ['a', 'b', 'c', 'd'].map((key) => ({ ...axis, key }));
+    runs({ ...doneRun('r', []), status: 'NEEDS_AXES', axisCandidates: candidates }, null);
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.run?.axisCandidates.map((a) => a.key)).toEqual(['a', 'b', 'c', 'd']);
+  });
+
+  it('rebuilds the saved result when it is not from the latest DONE run, and returns the rebuilt one', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-2', ['c1', 'c2']), doneRun('done-2', ['c1', 'c2']));
+    persistMock.rebuildMatricesProjection.mockResolvedValue({ run_id: 'done-2', charts: [] });
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(persistMock.rebuildMatricesProjection).toHaveBeenCalledWith('ws-1');
+    expect(status.matrices).toEqual({ run_id: 'done-2', charts: [] });
+  });
+
+  it('does not rebuild when the saved result is already the latest DONE run', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-1', ['c1', 'c2']), doneRun('done-1', ['c1', 'c2']));
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(persistMock.rebuildMatricesProjection).not.toHaveBeenCalled();
+    expect(status.matrices).toMatchObject({ run_id: 'done-1' });
+  });
+
+  it('keeps the saved result when a rebuild produces nothing', async () => {
+    withBlob('done-1');
+    runs(doneRun('done-2', ['c1', 'c2']), doneRun('done-2', ['c1', 'c2']));
+    persistMock.rebuildMatricesProjection.mockResolvedValue(null);
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.matrices).toMatchObject({ run_id: 'done-1' });
+  });
 });
 
 describe('saveMatrixAxes', () => {
@@ -277,6 +374,30 @@ describe('overrides', () => {
     });
     expect(prismaMock.matrixOverride.create).not.toHaveBeenCalled();
     expect(persistMock.rebuildMatricesProjection).toHaveBeenCalled();
+  });
+
+  it('rejects a competitorId that is neither null nor a non-empty string before touching the database', async () => {
+    for (const bad of [undefined, '', 42, {}]) {
+      vi.clearAllMocks();
+      expect(await setMatrixOverride('ws-1', 'offer', bad as never, { xScore: 3 })).toEqual({ error: 'matrixOverrideInvalid' });
+      expect(await clearMatrixOverride('ws-1', 'offer', bad as never)).toEqual({ error: 'matrixOverrideInvalid' });
+      expect(prismaMock.matrixRun.findFirst).not.toHaveBeenCalled();
+      expect(prismaMock.matrixOverride.deleteMany).not.toHaveBeenCalled();
+      expect(prismaMock.matrixOverride.findFirst).not.toHaveBeenCalled();
+    }
+  });
+
+  it('clearMatrixOverride rejects a competitor that is not in the latest run\'s chart', async () => {
+    expect(await clearMatrixOverride('ws-1', 'offer', 'zzz')).toEqual({ error: 'matrixOverrideInvalid' });
+    expect(await clearMatrixOverride('ws-1', 'nope', 'c1')).toEqual({ error: 'matrixOverrideInvalid' });
+    expect(prismaMock.matrixOverride.deleteMany).not.toHaveBeenCalled();
+  });
+
+  it('clearMatrixOverride clears a competitor that is in the chart', async () => {
+    await clearMatrixOverride('ws-1', 'offer', 'c1');
+    expect(prismaMock.matrixOverride.deleteMany).toHaveBeenCalledWith({
+      where: { workspaceId: 'ws-1', chartKey: 'offer', competitorId: 'c1' },
+    });
   });
 
   it('clearMatrixOverride deletes and rebuilds', async () => {
