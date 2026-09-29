@@ -77,12 +77,25 @@ export function parseStoredEvidence(value: unknown): EvidenceItem[] {
   return items;
 }
 
-/** `normalizeEvidenceUrl(url) -> id` for every stored evidence item. */
+/**
+ * `normalizeEvidenceUrl(url) -> id` for every stored URL that exactly one
+ * stored item points at. A URL several items share (the matrix site-evidence
+ * lines all cite `https://<domain>`, each under its own id) maps to nothing:
+ * a new item there cannot be said to be any one of them, so it keeps a fresh
+ * id rather than inheriting, and re-pointing, one of theirs.
+ */
 export function buildEvidenceIdMap(existingEvidence: EvidenceItem[]): Map<string, string> {
-  const map = new Map<string, string>();
+  const idsByUrl = new Map<string, Set<string>>();
   for (const item of existingEvidence) {
     if (!item?.url) continue;
-    map.set(normalizeEvidenceUrl(item.url), item.id);
+    const url = normalizeEvidenceUrl(item.url);
+    const ids = idsByUrl.get(url) ?? new Set<string>();
+    ids.add(item.id);
+    idsByUrl.set(url, ids);
+  }
+  const map = new Map<string, string>();
+  for (const [url, ids] of idsByUrl) {
+    if (ids.size === 1) map.set(url, [...ids][0]);
   }
   return map;
 }

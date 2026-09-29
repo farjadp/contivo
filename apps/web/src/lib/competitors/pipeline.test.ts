@@ -136,6 +136,15 @@ describe('buildEvidenceIdMap', () => {
     const map = buildEvidenceIdMap([{ id: 'x', kind: 'citation', url: '' }]);
     expect(map.size).toBe(0);
   });
+
+  it('maps no id for a URL that several stored items share', () => {
+    const map = buildEvidenceIdMap([
+      evidenceItem({ id: 'site-aaa', url: 'https://rival.com' }),
+      evidenceItem({ id: 'site-bbb', url: 'https://rival.com/' }),
+      evidenceItem({ id: 'solo', url: 'https://rival.com/pricing' }),
+    ]);
+    expect([...map.values()]).toEqual(['solo']);
+  });
 });
 
 describe('reconcileEvidence', () => {
@@ -171,6 +180,18 @@ describe('reconcileEvidence', () => {
 
     expect(result[0].id).toBe('stored-1');
     expect(result[1].id).toBe('stored-2');
+  });
+
+  it('mints a fresh id when several stored items shared the URL (site lines), inheriting neither', () => {
+    const existing = [
+      evidenceItem({ id: 'site-aaa', url: 'https://rival.com', kind: 'site' }),
+      evidenceItem({ id: 'site-bbb', url: 'https://rival.com', kind: 'site' }),
+    ];
+    const fresh = [evidenceItem({ id: 'freshly-minted', url: 'https://rival.com' })];
+
+    const result = reconcileEvidence(existing, fresh);
+
+    expect(result[0].id).toBe('freshly-minted');
   });
 
   it('preserves other fields of the new item (title, kind) while only overwriting id', () => {
