@@ -15,6 +15,7 @@ import { getSession } from '@/lib/auth';
 import { listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
+import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
 
 export async function generateMetadata() {
   const t = await getTranslations('growth.index');
@@ -34,7 +35,7 @@ export default async function GrowthEnginePage() {
       _count: {
         select: {
           contentItems: true,
-          competitors: true,
+          competitors: { where: COUNTED_COMPETITOR_WHERE },
         },
       },
     },

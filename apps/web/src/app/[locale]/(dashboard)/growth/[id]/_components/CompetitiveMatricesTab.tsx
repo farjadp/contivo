@@ -8,6 +8,7 @@ import {
   generateWorkspaceCompetitiveMatrices,
   saveWorkspaceCompetitiveMatricesEdits,
 } from '@/app/actions/growth-matrices';
+import { CompetitorBasisNote } from './CompetitorBits';
 import { CompetitorMapManager } from './CompetitorMapManager';
 
 type MatrixCompanyPoint = {
@@ -37,6 +38,8 @@ type CompetitiveMatrixChart = {
 
 type CompetitiveMatrixPayload = {
   generated_at: string;
+  /** Which competitors the result was built on; absent on payloads older than that rule. */
+  competitor_basis?: 'ACCEPTED' | 'UNCONFIRMED_HIGH' | 'NONE';
   ai_estimated: boolean;
   source: 'AI' | 'MANUAL';
   charts: CompetitiveMatrixChart[];
@@ -55,18 +58,6 @@ type CompetitiveMatrixPayload = {
       created_at: string;
     } | null;
   };
-};
-
-type CompetitorItem = {
-  id: string;
-  name: string;
-  domain?: string | null;
-  description?: string | null;
-  category?: string | null;
-  audienceGuess?: string | null;
-  type?: string | null;
-  userDecision?: string | null;
-  source?: string | null;
 };
 
 type DiscoveryMeta = {
@@ -128,13 +119,13 @@ function clampConfidence(value: number): number {
 export function CompetitiveMatricesTab({
   workspaceId,
   initialMatrices,
-  initialCompetitors,
+  targetMarket,
   discoveryMeta,
   discoveryArchive,
 }: {
   workspaceId: string;
   initialMatrices: CompetitiveMatrixPayload | null;
-  initialCompetitors: CompetitorItem[];
+  targetMarket: { country: string | null; language: 'fa' | 'en' };
   discoveryMeta: DiscoveryMeta;
   discoveryArchive: DiscoveryArchiveItem[];
 }) {
@@ -243,10 +234,9 @@ export function CompetitiveMatricesTab({
         <div className="p-6 bg-chalk-raised">
           <CompetitorMapManager
             workspaceId={workspaceId}
-            initialCompetitors={initialCompetitors}
             initialMeta={discoveryMeta}
             initialArchive={discoveryArchive}
-            onMatricesUpdated={setMatrices}
+            initialMarket={targetMarket}
           />
         </div>
       </section>
@@ -296,6 +286,12 @@ export function CompetitiveMatricesTab({
             </button>
           </div>
         </div>
+
+        {matrices ? (
+          <div className="border-b border-rule px-6 py-3 empty:hidden">
+            <CompetitorBasisNote payload={matrices} />
+          </div>
+        ) : null}
 
         {/* Global Notifications / Status */}
         {(error || success || showTokens) && (

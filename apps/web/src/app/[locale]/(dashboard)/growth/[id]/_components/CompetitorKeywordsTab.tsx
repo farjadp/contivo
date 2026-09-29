@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Loader2, Sparkles } from 'lucide-react';
 
 import { generateWorkspaceCompetitorKeywords } from '@/app/actions/growth-keywords';
+import { CompetitorBasisNote } from './CompetitorBits';
 
 type KeywordCluster = {
   cluster: string;
@@ -168,6 +169,8 @@ export function CompetitorKeywordsTab({
       <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs font-medium text-amber-800">
         {t('disclaimer')}
       </div>
+
+      <CompetitorBasisNote payload={payload} />
 
       {payload?.token_usage ? (
         <div className="grid gap-3 md:grid-cols-2">

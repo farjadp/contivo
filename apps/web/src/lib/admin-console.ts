@@ -14,6 +14,7 @@ import {
 import { listUserAccessStates, listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { getFrameworkUsageSummary, listRecentFrameworkMetadata } from '@/lib/framework-metadata-log';
 import { listAllActivityLogs } from '@/lib/activity-log';
+import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
 
 export type AdminSection =
   | 'overview'
@@ -468,7 +469,7 @@ export async function getAdminWorkspaces(input: {
       user: { select: { id: true, email: true, name: true } },
       _count: {
         select: {
-          competitors: true,
+          competitors: { where: COUNTED_COMPETITOR_WHERE },
           contentItems: true,
           strategyRuns: true,
           competitorKeywords: true,

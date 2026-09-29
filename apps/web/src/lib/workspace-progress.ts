@@ -1,4 +1,5 @@
 import type { ActivityLogEntry } from '@/lib/activity-log';
+import { countCompetitors } from '@/lib/competitor-counts';
 
 type ScorePair = {
   before: number;
@@ -160,7 +161,7 @@ function buildInitialScores(input: {
     ? input.insights.competitorKeywordsIntel.competitors.length
     : 0;
 
-  const totalCompetitors = input.competitors.length;
+  const totalCompetitors = countCompetitors(input.competitors);
   const acceptedCompetitors = input.competitors.filter((item) => item.userDecision === 'ACCEPTED').length;
   const generatedCount =
     countByStatus(input.contentItems, 'GENERATED') +

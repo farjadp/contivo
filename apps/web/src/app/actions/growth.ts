@@ -11,6 +11,7 @@ import { getLocale } from 'next-intl/server';
 import { asContentLanguage } from '@/lib/content-language';
 import { contentLanguageForLocale } from '@/lib/content-language';
 import { actionError } from '@/lib/action-errors';
+import { ONBOARDING_GUESS_SOURCE } from '@/lib/competitors/selection';
 
 /**
  * Step 1 of workspace creation: record the workspace and get out of the way.
@@ -229,7 +230,11 @@ export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentRe
         description: c.description,
         category: c.category,
         audienceGuess: c.audienceGuess,
-        source: 'AI',
+        // A model's guess from the brand summary, with no search and no
+        // evidence behind it. The review queue shows it as exactly that, and
+        // it carries no confidence, so selectCompetitors never feeds it to
+        // analysis unless the user accepts it.
+        source: ONBOARDING_GUESS_SOURCE,
       })),
     });
   }

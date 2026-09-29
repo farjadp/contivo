@@ -4,6 +4,8 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
+import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { collectSiteSignals, type SiteSignals } from '@/lib/competitors/site-signals';
 
 type TokenUsageRun = {
   model: string;
@@ -78,6 +80,7 @@ export type CompetitorKeywordsPayload = {
   generated_at: string;
   source: 'AI' | 'MANUAL';
   ai_estimated: boolean;
+  competitor_basis?: SelectionBasis;
   competitors: CompetitorKeywordIntel[];
   content_gaps: ContentGapOpportunity[];
   keyword_heatmap: {
@@ -97,10 +100,6 @@ function normalizeDomain(value: string | null | undefined): string {
   if (!raw) return '';
   const withoutProtocol = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
   return withoutProtocol.split('/')[0]?.toLowerCase().trim() || '';
-}
-
-function sanitizeText(input: string): string {
-  return input.replace(/\s+/g, ' ').trim();
 }
 
 function stripCodeFences(value: string): string {
@@ -177,116 +176,51 @@ function appendTokenUsage(
   };
 }
 
-function decodeHtmlEntities(input: string): string {
-  return input
-    .replace(/&nbsp;/gi, ' ')
-    .replace(/&amp;/gi, '&')
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;|&apos;/gi, "'")
-    .replace(/&lt;/gi, '<')
-    .replace(/&gt;/gi, '>');
+/**
+ * Overall wall-clock budget for reading every reviewed competitor's site in
+ * one "generate keywords" call. Each fetch already has its own timeout
+ * inside the hardened client, but each path now tries https and then http
+ * (fix-wave re-review, "Overall time budget for the Keywords and Offerings
+ * site reads"), which roughly doubled the worst case per path. With up to 8
+ * competitors and 6 paths each, an unbounded loop could hold this server
+ * action open for many minutes against sites a manual-add user controls.
+ * Once the budget is spent, no further competitor's site is read; the
+ * analysis runs on whatever was already collected.
+ */
+const KEYWORDS_ENRICH_BUDGET_MS = 90_000;
+
+/**
+ * Reads a competitor's site through the hardened client in
+ * `@/lib/competitors/site-signals` (pinned DNS with a private-address
+ * blocklist, per-hop redirect checks, capped bodies, bounded parsing).
+ */
+async function collectCompetitorSignals(
+  domain: string,
+  budget: { deadline?: number; now?: () => number } = {},
+): Promise<SiteSignals> {
+  return collectSiteSignals(normalizeDomain(domain), {
+    paths: ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'],
+    linesPerPage: 55,
+    maxLines: 320,
+    ...budget,
+  });
 }
 
-function extractPageSignals(html: string): string[] {
-  const lines: string[] = [];
-
-  const title = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1];
-  if (title) lines.push(sanitizeText(decodeHtmlEntities(title)));
-
-  const description =
-    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1] ||
-    html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["'][^>]*>/i)?.[1];
-  if (description) lines.push(sanitizeText(decodeHtmlEntities(description)));
-
-  const headingRegex = /<(h1|h2|h3|a)[^>]*>([\s\S]*?)<\/\1>/gi;
-  let headingMatch: RegExpExecArray | null = headingRegex.exec(html);
-  while (headingMatch) {
-    const text = sanitizeText(
-      decodeHtmlEntities(String(headingMatch[2] || '').replace(/<[^>]+>/g, ' ')),
-    );
-    if (text.length >= 12) lines.push(text);
-    headingMatch = headingRegex.exec(html);
-    if (lines.length > 220) break;
-  }
-
-  const unique = new Set<string>();
-  const filtered: string[] = [];
-  for (const line of lines) {
-    const normalized = line.toLowerCase();
-    if (!line || normalized.length < 8) continue;
-    if (unique.has(normalized)) continue;
-    unique.add(normalized);
-    filtered.push(line);
-    if (filtered.length >= 180) break;
-  }
-
-  return filtered;
-}
-
-async function fetchHtml(url: string): Promise<string | null> {
-  try {
-    const res = await fetch(url, {
-      method: 'GET',
-      redirect: 'follow',
-      signal: AbortSignal.timeout(6000),
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        Accept: 'text/html,application/xhtml+xml',
-      },
-    });
-
-    if (!res.ok) return null;
-    return await res.text();
-  } catch {
-    return null;
-  }
-}
-
-async function collectCompetitorSignals(domain: string): Promise<{
-  domain: string;
-  pages_scanned: string[];
-  evidence: string;
-}> {
-  const normalizedDomain = normalizeDomain(domain);
-  const paths = ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'];
-  const scanned: string[] = [];
-  const evidenceLines: string[] = [];
-
-  for (const path of paths) {
-    const url = `https://${normalizedDomain}${path}`;
-    const html = await fetchHtml(url);
-    if (!html) continue;
-
-    const lines = extractPageSignals(html);
-    if (lines.length === 0) continue;
-    scanned.push(path);
-    evidenceLines.push(...lines.slice(0, 55));
-    if (evidenceLines.length >= 320) break;
-  }
-
-  const compact = evidenceLines.join('\n').slice(0, 12000);
-  return {
-    domain: normalizedDomain,
-    pages_scanned: scanned,
-    evidence: compact,
-  };
-}
-
-function pickCompetitors(workspace: any): Array<{
-  name: string;
-  domain: string;
-  type: string;
-  description: string;
-  category: string;
-  audience: string;
-}> {
+function pickCompetitors(workspace: any): {
+  items: Array<{
+    name: string;
+    domain: string;
+    type: string;
+    description: string;
+    category: string;
+    audience: string;
+  }>;
+  basis: SelectionBasis;
+} {
   const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
-  const accepted = all.filter((item: any) => item.userDecision === 'ACCEPTED');
-  const fallback = all.filter((item: any) => item.userDecision !== 'REJECTED');
-  const source = accepted.length > 0 ? accepted : fallback;
+  const { competitors, basis } = selectCompetitors(all);
 
-  return source
+  const items = competitors
     .map((item: any) => ({
       name: trimTo(item.name, 120),
       domain: normalizeDomain(item.domain),
@@ -297,6 +231,8 @@ function pickCompetitors(workspace: any): Array<{
     }))
     .filter((item: { name: string; domain: string }) => item.name && item.domain)
     .slice(0, 8);
+
+  return { items, basis };
 }
 
 function buildKeywordAnalysisPrompt(input: {
@@ -752,14 +688,20 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
     });
     if (!workspace) return { error: await actionError('workspaceNotFound') };
 
-    const competitors = pickCompetitors(workspace);
+    const { items: competitors, basis } = pickCompetitors(workspace);
     if (competitors.length < 2) {
       return { error: await actionError('needTwoReviewed') };
     }
 
+    const now = Date.now;
+    const deadline = now() + KEYWORDS_ENRICH_BUDGET_MS;
     const competitorSignals = [];
     for (const competitor of competitors) {
-      const signals = await collectCompetitorSignals(competitor.domain);
+      // Checked before starting each competitor's site, not just inside
+      // collectSiteSignals's own path loop: once the shared budget is
+      // spent, no further competitor is read at all.
+      if (now() >= deadline) break;
+      const signals = await collectCompetitorSignals(competitor.domain, { deadline, now });
       if (!signals.evidence) continue;
       competitorSignals.push({
         ...competitor,
@@ -795,6 +737,7 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
       (workspace.audienceInsights as any)?.competitorKeywordsIntel?.token_usage,
     );
     payload.token_usage = appendTokenUsage(existingTokenUsage, openAiResult?.usage || null);
+    payload.competitor_basis = basis;
 
     await prisma.workspace.update({
       where: { id: workspace.id },

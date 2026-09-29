@@ -11,6 +11,7 @@ import { prisma } from '@/lib/db';
 import { requestJsonFromAi } from '@/lib/gemini';
 import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { actionError } from '@/lib/action-errors';
+import { countCompetitors } from '@/lib/competitor-counts';
 
 /**
  * The guide's advice is deterministic — it comes from the journey model, not
@@ -70,7 +71,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
     workspaceId,
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: workspace.competitors.filter((c) => c.userDecision === 'ACCEPTED').length,
-    totalCompetitors: workspace.competitors.length,
+    totalCompetitors: countCompetitors(workspace.competitors),
     matrixCharts: Array.isArray(insights?.competitiveMatrices?.charts)
       ? insights.competitiveMatrices.charts.length
       : 0,
