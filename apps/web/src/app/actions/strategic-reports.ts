@@ -29,6 +29,7 @@ import fs from 'fs/promises';
 import { asContentLanguage } from '@/lib/content-language';
 import { missingReportRequirements } from '@/lib/report-readiness';
 import { reportReference } from '@/lib/report/format';
+import { REPORT_LIST_SELECT } from '@/lib/report/list';
 
 // How many reports a user may generate per calendar month
 const MONTHLY_LIMIT = 5;
@@ -255,5 +256,6 @@ export async function getReportHistory(workspaceId: string) {
     where: { workspaceId },
     orderBy: { reportDate: 'desc' },
     take: 20,
+    select: REPORT_LIST_SELECT,
   });
 }
