@@ -61,6 +61,7 @@ import { getNarrative } from '@/app/actions/narrative';
 import { getFormatter, getLocale } from 'next-intl/server';
 import { missingReportRequirements } from '@/lib/report-readiness';
 import { countCompetitors } from '@/lib/competitor-counts';
+import { REPORT_LIST_SELECT } from '@/lib/report/list';
 
 export async function generateMetadata() {
   const t = await getTranslations('growth.workspace');
@@ -226,6 +227,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       where: { workspaceId: workspace.id },
       orderBy: { reportDate: 'desc' },
       take: 20,
+      select: REPORT_LIST_SELECT,
     }),
     // Runs that spent tokens, summed: the blob only holds the latest run's count.
     prisma.matrixRun.aggregate({
