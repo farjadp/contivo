@@ -68,13 +68,13 @@ export function createAdminFormat(format: Formatter, t: UnitTranslator): AdminFo
 }
 
 export function getStatusTone(status: string): string {
-  if (['FAILED', 'ERROR', 'PAST_DUE', 'INCOMPLETE'].includes(status)) {
+  if (['FAILED', 'ERROR', 'PAST_DUE', 'INCOMPLETE', 'UNCOLLECTIBLE'].includes(status)) {
     return 'text-red-700 bg-red-50 border-red-200';
   }
-  if (['PENDING', 'RUNNING', 'CRAWLING', 'ANALYZING', 'TRIALING', 'warning'].includes(status)) {
+  if (['PENDING', 'RUNNING', 'CRAWLING', 'ANALYZING', 'TRIALING', 'OPEN', 'warning'].includes(status)) {
     return 'text-amber-700 bg-amber-50 border-amber-200';
   }
-  if (['SCHEDULED', 'PUBLISHED', 'READY', 'ACTIVE', 'COMPLETED', 'healthy'].includes(status)) {
+  if (['SCHEDULED', 'PUBLISHED', 'READY', 'ACTIVE', 'COMPLETED', 'PAID', 'healthy'].includes(status)) {
     return 'text-moss-700 bg-chalk-sunk border-rule';
   }
   return 'text-moss bg-chalk border-rule';

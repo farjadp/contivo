@@ -23,6 +23,7 @@ export type AdminSection =
   | 'ai'
   | 'settings'
   | 'credits'
+  | 'finance'
   | 'content'
   | 'jobs'
   | 'logs'
@@ -85,6 +86,7 @@ export function resolveAdminSection(rawValue: string | string[] | undefined): Ad
     'ai',
     'settings',
     'credits',
+    'finance',
     'content',
     'jobs',
     'logs',
