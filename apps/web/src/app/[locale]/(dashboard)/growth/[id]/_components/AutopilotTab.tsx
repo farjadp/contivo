@@ -111,13 +111,26 @@ export function AutopilotTab({
       }
     });
   };
-  const [form, setForm] = useState<AutopilotPolicyInput>(() => toForm(initialPolicy));
+  // The editor always shows the selected agent. It used to be seeded once from
+  // the workspace's first policy, so a freshly created "Blog writer" was saved
+  // back as the default LinkedIn agent the moment its owner pressed Save.
+  const [form, setForm] = useState<AutopilotPolicyInput>(() => toForm(selected));
   // Server props win after router.refresh(); local override only right after a save.
   const [savedPolicy, setSavedPolicy] = useState<SerializedPolicy | null>(null);
-  const policy = savedPolicy ?? initialPolicy;
+  const [hintsText, setHintsText] = useState(selected?.topicHints.join(', ') ?? '');
+  const [avoidText, setAvoidText] = useState(selected?.avoidTopics.join(', ') ?? '');
+  const [editorAgentId, setEditorAgentId] = useState<string | null>(selected?.id ?? null);
+  // A new agent arrives through router.refresh() after createAgent, so the
+  // selection can change after mount; reload the editor when it does.
+  if ((selected?.id ?? null) !== editorAgentId) {
+    setEditorAgentId(selected?.id ?? null);
+    setForm(toForm(selected));
+    setHintsText(selected?.topicHints.join(', ') ?? '');
+    setAvoidText(selected?.avoidTopics.join(', ') ?? '');
+    setSavedPolicy(null);
+  }
+  const policy = savedPolicy ?? selected;
   const runs = initialRuns; // refreshed via router.refresh() after save/run
-  const [hintsText, setHintsText] = useState(initialPolicy?.topicHints.join(', ') ?? '');
-  const [avoidText, setAvoidText] = useState(initialPolicy?.avoidTopics.join(', ') ?? '');
   const [message, setMessage] = useState<{ kind: 'ok' | 'error'; text: string } | null>(null);
   const [isSaving, startSave] = useTransition();
   const [isRunning, startRun] = useTransition();
