@@ -254,10 +254,9 @@ function logFallback(scope: string, geminiStatus: number, openAiStatus?: number)
     return;
   }
 
-  if (openAiStatus !== undefined && !openAiUnavailable) {
-    return;
-  }
-
+  // Every caller reaches here only after both providers failed to give usable
+  // output, so an OpenAI 200 means its answer was unusable — say so instead of
+  // returning silently, which is how empty onboarding competitor lists went unlogged.
   if (geminiUnavailable && openAiUnavailable) {
     console.warn(
       `${scope}: Gemini (${geminiStatus}) and OpenAI (${openAiStatus}) unavailable. Using heuristic fallback output.`,
@@ -1597,6 +1596,17 @@ export interface CompetitorExtraction {
   audienceGuess: string;
 }
 
+/** A non-empty competitor array, whether the model sent it bare or wrapped in an object. */
+function competitorList(raw: string): CompetitorExtraction[] | null {
+  const parsed = safeJsonParse<unknown>(raw);
+  const list = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === 'object'
+      ? Object.values(parsed as Record<string, unknown>).find(Array.isArray)
+      : null;
+  return Array.isArray(list) && list.length > 0 ? (list as CompetitorExtraction[]) : null;
+}
+
 export async function discoverCompetitorsWithGemini(
   brandSummary: any,
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
@@ -1625,18 +1635,20 @@ Required Schema: An array of objects, where each object has these keys:
 
   const gemini = await callGemini(prompt, true);
   if (gemini.ok && gemini.text) {
-    const parsed = safeJsonParse<CompetitorExtraction[]>(gemini.text);
-    if (parsed && parsed.length > 0) return parsed;
+    const parsed = competitorList(gemini.text);
+    if (parsed) return parsed;
   }
 
+  // OpenAI's JSON mode can only return an object, never a bare array, so ask
+  // for the list under a key and unwrap it.
   const openAi = await callOpenAi(
     prompt,
     true,
-    'You are an expert market analyst. Return only a valid JSON array of real competitors.',
+    'You are an expert market analyst. Return only a JSON object of the form {"competitors": [...]}, where the array holds the real competitors in the schema described.',
   );
   if (openAi.ok && openAi.text) {
-    const parsed = safeJsonParse<CompetitorExtraction[]>(openAi.text);
-    if (parsed && parsed.length > 0) return parsed;
+    const parsed = competitorList(openAi.text);
+    if (parsed) return parsed;
   }
 
   logFallback('discoverCompetitorsWithGemini', gemini.status, openAi.status);
