@@ -5,6 +5,8 @@ import { Link, getPathname } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth';
 import { AdminBarChart, AdminPieChart } from './charts';
 import { createAdminFormat } from './_components/AdminUi';
+import { FinanceSection } from './_components/FinanceSection';
+import { getAdminFinance } from '@/lib/finance/ledger';
 import {
   adjustCredits,
   manageBilling,
@@ -190,6 +192,8 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
           />
         ) : null}
 
+        {section === 'finance' && sectionData.finance ? <FinanceSection finance={sectionData.finance} /> : null}
+
         {section === 'content' ? (
           <ContentSection
             rows={sectionData.contentItems || []}
@@ -365,6 +369,9 @@ async function getSectionData(
         },
       }),
     };
+  }
+  if (section === 'finance') {
+    return { finance: await getAdminFinance() };
   }
   if (section === 'content') {
     return {

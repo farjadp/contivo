@@ -18,7 +18,8 @@
       "jobs": "Queues & Jobs",
       "settings": "Platform Settings",
       "logs": "Logs & Security",
-      "analytics": "Analytics"
+      "analytics": "Analytics",
+      "finance": "Finance"
     },
     "sections": {
       "overview": {
@@ -64,6 +65,10 @@
       "analytics": {
         "label": "Analytics",
         "description": "Adoption, framework usage, and cost patterns"
+      },
+      "finance": {
+        "label": "Finance",
+        "description": "Revenue, MRR, churn and failed payments"
       }
     },
     "hero": {
@@ -494,6 +499,54 @@
       "twitter": "Twitter / X",
       "email": "Email",
       "instagram": "Instagram"
+    },
+    "finance": {
+      "empty": "No payments yet. Invoices appear here as Stripe sends them.",
+      "mockBanner": "These numbers include mock data. Fictional customers loaded for testing; nothing here was really paid.",
+      "kpiMrr": "MRR",
+      "kpiMrrHelper": "Active and past-due subscriptions, annual plans counted monthly",
+      "kpiNet": "Net revenue to date",
+      "kpiNetHelper": "{gross} collected, {refunds} refunded",
+      "kpiPaying": "Paying customers",
+      "kpiChurned": "Churned this month",
+      "kpiAttention": "Failed payments open",
+      "byMonthTitle": "Revenue by month",
+      "byMonthSubtitle": "Collected, refunded and net, with new and lost customers",
+      "colMonth": "Month",
+      "colGross": "Collected",
+      "colRefunds": "Refunded",
+      "colNet": "Net",
+      "colNew": "New",
+      "colChurned": "Churned",
+      "byPlanTitle": "MRR by plan",
+      "byPlanSubtitle": "Live subscriptions on each plan right now",
+      "colPlan": "Plan",
+      "colSubscriptions": "Subscriptions",
+      "colShare": "Share",
+      "noSubscriptions": "No live subscriptions.",
+      "attentionTitle": "Needs attention",
+      "attentionSubtitle": "Invoices Stripe could not collect",
+      "colCustomer": "Customer",
+      "colStatus": "Status",
+      "colOwed": "Owed",
+      "colAttempts": "Attempts",
+      "colIssued": "Issued",
+      "noAttention": "Every invoice has been paid.",
+      "invoicesTitle": "Recent invoices",
+      "invoicesSubtitle": "The latest 25, newest first",
+      "colReason": "Why",
+      "colPaid": "Paid",
+      "annual": "annual",
+      "monthly": "monthly",
+      "reason": {
+        "subscription_create": "First payment",
+        "subscription_cycle": "Renewal",
+        "subscription_update": "Plan change",
+        "other": "Other"
+      },
+      "refundsTitle": "Refunds",
+      "refundsSubtitle": "Money returned to customers",
+      "noRefunds": "No refunds."
     }
   }
 }

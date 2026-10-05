@@ -18,7 +18,8 @@
       "jobs": "صف‌ها و کارها",
       "settings": "تنظیمات پلتفرم",
       "logs": "گزارش‌ها و امنیت",
-      "analytics": "تحلیل‌ها"
+      "analytics": "تحلیل‌ها",
+      "finance": "مالی"
     },
     "sections": {
       "overview": {
@@ -64,6 +65,10 @@
       "analytics": {
         "label": "تحلیل‌ها",
         "description": "پذیرش، مصرف چارچوب‌ها و الگوهای هزینه"
+      },
+      "finance": {
+        "label": "مالی",
+        "description": "درآمد، درآمد ماهانهٔ تکرارشونده، ریزش و پرداخت‌های ناموفق"
       }
     },
     "hero": {
@@ -494,6 +499,54 @@
       "twitter": "Twitter / X",
       "email": "ایمیل",
       "instagram": "Instagram"
+    },
+    "finance": {
+      "empty": "هنوز پرداختی ثبت نشده است. صورت‌حساب‌ها همین‌که Stripe بفرستد اینجا دیده می‌شوند.",
+      "mockBanner": "این اعداد دادهٔ آزمایشی هم دارند. مشتری‌ها ساختگی‌اند و برای تست وارد شده‌اند؛ هیچ پولی واقعاً پرداخت نشده است.",
+      "kpiMrr": "درآمد ماهانهٔ تکرارشونده",
+      "kpiMrrHelper": "اشتراک‌های فعال و معوق؛ پلن سالانه به‌صورت ماهانه حساب شده",
+      "kpiNet": "درآمد خالص تا امروز",
+      "kpiNetHelper": "{gross} دریافت‌شده، {refunds} برگشت‌داده‌شده",
+      "kpiPaying": "مشتری‌های پرداخت‌کننده",
+      "kpiChurned": "ریزش این ماه",
+      "kpiAttention": "پرداخت‌های ناموفق باز",
+      "byMonthTitle": "درآمد ماه‌به‌ماه",
+      "byMonthSubtitle": "دریافتی، برگشتی و خالص، همراه مشتری‌های تازه و از دست‌رفته",
+      "colMonth": "ماه",
+      "colGross": "دریافتی",
+      "colRefunds": "برگشتی",
+      "colNet": "خالص",
+      "colNew": "تازه",
+      "colChurned": "ریزش",
+      "byPlanTitle": "درآمد ماهانه به تفکیک پلن",
+      "byPlanSubtitle": "اشتراک‌های زندهٔ هر پلن در همین لحظه",
+      "colPlan": "پلن",
+      "colSubscriptions": "اشتراک",
+      "colShare": "سهم",
+      "noSubscriptions": "اشتراک زنده‌ای وجود ندارد.",
+      "attentionTitle": "نیاز به پیگیری",
+      "attentionSubtitle": "صورت‌حساب‌هایی که Stripe نتوانست وصول کند",
+      "colCustomer": "مشتری",
+      "colStatus": "وضعیت",
+      "colOwed": "بدهی",
+      "colAttempts": "تلاش",
+      "colIssued": "تاریخ صدور",
+      "noAttention": "همهٔ صورت‌حساب‌ها پرداخت شده‌اند.",
+      "invoicesTitle": "صورت‌حساب‌های اخیر",
+      "invoicesSubtitle": "۲۵ صورت‌حساب آخر، جدیدترین اول",
+      "colReason": "بابت",
+      "colPaid": "پرداخت‌شده",
+      "annual": "سالانه",
+      "monthly": "ماهانه",
+      "reason": {
+        "subscription_create": "اولین پرداخت",
+        "subscription_cycle": "تمدید",
+        "subscription_update": "تغییر پلن",
+        "other": "سایر"
+      },
+      "refundsTitle": "برگشت وجه",
+      "refundsSubtitle": "پول‌هایی که به مشتری برگردانده شد",
+      "noRefunds": "برگشت وجهی ثبت نشده است."
     }
   }
 }

@@ -15,6 +15,7 @@ const ADMIN_NAV_ITEMS = [
   { href: { pathname: '/admin', query: { section: 'content' } }, key: 'content' },
   { href: { pathname: '/admin', query: { section: 'ai' } }, key: 'ai' },
   { href: { pathname: '/admin', query: { section: 'integrations' } }, key: 'integrations' },
+  { href: { pathname: '/admin', query: { section: 'finance' } }, key: 'finance' },
   { href: { pathname: '/admin', query: { section: 'credits' } }, key: 'credits' },
   { href: { pathname: '/admin', query: { section: 'jobs' } }, key: 'jobs' },
   { href: { pathname: '/admin', query: { section: 'settings' } }, key: 'settings' },
