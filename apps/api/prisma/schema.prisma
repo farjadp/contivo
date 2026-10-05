@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Runtime connections. On Vercel this is Neon's pooled endpoint: every
   // serverless invocation otherwise opens its own connection straight to the
   // database, and the connection limit is reached long before the traffic is
   // interesting.
-  url = env("DATABASE_URL")
+  url       = env("DATABASE_URL")
   // Migrations and introspection, which a connection pooler cannot serve.
   // Falls back to DATABASE_URL where DIRECT_URL is not set, so a local
   // checkout and the long-running API keep working with one variable.
@@ -16,22 +16,25 @@ datasource db {
 }
 
 model User {
-  id           String         @id @default(cuid())
-  clerkId      String?        @unique
-  passwordHash String?
-  email        String         @unique
-  name         String?
-  avatarUrl    String?
-  plan         UserPlan       @default(FREE)
-  role         UserRole       @default(USER)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  aiUsageLogs  AiUsageLog[]
-  contentItems ContentItem[]
-  contentJobs  ContentJob[]
-  creditLedger CreditLedger[]
-  subscription Subscription?
-  workspaces   Workspace[]
+  id                    String                 @id @default(cuid())
+  clerkId               String?                @unique
+  passwordHash          String?
+  email                 String                 @unique
+  name                  String?
+  avatarUrl             String?
+  plan                  UserPlan               @default(FREE)
+  role                  UserRole               @default(USER)
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+  aiUsageLogs           AiUsageLog[]
+  contentItems          ContentItem[]
+  contentJobs           ContentJob[]
+  creditLedger          CreditLedger[]
+  subscription          Subscription?
+  workspaces            Workspace[]
+  billingInvoices       BillingInvoice[]
+  billingOneOffPayments BillingOneOffPayment[]
+  billingRefunds        BillingRefund[]
 
   @@index([clerkId])
   @@index([email])
@@ -1021,4 +1024,89 @@ model RateLimit {
 
   @@index([windowStart])
   @@map("rate_limits")
+}
+
+// ─── Billing ledger ──────────────────────────────────────────────────────────
+// What customers actually paid, copied from Stripe so the admin finance screen
+// never has to call Stripe to draw a page. Keyed by the Stripe id: a replayed
+// webhook or a re-run import upserts. Amounts are integer cents, USD, pre-tax.
+
+enum BillingInvoiceStatus {
+  PAID
+  OPEN
+  UNCOLLECTIBLE
+  VOID
+}
+
+/// Where a billing row came from. MOCK rows exist only on local and staging.
+enum BillingDataSource {
+  STRIPE
+  MOCK
+}
+
+model BillingInvoice {
+  id                   String               @id @default(cuid())
+  stripeInvoiceId      String               @unique
+  stripeCustomerId     String
+  stripeSubscriptionId String?
+  userId               String?
+  user                 User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status               BillingInvoiceStatus
+  /// subscription_create, subscription_cycle or subscription_update.
+  billingReason        String
+  plan                 UserPlan?
+  /// "month" or "year".
+  interval             String
+  currency             String               @default("usd")
+  amountDue            Int
+  amountPaid           Int
+  attemptCount         Int                  @default(1)
+  periodStart          DateTime
+  periodEnd            DateTime
+  issuedAt             DateTime
+  paidAt               DateTime?
+  source               BillingDataSource    @default(STRIPE)
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+
+  @@index([issuedAt])
+  @@index([userId])
+  @@index([stripeSubscriptionId])
+  @@map("billing_invoices")
+}
+
+/// A paid Checkout Session in payment mode, e.g. an image pack.
+model BillingOneOffPayment {
+  id               String            @id @default(cuid())
+  stripeSessionId  String            @unique
+  stripeCustomerId String
+  userId           String?
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  kind             String
+  amount           Int
+  currency         String            @default("usd")
+  paidAt           DateTime
+  source           BillingDataSource @default(STRIPE)
+  createdAt        DateTime          @default(now())
+
+  @@index([paidAt])
+  @@map("billing_one_off_payments")
+}
+
+model BillingRefund {
+  id               String            @id @default(cuid())
+  stripeRefundId   String            @unique
+  stripeInvoiceId  String?
+  stripeCustomerId String?
+  userId           String?
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+  amount           Int
+  currency         String            @default("usd")
+  reason           String?
+  refundedAt       DateTime
+  source           BillingDataSource @default(STRIPE)
+  createdAt        DateTime          @default(now())
+
+  @@index([refundedAt])
+  @@map("billing_refunds")
 }
