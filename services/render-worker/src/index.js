@@ -17,10 +17,18 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SPECS_DIR = path.join(ROOT, 'specs');
 const QUEUE = 'contivo-render';
 
+const log = (...a) => console.log(new Date().toISOString(), ...a);
+
+// No token yet: idle instead of crash-looping. Setting the variable in
+// Railway redeploys the service, which picks it up.
+if (!process.env.TELEGRAM_BOT_TOKEN) {
+  log('TELEGRAM_BOT_TOKEN is not set — waiting. Set it in Railway → render-worker → Variables.');
+  setInterval(() => {}, 1 << 30);
+  await new Promise(() => {});
+}
+
 const tg = new Telegram(process.env.TELEGRAM_BOT_TOKEN);
 const ALLOWED = (process.env.TELEGRAM_ALLOWED_CHAT_ID || '').trim();
-
-const log = (...a) => console.log(new Date().toISOString(), ...a);
 
 // ---------------------------------------------------------------- specs
 async function listSpecs() {
