@@ -1,6 +1,7 @@
 // spec -> images + music -> HyperFrames project -> MP4
 
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { mkdir, mkdtemp, stat, copyFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -12,6 +13,15 @@ import { generateImage } from './images.js';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const HF_BIN = path.join(ROOT, 'node_modules', '.bin', 'hyperframes');
 
+// Drop FFmpeg/HyperFrames progress noise so the real error is visible.
+export function meaningfulTail(out, max = 2500) {
+  return out
+    .split(/[\r\n]+/)
+    .filter((l) => l.trim() && !/^\s*frame=|hf-progress|█|░|Render:trace.*checkpoint/.test(l))
+    .join('\n')
+    .slice(-max);
+}
+
 function run(cmd, args, opts = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...opts });
@@ -19,10 +29,43 @@ function run(cmd, args, opts = {}) {
     child.stdout.on('data', (d) => (out += d));
     child.stderr.on('data', (d) => (out += d));
     child.on('error', reject);
-    child.on('close', (code) =>
-      code === 0 ? resolve(out) : reject(new Error(`${path.basename(cmd)} exited ${code}: ${out.slice(-1500)}`)),
-    );
+    child.on('close', (code, signal) => {
+      if (code === 0) return resolve(out);
+      // Full output to the service log; a readable tail in the error.
+      console.error(`--- ${path.basename(cmd)} output (exit ${code}, signal ${signal}) ---\n${meaningfulTail(out, 12000)}`);
+      reject(new Error(`${path.basename(cmd)} exited ${code}${signal ? ` (${signal})` : ''}:\n${meaningfulTail(out)}`));
+    });
   });
+}
+
+// Generated images cached by prompt+model for the life of the container, so
+// retrying a failed render does not pay for the same images again.
+const IMG_CACHE = path.join(tmpdir(), 'render-image-cache');
+async function cachedImage(prompt, dest) {
+  const key = createHash('sha256').update(`${process.env.IMAGE_MODEL || ''}|${prompt}`).digest('hex').slice(0, 24);
+  const cached = path.join(IMG_CACHE, `${key}.jpg`);
+  try {
+    await stat(cached);
+  } catch {
+    await mkdir(IMG_CACHE, { recursive: true });
+    const raw = path.join(IMG_CACHE, `${key}.png`);
+    await generateImage(prompt, raw);
+    // JPEG at frame width: ~10x smaller than the PNG, less for Chrome to decode.
+    await run('ffmpeg', ['-v', 'error', '-y', '-i', raw, '-vf', 'scale=1080:-2', '-q:v', '3', cached]);
+  }
+  await copyFile(cached, dest);
+  return { cached: true };
+}
+
+// Telegram bots cannot send files over 50 MB.
+const TELEGRAM_MAX = 45 * 1024 * 1024;
+export async function fitForTelegram(file) {
+  const { size } = await stat(file);
+  if (size <= TELEGRAM_MAX) return file;
+  const smaller = file.replace(/\.mp4$/, '.tg.mp4');
+  await run('ffmpeg', ['-v', 'error', '-y', '-i', file, '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '24',
+    '-maxrate', '10M', '-bufsize', '20M', '-c:a', 'copy', '-movflags', '+faststart', smaller]);
+  return smaller;
 }
 
 export function validateSpec(spec) {
@@ -55,10 +98,10 @@ export async function renderSpec(spec, { onProgress = () => {}, skipImages = fal
   const wanted = spec.scenes.map((s, i) => [i, s.image]).filter(([, p]) => p);
   for (const [n, [i, prompt]] of wanted.entries()) {
     if (skipImages) break;
-    const rel = `assets/img/scene-${i}.png`;
+    const rel = `assets/img/scene-${i}.jpg`;
     onProgress(`🎨 تصویر ${n + 1} از ${wanted.length}…`);
     try {
-      await generateImage(prompt, path.join(work, rel));
+      await cachedImage(prompt, path.join(work, rel));
       imageFiles[i] = rel;
     } catch (err) {
       const msg = String(err.message);
@@ -97,10 +140,12 @@ export async function renderSpec(spec, { onProgress = () => {}, skipImages = fal
   const t0 = Date.now();
   await run(HF_BIN, ['render', '--output', out], { cwd: work, env });
   const renderMs = Date.now() - t0;
-  const { size } = await stat(out);
-  if (size < 10_000) throw new Error(`rendered file is suspiciously small (${size} bytes)`);
+  const { size: rawSize } = await stat(out);
+  if (rawSize < 10_000) throw new Error(`rendered file is suspiciously small (${rawSize} bytes)`);
+  const file = await fitForTelegram(out);
+  const { size } = await stat(file);
 
-  return { file: out, seconds: total, renderMs, images: Object.keys(imageFiles).length, size, warnings };
+  return { file, seconds: total, renderMs, images: Object.keys(imageFiles).length, size, warnings };
 }
 
 export async function copyOut(file, dest) {
