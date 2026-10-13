@@ -1,0 +1,52 @@
+{
+  "id": "eresidency-fa",
+  "title": "کشوری که شهروند دیجیتال می‌پذیرد",
+  "workspace": "startup-visaroad",
+  "language": "fa",
+  "direction": "rtl",
+  "brand": "استارتاپ ویزارود",
+  "music": "generated",
+  "source": "منبع: e-resident.gov.ee و Wikipedia — بررسی‌شده در ۱۳ اکتبر ۲۰۲۶. محتوای آموزشی است، نه مشاوره‌ی حقوقی یا مهاجرتی.",
+  "sources": [
+    "https://e-resident.gov.ee",
+    "https://en.wikipedia.org/wiki/E-Residency_of_Estonia (checked 2026-10-13)"
+  ],
+  "caption": "استونی از سال ۲۰۱۴ «شهروند دیجیتال» می‌پذیرد. اما ای‌رزیدنسی ویزا یا اقامت نیست. 👇\n\n#استارتاپ #استونی #ای_رزیدنسی #مهاجرت_کاری",
+  "scenes": [
+    {
+      "type": "hook",
+      "duration": 5,
+      "kicker": "داستان یک کشور کوچک",
+      "title": "کشوری که\n**شهروند دیجیتال**\nمی‌پذیرد",
+      "image": "Cinematic photo of Tallinn Old Town rooftops and medieval towers at blue hour, warm windows glowing, thin golden digital light lines floating above the city like a network, moody deep navy sky, empty dark sky at the top"
+    },
+    {
+      "type": "body",
+      "duration": 6,
+      "kicker": "استونی، ۱ دسامبر ۲۰۱۴",
+      "title": "اولین برنامه‌ی\n**«ای‌رزیدنسی»** دنیا\nراه افتاد.",
+      "image": "Close-up cinematic photo of a hand inserting a plain dark blue smart ID card with a gold chip into a small USB card reader next to a laptop, shallow depth of field, warm amber rim light, deep navy background"
+    },
+    {
+      "type": "list",
+      "duration": 6,
+      "kicker": "با یک کارت هویت دیجیتال:",
+      "items": ["ثبت شرکت در استونی", "امضای دیجیتال اسناد", "بانکداری و مالیات آنلاین"],
+      "image": "Cinematic photo of a founder seen from behind working late at night on a laptop at a small desk by a window, city lights outside, warm desk lamp and cool navy shadows, dark empty lower half"
+    },
+    {
+      "type": "warn",
+      "duration": 5,
+      "kicker": "اما دقت کنید",
+      "title": "ای‌رزیدنسی **ویزا، اقامت\nیا تابعیت** نیست.",
+      "body": "حق ورود یا زندگی در استونی\nو اقامت مالیاتی هم نمی‌دهد."
+    },
+    {
+      "type": "cta",
+      "duration": 4,
+      "kicker": "برای زندگی در استونی",
+      "title": "مسیرهای جداگانه‌ای\nمثل **ویزای استارتاپ** هست.",
+      "handle": "@startup_visaroad"
+    }
+  ]
+}

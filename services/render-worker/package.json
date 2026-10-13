@@ -1,0 +1,18 @@
+{
+  "name": "contivo-render-worker",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Renders short videos from a JSON spec with HyperFrames and sends them to Telegram for approval. Outside the pnpm workspace on purpose.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node src/index.js",
+    "render:local": "node src/cli.js"
+  },
+  "dependencies": {
+    "bullmq": "^5.7.0",
+    "gsap": "3.14.2",
+    "hyperframes": "0.8.152",
+    "vazirmatn": "33.0.3"
+  }
+}

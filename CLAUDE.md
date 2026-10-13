@@ -22,7 +22,7 @@ on this repository at the same time. To avoid overwriting each other:
 
 | Stream | Branch | Owner | Files it owns | Status |
 |---|---|---|---|---|
-| Video pipeline | `feat/video-pipeline` | cloud Claude session | `docs/video-pipeline/**`, `apps/render-worker/**` (new), and — in later phases, announced here first — `apps/api/prisma/schema.prisma` (VIDEO additions only), `apps/api/src/modules/jobs/jobs.constants.ts` (new `RENDER` queue only) | Planning — see `docs/video-pipeline/PLAN.md` |
+| Video pipeline | `feat/video-pipeline` | cloud Claude session | `docs/video-pipeline/**`, `services/render-worker/**` (new, outside the pnpm workspace), and — in later phases, announced here first — `apps/api/prisma/schema.prisma` (VIDEO additions only), `apps/api/src/modules/jobs/jobs.constants.ts` (new `RENDER` queue only) | Phase 1 built: render worker — see `docs/video-pipeline/PLAN.md` |
 
 Schema changes from any stream: write a migration file **and** note it here,
 because two streams changing `schema.prisma` will conflict.
