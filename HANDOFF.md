@@ -1,5 +1,14 @@
 # Contivo — session handoff (1 September 2026)
 
+> **13 Oct update — parallel work + video pipeline.** A cloud Claude session
+> now works on this repo alongside local Claude Code. Coordination rules and
+> the table of active streams live in `CLAUDE.md` (loaded automatically by
+> Claude Code). First stream: the video pipeline on `feat/video-pipeline` —
+> plan, audit findings and hard-won rendering rules in
+> `docs/video-pipeline/PLAN.md`. Farjad's own brands (Visaroads, Startup
+> Visaroad, Ashavid, UpsideTree) become Contivo's first workspaces as internal
+> design partners.
+
 > **1 Sep update — the onboarding flow.** The autonomous loop below still holds.
 > What did *not* work was the front door. Four blockers, none of which threw:
 >
