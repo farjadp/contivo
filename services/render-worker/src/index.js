@@ -53,6 +53,7 @@ async function processJob(jobId, data) {
     const caption = [
       `🎬 ${spec.title || spec.id}`,
       `⏱ ${r.seconds} ثانیه · رندر در ${Math.round(r.renderMs / 1000)} ثانیه · ${r.images} تصویر`,
+      r.warnings?.length ? `⚠️ ${r.warnings.join('\n⚠️ ')}` : '',
       spec.sources?.length ? `📚 منابع:\n${spec.sources.map((s) => `• ${s}`).join('\n')}` : '',
       spec.caption ? `\n✍️ کپشن پیشنهادی:\n${spec.caption}` : '',
       '\nمنتشر نشده — فقط برای بررسی.',

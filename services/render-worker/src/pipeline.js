@@ -47,15 +47,26 @@ export async function renderSpec(spec, { onProgress = () => {}, skipImages = fal
   await mkdir(imgDir, { recursive: true });
   await mkdir(audioDir, { recursive: true });
 
-  // 1. images (sequential: keeps rate limits and cost predictable)
+  // 1. images (sequential: keeps rate limits and cost predictable).
+  // Best-effort, like Contivo's own images: a failure never blocks the video.
+  // A quota/auth error stops further attempts (they would fail the same way).
   const imageFiles = {};
+  const warnings = [];
   const wanted = spec.scenes.map((s, i) => [i, s.image]).filter(([, p]) => p);
   for (const [n, [i, prompt]] of wanted.entries()) {
+    if (skipImages) break;
     const rel = `assets/img/scene-${i}.png`;
-    if (skipImages) continue;
     onProgress(`🎨 تصویر ${n + 1} از ${wanted.length}…`);
-    await generateImage(prompt, path.join(work, rel));
-    imageFiles[i] = rel;
+    try {
+      await generateImage(prompt, path.join(work, rel));
+      imageFiles[i] = rel;
+    } catch (err) {
+      const msg = String(err.message);
+      const fatal = /insufficient_quota|credit_balance|401|invalid_api_key|not set/.test(msg);
+      warnings.push(fatal ? `image provider unavailable: ${msg.slice(0, 160)}` : `scene ${i + 1} image failed`);
+      onProgress(fatal ? '⚠️ ساخت تصویر ممکن نیست؛ ادامه بدون تصویر.' : `⚠️ تصویر ${n + 1} ساخته نشد؛ ادامه.`);
+      if (fatal) break;
+    }
   }
 
   // 2. music: original, generated, no copyright risk
@@ -89,7 +100,7 @@ export async function renderSpec(spec, { onProgress = () => {}, skipImages = fal
   const { size } = await stat(out);
   if (size < 10_000) throw new Error(`rendered file is suspiciously small (${size} bytes)`);
 
-  return { file: out, seconds: total, renderMs, images: Object.keys(imageFiles).length, size };
+  return { file: out, seconds: total, renderMs, images: Object.keys(imageFiles).length, size, warnings };
 }
 
 export async function copyOut(file, dest) {
