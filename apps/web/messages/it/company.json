@@ -1,0 +1,138 @@
+{
+  "company": {
+    "contact": {
+      "meta": {
+        "title": "Contatti — Contivo",
+        "description": "Scrivi direttamente a chi sviluppa Contivo. Domande, bug, richieste sulla privacy e proposte dalle agenzie."
+      },
+      "eyebrow": "Contatti",
+      "headline": "Scrivi a una <accent>persona</accent>.",
+      "intro": "Niente code di ticket e niente chatbot. Le email inviate qui le legge chi sviluppa Contivo, e la risposta arriva da lui.",
+      "addressLabel": "L'indirizzo",
+      "copy": "Copia",
+      "copied": "Indirizzo copiato",
+      "selected": "Selezionato. Premi Ctrl+C (⌘C su Mac) per copiarlo.",
+      "write": "Scrivi un'email",
+      "facts": {
+        "who": {
+          "label": "Chi la legge",
+          "value": "Il fondatore, non un team di assistenza"
+        },
+        "where": {
+          "label": "Dove",
+          "value": "Ontario, Canada. Fuso orario della costa est."
+        },
+        "how": {
+          "label": "Lingua",
+          "value": "Inglese o persiano, come preferisci"
+        }
+      },
+      "topicsTitle": "Risparmia uno scambio di email",
+      "topicsIntro": "Scegli l'argomento. La tua app di posta apre una bozza con l'oggetto già compilato e qualche domanda che ti aiuta a ottenere subito una risposta utile.",
+      "draftHint": "Oggetto:",
+      "topics": {
+        "question": {
+          "title": "Una domanda prima di iniziare",
+          "summary": "Se Contivo è adatto alla tua attività, alla tua lingua o ai tuoi canali.",
+          "subject": "Contivo: una domanda prima di iniziare",
+          "body": "Ciao,\n\nIl mio sito web: \nCosa vorrei che facesse Contivo: \nLa mia domanda: \n\nGrazie"
+        },
+        "broken": {
+          "title": "Qualcosa non funziona",
+          "summary": "Un'esecuzione fallita, un post mai uscito, una pagina che dà errore.",
+          "subject": "Contivo: qualcosa non funziona",
+          "body": "Ciao,\n\nCosa ho fatto: \nCosa mi aspettavo: \nCosa è successo invece: \nL'indirizzo (URL) della pagina in cui è successo: \nPiù o meno quando: \n\nUno screenshot aiuta molto, se ne hai uno."
+        },
+        "privacy": {
+          "title": "I tuoi dati",
+          "summary": "Una copia dei dati che conserviamo, una correzione o l'eliminazione del tuo account.",
+          "subject": "Contivo: richiesta sulla privacy",
+          "body": "Ciao,\n\nL'indirizzo email del mio account: \nCosa chiedo (una copia / una correzione / l'eliminazione): \n\nGrazie"
+        },
+        "agency": {
+          "title": "Agenzie e partnership",
+          "summary": "Usare Contivo per più clienti, o costruirci sopra qualcosa.",
+          "subject": "Contivo: agenzia o partnership",
+          "body": "Ciao,\n\nChi siamo: \nQuanti brand o clienti: \nCosa abbiamo in mente: \n\nGrazie"
+        }
+      },
+      "before": "Molte risposte sono già scritte: cosa succede ai tuoi dati è spiegato nella <privacy>pagina sulla privacy</privacy>, e quanto costa nella pagina <pricing>Prezzi</pricing>."
+    },
+    "about": {
+      "meta": {
+        "title": "Chi siamo — Contivo",
+        "description": "Chi sviluppa Contivo, i principi su cui si basa e a che punto è davvero oggi."
+      },
+      "eyebrow": "Chi siamo",
+      "headline": "Messo alla prova prima sui siti del suo <accent>stesso</accent> fondatore.",
+      "intro": "Contivo è sviluppato da Farjad P.D, fondatore di {entity}, in Ontario, Canada. Nasce per un problema semplice: una piccola azienda sa che dovrebbe pubblicare con costanza e tenere d'occhio il proprio mercato, ma nessuno ha il tempo di farlo bene.",
+      "principlesTitle": "I principi su cui si basa",
+      "principlesIntro": "Ognuno di questi è una scelta già presente nel prodotto, non una promessa. La data indica quando è stata introdotta.",
+      "principles": [
+        {
+          "title": "Meglio rifiutare che inventare",
+          "body": "Ad agosto 2026 il sistema di scrittura ha prodotto un caso cliente mai esistito, e il revisore AI gli ha dato nove su dieci. Da allora, una bozza che inventa un caso, un dato o una citazione non supera il controllo qualità.",
+          "date": "2026-08-18"
+        },
+        {
+          "title": "Nessun numero che non sia stato misurato",
+          "body": "Quando il provider dei dati di ricerca non è collegato, Contivo ora non mostra alcun volume di ricerca, invece di uno plausibile ma inventato.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Vendere solo ciò che funziona",
+          "body": "Questo sito elencava social network su cui Contivo non può ancora pubblicare. Sono stati tolti dalla pagina il giorno stesso in cui ce ne siamo accorti.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Il persiano si scrive, non si traduce",
+          "body": "Un workspace in persiano riceve articoli scritti in persiano fin dall'inizio, non testi in inglese con un menu in persiano intorno.",
+          "date": "2026-09-23"
+        }
+      ],
+      "since": "Nel prodotto dal {date}",
+      "timelineTitle": "Come ci siamo arrivati",
+      "timeline": [
+        {
+          "date": "2026-03-12",
+          "title": "Primo commit",
+          "body": "Un workspace, una connessione a LinkedIn e X e uno strumento di programmazione."
+        },
+        {
+          "date": "2026-04-26",
+          "title": "Il report strategico",
+          "body": "Contivo inizia a leggere un sito e i suoi concorrenti e a mettere per iscritto ciò che trova."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Autopilot e controllo qualità",
+          "body": "Pubblica secondo un calendario, e ogni bozza deve superare una revisione prima di uscire."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Il tuo sito web",
+          "body": "Oltre ai social network, Contivo può pubblicare articoli direttamente sul tuo sito."
+        },
+        {
+          "date": "2026-09-23",
+          "title": "Persiano",
+          "body": "L'intero prodotto, e la scrittura stessa, in persiano."
+        },
+        {
+          "date": "2026-09-27",
+          "title": "Accesso anticipato",
+          "body": "Dove si trova oggi: gratuito, in uso sui siti del suo fondatore e aperto a chi vuole provarlo."
+        }
+      ],
+      "standsTitle": "A che punto è",
+      "stands": [
+        "Accesso anticipato. La fatturazione non è attiva, quindi è gratis.",
+        "Non ci sono ancora clienti da citare, quindi questo sito non ne cita nessuno.",
+        "A volte qualcosa si rompe. Quando succede, puoi scrivere direttamente a chi lo ripara."
+      ],
+      "ctaTitle": "Scopri se fa per il tuo sito.",
+      "ctaStart": "Inizia gratis",
+      "ctaContact": "Oppure scrivici"
+    }
+  }
+}

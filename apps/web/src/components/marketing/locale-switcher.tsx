@@ -8,7 +8,7 @@ import { Link, usePathname } from '@/i18n/navigation';
 import { locales } from '@/i18n/routing';
 
 /**
- * The switch between English and Persian.
+ * The switch between Contivo's languages.
  *
  * It links rather than pushes, for two reasons that are easy to lose: a real
  * `<a href="/fa/...">` is what tells a crawler the other language exists, and

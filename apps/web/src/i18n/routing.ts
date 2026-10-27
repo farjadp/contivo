@@ -1,14 +1,18 @@
 import { defineRouting } from 'next-intl/routing';
 
 /**
- * The two languages Contivo ships in.
+ * The languages Contivo ships in.
  *
  * `fa` is not a translation bolted onto an English product: it carries its own
  * direction, its own font stack and its own AI prompt language, so a Persian
  * workspace produces Persian articles rather than English ones with a Persian
  * menu around them. Anything added here has to answer all three questions.
+ *
+ * `it` is left-to-right and covered by the Latin font stack. Its workspaces
+ * still write in English: the content language (see lib/content-language.ts)
+ * is a Prisma enum with EN and FA only, so Italian is a UI language for now.
  */
-export const locales = ['en', 'fa'] as const;
+export const locales = ['en', 'fa', 'it'] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'en';
@@ -35,11 +39,12 @@ export const routing = defineRouting({
   */
   localePrefix: 'always',
   /*
-    Browser negotiation decides the first visit; the cookie next-intl writes on
-    a manual switch outranks it afterwards, so choosing English once is not
-    undone by a Persian Accept-Language header on the next request.
+    A bare URL always opens in English. Negotiating from Accept-Language and the
+    NEXT_LOCALE cookie sent visitors with a Persian or Italian browser to that
+    language before they had chosen it; the switcher is how a reader picks one,
+    and the locale then travels in the URL.
   */
-  localeDetection: true,
+  localeDetection: false,
   /*
     Declaring every route here is what keeps `typedRoutes` working after the
     move under [locale]: Next now types its routes as `/[locale]/pricing`,

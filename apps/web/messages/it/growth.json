@@ -1,0 +1,320 @@
+{
+  "growth": {
+    "index": {
+      "metaTitle": "Workspace",
+      "title": "Workspace",
+      "subtitle": "I tuoi workspace strategici basati sull'AI. Ogni riga ti porta direttamente in ciascun modulo, con una breve spiegazione.",
+      "newWorkspace": "Nuovo workspace",
+      "rowHint": "Ogni workspace occupa una riga. Da lì puoi entrare direttamente in una qualsiasi delle sue schede.",
+      "empty": {
+        "title": "Ancora nessun workspace",
+        "body": "Crea il tuo primo workspace. Raccontaci il tuo brand e in pochi secondi costruiremo una strategia di contenuti su misura.",
+        "cta": "Crea workspace"
+      },
+      "statusActive": "Attivo",
+      "statusDraft": "Bozza",
+      "noUrl": "Nessun URL",
+      "statCompetitors": "Concorrenti",
+      "statContentItems": "Contenuti",
+      "industry": "Settore:",
+      "openWorkspace": "Apri workspace",
+      "openStrategy": "Apri strategia",
+      "cards": {
+        "pipelineTitle": "Pipeline dei contenuti",
+        "pipelineDesc": "Contenuti monitorati tra pianificazione, bozza ed esecuzione: {count, number}.",
+        "ideationTitle": "Ideation Station",
+        "ideationDesc": "Genera angolazioni per le campagne e trasforma le idee in contenuti pronti da pubblicare, in poco tempo.",
+        "strategyTitle": "Brand Memory",
+        "strategyDesc": "Pilastri dei contenuti ricavati da tono e posizionamento del sito: {count, number}.",
+        "matricesTitle": "Market Matrices",
+        "matricesDesc": "Grafici competitivi generati per posizionamento e differenziazione: {count, number}.",
+        "keywordsTitle": "Competitor Keywords",
+        "keywordsDesc": "Concorrenti analizzati per cluster di keyword e lacune nella strategia dei contenuti: {count, number}.",
+        "offeringsTitle": "Prodotti e servizi",
+        "offeringsDesc": "Offerte del cliente mappate per il confronto con quelle del mercato: {count, number}."
+      }
+    },
+    "new": {
+      "back": "Indietro",
+      "titleTop": "Crea il",
+      "titleAccent": "workspace",
+      "lead": "Indica il tuo dominio. Analizzeremo in automatico il tuo brand, ne estrarremo i messaggi e costruiremo la tua strategia di contenuti.",
+      "systemInit": "Inizializzazione del sistema",
+      "nameLabel": "<num>01</num> — Nome dell'azienda",
+      "namePlaceholder": "Acme Srl",
+      "urlLabel": "<num>02</num> — Dominio principale",
+      "urlPlaceholder": "https://acme.com",
+      "submit": "Analizza il sito",
+      "submitting": "Inizializzazione...",
+      "note": "Potrai rivedere e modificare tutte le informazioni estratte prima di confermare le impostazioni."
+    },
+    "analyzing": {
+      "processing": "Elaborazione — Sistema attivo",
+      "titleTop": "Analisi del",
+      "titleAccent": "sito",
+      "lead": "Il motore di intelligence di <brand>Contivo</brand> sta leggendo le tue pagine. Di solito servono 10–30 secondi.",
+      "doNotClose": "Non chiudere la finestra",
+      "phase": "Fase 0{n, number}",
+      "running": "In corso...",
+      "complete": "Completata",
+      "steps": {
+        "connect": "Connessione al tuo sito",
+        "read": "Lettura delle pagine principali",
+        "understand": "Analisi del brand e del pubblico",
+        "build": "Creazione della tua Brand Memory"
+      },
+      "error": {
+        "eyebrow": "Analisi interrotta",
+        "titleTop": "Non siamo riusciti a leggere",
+        "titleAccent": "il tuo sito",
+        "threw": "Qualcosa è andato storto durante l'analisi del sito. Riprova.",
+        "failed": "Non siamo riusciti ad analizzare il tuo sito. Riprova.",
+        "retry": "Riprova",
+        "back": "Torna ai workspace"
+      }
+    },
+    "review": {
+      "title": "Ecco cosa abbiamo trovato",
+      "subtitle": "Abbiamo analizzato il tuo sito e preparato una prima strategia di contenuti. Rivedi, modifica e conferma questi dettagli.",
+      "businessSummary": "Sintesi dell'attività",
+      "targetAudience": "Pubblico di riferimento",
+      "brandTone": "Tono del brand",
+      "detectedIndustry": "Settore rilevato",
+      "emptySummary": "Nessuna sintesi estratta.",
+      "emptyAudience": "Nessun pubblico estratto.",
+      "emptyIndustry": "Settore sconosciuto.",
+      "positioning": "Opportunità di posizionamento",
+      "messaging": "Differenziazione del messaggio",
+      "confirm": "Conferma e genera la strategia",
+      "saving": "Salvataggio delle modifiche..."
+    },
+    "workspace": {
+      "metaTitle": "Dashboard del workspace",
+      "warningsTitle": "Configurazione completata con alcuni problemi",
+      "back": "Workspace",
+      "autopilotOn": "Autopilot attivo · {posts, number}/sett.",
+      "autopilotOff": "Attiva Autopilot",
+      "ideateByHand": "Crea idee a mano",
+      "statCompetitors": "Concorrenti",
+      "statContent": "Contenuti",
+      "statDiscoveryRuns": "Ricerche",
+      "statDiscoveryValue": "{used, number} / {total, number}",
+      "statAiCalls": "Chiamate AI",
+      "statAiTokens": "Token AI",
+      "statEstCost": "Costo stimato",
+      "trackedNote": "solo moduli monitorati",
+      "tabTitleGated": "{helper} — {gate}",
+      "tabs": {
+        "strategyLabel": "Brand Memory",
+        "strategyHelper": "{count, number} asset",
+        "matricesLabel": "Market Matrices",
+        "matricesHelper": "{count, number} grafici",
+        "keywordsLabel": "Competitor Keywords",
+        "keywordsHelper": "{count, number} analizzati",
+        "narrativeLabel": "Narrativa",
+        "narrativeHelper": "{count, number} storyline",
+        "offeringsLabel": "Prodotti e servizi",
+        "offeringsHelper": "{count, number} offerte del cliente",
+        "seoLabel": "SEO Intelligence",
+        "seoHelper": "{count, number} opportunità",
+        "ideationLabel": "Ideation Station",
+        "ideationHelper": "Idee AI + bozze",
+        "pipelineLabel": "Pipeline dei contenuti",
+        "pipelineHelper": "{count, number} elementi",
+        "calendarLabel": "Calendario editoriale",
+        "calendarHelper": "Contenuti programmati",
+        "autopilotLabel": "Autopilot",
+        "autopilotHelperOn": "ATTIVO · {posts, number}/settimana",
+        "autopilotHelperOff": "Pubblicazione automatica",
+        "reportsLabel": "Report",
+        "reportsHelper": "{count, number} rimanenti questo mese",
+        "progressLabel": "Report sull'evoluzione",
+        "progressHelper": "{before} → {now}"
+      },
+      "warnings": {
+        "competitorDiscoveryEmpty": "La ricerca dei concorrenti non ha dato risultati: il provider AI non era disponibile. Puoi riprovare da Market Matrices."
+      },
+      "loop": {
+        "label": "Fasi del workspace",
+        "tabsLabel": "Sezioni della fase",
+        "state": {
+          "done": "fatto",
+          "next": "prossimo",
+          "open": "aperto",
+          "locked": "bloccato"
+        },
+        "know": {
+          "name": "Conosci",
+          "sub": "Brand e offerta"
+        },
+        "watch": {
+          "name": "Osserva",
+          "sub": "Mercato"
+        },
+        "think": {
+          "name": "Pensa",
+          "sub": "Posizione e idee"
+        },
+        "make": {
+          "name": "Crea",
+          "sub": "Pipeline"
+        },
+        "ship": {
+          "name": "Pubblica",
+          "sub": "Calendario e autopilot"
+        },
+        "learn": {
+          "name": "Impara",
+          "sub": "Report"
+        }
+      }
+    },
+    "competitors": {
+      "loading": "Caricamento dei concorrenti…",
+      "loadFailed": "Impossibile caricare i tuoi concorrenti.",
+      "retry": "Riprova",
+      "newTab": "(si apre in una nuova scheda)",
+      "noDomain": "Nessun sito",
+      "market": {
+        "searchingIn": "Ricerca in {country}, in {language}",
+        "everywhere": "tutti i paesi",
+        "change": "Modifica",
+        "countryLabel": "Paese",
+        "languageLabel": "Lingua di ricerca",
+        "save": "Salva",
+        "cancel": "Annulla",
+        "saveFailed": "Impossibile salvare il mercato.",
+        "lockedWhileRunning": "Potrai cambiare paese e lingua al termine della ricerca in corso."
+      },
+      "run": {
+        "find": "Trova concorrenti",
+        "quota": "{remaining, number} ricerche rimaste su {max, number}",
+        "quotaSpent": "{max, plural, =1 {Hai già usato l'unica ricerca di questo workspace.} other {Hai usato tutte le # ricerche di questo workspace.}}",
+        "onlyDoneCounts": "Una ricerca viene conteggiata solo se trova qualcosa.",
+        "startFailed": "Impossibile avviare la ricerca.",
+        "starting": "Preparazione della ricerca",
+        "leaveNote": "Non devi restare su questa pagina. La ricerca continua e troverai i risultati qui quando torni.",
+        "stages": {
+          "QUERIES": "Scrittura delle query di ricerca",
+          "SEARCH": "Ricerca sul web",
+          "ENRICH": "Lettura del sito di ogni candidato",
+          "JUDGE": "Verifica di ciascuno sulla base delle prove",
+          "SAVE": "Salvataggio dei risultati"
+        },
+        "stageDone": "fatto",
+        "stageCurrent": "in corso",
+        "done": "{count, plural, one {Trovato # probabile concorrente.} other {Trovati # probabili concorrenti.}} Esamina qui sotto ciascuno e le relative prove.",
+        "skippedSites": "{count, plural, one {Il tempo è scaduto prima di poter leggere # sito, quindi non compare nei risultati.} other {Il tempo è scaduto prima di poter leggere # siti, quindi non compaiono nei risultati.}}",
+        "emptyTitle": "Nessun concorrente questa volta",
+        "emptyDetail": "Abbiamo cercato con {count, plural, one {# query} other {# query}} in {language} per {country}, ma nessun risultato era supportato da prove sufficienti.",
+        "emptyDetailNoCount": "Abbiamo cercato in {language} per {country}, ma nessun risultato era supportato da prove sufficienti.",
+        "notCharged": "Questa ricerca non è stata conteggiata nel tuo limite.",
+        "nextStepsIntro": "Prima della prossima ricerca puoi fare una di queste due cose:",
+        "nextChangeMarket": "Cambiare paese o lingua",
+        "nextAddManual": "Aggiungere un concorrente che conosci già",
+        "nextAddManualHint": "La prossima ricerca lo userà come riferimento.",
+        "failedTitle": "La ricerca non è stata completata",
+        "failedNotCharged": "Non è stata conteggiata nel tuo limite, quindi puoi riprovare.",
+        "failedReason": {
+          "timedOut": "La ricerca ha richiesto troppo tempo ed è stata interrotta.",
+          "dispatch": "La ricerca non è partita a causa di un problema da parte nostra.",
+          "judgeOutage": "Il servizio che verifica ogni azienda sulla base delle prove non era disponibile, quindi non è stato possibile verificare nulla. Il problema non è il mercato che hai scelto.",
+          "searchUnavailable": "La ricerca web che individua i concorrenti non era disponibile, quindi non ne è stato trovato nessuno. Il problema non è il mercato che hai scelto.",
+          "rateLimited": "Il servizio AI sta ricevendo troppe richieste in questo momento. Attendi qualche minuto, poi riprova.",
+          "generic": "Qualcosa è andato storto nel nostro sistema."
+        },
+        "pollStopped": "Questa pagina ha smesso di controllare lo stato della ricerca. Ricarica per vedere a che punto è.",
+        "queriesTitle": "Query di ricerca"
+      },
+      "queue": {
+        "title": "In attesa della tua revisione",
+        "empty": "Al momento non c'è nulla da revisionare. Qui compariranno i concorrenti trovati da una ricerca.",
+        "accept": "Aggiungi ai concorrenti",
+        "reject": "Metti da parte",
+        "typeLabel": "Tipo",
+        "why": "Perché è stato suggerito?",
+        "queries": "Ricerche che l'hanno trovato",
+        "sources": "Pagine che lo citano",
+        "site": "Cosa dice il suo sito",
+        "features": "Funzionalità principali",
+        "sitePages": "Pagine che abbiamo letto",
+        "noEvidence": "Per questo suggerimento non è stata salvata alcuna prova.",
+        "initialGuessBadge": "Ipotesi iniziale, senza prove",
+        "initialGuessNote": "Questo nome è stato suggerito da un passaggio AI precedente a partire dalla descrizione della tua attività, non da una ricerca web, e non ha nessuna delle prove raccolte dalle nuove ricerche. Controlla tu il suo sito prima di aggiungerlo.",
+        "decisionFailed": "Non è stato salvato. Riprova.",
+        "typeSaveFailed": "Il tipo non è stato salvato. Riprova."
+      },
+      "basis": {
+        "unconfirmed": "Basata su concorrenti non confermati. Quando è stata generata non avevi confermato alcun concorrente, quindi ha usato aziende trovate da più ricerche separate e valutate come probabili concorrenti. Controllale nella sezione concorrenti, poi generala di nuovo.",
+        "legacy": "Questa analisi è precedente alla registrazione dei concorrenti su cui si basa. Generala di nuovo se vuoi essere certo che usi i concorrenti che hai confermato."
+      },
+      "confidence": {
+        "high": "Affidabilità alta",
+        "medium": "Affidabilità media",
+        "low": "Affidabilità bassa",
+        "unknown": "Non valutata"
+      },
+      "labels": {
+        "SEO": "Concorre nei risultati di ricerca",
+        "BUSINESS": "Concorre per i clienti"
+      },
+      "types": {
+        "DIRECT": "Diretto",
+        "INDIRECT": "Indiretto",
+        "ASPIRATIONAL": "Di riferimento"
+      },
+      "undo": {
+        "accepted": "<b>{name}</b> ora è tra i tuoi concorrenti.",
+        "rejected": "<b>{name}</b> è stato messo da parte e non verrà più suggerito.",
+        "reasonPrompt": "Se vuoi, dicci perché: la prossima ricerca suggerirà meno aziende simili.",
+        "reasonSaved": "Motivo salvato.",
+        "undo": "Annulla",
+        "dismiss": "Chiudi",
+        "undoFailed": "Impossibile annullare. Riprova.",
+        "removed": "<b>{name}</b> è stato tolto dalla tua lista e non verrà più suggerito."
+      },
+      "reasons": {
+        "DIFFERENT_MARKET": "Mercato diverso",
+        "TOO_BIG": "Troppo grande",
+        "DIFFERENT_PRODUCT": "Prodotto diverso",
+        "NOT_A_COMPANY": "Non è un'azienda"
+      },
+      "list": {
+        "title": "I tuoi concorrenti",
+        "empty": "Nessun concorrente nella tua lista. Aggiungine uno dai suggerimenti oppure inseriscine uno che conosci.",
+        "addedByYou": "Aggiunto da te",
+        "remove": "Togli dalla lista",
+        "removeFailed": "Impossibile toglierlo dalla lista. Riprova.",
+        "setAside": "Messi da parte",
+        "backToReview": "Rimetti in revisione"
+      },
+      "add": {
+        "title": "Aggiungi un concorrente che conosci",
+        "hint": "Inserisci il suo sito. Lo leggiamo e verifichiamo quanto è vicino alla tua attività. Qualunque sia il risultato, il concorrente viene aggiunto alla tua lista.",
+        "placeholder": "concorrente.it",
+        "button": "Aggiungi",
+        "added": "<b>{name}</b> è stato aggiunto.",
+        "warning": "Nota:",
+        "failed": "Impossibile aggiungere questo concorrente."
+      },
+      "history": {
+        "title": "Ricerche precedenti",
+        "empty": "Ancora nessuna ricerca.",
+        "found": "{count, number} trovati",
+        "notCharged": "Non conteggiata",
+        "legacy": "Ricerca precedente",
+        "status": {
+          "PENDING": "In avvio",
+          "RUNNING": "In corso",
+          "DONE": "Completata",
+          "EMPTY": "Nessun risultato",
+          "FAILED": "Non completata"
+        },
+        "accepted": "{count, number} accettati",
+        "queries": "{count, plural, one {# query} other {# query}}",
+        "market": "{country}, {language}"
+      },
+      "signedOut": "La tua sessione è scaduta. Accedi di nuovo per vedere i tuoi concorrenti."
+    }
+  }
+}

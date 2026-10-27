@@ -1,0 +1,17 @@
+{
+  "onboarding": {
+    "stage": "Onboarding — Configurazione",
+    "welcome": {
+      "titleLead": "Inizia a",
+      "titleAccent": "dare forma",
+      "titleTail": "al tuo sistema.",
+      "body": "Contivo fa chiarezza nei tuoi contenuti. Scegli un percorso per costruire la tua strategia a lungo termine, oppure salta la configurazione e genera subito.",
+      "workspaceIndex": "01 — Consigliato",
+      "workspaceTitle": "Crea un workspace",
+      "workspaceBody": "Definisci l'identità del tuo brand e metti in piedi un motore di marketing completo, guidato dai dati.",
+      "instantIndex": "02 — Corsia veloce",
+      "instantTitle": "Contenuti istantanei",
+      "instantBody": "Nessuna configurazione. Indica un argomento, scegli una piattaforma e ottieni post curati in pochi secondi."
+    }
+  }
+}

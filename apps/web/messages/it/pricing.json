@@ -1,0 +1,225 @@
+{
+  "pricing": {
+    "meta": {
+      "title": "Prezzi — Contivo"
+    },
+    "headline": "Paghi in base a quanto lavora <accent>senza</accent> di te.",
+    "intro": "Workspace × post a settimana × canali. Nessun costo per utente: il punto è proprio che non serve nessuno davanti allo schermo.",
+    "earlyAccess": "Accesso anticipato: la fatturazione non è ancora attiva. È tutto gratis mentre lo mettiamo alla prova sui nostri siti.",
+    "mostUseful": "Il più utile",
+    "plans": {
+      "solo": {
+        "name": "Solo",
+        "price": "$0",
+        "period": "durante l'accesso anticipato",
+        "tagline": "Un brand, in autopilot.",
+        "features": {
+          "workspaces": "1 workspace",
+          "memory": "Memoria del brand + mappa della concorrenza",
+          "narrative": "Una narrazione che ogni post deve portare avanti",
+          "autopilot": "Autopilot: fino a 3 post / settimana",
+          "channels": "LinkedIn + il tuo sito",
+          "gate": "Controllo qualità su ogni post"
+        },
+        "cta": "Inizia gratis"
+      },
+      "founder": {
+        "name": "Founder",
+        "price": "$49",
+        "period": "al mese, in arrivo",
+        "tagline": "Tutti i tuoi progetti, un solo autopilot.",
+        "features": {
+          "workspaces": "3 workspace",
+          "everything": "Tutto quello che c'è in Solo",
+          "autopilot": "Autopilot: fino a 14 post / settimana ciascuno",
+          "channels": "LinkedIn · X · Instagram · siti web",
+          "report": "Report strategico in PDF, 5 / mese",
+          "digest": "Riepilogo settimanale di ciò che è stato pubblicato"
+        },
+        "cta": "Mettiti in lista"
+      },
+      "agency": {
+        "name": "Agency",
+        "price": "$149",
+        "period": "al mese, in arrivo",
+        "tagline": "Gestisci il marketing dei clienti, senza starci dietro.",
+        "features": {
+          "workspaces": "10 workspace",
+          "everything": "Tutto quello che c'è in Founder",
+          "windows": "Fasce di pubblicazione e direzione per ogni cliente",
+          "keys": "Chiavi della Content API per ogni sito cliente",
+          "support": "Supporto prioritario"
+        },
+        "cta": "Parliamone"
+      }
+    },
+    "faqTitle": "Prima che tu lo chieda.",
+    "faq": {
+      "post": {
+        "q": "Cosa conta come post?",
+        "a": "Un contenuto pubblicato su un canale. Un post LinkedIn e un articolo del blog nati dalla stessa idea contano come due."
+      },
+      "approve": {
+        "q": "Posso approvare prima che venga pubblicato?",
+        "a": "Sì: disattiva l'Autopilot e tutto resta nella pipeline in attesa della tua revisione. Oppure lascialo attivo e fai fare la revisione al controllo qualità."
+      },
+      "down": {
+        "q": "E se l'AI non funziona?",
+        "a": "Il post aspetta. Contivo non pubblica mai qualcosa che il controllo qualità non ha potuto verificare."
+      }
+    },
+    "closeHeadline": "Per ora non c'è niente da decidere. È <accent>gratis</accent> finché lo dimostriamo.",
+    "closeCta": "Parti dal tuo sito",
+    "closeDocs": "Leggi la documentazione per sviluppatori"
+  },
+  "siteApi": {
+    "meta": {
+      "title": "Content API — Contivo per sviluppatori",
+      "description": "Leggi i post pubblicati su Contivo da qualsiasi stack con una sola GET autenticata. Endpoint, parametri, struttura della risposta, errori, caching e webhook di revalidate."
+    },
+    "title": "Content API",
+    "lede": "Il tuo sito legge i post pubblicati da Contivo con una sola <code>GET</code> autenticata. Nel tuo codice non viene inserito nulla, non c'è nessun plugin e funziona con qualsiasi stack in grado di fare una richiesta HTTP.",
+    "baseLabel": "URL di base",
+    "readOnly": "sola lettura",
+    "contents": "Indice",
+    "toc": {
+      "how-it-works": "Come funziona",
+      "auth": "Autenticazione",
+      "list": "Elenco dei post",
+      "single": "Un singolo post",
+      "post-object": "L'oggetto post",
+      "errors": "Errori",
+      "caching": "Caching e aggiornamento",
+      "revalidate": "Webhook di revalidate",
+      "recipes": "Esempi pratici",
+      "limits": "Limiti e garanzie"
+    },
+    "howItWorks": {
+      "p1": "Contivo scrive e pubblica secondo la programmazione che hai impostato. Quando un post va online riceve uno slug permanente e viene segnato come pubblicato: lì finisce il ruolo di Contivo. È il tuo sito a chiedere i post quando gli servono.",
+      "p2": "Questa direzione è importante: Contivo non ha mai accesso in scrittura al tuo codice, alla tua pipeline di deploy o al tuo CMS. Se disattivi Contivo, il tuo sito continua a mostrare ciò che ha recuperato l'ultima volta."
+    },
+    "auth": {
+      "p1": "Ogni richiesta include una chiave del sito come bearer token. Creala in <link>Connessioni → Siti web</link>. Viene mostrata una sola volta, al momento della creazione, e non si può recuperare: se la perdi, crea una nuova connessione al sito.",
+      "blockLabel": "Ogni richiesta",
+      "p2": "<strong>Tieni la chiave lato server.</strong> Può leggere tutto ciò che questo workspace ha mai pubblicato. Gli endpoint inviano header CORS permissivi, quindi un browser <em>può</em> chiamarli — ma così facendo consegni la tua chiave a ogni visitatore. Fai la richiesta in un server component, in un route handler, in fase di build o dal tuo backend."
+    },
+    "list": {
+      "p1": "Restituisce i post pubblicati del workspace a cui appartiene la chiave, dal più recente.",
+      "head": {
+        "name": "Parametro",
+        "type": "Tipo",
+        "meaning": "Significato"
+      },
+      "limit": "Quanti post restituire. I valori fuori intervallo vengono riportati nei limiti, non rifiutati.",
+      "cursor": "Il nextCursor di una risposta precedente. Omettilo per la prima pagina.",
+      "channel": "Quale canale restituire. Passa \"all\" per includere anche i post social — di solito non li vuoi su un sito.",
+      "responseLabel": "Risposta",
+      "p2": "<code>nextCursor</code> è <code>null</code> quando non ci sono altre pagine. È l'unico segnale affidabile di fine elenco: non fermarti solo perché una pagina è più corta."
+    },
+    "single": {
+      "p1": "Restituisce <shape>post</shape> con lo stesso oggetto visto sopra. Costruisci le route delle tue pagine su <code>slug</code>, mai su <code>id</code>: lo slug viene assegnato una volta sola alla pubblicazione e non cambia mai, ed è questo che mantiene stabili i tuoi URL."
+    },
+    "postObject": {
+      "head": {
+        "name": "Campo",
+        "type": "Tipo",
+        "notes": "Note"
+      },
+      "id": "Identificativo interno stabile. Va bene come key di React, non per gli URL.",
+      "slug": "Sicuro per gli URL, unico per workspace, permanente dal momento della pubblicazione.",
+      "title": "L'argomento del post.",
+      "content": "Il testo completo, in Markdown. Renderizzalo con quello che usi già.",
+      "excerpt": "I primi ~200 caratteri senza Markdown. Per card, elenchi e meta description.",
+      "channel": "Di norma \"blog\". Altri valori solo se hai chiesto channel=all.",
+      "publishedAt": "ISO 8601 UTC.",
+      "updatedAt": "ISO 8601 UTC. Utile per le chiavi di cache, le sitemap e lastmod."
+    },
+    "errors": {
+      "head": {
+        "status": "Stato",
+        "body": "Errore nel body",
+        "meaning": "Cosa significa"
+      },
+      "unauthorized": "Chiave mancante, malformata, sconosciuta o revocata — oppure la connessione al sito non è attiva. Tutti e quattro i casi restituiscono di proposito la stessa risposta, così nessuno può usare questo endpoint per scoprire quali chiavi esistono.",
+      "notFound": "Solo per il singolo post. Nessun post pubblicato con quello slug in questo workspace. Anche uno slug di un altro cliente restituisce 404, mai 403.",
+      "p1": "Un array <code>posts</code> vuoto <em>non</em> è un errore. Significa che la chiave è valida e che su quel canale non è ancora stato pubblicato nulla: l'Autopilot deve pubblicare qualcosa prima che qui compaia qualcosa."
+    },
+    "caching": {
+      "p1": "Le risposte vengono inviate con <code>Cache-Control: no-store</code>, quindi l'API non chiede mai a una CDN o a un browser di conservarle. Il caching lo decidi interamente tu, ed è giusto così: il tuo framework conosce il tuo traffico e quanto puoi tollerare contenuti non aggiornati.",
+      "blockLabel": "Next.js — revalidate ogni cinque minuti",
+      "p2": "Una finestra di cinque minuti è un default sensato. Per aggiornamenti istantanei, abbina un revalidate lungo al webhook qui sotto invece di interrogare l'API più spesso."
+    },
+    "revalidate": {
+      "p1": "Facoltativo. Imposta un URL di revalidate sulla connessione al sito e Contivo lo chiamerà subito dopo ogni pubblicazione, così la tua cache si svuota immediatamente invece che all'intervallo successivo.",
+      "sendsLabel": "Cosa invia Contivo",
+      "routeLabel": "Next.js — app/api/revalidate/route.ts",
+      "p2": "La chiamata va in timeout dopo 8 secondi e il suo stato viene registrato sulla connessione al sito. Un errore viene annotato e non blocca mai la pubblicazione: il post è già online e il tuo sito lo recupererà comunque alla prossima richiesta programmata."
+    },
+    "recipes": {
+      "curl": "Verifica la chiave dal terminale",
+      "paging": "Recupera tutti i post, una pagina alla volta",
+      "ssg": "Generazione di siti statici",
+      "ssgLabel": "Next.js — generateStaticParams",
+      "python": "Python",
+      "php": "PHP / WordPress"
+    },
+    "limits": {
+      "head": {
+        "property": "Proprietà",
+        "value": "Valore",
+        "notes": "Note"
+      },
+      "methods": "Metodi",
+      "methodsValue": "GET, OPTIONS",
+      "methodsNotes": "Sola lettura. Non c'è modo di scrivere contenuti tramite questa API.",
+      "pageSize": "Dimensione pagina",
+      "pageSizeValue": "max 100",
+      "pageSizeNotes": "I valori più alti vengono riportati al massimo, non rifiutati.",
+      "scope": "Ambito",
+      "scopeValue": "un workspace",
+      "scopeNotes": "Una chiave può leggere solo il workspace in cui è stata creata.",
+      "slugs": "Slug",
+      "slugsValue": "permanenti",
+      "slugsNotes": "Assegnati alla pubblicazione, mai riscritti. Sicuri da usare negli URL e nelle sitemap.",
+      "revoking": "Revoca",
+      "revokingValue": "immediata",
+      "revokingNotes": "Eliminando o disattivando una connessione al sito, la sua chiave restituisce 401 già dalla richiesta successiva.",
+      "p1": "Oggi non c'è un rate limit dichiarato. Metti comunque in cache le risposte: un sito che fa una richiesta a ogni visualizzazione di pagina è fragile per motivi suoi, non solo nostri."
+    },
+    "footerNote": "Qualcosa di sbagliato o mancante? Questa pagina è generata dallo stesso codice che serve l'API, quindi ogni discrepanza è un bug da segnalare. Stampa la pagina per salvarla in PDF.",
+    "guide": {
+      "toggleTitle": "Come usare la chiave del sito",
+      "toggleBody": "È il tuo sito a leggere i post da Contivo. Nel tuo codice non viene inserito nulla e non c'è nessun plugin da installare.",
+      "copy": "Copia",
+      "copied": "Copiato",
+      "step1Title": "1 · Salva la chiave come variabile d'ambiente",
+      "step1Body": "Viene mostrata una sola volta, quando la crei. Inseriscila nelle variabili d'ambiente del tuo hosting come <code>CONTIVO_SITE_KEY</code> e mai nel codice lato client: la chiave legge tutto ciò che questo workspace ha pubblicato. L'hai persa? Crea una nuova connessione al sito; le chiavi non si possono recuperare.",
+      "step2Title": "2 · Verifica che funzioni",
+      "step2Label": "Dal terminale",
+      "step3Title": "3 · Mostra l'elenco dei post sul tuo sito",
+      "step3Label": "Next.js App Router — server component",
+      "step3Body": "Funziona con qualsiasi framework: è una sola GET autenticata che restituisce JSON. Chiamala lato server, così la chiave non arriva mai al browser.",
+      "step4Title": "4 · Mostra un singolo post",
+      "step4Label": "Singolo post tramite slug",
+      "fieldsTitle": "Cosa ricevi",
+      "fields": {
+        "id": "Identificativo stabile. Usalo come key di React, non nei tuoi URL.",
+        "slug": "Sicuro per gli URL, assegnato alla pubblicazione e mai più modificato. Basa le route su questo.",
+        "title": "L'argomento del post.",
+        "content": "Il testo completo, in Markdown.",
+        "excerpt": "I primi ~200 caratteri, già ripuliti dal Markdown. Per card e meta description.",
+        "channel": "Sempre \"blog\", a meno che tu non abbia chiesto altri canali.",
+        "publishedAt": "ISO 8601, oppure null se non pubblicato.",
+        "updatedAt": "ISO 8601. Utile per le chiavi di cache e le sitemap."
+      },
+      "pagingTitle": "Più di 100 post",
+      "pagingLabel": "Paginazione con cursore",
+      "troubleTitle": "Quando qualcosa non va",
+      "trouble401": "<c>401</c> — la chiave è sbagliata, è stata revocata oppure la connessione al sito non è attiva. Controlla lo stato qui sopra.",
+      "trouble404": "<c>404</c> su un singolo post — quello slug non è pubblicato. Gli slug vengono assegnati alla pubblicazione, non quando viene scritta la bozza.",
+      "troubleEmpty": "<c>posts: []</c> — la chiave è a posto, ma sul canale blog non è ancora stato pubblicato nulla. L'Autopilot deve pubblicare prima che qui compaia qualcosa.",
+      "revalidateNote": "Facoltativo: imposta un URL di revalidate sulla connessione al sito e Contivo lo chiamerà dopo ogni pubblicazione, così la tua cache si aggiorna subito invece che all'intervallo successivo.",
+      "fullReference": "Riferimento completo dell'API — ogni parametro, campo ed errore"
+    }
+  }
+}

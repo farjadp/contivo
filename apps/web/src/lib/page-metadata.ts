@@ -3,7 +3,7 @@ import { routing } from '@/i18n/routing';
 /**
  * hreflang and canonical for one public page.
  *
- * The root layout declares alternates for `/en` and `/fa` only. A child page
+ * The root layout declares alternates for the locale roots only. A child page
  * that does not override them inherits those, which tells Google that the
  * Persian version of /en/privacy is the Persian *homepage*. Every public page
  * passes its own path through here instead.
@@ -16,6 +16,7 @@ export function pageAlternates(locale: string, path: string) {
     languages: {
       en: `/en${path}`,
       fa: `/fa${path}`,
+      it: `/it${path}`,
       'x-default': `/${routing.defaultLocale}${path}`,
     },
   };

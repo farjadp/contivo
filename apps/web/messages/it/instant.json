@@ -1,0 +1,48 @@
+{
+  "instant": {
+    "meta": { "title": "Contenuti istantanei — Contivo" },
+    "title": "Contenuti istantanei",
+    "subtitle": "Inserisci un argomento e un canale. Ottieni contenuti pronti da pubblicare in pochi secondi.",
+    "form": {
+      "channel": "Canale",
+      "topic": "Argomento",
+      "topicPlaceholder": "es. Perché i founder B2B dovrebbero investire nella thought leadership prima di assumere un team marketing",
+      "tone": "Tono",
+      "generating": "Generazione in corso…",
+      "generate": "Genera contenuto",
+      "unexpectedError": "Qualcosa è andato storto. Riprova."
+    },
+    "channels": {
+      "linkedin": "Post",
+      "twitter": "Thread",
+      "instagram": "Didascalia",
+      "email": "Bozza",
+      "blog": "Scaletta"
+    },
+    "channelNames": {
+      "email": "Email",
+      "blog": "Blog"
+    },
+    "tones": {
+      "professional": "Professionale",
+      "friendly": "Amichevole",
+      "bold": "Audace",
+      "educational": "Divulgativo",
+      "persuasive": "Persuasivo"
+    },
+    "result": {
+      "linkedin": "Post LinkedIn",
+      "twitter": "Thread su X",
+      "instagram": "Didascalia Instagram",
+      "email": "Bozza email",
+      "blog": "Scaletta del blog",
+      "copy": "Copia",
+      "copied": "Copiato!",
+      "new": "Nuovo",
+      "regenerate": "Genera di nuovo",
+      "topicLabel": "Argomento: ",
+      "creditsUsed": "{count, plural, one {# credito usato} other {# crediti usati}}",
+      "creditsRemaining": "{count, number} rimanenti"
+    }
+  }
+}

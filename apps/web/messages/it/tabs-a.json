@@ -1,0 +1,346 @@
+{
+  "tabsA": {
+    "common": {
+      "attachFiles": "Allega file (PDF/TXT/MD/CSV/JSON)",
+      "maxFiles": "Max {count, number}",
+      "extracting": "Estrazione del testo dai file allegati...",
+      "tokensApprox": "Circa {count, number} token estratti",
+      "remove": "Rimuovi",
+      "cancel": "Annulla",
+      "date": "Data",
+      "time": "Ora",
+      "timezone": "Fuso orario"
+    },
+    "channels": {
+      "linkedin": "LinkedIn",
+      "twitter": "X (Twitter)",
+      "instagram": "Instagram",
+      "blog": "Blog",
+      "email": "Email"
+    },
+    "goals": {
+      "authority": "Autorevolezza",
+      "awareness": "Notorietà",
+      "engagement": "Engagement",
+      "leads": "Lead",
+      "education": "Formazione",
+      "conversion": "Conversione",
+      "strategic_education": "Formazione strategica",
+      "decision_support": "Supporto alle decisioni"
+    },
+    "platforms": {
+      "linkedin": "LinkedIn",
+      "x": "X / Twitter",
+      "blog": "Blog",
+      "email": "Email",
+      "landing_page": "Landing page",
+      "ad": "Testo pubblicitario",
+      "strategy_note": "Nota strategica"
+    },
+    "funnel": {
+      "AUTO": "Auto",
+      "TOFU": "TOFU",
+      "MOFU": "MOFU",
+      "BOFU": "BOFU"
+    },
+    "frameworks": {
+      "hook_value_cta": "Hook → Valore → CTA",
+      "problem_cause_solution": "Problema → Causa → Soluzione",
+      "what_why_how": "Cosa → Perché → Come",
+      "opinion_reason_example": "Opinione forte → Motivo → Esempio",
+      "aida": "AIDA",
+      "insight_implication_action": "Insight → Implicazione → Azione"
+    },
+    "wordCountPlatforms": {
+      "blog": "Blog / Articolo",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "Email",
+      "instagram": "Instagram"
+    },
+    "timezones": {
+      "America/Toronto": "Ora della costa orientale (ET)",
+      "America/Los_Angeles": "Ora del Pacifico (PT)",
+      "Europe/London": "Londra (GMT)"
+    },
+    "contentStatus": {
+      "DRAFT": "BOZZA",
+      "GENERATED": "GENERATO",
+      "READY": "PRONTO",
+      "SCHEDULED": "PROGRAMMATO",
+      "PUBLISHED": "PUBBLICATO",
+      "FAILED": "NON RIUSCITO"
+    },
+    "autopilot": {
+      "agents": {
+        "title": "Agenti",
+        "body": "Ogni agente svolge un solo compito, con cadenza, canali e indicazioni propri. Condividono le informazioni del workspace e non occupano mai due volte lo stesso slot.",
+        "new": "Nuovo agente",
+        "on": "Attivo",
+        "off": "Disattivo",
+        "postsPerWeek": "{count, number}/settimana",
+        "noChannel": "nessun canale",
+        "lastRun": "ultima esecuzione {date}",
+        "created": "{name} creato. Controlla le impostazioni, poi attivalo.",
+        "recipesTitle": "Parti da un modello"
+      },
+      "recipes": {
+        "requiresSite": "serve un sito web",
+        "requiresSocial": "serve un account social",
+        "requiresEither": "qualsiasi canale",
+        "linkedin_voice": {
+          "name": "Voce su LinkedIn",
+          "tagline": "Post brevi e decisi con la tua voce, qualche volta a settimana."
+        },
+        "blog_writer": {
+          "name": "Autore del blog",
+          "tagline": "Articoli lunghi pubblicati direttamente sul tuo sito."
+        },
+        "thought_leader": {
+          "name": "Thought leader",
+          "tagline": "Meno post, tesi più forti, pensati per il tuo cliente ideale."
+        },
+        "product_updates": {
+          "name": "Prodotti e offerte",
+          "tagline": "Trasforma ciò che vendi in un ritmo costante di contenuti."
+        },
+        "custom": {
+          "name": "Agente personalizzato",
+          "tagline": "Parti da zero e regola tu ogni parametro."
+        }
+      },
+      "status": {
+        "defaultName": "Autopilot",
+        "body": "Quando è attivo, Contivo trova le idee, scrive le bozze e programma i post per te con una cadenza regolare, senza clic. La pubblicazione avviene in automatico all'arrivo di ogni slot.",
+        "label": "Stato:",
+        "on": "ATTIVO",
+        "off": "DISATTIVO",
+        "lastRun": "Ultima esecuzione: {date}",
+        "nextRun": "Prossima esecuzione: {date}"
+      },
+      "actions": {
+        "runNow": "Esegui ora",
+        "running": "In esecuzione…",
+        "runNowTitle": "Esegui subito un ciclo",
+        "runDisabledTitle": "Prima attiva e salva",
+        "save": "Salva",
+        "saving": "Salvataggio…"
+      },
+      "messages": {
+        "savedOn": "Autopilot è ATTIVO. Il prossimo ciclo programmato riempirà la tua coda.",
+        "savedOff": "Impostazioni di Autopilot salvate (al momento disattivo).",
+        "runResult": "Esecuzione {status}: {scheduled, number} programmati, {skipped, number} saltati.",
+        "runResultWithReason": "Esecuzione {status}: {scheduled, number} programmati, {skipped, number} saltati — {reason}."
+      },
+      "warnings": {
+        "ideation": "Questo workspace non può ancora generare idee. Autopilot ha bisogno di Brand Memory, Market Matrices e Competitor Keywords: completa prima queste schede. Fino ad allora le esecuzioni verranno saltate.",
+        "channels": "Nessuno dei canali selezionati può ancora pubblicare. I canali social richiedono un account predefinito collegato e il Blog richiede un sito web: configurali nella pagina <link>Connessioni</link>, altrimenti Autopilot salterà ogni esecuzione."
+      },
+      "form": {
+        "enable": "Attiva Autopilot per questo workspace",
+        "postsPerWeek": "Post a settimana",
+        "postsPerWeekHint": "Autopilot mantiene i prossimi 7 giorni pieni fino a questo numero.",
+        "timezone": "Fuso orario",
+        "timezoneHint": "Nome IANA. Fascia oraria e giorni di pubblicazione si riferiscono a questo fuso.",
+        "channels": "Canali",
+        "channelsHint": "Pallino verde = quel canale può davvero pubblicare (account social o sito web collegato).",
+        "publishDays": "Giorni di pubblicazione",
+        "window": "Fascia di pubblicazione (ore locali)",
+        "windowTo": "alle",
+        "windowHint": "es. dalle 9 alle 18 = i post escono tra le 09:00 e le 17:59.",
+        "goal": "Obiettivo principale",
+        "storylines": "Quali storyline porta avanti questo agente",
+        "storylinesHint": "Tutte, se non restringi la scelta. L'agente ruota tra quelle selezionate, così la stessa tesi non si ripete settimana dopo settimana.",
+        "themes": "Punta su questi temi",
+        "themesPlaceholder": "es. adozione dell'AI nelle PMI, lezioni da founder, novità di prodotto",
+        "themesHint": "Separati da virgola o a capo. Vengono passati all'AI come indicazioni.",
+        "avoid": "Non scrivere mai di",
+        "avoidPlaceholder": "es. prezzi, politica, nomi dei concorrenti",
+        "avoidHint": "Le idee il cui argomento contiene una di queste frasi vengono scartate."
+      },
+      "channelDot": {
+        "ready": "Pronto a pubblicare",
+        "noSite": "Nessuna connessione al sito attiva",
+        "noAccount": "Nessun account predefinito collegato"
+      },
+      "days": {
+        "0": "Dom",
+        "1": "Lun",
+        "2": "Mar",
+        "3": "Mer",
+        "4": "Gio",
+        "5": "Ven",
+        "6": "Sab"
+      },
+      "narrative": {
+        "title": "Questo agente pubblica senza una narrativa.",
+        "body": "Funziona lo stesso e qui non c'è nulla di bloccato. Ma i suoi post non convergono verso nulla, quindi nell'arco di un mese non costruiranno niente.",
+        "cta": "Dagli una posizione"
+      },
+      "runs": {
+        "title": "Cronologia esecuzioni",
+        "count": "Le {count, number} più recenti",
+        "empty": "Ancora nessuna esecuzione. Attiva Autopilot e salva, oppure clicca Esegui ora.",
+        "via": "tramite {trigger}",
+        "ideas": "{count, number} idee",
+        "scheduled": "{count, number} programmati",
+        "skipped": "{count, number} saltati"
+      },
+      "runStatus": {
+        "SUCCEEDED": "RIUSCITA",
+        "PARTIAL": "PARZIALE",
+        "FAILED": "NON RIUSCITA",
+        "RUNNING": "IN CORSO",
+        "QUEUED": "IN CODA",
+        "SKIPPED": "SALTATA"
+      },
+      "runStatusLower": {
+        "SUCCEEDED": "riuscita",
+        "PARTIAL": "parziale",
+        "FAILED": "non riuscita",
+        "RUNNING": "in corso",
+        "QUEUED": "in coda",
+        "SKIPPED": "saltata"
+      }
+    },
+    "ideation": {
+      "title": "Ideation Station",
+      "lede": "Genera idee di contenuto efficaci, su misura per il tuo pubblico e i pilastri del tuo brand. Usiamo sempre Brand Memory, Market Metric e Competitor Keywords come contesto obbligatorio.",
+      "requiredInputs": "Input richiesti per l'ideazione: Brand Memory + Market Metric + Competitor Keywords.",
+      "targetWords": "Parole obiettivo: {count, number} (intervallo {platform} {min, number}-{max, number})",
+      "goalOption": "Obiettivo: {label}",
+      "platformOption": "Piattaforma: {label}",
+      "funnelOption": "Funnel: {label}",
+      "frameworkAuto": "Framework: Auto",
+      "frameworkManual": "Framework: Manuale",
+      "ideasLabel": "Idee",
+      "wordsLabel": "Parole",
+      "needImagesLabel": "Servono immagini",
+      "imagesLabel": "Immagini",
+      "autoCalendarLabel": "Calendario automatico",
+      "generationPath": "Modalità di generazione",
+      "directGenerate": "Generazione diretta",
+      "sourceFormGenerate": "Genera da una fonte",
+      "sourcePlaceholder": "Incolla appunti, sintesi di un documento, script o idee chiave...",
+      "sourceNote": "Questa fonte vale per tutte le anteprime generate in questa sessione di ideazione.",
+      "directNote": "Modalità diretta: genera idee di contenuto senza fornire una fonte manuale.",
+      "generateCta": "{count, plural, one {Genera # idea di contenuto} other {Genera # idee di contenuto}}",
+      "brainstorming": "Brainstorming con l'AI...",
+      "selectedFramework": "Framework selezionato",
+      "overallScore": "Punteggio complessivo: {score}/10",
+      "fallbackApplied": "Fallback applicato",
+      "imagesBadge": "Immagini: {count, number} (la 1ª è la copertina)",
+      "imagesBadgeNone": "Immagini: No",
+      "calendarAuto": "Calendario: inserimento automatico (mock)",
+      "calendarManual": "Calendario: manuale",
+      "wordsBadge": "Parole: {count, number}",
+      "freshIdeas": "Nuove idee generate",
+      "freshIdeasCount": "({count, number})",
+      "formatFallback": "Articolo",
+      "pillarFallback": "Generale",
+      "imagesCount": "{count, number} immagini",
+      "wordsCount": "{count, number} parole",
+      "generatePreview": "Genera anteprima",
+      "generatingPreview": "Generazione anteprima...",
+      "addToPipeline": "Aggiungi alla pipeline",
+      "addedToPipeline": "Aggiunto alla pipeline",
+      "contentPreview": "Anteprima contenuto",
+      "closePreview": "Chiudi anteprima",
+      "channelFallback": "Contenuto",
+      "noPreview": "Nessuna anteprima ancora disponibile.",
+      "errors": {
+        "unexpected": "Si è verificato un errore imprevisto durante il brainstorming.",
+        "previewFailed": "Impossibile generare l'anteprima.",
+        "maxFiles": "Puoi allegare fino a {count, number} file.",
+        "readFailed": "Impossibile leggere \"{name}\". Usa file PDF/TXT/MD/CSV/JSON oppure incolla il testo a mano."
+      }
+    },
+    "pipeline": {
+      "empty": {
+        "title": "La tua pipeline è vuota",
+        "body": "Non hai ancora generato contenuti per questo brand. Vai alla Ideation Station per iniziare.",
+        "cta": "Vai all'ideazione"
+      },
+      "wordsTarget": "Obiettivo: {count, number} parole",
+      "previewLabel": "Anteprima",
+      "publishAt": "Pubblicazione: {date} {time}",
+      "quickSchedule": {
+        "title": "Programmazione rapida",
+        "saving": "Salvataggio...",
+        "publish": "Pubblica",
+        "note": "Per impostazione predefinita la pubblicazione avviene {hours, number} ore dopo la generazione.",
+        "noteDraft": "Genera ora per applicare in automatico questa programmazione.",
+        "noteReady": "Puoi modificarla qui con un clic."
+      },
+      "source": {
+        "refineTitle": "Perfeziona con una tua fonte",
+        "useTitle": "Usa una tua fonte",
+        "hide": "Nascondi",
+        "addContext": "Aggiungi contesto",
+        "wordCount": "Numero di parole ({platform} {min, number}-{max, number})",
+        "placeholder": "Incolla appunti, idee grezze, trascrizioni o punti chiave...",
+        "note": "La generazione darà priorità ai tuoi appunti, al testo dei file allegati e al numero di parole indicato."
+      },
+      "actions": {
+        "generate": "Genera, programma e visualizza",
+        "edit": "Modifica",
+        "approve": "Approva concept",
+        "reschedule": "Riprogramma",
+        "publish": "Pubblica"
+      },
+      "editor": {
+        "eyebrow": "Modifica e programma il post",
+        "close": "Chiudi anteprima",
+        "draftLabel": "Bozza del contenuto",
+        "scheduleTitle": "Programmazione",
+        "dateOptional": "Data (facoltativa)",
+        "timeOptional": "Ora (facoltativa)",
+        "blankNote": "Lascia vuote data e ora per salvarlo semplicemente come \"Pronto\", oppure compilale per segnare in automatico il post come \"Programmato\".",
+        "save": "Salva modifiche"
+      },
+      "scheduleModal": {
+        "title": "Programma contenuto",
+        "confirm": "Conferma programmazione"
+      },
+      "errors": {
+        "maxFiles": "Puoi allegare fino a {count, number} file.",
+        "readFailed": "Impossibile leggere \"{name}\". Usa file PDF/TXT/MD/CSV/JSON oppure incolla il testo a mano."
+      }
+    },
+    "calendar": {
+      "title": "Calendario dei contenuti",
+      "subtitle": "Programmazione e timeline",
+      "weekView": "Settimana",
+      "listView": "Elenco",
+      "loadError": "Impossibile caricare gli elementi del calendario",
+      "emptyTitle": "Il tuo calendario è vuoto",
+      "emptyBody": "Genera nuovi contenuti dalla Ideation Station e programmali per riempire la tua timeline.",
+      "unscheduled": "Non programmati",
+      "noTime": "Senza orario",
+      "dayEmpty": "Vuoto"
+    },
+    "brandMemory": {
+      "badge": "Brand Memory",
+      "title": "Fondamenta del brand e base di conoscenza",
+      "body": "Questa sezione mantiene stabile il contesto del tuo brand in strategia, contenuti e design. L'AI prepara la prima versione partendo dal tuo sito, poi il tuo team la conferma e la migliora.",
+      "assetsCount": "{count, number} asset",
+      "pendingCount": "{count, number} da revisionare",
+      "approvedCount": "{count, number} approvati",
+      "businessSummary": "Sintesi dell'attività",
+      "valueProposition": "Proposta di valore",
+      "audienceClarity": "Chiarezza sul pubblico",
+      "ready": "Pronto",
+      "needsReview": "Da revisionare",
+      "noSummary": "Nessuna sintesi disponibile.",
+      "noValueProposition": "Nessuna proposta di valore definita.",
+      "targetAudience": "Pubblico di riferimento",
+      "personaFallback": "Pubblico generico",
+      "noAudience": "Nessun dettaglio sul pubblico.",
+      "brandTone": "Tono del brand",
+      "toneNotSpecified": "Non specificato",
+      "pillarsTitle": "Pilastri dei contenuti",
+      "pillarLabel": "Pilastro {index, number}",
+      "noPillars": "Nessun pilastro definito."
+    }
+  }
+}

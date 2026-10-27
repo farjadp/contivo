@@ -1,0 +1,254 @@
+{
+  "meta": {
+    "title": "Contivo — Il marketing in autopilot",
+    "description": "Contivo trasforma il tuo sito in memoria del brand, analisi della concorrenza e un autopilot per la pubblicazione: scrive, revisiona e pubblica al posto tuo, con i tempi che decidi tu."
+  },
+  "nav": {
+    "refusal": "Il rifiuto",
+    "intelligence": "Intelligence",
+    "autopilot": "Autopilot",
+    "pricing": "Prezzi",
+    "signIn": "Accedi",
+    "startFree": "Inizia gratis",
+    "features": "Funzionalità"
+  },
+  "localeSwitcher": {
+    "label": "Lingua",
+    "en": "English",
+    "fa": "فارسی",
+    "it": "Italiano"
+  },
+  "intake": {
+    "label": "Parti dall'unica cosa che gli serve",
+    "placeholder": "la-tua-azienda.it",
+    "submit": "Leggi il mio sito",
+    "submitting": "Apertura…",
+    "errorEmpty": "Scrivi l'indirizzo del sito da leggere.",
+    "errorInvalid": "Questo non sembra l'indirizzo di un sito."
+  },
+  "home": {
+    "actOne": {
+      "headline": "Dagli il tuo sito. <accent>Tieniti</accent> il resto della giornata.",
+      "body": "Contivo legge il tuo sito e ne ricava una memoria del brand, mappa i concorrenti che hai davvero e capisce quali keyword lasciano scoperte. Solo allora scrive — e solo ciò che supera un controllo qualità pensato per bocciarlo.",
+      "evidence": {
+        "readTime": "Tempo per leggere un sito",
+        "readTimeValue": "≈ 20 sec",
+        "readCost": "Costo AI di quella lettura",
+        "readCostValue": "$0.03",
+        "competitors": "Concorrenti mappati",
+        "competitorsValue": "5 tenuti su 9",
+        "charts": "Grafici di posizionamento creati",
+        "chartsValue": "5",
+        "note": "Misurato su un workspace di esempio, creato da un sito pubblico mentre scrivevamo questa pagina. Contivo non ha ancora clienti: l'unico utilizzo reale è quello del suo fondatore."
+      }
+    },
+    "reel": {
+      "headline": "Tutto il ciclo, in ventidue secondi.",
+      "body": "Come un solo URL diventa una memoria del brand, una mappa del mercato, un rifiuto e una settimana di post che si sono pubblicati da soli.",
+      "videoAlt": "Animazione che mostra Contivo: l'indirizzo di un sito viene letto e trasformato in memoria del brand, i concorrenti compaiono su un grafico di posizionamento, l'ideazione resta bloccata finché l'analisi non è pronta, una bozza supera il controllo qualità e una settimana si riempie di post programmati.",
+      "caption": "Un'animazione esplicativa, non una registrazione dello schermo: gli screenshot più in basso sono il prodotto vero. Senza audio.",
+      "reducedNote": "In pausa perché il tuo sistema richiede animazioni ridotte.",
+      "play": "Riproduci",
+      "pause": "Pausa"
+    },
+    "intelligence": {
+      "headline": "Quasi tutti i tool partono da un prompt vuoto. <accent>Ecco</accent> perché sembrano scritti così.",
+      "brandTitle": "Il tuo brand, raccontato a te",
+      "brandBody": "Incolla un URL. Contivo estrae la descrizione dell'attività, la proposta di valore, il pubblico a cui ti rivolgi davvero e il tono con cui scrivi — e ti lascia correggere tutto. Ogni bozza successiva nasce da qui, non dal tuo prompt.",
+      "brandAlt": "La schermata Memoria del brand di Contivo con descrizione dell'attività, proposta di valore, persona del pubblico target e tag del tono di voce estratti dal sito.",
+      "marketTitle": "Il mercato, con te dentro",
+      "marketBody": "Trova i concorrenti della tua dimensione, verifica che esistano e ti lascia scartare quelli che non lo sono davvero. Chi resta viene valutato su grafici di posizionamento costruiti per il tuo mercato — e tu sei lì in mezzo, su un grafico, non descritto in un paragrafo.",
+      "marketAlt": "Il grafico del panorama competitivo di Contivo, che colloca il brand del cliente tra i concorrenti trovati in base alla dimensione del pubblico e alla complessità del prodotto."
+    },
+    "actTwo": {
+      "headline": "<accent>Per ora</accent> non scrive.",
+      "body": "L'ideazione resta bloccata finché non esiste l'analisi su cui si basa. Non puoi convincerlo a saltarla, e nemmeno il modello può. È proprio per questo che vale la pena leggere quello che produce.",
+      "chainAlt": "La sequenza di configurazione di un workspace reale in Contivo: memoria del brand, mappa del mercato, keyword dei concorrenti e un canale di pubblicazione completati; il passo successivo è decidere cosa rappresenta il brand.",
+      "chainCaption": "La sequenza vera, nel prodotto vero. Ogni passo si sblocca solo dopo che il precedente è stato completato.",
+      "checksTitle": "Controlli che non si discutono",
+      "checks": {
+        "limits": "I limiti di ogni piattaforma e il numero di parole che hai scelto",
+        "scaffolding": "Residui di template, segnaposto, “come intelligenza artificiale…”",
+        "blocklist": "Gli argomenti che hai vietato, nel testo e non solo nel titolo",
+        "duplicates": "Quasi-doppioni di qualsiasi cosa già pubblicata"
+      },
+      "judgeTitle": "Un giudice con diritto di veto",
+      "judge": {
+        "scores": "Dà un voto da uno a dieci a coerenza con il brand, affidabilità dei fatti e chiarezza",
+        "strictest": "L'affidabilità dei fatti ha la soglia più severa delle tre",
+        "vetoes": "Blocca statistiche inventate, studi citati per nome e aneddoti sui clienti",
+        "held": "Entrambi i provider fuori uso? Il post resta in attesa. Mai pubblicato senza revisione."
+      }
+    },
+    "actThree": {
+      "headline": "Poi scrive, e <accent>pubblica</accent>.",
+      "body": "Tu scegli la frequenza, i canali e le fasce orarie in cui può pubblicare. Lui tiene piena la settimana successiva, distribuisce i post nella tua fascia, evita di ripetersi e riprova quando la coda si svuota. Nessuno deve approvare niente, a meno che tu non lo voglia.",
+      "cadence": "Frequenza",
+      "cadenceValue": "Da 1 a 14 post a settimana, sempre pieni per i 7 giorni successivi",
+      "channels": "Canali",
+      "channelsValue": "LinkedIn · X · il tuo sito",
+      "window": "Fascia oraria",
+      "windowValue": "I giorni e gli orari locali che scegli tu",
+      "steering": "Direzione",
+      "steeringValue": "Un obiettivo, temi su cui puntare, argomenti da non toccare mai",
+      "postAlt": "La pipeline di un workspace reale in Contivo: post LinkedIn scritti da Contivo, due pubblicati e uno in bozza con la sua programmazione, ciascuno con il proprio obiettivo di parole.",
+      "postCaption": "La pipeline di un workspace reale, catturata per questa pagina."
+    },
+    "channels": {
+      "headline": "Social tramite OAuth. Il tuo sito con una sola chiave.",
+      "body": "Collega LinkedIn o X una volta sola e Contivo pubblica per conto tuo. Per il tuo sito — qualsiasi stack, qualsiasi hosting — ricevi una chiave API ed è il tuo sito a leggere i post. Nel tuo codice non viene mai inserito nulla e non c'è alcun plugin da installare. Instagram, Facebook e TikTok non sono ancora collegati: ognuno richiede prima la revisione dell'app da parte della piattaforma.",
+      "connect": "Collega",
+      "connectBody": "Un passaggio OAuth per ogni social, oppure una chiave per il tuo sito.",
+      "schedule": "Programma",
+      "scheduleBody": "Contivo sceglie gli slot dentro la fascia che hai autorizzato.",
+      "publish": "Pubblica",
+      "publishBody": "Uno scheduler parte ogni minuto e pubblica ciò che è in scadenza.",
+      "record": "Registra",
+      "recordBody": "Ogni esecuzione viene registrata passo per passo, compreso ciò che ha scartato."
+    },
+    "close": {
+      "headline": "Incolla un URL e torna al tuo <accent>lavoro</accent>.",
+      "body": "In meno di un minuto hai una memoria del brand e una mappa della concorrenza. Da lì la coda si riempie da sola, e l'unica cosa che non farà mai è pubblicare qualcosa che non può sostenere.",
+      "cta": "Crea il tuo workspace",
+      "pricing": "Vedi i prezzi"
+    },
+    "loop": {
+      "title": "Il ciclo",
+      "sub": "ogni settimana, da solo",
+      "position": "{n} di 06",
+      "tabsLabel": "Fasi del ciclo",
+      "stages": {
+        "know": {
+          "name": "Conosci",
+          "short": "memoria del brand",
+          "title": "Il tuo brand, raccontato a te.",
+          "body": "Descrizione dell'attività, proposta di valore, pubblico e tono, estratti dal tuo sito — e tutto correggibile da te."
+        },
+        "watch": {
+          "name": "Osserva",
+          "short": "mappa del mercato",
+          "title": "Il mercato, con te dentro.",
+          "body": "Concorrenti della tua dimensione, verificati, valutati su grafici di posizionamento costruiti per il tuo mercato, con te in mezzo a loro."
+        },
+        "think": {
+          "name": "Rifletti",
+          "short": "bloccato fino a 01–02",
+          "title": "Per ora non scrive.",
+          "body": "L'ideazione resta bloccata finché non esiste l'analisi su cui si basa. Né tu né il modello potete saltarla."
+        },
+        "make": {
+          "name": "Crea",
+          "short": "bozze che superano il controllo",
+          "title": "Poi scrive.",
+          "body": "Solo ciò che supera un controllo qualità pensato per bocciarlo: prima i controlli rigidi, poi un giudice con diritto di veto."
+        },
+        "ship": {
+          "name": "Pubblica",
+          "short": "i tuoi canali",
+          "title": "E pubblica.",
+          "body": "Da 1 a 14 post a settimana, nei giorni e negli orari che consenti, su LinkedIn, X o il tuo sito."
+        },
+        "learn": {
+          "name": "Impara",
+          "short": "ogni esecuzione registrata",
+          "title": "Ogni esecuzione, nero su bianco.",
+          "body": "Ogni esecuzione viene registrata passo per passo, compreso ciò che ha scartato."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Cosa succede quando premi Leggi · ≈ 20 sec",
+      "read": "Lettura delle tue pagine",
+      "memory": "Scrittura della memoria del brand",
+      "competitors": "Ricerca dei concorrenti della tua dimensione",
+      "charts": "Valutazione sui grafici di posizionamento"
+    },
+    "tryIt": {
+      "label": "Provalo",
+      "button": "Fagli scrivere un post adesso",
+      "attempts": "{count, plural, =0 {Non ancora premuto} one {Premuto una volta · ancora bloccato} other {Premuto # volte · ancora bloccato}}",
+      "lines": {
+        "0": "Premilo. È il pulsante che ogni altro tool ti mette davanti per primo.",
+        "1": "Bloccato. Le idee hanno bisogno delle keyword dei concorrenti, e il passo 03 non è ancora stato eseguito.",
+        "2": "Ancora bloccato. Chiederlo di nuovo non crea l'analisi che manca.",
+        "3": "Il modello riceve la tua stessa risposta. Non esiste un prompt che apra questa porta.",
+        "4": "Completa il passo 03 — Keyword — e l'ideazione si sblocca da sola."
+      },
+      "chain": {
+        "brand": "Memoria del brand",
+        "market": "Mappa del mercato",
+        "keywords": "Keyword",
+        "ideas": "Idee",
+        "channel": "Canale",
+        "autopilot": "Autopilot",
+        "done": "fatto",
+        "next": "prossimo",
+        "locked": "bloccato"
+      }
+    },
+    "cadence": {
+      "label": "Prova una frequenza",
+      "value": "{count, plural, one {# post a settimana} other {# post a settimana}}",
+      "caption": "Distribuiti nella tua fascia oraria, mai due volte di fila la stessa idea."
+    },
+    "log": {
+      "title": "Registro esecuzione · esempio",
+      "replay": "Rivedi",
+      "rows": {
+        "r1": {
+          "kind": "Piano",
+          "text": "La settimana ha 3 slot liberi nella tua fascia"
+        },
+        "r2": {
+          "kind": "Bozza",
+          "text": "LinkedIn, da una delle tue linee narrative"
+        },
+        "r3": {
+          "kind": "Scartato",
+          "text": "Veto del giudice: citava uno studio che non esiste"
+        },
+        "r4": {
+          "kind": "Bozza",
+          "text": "Riscritto senza quell'affermazione"
+        },
+        "r5": {
+          "kind": "Approvato",
+          "text": "Coerenza con il brand, affidabilità e chiarezza sopra la soglia"
+        },
+        "r6": {
+          "kind": "Programmato",
+          "text": "Giovedì, dentro la tua fascia di pubblicazione"
+        }
+      }
+    },
+    "chapters": {
+      "thinkLabel": "Rifletti — e rifiuta",
+      "makeShip": "Crea · Pubblica"
+    }
+  },
+  "footer": {
+    "blurb": "Legge il tuo sito e ne ricava una memoria del brand e una mappa della concorrenza, poi scrive, revisiona e pubblica con i tempi che decidi tu.",
+    "provenance": "Costruito e usato prima di tutto sui siti del suo fondatore. Non abbiamo ancora clienti da citare, quindi qui niente fa credere il contrario.",
+    "productTitle": "Il prodotto",
+    "intelligence": "Intelligence",
+    "qualityGate": "Il controllo qualità",
+    "autopilot": "Autopilot",
+    "pricing": "Prezzi",
+    "publishesTitle": "Pubblica su",
+    "ownSite": "Il tuo sito",
+    "accountTitle": "Account",
+    "signIn": "Accedi",
+    "createWorkspace": "Crea un workspace",
+    "copyright": "© {year} Contivo",
+    "companyTitle": "Azienda",
+    "about": "Chi siamo",
+    "contact": "Contatti",
+    "privacy": "Privacy",
+    "terms": "Termini",
+    "socialSoon": "Instagram · TikTok · Facebook",
+    "soon": "In arrivo",
+    "writeTo": "Scrivi a una persona vera",
+    "navLabel": "Sito",
+    "features": "Funzionalità"
+  }
+}

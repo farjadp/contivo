@@ -47,7 +47,10 @@ export function asContentLanguage(value: unknown): ContentLanguage {
   return value === 'FA' || value === 'EN' ? value : DEFAULT_CONTENT_LANGUAGE;
 }
 
-/** Maps a UI locale to the language a workspace created from it should write in. */
+/**
+ * Maps a UI locale to the language a workspace created from it should write in.
+ * Italian has no content language yet, so it maps to English.
+ */
 export function contentLanguageForLocale(locale: string): ContentLanguage {
   return locale === 'fa' ? 'FA' : DEFAULT_CONTENT_LANGUAGE;
 }

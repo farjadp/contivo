@@ -1,0 +1,221 @@
+{
+  "features": {
+    "meta": {
+      "title": "Funzionalità — Contivo",
+      "description": "Tutto quello che fa Contivo, fase per fase: memoria del brand, mappa della concorrenza, una narrazione, bozze che superano un controllo qualità e pubblicazione sui tuoi canali."
+    },
+    "headline": "Tutto quello che ottieni, e <accent>a cosa ti serve</accent>.",
+    "intro": "{count, number} cose che fa Contivo, nell'ordine in cui le incontri. Per ognuna trovi cosa fa e cosa ti resta in mano. Ciò che non è ancora pronto è indicato chiaramente.",
+    "jumpLabel": "Vai a una fase",
+    "soon": "In arrivo",
+    "youGet": "Ottieni:",
+    "stages": {
+      "know": {
+        "title": "Si parte dal tuo sito.",
+        "body": "Un solo URL. Contivo lo legge e costruisce la memoria da cui nasce tutto ciò che scriverà dopo.",
+        "alt": "La scheda Memoria del brand in Contivo: descrizione dell'attività, proposta di valore, persona del pubblico target e tag del tono di voce, estratti da un sito."
+      },
+      "watch": {
+        "title": "Poi mappa il mercato.",
+        "body": "Concorrenti della tua dimensione, verificati, valutati — e tu sullo stesso grafico insieme a loro.",
+        "alt": "Un grafico del panorama competitivo in Contivo che colloca un brand accanto ai concorrenti trovati, in base alla dimensione del pubblico e alla complessità del prodotto."
+      },
+      "think": {
+        "title": "Poi si rifiuta di scrivere.",
+        "body": "L'ideazione resta bloccata finché non esiste l'analisi su cui si basa. È proprio questo rifiuto a rendere i contenuti degni di essere letti.",
+        "alt": "La sequenza di configurazione di un workspace reale in Contivo: memoria del brand, mappa del mercato, keyword dei concorrenti e un canale di pubblicazione, tutti completati."
+      },
+      "make": {
+        "title": "Poi scrive.",
+        "body": "Bozze con la tua voce, sottoposte a un controllo pensato per bocciarle.",
+        "alt": "La pipeline dei contenuti di un workspace reale in Contivo: post LinkedIn scritti da Contivo, due pubblicati e una bozza con il suo orario programmato."
+      },
+      "ship": {
+        "title": "E pubblica.",
+        "body": "I tuoi canali, i tuoi orari, il tuo ritmo — e niente esce senza revisione."
+      },
+      "learn": {
+        "title": "E mostra come ci è arrivato.",
+        "body": "Ogni esecuzione, ogni rifiuto e ogni numero restano registrati, così capisci se una settimana è andata bene per merito o per fortuna."
+      }
+    },
+    "items": {
+      "brandMemory": {
+        "name": "Memoria del brand",
+        "body": "Incolla il tuo indirizzo. Contivo legge il sito e ti restituisce cosa fa la tua attività, cosa promette, a chi si rivolge e che tono ha — poi lascia a te le correzioni.",
+        "get": "Una pagina modificabile: descrizione dell'attività, proposta di valore, persona del pubblico e tag del tono."
+      },
+      "brandAssets": {
+        "name": "Asset del brand",
+        "body": "Nello stesso passaggio raccoglie i colori, i loghi e le frasi che il tuo sito usa già. Ognuno aspetta il tuo sì o il tuo no, invece di essere usato a tua insaputa.",
+        "get": "Un set verificato di colori, loghi, messaggi e note sul tono di voce — più tutto ciò che carichi tu."
+      },
+      "language": {
+        "name": "Persiano o inglese",
+        "body": "Ogni brand scrive nella propria lingua. I testi in persiano vengono scritti direttamente in persiano, non tradotti da una bozza in inglese, e il controllo qualità li valuta con intervalli di parole pensati per il persiano.",
+        "get": "Un'impostazione per brand che seguono tutti i post, i report e i titoli delle immagini."
+      },
+      "brands": {
+        "name": "Brand separati",
+        "body": "Ogni brand ha la sua memoria, i suoi concorrenti, la sua narrazione, il suo calendario e i suoi canali. Niente passa da uno all'altro.",
+        "get": "Workspace che puoi gestire in parallelo."
+      },
+      "discovery": {
+        "name": "Ricerca dei concorrenti",
+        "body": "Contivo cerca aziende della tua dimensione invece dei soliti nomi famosi del tuo settore, e verifica che ognuna esista davvero prima di mostrartela.",
+        "get": "Un elenco di concorrenti reali, ognuno con le prove su cui è stato trovato."
+      },
+      "validation": {
+        "name": "Decidi tu chi conta",
+        "body": "Accetta, scarta o aggiungi a mano un concorrente. Quelli che aggiungi tu vengono letti dal loro sito, così arrivano con le stesse prove degli altri.",
+        "get": "Un set di concorrenti confermato — la base di tutte le fasi successive."
+      },
+      "matrices": {
+        "name": "Matrici di posizionamento",
+        "body": "Due grafici fissi più da uno a tre scelti per il tuo mercato. Tu e ogni concorrente confermato ricevete un punteggio da uno a dieci su due assi ciascuno, con il ragionamento e le prove dietro ogni voto bene in vista.",
+        "get": "Grafici che mostrano dove ti trovi davvero, e quali angoli non occupa nessuno."
+      },
+      "keywords": {
+        "name": "Keyword dei concorrenti",
+        "body": "Per cosa si posizionano i tuoi concorrenti, raggruppato in cluster e diviso in base a ciò che cerca davvero chi fa la ricerca — e quali spazi hanno lasciato scoperti.",
+        "get": "Cluster di keyword, l'intento dietro ciascuno e un elenco di opportunità su cui vale la pena scrivere."
+      },
+      "offerings": {
+        "name": "Prodotti e servizi a confronto",
+        "body": "Cosa vende ogni concorrente, accanto a ciò che vendi tu.",
+        "get": "Un confronto tra la tua offerta e la loro, e cosa manca da entrambe le parti."
+      },
+      "monitoring": {
+        "name": "Monitoraggio settimanale dei concorrenti",
+        "body": "Ogni settimana rilegge tutti i concorrenti confermati e ti avvisa quando cambiano il sito, i prezzi o il posizionamento.",
+        "get": "Un elenco settimanale di cosa è cambiato, concorrente per concorrente."
+      },
+      "lock": {
+        "name": "Il blocco",
+        "body": "L'ideazione non parte finché non esistono memoria del brand, matrici e keyword dei concorrenti. Né tu né il modello potete convincerlo del contrario.",
+        "get": "Un rifiuto — e il motivo per cui, una volta sbloccate, le idee meritano di essere lette."
+      },
+      "narrative": {
+        "name": "Narrazione",
+        "body": "Tre o quattro affermazioni solide che i tuoi contenuti devono portare avanti, scritte a partire dall'analisi che Contivo ha già fatto e poi corrette da te.",
+        "get": "Linee narrative, ognuna con la sua tesi, il suo pubblico, la lacuna dei concorrenti che sfrutta, le prove che può usare e un elenco di cose che non deve mai affermare."
+      },
+      "ideation": {
+        "name": "Ideazione",
+        "body": "Idee che nascono da un vuoto nelle keyword o da una posizione su una matrice, ognuna legata a una linea narrativa e a uno schema di scrittura scelto in base all'obiettivo e alla piattaforma.",
+        "get": "Una serie di idee, ognuna con la linea narrativa che porta avanti e il motivo per cui è stata scelta."
+      },
+      "drafts": {
+        "name": "Bozze",
+        "body": "Post completi scritti con il tuo tono, con uno schema adatto al canale, entro l'intervallo di parole che imposti per ogni piattaforma.",
+        "get": "Una bozza finita per ogni idea che mandi avanti, programmata e pronta da rivedere."
+      },
+      "sources": {
+        "name": "Il tuo materiale",
+        "body": "Aggiungi delle note o allega un PDF, una trascrizione o una specifica, e il post viene scritto partendo da ciò che hai fornito invece che dalle supposizioni del modello.",
+        "get": "Bozze basate sul tuo materiale, con la fonte registrata sul post."
+      },
+      "humanize": {
+        "name": "Via i segni della macchina",
+        "body": "Un secondo passaggio su ogni bozza elimina le formule che tradiscono un testo scritto dall'AI.",
+        "get": "Testi che non iniziano con “Nel mondo frenetico di oggi”."
+      },
+      "gate": {
+        "name": "Il controllo qualità",
+        "body": "Prima i controlli rigidi: il limite della piattaforma, l'intervallo di parole che hai impostato, residui di template e gli argomenti che hai detto di non toccare mai. Poi un giudice dà un voto da uno a dieci a coerenza con il brand, affidabilità dei fatti e chiarezza — e può mettere il veto.",
+        "get": "Solo i post che hanno superato il controllo. Quelli scartati tornano in bozza con il motivo indicato, e se nessun modello può revisionarli, non viene pubblicato nulla."
+      },
+      "images": {
+        "name": "Immagini",
+        "body": "Un'immagine con una direzione artistica ricavata dal post stesso, non presa da un archivio di stock, con i cliché esclusi già nel brief.",
+        "get": "Un'immagine per post, con testo alternativo scritto per gli screen reader."
+      },
+      "imageTemplate": {
+        "name": "Template del brand sulle immagini",
+        "body": "Titolo e logo sovrapposti all'immagine con il colore del tuo brand e un font vero, così il testo è sempre corretto — anche in persiano, che i modelli di immagini storpiano sempre.",
+        "get": "Immagini che sembrano tutte dello stesso brand, con un titolo che puoi riscrivere gratis."
+      },
+      "imageQuality": {
+        "name": "Scegli la qualità delle immagini",
+        "body": "Scegli veloce, standard o HD per ogni immagine e usa il tuo budget di conseguenza, invece di pagare lo stesso per un'immagine qualsiasi e per quella di punta.",
+        "get": "Il controllo su quanto ti costa ogni immagine rispetto al budget mensile."
+      },
+      "instant": {
+        "name": "Contenuto istantaneo",
+        "body": "Un post, subito, senza dover prima configurare un brand. Il modo più veloce per vedere come scrive.",
+        "get": "Una bozza per LinkedIn, X, Instagram, email o blog, in pochi secondi."
+      },
+      "pipeline": {
+        "name": "Pipeline",
+        "body": "Tutte le idee e le bozze in un unico posto, con il loro stato, il canale e l'obiettivo di parole.",
+        "get": "Una board da cui puoi modificare, riprogrammare o pubblicare direttamente."
+      },
+      "calendar": {
+        "name": "Calendario",
+        "body": "Cosa esce, e quando.",
+        "get": "Vista elenco e vista settimanale di tutto ciò che è programmato."
+      },
+      "website": {
+        "name": "Il tuo sito",
+        "body": "Una chiave, qualsiasi stack, qualsiasi hosting. È il tuo sito a chiedere i post a Contivo — Contivo non tocca mai il tuo codice, il tuo deploy o il tuo CMS.",
+        "get": "Una content API in sola lettura, più un webhook che svuota la cache nel momento in cui un post va online."
+      },
+      "social": {
+        "name": "LinkedIn e X",
+        "body": "Collega un account una volta e Contivo pubblica per conto tuo, nei giorni e negli orari che consenti. Pubblica sul tuo profilo LinkedIn personale, non su una pagina aziendale.",
+        "get": "Pubblicazione programmata su LinkedIn e X, con ogni tentativo registrato."
+      },
+      "socialMore": {
+        "name": "Instagram, Facebook e TikTok",
+        "body": "I tre social su cui Contivo non può ancora pubblicare. Ognuno richiede la revisione dell'app da parte della piattaforma prima che chiunque oltre a noi possa collegare un account, per questo sono elencati qui e non promessi più sopra.",
+        "get": "La stessa programmazione e lo stesso controllo qualità, su altri tre social."
+      },
+      "autopilot": {
+        "name": "Autopilot",
+        "body": "Imposta un ritmo e terrà pieni i sette giorni successivi da solo: trova le idee, scrive le bozze, le controlla e le programma senza che tu debba chiederlo.",
+        "get": "Da 1 a 14 post a settimana nella tua fascia oraria, guidati da un obiettivo, dai temi da privilegiare e da quelli da non toccare mai."
+      },
+      "video": {
+        "name": "Script video e video da template",
+        "body": "Un hook, uno script, una lista delle inquadrature e una didascalia costruiti sulle lacune lasciate dai concorrenti — e un carosello trasformato in Reel con testo animato.",
+        "get": "Script pronti da girare e video brevi creati senza telecamera."
+      },
+      "runLog": {
+        "name": "Ogni esecuzione, nero su bianco",
+        "body": "Ogni esecuzione dell'Autopilot viene registrata passo per passo, compreso ciò che ha rifiutato e il punteggio per cui l'ha rifiutato.",
+        "get": "Lo storico completo delle esecuzioni per ogni agente, così anche una settimana tranquilla ha una spiegazione."
+      },
+      "report": {
+        "name": "Report strategico",
+        "body": "Tutto ciò che Contivo ha capito del tuo mercato, messo per iscritto in un documento che puoi passare a qualcun altro.",
+        "get": "Un PDF: executive summary, profilo del brand, panorama competitivo, matrici di posizionamento, analisi delle keyword, prodotti e servizi, e raccomandazioni."
+      },
+      "whiteLabel": {
+        "name": "Report white-label",
+        "body": "Lo stesso report strategico, con il brand della tua agenzia al posto del nostro.",
+        "get": "Un report che puoi inviare a un cliente a tuo nome."
+      },
+      "shareLinks": {
+        "name": "Link condivisibili per i clienti",
+        "body": "Un link che il cliente può aprire per vedere il report del proprio workspace, senza bisogno di un account.",
+        "get": "Un link per cliente, revocabile."
+      }
+    },
+    "notes": {
+      "estimated": "I punteggi sono la lettura del modello sulla base di dati pubblici, non misurazioni. Ognuno mostra il proprio ragionamento, così puoi non essere d'accordo.",
+      "reportTime": "Si genera in meno di un minuto. Prima devono essere compilati la memoria del brand, almeno tre grafici di posizionamento, le keyword e la tua offerta.",
+      "discoveryChecked": "“Verificato” significa che il dominio esiste e risponde — cioè che l'azienda è reale, non che sia una tua concorrente. Quel giudizio resta a te."
+    },
+    "close": {
+      "headline": "Gratis finché è in <accent>accesso anticipato</accent>.",
+      "cta": "Inizia gratis",
+      "pricing": "Vedi i prezzi"
+    },
+    "eyebrow": "Funzionalità",
+    "stats": {
+      "live": "già attive",
+      "soon": "indicate come non ancora pronte",
+      "stages": "fasi, le stesse dell'app"
+    }
+  }
+}

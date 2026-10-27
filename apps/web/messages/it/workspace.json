@@ -1,0 +1,85 @@
+{
+  "journey": {
+    "steps": {
+      "brand": {
+        "title": "Crea la memoria del brand",
+        "why": "Tutto ciò che Contivo scrive si basa su questo. Senza, non c'è una voce con cui scrivere.",
+        "action": "Rivedi o rianalizza la memoria del brand",
+        "detailDone": "Estratta dal tuo sito",
+        "detailTodo": "Non ancora estratta"
+      },
+      "market": {
+        "title": "Mappa il mercato",
+        "why": "Accetta i concorrenti che sono davvero tuoi, poi genera i grafici di posizionamento. Le idee nascono dagli spazi vuoti che emergono.",
+        "actionDiscover": "Scopri e accetta almeno 2 concorrenti",
+        "actionCharts": "Genera le matrici di posizionamento",
+        "detailDone": "{charts, number} grafici · {competitors, number} concorrenti accettati",
+        "detailPartial": "{accepted, number} concorrenti accettati su {total, number} · ancora nessun grafico",
+        "detailNone": "Nessun concorrente individuato finora"
+      },
+      "keywords": {
+        "title": "Analizza le keyword dei concorrenti",
+        "why": "Mostra quali argomenti presidiano i concorrenti e quali lasciano scoperti. È da qui che i contenuti prendono il loro taglio.",
+        "action": "Avvia l'analisi delle keyword",
+        "detailDone": "{count, number} concorrenti analizzati",
+        "detailTodo": "Non ancora analizzate"
+      },
+      "narrative": {
+        "title": "Decidi per cosa ti schieri",
+        "why": "Tre o quattro argomenti che ogni post deve portare avanti, così i contenuti costruiscono qualcosa invece di essere quaranta post scollegati. La bozza parte dall'intelligence raccolta sopra.",
+        "action": "Scrivi la bozza della narrativa",
+        "detailDone": "{count, number} filoni narrativi",
+        "detailTodo": "Nessuna posizione per ora"
+      },
+      "channel": {
+        "title": "Collega un canale di pubblicazione",
+        "why": "Un account social o il tuo sito web. Senza, le bozze non hanno dove andare.",
+        "action": "Collega un account o aggiungi un sito",
+        "detailDone": "Collegato",
+        "detailNamed": "{name}",
+        "detailTodo": "Nulla di collegato"
+      },
+      "autopilot": {
+        "title": "Attiva l'Autopilot",
+        "why": "A quel punto Contivo genera idee, scrive bozze, ne controlla la qualità e pubblica secondo il tuo calendario, senza che tu debba chiedere.",
+        "actionReview": "Rivedi le regole",
+        "actionEnable": "Attiva e salva le regole",
+        "detailOn": "In esecuzione",
+        "detailOff": "Spento"
+      }
+    },
+    "blockers": {
+      "brandMemory": "la memoria del brand",
+      "acceptedCompetitors": "dei concorrenti accettati",
+      "marketMap": "la mappa del mercato",
+      "connectedChannel": "un canale collegato",
+      "narrative": "una narrativa da portare avanti",
+      "intelligenceSteps": "i passi di intelligence qui sopra"
+    },
+    "gates": {
+      "acceptCompetitors": "Prima accetta i concorrenti",
+      "matricesAndKeywords": "Servono matrici e keyword",
+      "marketMap": "Serve la mappa del mercato",
+      "narrative": "Serve una narrativa",
+      "fullIntelligence": "Serve l'intelligence completa"
+    }
+  },
+  "journeyGuide": {
+    "complete": "Configurazione completata: brand, mercato, keyword, canale e Autopilot sono tutti a posto.",
+    "whatNow": "E adesso?",
+    "youAreHere": "Sei qui:",
+    "needs": "Serve {what}",
+    "doneHeadline": "La configurazione è completa.",
+    "doneRunning": "L'Autopilot è attivo. {scheduled, plural, one {# post} other {# post}} in coda, {published, number} pubblicati finora. Al momento non serve nulla da parte tua: se vuoi vedere cosa ha deciso, controlla lo storico delle esecuzioni dell'Autopilot.",
+    "doneIdle": "È tutto collegato e analizzato. Genera idee a mano, oppure attiva l'Autopilot e lascialo lavorare senza di te.",
+    "nextHeadline": "Prossimo passo: {step}",
+    "nextBody": "{why} Al momento: {detail}.",
+    "gateBlocked": "Questo passo non è ancora pronto: {reason}.",
+    "gateConsequence": "Eseguirlo adesso non produrrebbe nulla di utile.",
+    "setup": "Configurazione",
+    "explainStep": "Spiega questo passo",
+    "dismiss": "Chiudi",
+    "writtenForBrand": "scritto per questo brand",
+    "guideLabel": "guida"
+  }
+}
