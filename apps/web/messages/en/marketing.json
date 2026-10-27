@@ -15,7 +15,8 @@
   "localeSwitcher": {
     "label": "Language",
     "en": "English",
-    "fa": "فارسی"
+    "fa": "فارسی",
+    "it": "Italiano"
   },
   "intake": {
     "label": "Start with the only thing it needs",

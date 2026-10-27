@@ -68,6 +68,7 @@ export async function generateMetadata({
       languages: {
         en: '/en',
         fa: '/fa',
+        it: '/it',
         'x-default': `/${routing.defaultLocale}`,
       },
     },

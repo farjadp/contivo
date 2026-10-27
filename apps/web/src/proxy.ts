@@ -15,8 +15,8 @@ import { routing } from '@/i18n/routing';
  * every single request. It authenticated nothing — route protection lives in
  * the (dashboard) and (onboarding) layouts — so it is gone.
  *
- * What runs here now is locale negotiation only: it reads the NEXT_LOCALE
- * cookie, falls back to Accept-Language, and redirects a bare path onto its
- * /en or /fa twin. Auth stays in the layouts, where it can read the database.
+ * What runs here now is locale routing only: detection is off (see
+ * routing.ts), so a bare path is redirected onto its /en twin and a prefixed
+ * one is served as is. Auth stays in the layouts, where it can read the database.
  */
 export default createMiddleware(routing);

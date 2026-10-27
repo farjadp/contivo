@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Guards the two message catalogues against the ways they rot.
+ * Guards the message catalogues against the ways they rot.
  *
  * A missing translation does not throw at build time. It throws — or worse,
  * renders the key path as visible text — on one page, in one language, for
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const LOCALES = ['en', 'fa'];
+const LOCALES = ['en', 'fa', 'it'];
 
 /** The namespace list, read from the source of truth rather than duplicated. */
 function namespaces() {
@@ -82,24 +82,27 @@ for (const ns of namespaces()) {
 
   if (Object.keys(loaded).length !== LOCALES.length) continue;
 
-  const [a, b] = LOCALES;
-  for (const key of loaded[a].keys()) {
-    if (!loaded[b].has(key)) problems.push(`${ns}: '${key}' is in ${a} but missing from ${b}`);
-  }
-  for (const key of loaded[b].keys()) {
-    if (!loaded[a].has(key)) problems.push(`${ns}: '${key}' is in ${b} but missing from ${a}`);
-  }
-
-  for (const [key, message] of loaded[a]) {
-    const other = loaded[b].get(key);
-    if (other === undefined) continue;
-    const mine = placeholders(message);
-    const theirs = placeholders(other);
-    for (const p of mine) {
-      if (!theirs.has(p)) problems.push(`${ns}: '${key}' uses {${p}} in ${a} but not in ${b}`);
+  // English is the reference; every other locale is compared against it.
+  const [a, ...others] = LOCALES;
+  for (const b of others) {
+    for (const key of loaded[a].keys()) {
+      if (!loaded[b].has(key)) problems.push(`${ns}: '${key}' is in ${a} but missing from ${b}`);
     }
-    for (const p of theirs) {
-      if (!mine.has(p)) problems.push(`${ns}: '${key}' uses {${p}} in ${b} but not in ${a}`);
+    for (const key of loaded[b].keys()) {
+      if (!loaded[a].has(key)) problems.push(`${ns}: '${key}' is in ${b} but missing from ${a}`);
+    }
+
+    for (const [key, message] of loaded[a]) {
+      const other = loaded[b].get(key);
+      if (other === undefined) continue;
+      const mine = placeholders(message);
+      const theirs = placeholders(other);
+      for (const p of mine) {
+        if (!theirs.has(p)) problems.push(`${ns}: '${key}' uses {${p}} in ${a} but not in ${b}`);
+      }
+      for (const p of theirs) {
+        if (!mine.has(p)) problems.push(`${ns}: '${key}' uses {${p}} in ${b} but not in ${a}`);
+      }
     }
   }
 }

@@ -1,0 +1,21 @@
+{
+  "shell": {
+    "nav": {
+      "overview": "Oggi",
+      "growth": "Workspace",
+      "connections": "Connessioni",
+      "instant": "Contenuti istantanei",
+      "settings": "Impostazioni"
+    },
+    "signOut": "Esci",
+    "header": {
+      "signIn": "Accedi",
+      "signUp": "Registrati"
+    },
+    "credits": {
+      "label": "{count, number} crediti"
+    },
+    "navLabel": "Principale",
+    "account": "Account"
+  }
+}
