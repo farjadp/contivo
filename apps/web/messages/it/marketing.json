@@ -86,7 +86,7 @@
       "cadence": "Frequenza",
       "cadenceValue": "Da 1 a 14 post a settimana, sempre pieni per i 7 giorni successivi",
       "channels": "Canali",
-      "channelsValue": "LinkedIn · X · il tuo sito",
+      "channelsValue": "LinkedIn · il tuo sito",
       "window": "Fascia oraria",
       "windowValue": "I giorni e gli orari locali che scegli tu",
       "steering": "Direzione",
@@ -96,9 +96,9 @@
     },
     "channels": {
       "headline": "Social tramite OAuth. Il tuo sito con una sola chiave.",
-      "body": "Collega LinkedIn o X una volta sola e Contivo pubblica per conto tuo. Per il tuo sito — qualsiasi stack, qualsiasi hosting — ricevi una chiave API ed è il tuo sito a leggere i post. Nel tuo codice non viene mai inserito nulla e non c'è alcun plugin da installare. Instagram, Facebook e TikTok non sono ancora collegati: ognuno richiede prima la revisione dell'app da parte della piattaforma.",
+      "body": "Collega una volta sola il tuo profilo LinkedIn e Contivo pubblica per conto tuo. Per il tuo sito — qualsiasi stack, qualsiasi hosting — ricevi una chiave API ed è il tuo sito a leggere i post. Nel tuo codice non viene mai inserito nulla e non c'è alcun plugin da installare. X non è ancora attivo, e Instagram, Facebook e TikTok richiedono prima la revisione dell'app da parte della piattaforma.",
       "connect": "Collega",
-      "connectBody": "Un passaggio OAuth per ogni social, oppure una chiave per il tuo sito.",
+      "connectBody": "Un passaggio OAuth per LinkedIn, oppure una chiave per il tuo sito.",
       "schedule": "Programma",
       "scheduleBody": "Contivo sceglie gli slot dentro la fascia che hai autorizzato.",
       "publish": "Pubblica",
@@ -146,7 +146,7 @@
           "name": "Pubblica",
           "short": "i tuoi canali",
           "title": "E pubblica.",
-          "body": "Da 1 a 14 post a settimana, nei giorni e negli orari che consenti, su LinkedIn, X o il tuo sito."
+          "body": "Da 1 a 14 post a settimana, nei giorni e negli orari che consenti, su LinkedIn o il tuo sito."
         },
         "learn": {
           "name": "Impara",
@@ -246,7 +246,7 @@
     "contact": "Contatti",
     "privacy": "Privacy",
     "terms": "Termini",
-    "socialSoon": "Instagram · TikTok · Facebook",
+    "socialSoon": "X · Instagram · TikTok · Facebook",
     "soon": "In arrivo",
     "writeTo": "Scrivi a una persona vera",
     "navLabel": "Sito",

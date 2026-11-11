@@ -45,7 +45,6 @@ export function SiteFooter() {
            except where Persian has a settled spelling of its own — which the
            message catalogue decides, not this file. */
         { href: { pathname: '/', hash: 'learn' }, label: 'LinkedIn' },
-        { href: { pathname: '/', hash: 'learn' }, label: 'X' },
         { href: { pathname: '/', hash: 'learn' }, label: t('ownSite') },
         { href: { pathname: '/', hash: 'learn' }, label: t('socialSoon'), soon: true },
       ],

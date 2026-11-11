@@ -161,14 +161,14 @@
         "get": "Una content API in sola lettura, più un webhook che svuota la cache nel momento in cui un post va online."
       },
       "social": {
-        "name": "LinkedIn e X",
+        "name": "LinkedIn",
         "body": "Collega un account una volta e Contivo pubblica per conto tuo, nei giorni e negli orari che consenti. Pubblica sul tuo profilo LinkedIn personale, non su una pagina aziendale.",
-        "get": "Pubblicazione programmata su LinkedIn e X, con ogni tentativo registrato."
+        "get": "Pubblicazione programmata sul tuo profilo LinkedIn, con ogni tentativo registrato."
       },
       "socialMore": {
-        "name": "Instagram, Facebook e TikTok",
-        "body": "I tre social su cui Contivo non può ancora pubblicare. Ognuno richiede la revisione dell'app da parte della piattaforma prima che chiunque oltre a noi possa collegare un account, per questo sono elencati qui e non promessi più sopra.",
-        "get": "La stessa programmazione e lo stesso controllo qualità, su altri tre social."
+        "name": "X, Instagram, Facebook e TikTok",
+        "body": "I social su cui Contivo non può ancora pubblicare. X richiede ancora lavoro da parte nostra, e gli altri tre richiedono la revisione dell'app da parte della piattaforma prima che chiunque oltre a noi possa collegare un account, per questo sono elencati qui e non promessi più sopra.",
+        "get": "La stessa programmazione e lo stesso controllo qualità, su altri quattro social."
       },
       "autopilot": {
         "name": "Autopilot",

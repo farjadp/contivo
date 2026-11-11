@@ -57,7 +57,7 @@ const PLANS = [
   },
   {
     id: 'founder',
-    features: ['workspaces', 'everything', 'autopilot', 'channels', 'report', 'digest'],
+    features: ['workspaces', 'everything', 'autopilot', 'channels', 'report'],
     href: '/sign-up',
     highlighted: true,
   },
