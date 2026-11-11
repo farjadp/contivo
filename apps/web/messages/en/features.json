@@ -161,14 +161,14 @@
         "get": "A read-only content API, plus a webhook that clears your cache the moment a post goes live."
       },
       "social": {
-        "name": "LinkedIn and X",
+        "name": "LinkedIn",
         "body": "Connect an account once and Contivo posts on your behalf, inside the days and hours you allow. It posts to your own LinkedIn profile, not to a company page.",
-        "get": "Scheduled publishing to LinkedIn and X, with every attempt recorded."
+        "get": "Scheduled publishing to your LinkedIn profile, with every attempt recorded."
       },
       "socialMore": {
-        "name": "Instagram, Facebook and TikTok",
-        "body": "The three networks Contivo can not yet post to. Each one needs its platform's app review before anybody but us can connect an account, so they are listed here rather than promised above.",
-        "get": "The same scheduling and quality gate, on three more networks."
+        "name": "X, Instagram, Facebook and TikTok",
+        "body": "The networks Contivo can not post to yet. X is waiting on its developer access, and the other three each need their platform's app review before anybody but us can connect an account, so they are listed here rather than promised above.",
+        "get": "The same scheduling and quality gate, on four more networks."
       },
       "autopilot": {
         "name": "Autopilot",
