@@ -10,13 +10,10 @@
  *   - Status sync
  *
  * SECURITY:
- *   - Tokens are XOR-encrypted with SOCIAL_TOKEN_SECRET from env before storage.
+ *   - Tokens are encrypted with AES-256-GCM keyed from SOCIAL_TOKEN_SECRET
+ *     (see token-crypto.ts). The API refuses to start without that variable.
  *   - Tokens are decrypted only when an adapter needs them to publish.
  *   - No token is ever returned in a response or written to logs.
- *
- * Production upgrade path:
- *   Replace encrypt/decrypt helpers with calls to a secret manager
- *   (AWS Secrets Manager, GCP Secret Manager, Vault) using the stored ref key.
  */
 
 import {
@@ -32,12 +29,17 @@ import {
   CreateSocialConnectionDto,
   UpdateSocialConnectionDto,
 } from './dto/create-social-connection.dto';
+import * as tokenCrypto from './token-crypto';
 
 @Injectable()
 export class SocialConnectionsService {
   private readonly logger = new Logger(SocialConnectionsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {
+    // Fail at boot rather than on the first publish: without the secret no
+    // stored token can be read and no new one can be written.
+    tokenCrypto.getSocialTokenSecret();
+  }
 
   // ─── Public methods ────────────────────────────────────────────────────────
 
@@ -222,29 +224,14 @@ export class SocialConnectionsService {
     } as const;
   }
 
-  // ─── Token encryption (MVP: XOR + base64) ─────────────────────────────────
-  // Replace with proper KMS / Vault calls in production.
-
-  /** XOR a buffer against the repeating key. Symmetric: same call both ways. */
-  private xorBytes(input: Buffer): Buffer {
-    const secret = process.env.SOCIAL_TOKEN_SECRET ?? 'contivo-dev-secret-key-change-in-prod';
-    const keyBytes = Buffer.from(secret, 'utf8');
-    const out = Buffer.alloc(input.length);
-    for (let i = 0; i < input.length; i++) {
-      out[i] = input[i] ^ keyBytes[i % keyBytes.length];
-    }
-    return out;
-  }
+  // ─── Token encryption ─────────────────────────────────────────────────────
+  // Writes v1 (AES-256-GCM); reads v1 and the legacy XOR format.
 
   public encryptToken(token: string): string {
-    return this.xorBytes(Buffer.from(token, 'utf8')).toString('base64');
+    return tokenCrypto.encryptToken(token);
   }
 
   public decryptToken(ref: string): string {
-    // Must XOR the raw bytes. The previous version decoded the ciphertext to a
-    // UTF-8 *string* first: XORed bytes are arbitrary binary, so every byte
-    // that was not valid UTF-8 became U+FFFD and the token came back corrupted.
-    // Every social publish then failed as "token expired or invalid".
-    return this.xorBytes(Buffer.from(ref, 'base64')).toString('utf8');
+    return tokenCrypto.decryptToken(ref);
   }
 }
