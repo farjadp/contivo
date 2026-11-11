@@ -37,6 +37,7 @@ const NAMESPACES = [
   'tabs-a',
   'admin',
   'errors',
+  'blog',
 ] as const;
 
 /**

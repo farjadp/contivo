@@ -66,6 +66,8 @@ export const routing = defineRouting({
     '/contact': '/contact',
     '/privacy': '/privacy',
     '/terms': '/terms',
+    '/blog': '/blog',
+    '/blog/[slug]': '/blog/[slug]',
     '/sign-in': '/sign-in',
     '/sign-up': '/sign-up',
     '/onboarding': '/onboarding',
