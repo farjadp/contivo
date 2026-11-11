@@ -24,3 +24,6 @@ export const { Link, usePathname, useRouter, getPathname } = navigation;
  * believes in. This one line is what keeps those guards meaningful.
  */
 export const redirect: typeof navigation.redirect = navigation.redirect;
+
+/** 308 twin of `redirect`, for a URL that will never be valid (wrong-locale blog URLs). Typed for the same reason. */
+export const permanentRedirect: typeof navigation.permanentRedirect = navigation.permanentRedirect;

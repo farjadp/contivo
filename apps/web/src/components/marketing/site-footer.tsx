@@ -54,6 +54,7 @@ export function SiteFooter() {
       title: t('companyTitle'),
       links: [
         { href: { pathname: '/about' }, label: t('about') },
+        { href: { pathname: '/blog' }, label: t('blog') },
         { href: { pathname: '/contact' }, label: t('contact') },
         { href: { pathname: '/privacy' }, label: t('privacy') },
         { href: { pathname: '/terms' }, label: t('terms') },

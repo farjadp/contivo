@@ -23,6 +23,7 @@ on this repository at the same time. To avoid overwriting each other:
 | Stream | Branch | Owner | Files it owns | Status |
 |---|---|---|---|---|
 | Video pipeline | `feat/video-pipeline` | cloud Claude session | `docs/video-pipeline/**`, `services/render-worker/**` (new, outside the pnpm workspace), and — in later phases, announced here first — `apps/api/prisma/schema.prisma` (VIDEO additions only), `apps/api/src/modules/jobs/jobs.constants.ts` (new `RENDER` queue only) | Phase 1 built: render worker — see `docs/video-pipeline/PLAN.md` |
+| contivo.app blog | `feat/contivo-blog` | local side session | `apps/web/src/lib/blog/**`, `apps/web/src/components/blog/**`, `apps/web/src/app/[locale]/(marketing)/blog/**`, `apps/web/src/app/api/blog/**`, `apps/web/messages/*/blog.json`; one-line additions to `routing.ts`, `request.ts`, `global-header.tsx`, `site-footer.tsx`, `sitemap.ts`, `i18n/navigation.ts`. No schema change. | Built, awaiting release queue — see `docs/superpowers/specs/2026-11-11-contivo-blog-design.md` |
 
 Schema changes from any stream: write a migration file **and** note it here,
 because two streams changing `schema.prisma` will conflict.
