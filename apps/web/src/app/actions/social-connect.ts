@@ -19,6 +19,24 @@ import { actionError } from '@/lib/action-errors';
 
 const TTL_MS = 5 * 60 * 1000;
 
+/**
+ * The handoff token is signed here and verified by the API, so this must be
+ * the same value as OAUTH_STATE_SECRET on contivo-api. No default: the repo
+ * is public, and a known key would let anyone forge a connect link for any
+ * user and workspace. Not exported: a 'use server' file may only export
+ * async actions.
+ */
+function getOAuthStateSecret(): string {
+  const secret = process.env.OAUTH_STATE_SECRET;
+  if (!secret || secret.trim() === '') {
+    throw new Error(
+      'OAUTH_STATE_SECRET is not set. It signs the social connect handoff token and has no default; ' +
+        'set the same value on contivo-web and contivo-api (generate with `openssl rand -base64 32`).',
+    );
+  }
+  return secret;
+}
+
 export type ConnectUrlResult = { url: string } | { error: string };
 
 export async function getSocialConnectUrl(
@@ -44,7 +62,7 @@ export async function getSocialConnectUrl(
     if (user?.role !== 'ADMIN') return { error: await actionError('workspaceNotFoundDot') };
   }
 
-  const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
+  const secret = getOAuthStateSecret();
   const body = Buffer.from(
     JSON.stringify({ userId, workspaceId, exp: Date.now() + TTL_MS }),
     'utf8',
