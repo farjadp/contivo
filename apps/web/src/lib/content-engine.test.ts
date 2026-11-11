@@ -50,7 +50,7 @@ beforeEach(() => {
     async ({ where }: { where: { id: string; userId: string } }) =>
       where.id === WORKSPACE && where.userId === OWNER ? { id: WORKSPACE } : null,
   );
-  prismaMock.contentItem.create.mockImplementation(async ({ data }: { data: any }) => ({
+  prismaMock.contentItem.create.mockImplementation(async ({ data }: { data: { topic: string; channel: string } }) => ({
     id: 'item-1',
     topic: data.topic,
     channel: data.channel,
