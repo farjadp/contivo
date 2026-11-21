@@ -16,16 +16,14 @@
 
 import * as crypto from 'crypto';
 
+import { getOAuthStateSecret } from './oauth-state-secret';
+
 const TTL_MS = 5 * 60 * 1000; // 5 minutes: long enough to click, short enough to be useless if leaked
 
 export type HandoffPayload = { userId: string; workspaceId: string };
 
-function secret(): string {
-  return process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
-}
-
 function sign(body: string): string {
-  return crypto.createHmac('sha256', secret()).update(body).digest('base64url');
+  return crypto.createHmac('sha256', getOAuthStateSecret()).update(body).digest('base64url');
 }
 
 /** Mints `<base64url(json)>.<hmac>`. Used by the web app. */

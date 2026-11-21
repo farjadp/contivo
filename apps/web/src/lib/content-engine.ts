@@ -347,6 +347,18 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
   const { userId, workspaceId } = actor;
 
   try {
+    /*
+      workspaceId comes from the client in the server action, and the
+      autopilot runner calls this too. Never write a row into a workspace the
+      actor does not own: someone else's workspace and a missing one look
+      identical.
+    */
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId, userId },
+      select: { id: true },
+    });
+    if (!workspace) return { error: 'Workspace not found' };
+
     const channel = resolveChannelFromFormat(idea?.format);
 
     const item = await prisma.contentItem.create({

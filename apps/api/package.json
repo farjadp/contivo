@@ -9,6 +9,7 @@
     "start:worker": "WORKER_MODE=true node dist/src/worker.js",
     "lint": "eslint src/**/*.ts",
     "typecheck": "tsc --noEmit",
+    "test": "node --require ts-node/register --test test/*.test.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio",

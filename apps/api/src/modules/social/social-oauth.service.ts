@@ -24,6 +24,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
+import { getOAuthStateSecret } from './oauth-state-secret';
 import { SocialConnectionsService } from './social-connections.service';
 
 
@@ -38,7 +39,10 @@ export class SocialOAuthService {
   constructor(
     private readonly connections: SocialConnectionsService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) {
+    // Fail at boot, not on the first connect attempt.
+    getOAuthStateSecret();
+  }
 
   // ─── Step 1: Build redirect URL ──────────────────────────────────────────
 
@@ -440,7 +444,7 @@ export class SocialOAuthService {
   // ─── State helpers (CSRF) ────────────────────────────────────────────────
 
   private buildState(workspaceId: string, extraData: Record<string, string> = {}): string {
-    const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
+    const secret = getOAuthStateSecret();
     const key = crypto.createHash('sha256').update(secret).digest();
     const iv = crypto.randomBytes(12);
 
@@ -457,7 +461,7 @@ export class SocialOAuthService {
 
   private verifyState(stateParam: string): Record<string, any> {
     try {
-      const secret = process.env.OAUTH_STATE_SECRET ?? 'contivo-oauth-state-secret';
+      const secret = getOAuthStateSecret();
       const key = crypto.createHash('sha256').update(secret).digest();
 
       const packed = Buffer.from(stateParam, 'base64url');

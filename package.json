@@ -28,7 +28,9 @@
   },
   "pnpm": {
     "overrides": {
-      "ioredis": "5.10.0"
+      "ioredis": "5.10.0",
+      "sharp": "^0.35.5",
+      "proxy-addr": "^2.0.8"
     }
   }
 }

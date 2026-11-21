@@ -46,6 +46,7 @@ async function requireWorkspace(workspaceId: string, userId: string) {
 export async function getAutopilotState(workspaceId: string) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
+  if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };
 
   const [agents, runs, connections, siteCount] = await Promise.all([
     prisma.autopilotPolicy.findMany({
