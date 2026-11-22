@@ -1,7 +1,12 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
-const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
+// The failover layer is mocked: no network.
+const { recordAiUsageMock, runAiTaskMock } = vi.hoisted(() => ({
+  recordAiUsageMock: vi.fn(async () => {}),
+  runAiTaskMock: vi.fn(),
+}));
+vi.mock('@/lib/ai', () => ({ runAiTask: runAiTaskMock }));
 vi.mock('@/lib/ai-usage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
   recordAiUsage: recordAiUsageMock,
@@ -132,63 +137,52 @@ describe('mergeQueryResults', () => {
 });
 
 describe('harvestFromWebSearch error handling', () => {
-  const ORIGINAL_KEY = process.env.OPENAI_API_KEY;
-
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    if (ORIGINAL_KEY === undefined) {
-      delete process.env.OPENAI_API_KEY;
-    } else {
-      process.env.OPENAI_API_KEY = ORIGINAL_KEY;
-    }
+  beforeEach(() => {
+    runAiTaskMock.mockReset();
   });
 
-  it('throws when OPENAI_API_KEY is missing', async () => {
-    delete process.env.OPENAI_API_KEY;
+  function searchSuccess(provider: 'openai' | 'anthropic' | 'gemini', webSearch: unknown) {
+    return {
+      ok: true,
+      provider,
+      model: provider === 'anthropic' ? 'claude-sonnet-5-5' : 'gpt-5-mini',
+      text: 'answer',
+      usage: { promptTokens: 20, completionTokens: 22, totalTokens: 42 },
+      failedOver: [],
+      webSearch,
+    };
+  }
+
+  it('needs no OPENAI_API_KEY of its own: the layer skips unconfigured providers', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '');
+    runAiTaskMock.mockResolvedValue(searchSuccess('anthropic', { query: '', citations: [], sourceUrls: [] }));
 
     await expect(
       harvestFromWebSearch(['some query'], { country: null, language: 'en' }, new Set()),
-    ).rejects.toThrow(/OPENAI_API_KEY/);
+    ).resolves.toMatchObject({ errors: [] });
+    vi.unstubAllEnvs();
   });
 
-  it('pushes a non-200 response to errors without aborting the harvest', async () => {
-    process.env.OPENAI_API_KEY = 'test-key';
-
-    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
-      const body = JSON.parse(init.body as string);
-      const isFailingQuery = body.input.includes('failing query');
-
-      if (isFailingQuery) {
+  it('pushes a failed chain to errors without aborting the harvest', async () => {
+    runAiTaskMock.mockImplementation(async (_task: string, request: { prompt: string }) => {
+      if (request.prompt.includes('failing query')) {
         return {
           ok: false,
-          status: 500,
-          text: async () => 'internal server error',
-        } as Response;
-      }
-
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          output: [
-            {
-              type: 'message',
-              content: [
-                {
-                  annotations: [{ url: 'https://example-competitor.com/pricing', title: 'Example Competitor' }],
-                },
-              ],
-            },
-            {
-              type: 'web_search_call',
-              action: { sources: [{ url: 'https://noise.example.com' }] },
-            },
+          kind: 'all_unavailable',
+          attempts: [
+            { provider: 'openai', errorClass: 'server', status: 500, message: 'internal server error' },
+            { provider: 'anthropic', errorClass: 'overloaded', status: 529, message: 'overloaded' },
           ],
-          usage: { total_tokens: 42 },
-        }),
-      } as Response;
+          firstErrorClass: 'server',
+          allRateLimited: false,
+        };
+      }
+      return searchSuccess('openai', {
+        query: 'provider wording',
+        citations: [{ url: 'https://example-competitor.com/pricing', title: 'Example Competitor' }],
+        sourceUrls: ['https://noise.example.com'],
+      });
     });
-    vi.stubGlobal('fetch', fetchMock);
 
     const { candidates, errors, tokens } = await harvestFromWebSearch(
       ['failing query', 'working query'],
@@ -199,9 +193,56 @@ describe('harvestFromWebSearch error handling', () => {
     expect(errors).toHaveLength(1);
     expect(errors[0]).toMatch(/failing query/);
     expect(errors[0]).toMatch(/500/);
+    expect(errors[0]).not.toContain('internal server error');
 
     expect(candidates.map((c) => c.domain)).toEqual(['example-competitor.com']);
+    // Our query label, not the provider's wording.
+    expect(candidates[0].evidence[0].query).toBe('working query');
     expect(tokens).toBe(42);
+  });
+
+  it('a Claude-shaped web search result flows into the same candidates as an OpenAI one', async () => {
+    const webSearch = {
+      query: '',
+      citations: [
+        { url: 'https://www.rival-one.com/pricing', title: 'Rival One' },
+        { url: 'https://rival-two.ir/', title: 'Rival Two' },
+      ],
+      sourceUrls: ['https://rival-two.ir/about', 'https://noise.example.com'],
+    };
+    runAiTaskMock.mockResolvedValueOnce(searchSuccess('openai', webSearch));
+    const fromOpenAi = await harvestFromWebSearch(['q'], { country: 'IR', language: 'fa' }, new Set());
+    runAiTaskMock.mockResolvedValueOnce(searchSuccess('anthropic', webSearch));
+    const fromClaude = await harvestFromWebSearch(['q'], { country: 'IR', language: 'fa' }, new Set());
+
+    const shape = (r: typeof fromOpenAi) =>
+      r.candidates.map((c) => ({ domain: c.domain, frequency: c.frequency, urls: c.evidence.map((e) => e.url), q: c.evidence[0].query }));
+    expect(shape(fromClaude)).toEqual(shape(fromOpenAi));
+    expect(shape(fromClaude)).toEqual([
+      { domain: 'rival-one.com', frequency: 1, urls: ['https://www.rival-one.com/pricing'], q: 'q' },
+      { domain: 'rival-two.ir', frequency: 1, urls: ['https://rival-two.ir/'], q: 'q' },
+    ]);
+    expect(fromClaude.errors).toEqual([]);
+  });
+
+  it('an answer without web search data is an error, not an empty result', async () => {
+    runAiTaskMock.mockResolvedValue(searchSuccess('gemini', undefined));
+
+    const { candidates, errors } = await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
+
+    expect(candidates).toEqual([]);
+    expect(errors).toEqual(['Search query for "q" returned no web search results (gemini)']);
+  });
+
+  it('a provider that reports no usage gives tokens null, not 0', async () => {
+    runAiTaskMock.mockResolvedValue({
+      ...searchSuccess('anthropic', { query: '', citations: [], sourceUrls: [] }),
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    });
+
+    const { tokens } = await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
+
+    expect(tokens).toBeNull();
   });
 });
 
