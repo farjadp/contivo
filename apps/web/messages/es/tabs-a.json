@@ -299,14 +299,14 @@
         "publish": "Publicar"
       },
       "editor": {
-        "eyebrow": "Editar y programar la publicación",
+        "eyebrow": "Editar la publicación",
         "close": "Cerrar la vista previa",
         "draftLabel": "Borrador del contenido",
         "scheduleTitle": "Programación de la publicación",
         "dateOptional": "Fecha (opcional)",
         "timeOptional": "Hora (opcional)",
-        "blankNote": "Deja la fecha y la hora en blanco para guardarla como «Lista», o rellénalas para marcarla automáticamente como «Programada».",
-        "save": "Guardar cambios",
+        "blankNote": "Guardar deja la publicación como está: solo cambia el texto. Para programarla, rellena la fecha y la hora y elige Guardar y programar.",
+        "save": "Guardar",
         "titleLabel": "Título",
         "slugLabel": "Slug de la URL",
         "slugFrozen": "No cambia después de publicar, para que la dirección de la publicación sea siempre la misma.",
@@ -314,7 +314,10 @@
         "saveFailed": "Tus cambios no se guardaron. Inténtalo de nuevo.",
         "publishedEyebrow": "Editar una publicación publicada",
         "publishedNote": "Al guardar, el artículo publicado en tu sitio se actualiza al instante. Su dirección no cambia.",
-        "saveLive": "Guardar y actualizar en vivo"
+        "saveLive": "Guardar y actualizar en vivo",
+        "scheduledNote": "Esta publicación ya está programada. Cambia la fecha o la hora para moverla; déjalas como están para mantenerla.",
+        "partialNote": "Rellena la fecha y la hora para programarla.",
+        "saveAndSchedule": "Guardar y programar"
       },
       "scheduleModal": {
         "title": "Programar contenido",

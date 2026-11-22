@@ -21,7 +21,7 @@ export type GateOverride = { override?: boolean };
 async function loadOwnedItem(contentId: string, userId: string) {
   const item = await prisma.contentItem.findFirst({
     where: { id: contentId, userId },
-    select: { id: true, workspaceId: true, content: true, qualityVerdict: true },
+    select: { id: true, workspaceId: true, status: true, content: true, qualityVerdict: true },
   });
   if (!item) throw new Error('Content item not found');
   return item;
@@ -98,8 +98,16 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
   const session = await getSession();
   if (!session?.userId) throw new Error('Unauthorized');
 
+  /*
+    Saving the editor never schedules by itself (QA, 22 Nov): a customer who
+    fixes a typo and presses Save must not publish a post. A schedule is set
+    only when the request carries a date AND a time — the UI sends them only
+    from "Save & schedule". Without them the item keeps its status and any
+    time it already had.
+  */
+  const wantsSchedule = Boolean(payload.publishDate && payload.publishTime);
   let scheduledAtUtc: Date | null = null;
-  if (payload.publishDate && payload.publishTime) {
+  if (wantsSchedule) {
     // The customer's wall-clock time in their own zone, as a UTC instant —
     // same conversion as scheduleContentItem, independent of the server zone.
     scheduledAtUtc = parseLocalDateTimeToUtc(
@@ -113,8 +121,8 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
   const item = await loadOwnedItem(payload.contentId, session.userId);
   /*
     A verdict judged the old text. Editing a gated body resets it to "not
-    checked": the edit is saved, but held unscheduled (GENERATED) until the
-    user runs "Check again" or chooses "Publish anyway". Nothing typed is lost.
+    checked": the edit is saved, but held unscheduled until the user runs
+    "Check again" or chooses "Publish anyway". Nothing typed is lost.
   */
   const bodyChanged = String(item.content ?? '').trim() !== String(payload.content ?? '').trim();
   const gated = item.qualityVerdict !== null && item.qualityVerdict !== undefined;
@@ -127,14 +135,24 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
         ? await enforceQualityGate({ item: { ...item, qualityVerdict: reset }, userId: session.userId, override: true })
         : reset;
     hold = !nextVerdict?.override;
-  } else if (isBlockedVerdict(item.qualityVerdict) && payload.override !== true) {
-    // The editor saves; it never publishes a blocked draft. Held, not refused,
-    // so the user's edits are kept.
-    hold = true;
-  } else {
-    nextVerdict = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
+  } else if (wantsSchedule) {
+    if (isBlockedVerdict(item.qualityVerdict) && payload.override !== true) {
+      // The editor saves; it never publishes a blocked draft. Held, not
+      // refused, so the user's edits are kept.
+      hold = true;
+    } else {
+      nextVerdict = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
+    }
   }
-  if (hold) scheduledAtUtc = null;
+
+  const scheduled = wantsSchedule && !hold;
+  // A held item that was on its way out (READY/SCHEDULED) goes back to GENERATED.
+  const wasForward = item.status === 'READY' || item.status === 'SCHEDULED';
+  const statusData = hold
+    ? { ...(wasForward ? { status: 'GENERATED' as const } : {}), scheduledAtUtc: null, scheduledTimezone: null }
+    : scheduled
+      ? { status: 'SCHEDULED' as const, scheduledAtUtc, scheduledTimezone: payload.timezone }
+      : {};
 
   const updatedContent = await prisma.contentItem.update({
     where: {
@@ -143,10 +161,8 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
     },
     data: {
       ...verdictData(nextVerdict),
+      ...statusData,
       content: payload.content,
-      status: hold ? 'GENERATED' : scheduledAtUtc ? 'SCHEDULED' : 'READY',
-      scheduledAtUtc,
-      scheduledTimezone: scheduledAtUtc ? payload.timezone : null,
       campaign: payload.campaign,
       notes: payload.notes,
     },
@@ -156,12 +172,14 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
     await writeActivityLog({
       userId: session.userId,
       workspaceId: updatedContent.workspaceId,
-      action: 'CONTENT_EDITED_AND_SCHEDULED',
+      // Named for what happened, not for the form it came from.
+      action: scheduled ? 'CONTENT_EDITED_AND_SCHEDULED' : 'CONTENT_EDITED',
       detail: {
         contentId: updatedContent.id,
         platform: payload.platform,
-        scheduledAtUtc: scheduledAtUtc?.toISOString(),
-        timezone: payload.timezone,
+        scheduledAtUtc: scheduled ? scheduledAtUtc?.toISOString() : undefined,
+        timezone: scheduled ? payload.timezone : undefined,
+        held: hold || undefined,
       },
     });
   }

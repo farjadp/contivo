@@ -130,6 +130,15 @@ async function extractTextFromFile(file: File): Promise<string> {
   throw new Error('Unsupported file type. Use PDF/TXT/MD/CSV/JSON.');
 }
 
+/** The browser's own zone, or Toronto when it cannot tell. */
+function publishTimezoneDefault(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Toronto';
+  } catch {
+    return 'America/Toronto';
+  }
+}
+
 export function PipelineTab({
   workspace,
   items,
@@ -297,6 +306,17 @@ function PipelineItemCard({
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Toronto'
   );
   const [hasCustomSchedule, setHasCustomSchedule] = useState(false);
+  /*
+    The editor's own date/time, separate from the card's quick-schedule
+    fields. They start empty — or, for a post that is already SCHEDULED, at
+    its current time — so pressing Save after fixing a typo never schedules
+    anything (QA, 22 Nov). A schedule is sent only when both are filled and
+    differ from what the post already has: that is "Save & schedule".
+  */
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [editTimezone, setEditTimezone] = useState(publishTimezoneDefault());
+  const [editScheduleBaseline, setEditScheduleBaseline] = useState<{ date: string; time: string } | null>(null);
   const [isScheduling, setIsScheduling] = useState(false);
 
   useEffect(() => {
@@ -312,6 +332,12 @@ function PipelineItemCard({
   // B8: a gated AI draft that failed (or was edited since) cannot be approved
   // or scheduled from here; the server refuses it too.
   const qualityBlocked = isBlockedVerdict(currentItem.qualityVerdict);
+  const editScheduleFilled = Boolean(editDate && editTime);
+  const editSchedulePartial = Boolean(editDate || editTime) && !editScheduleFilled;
+  const editScheduleRequested =
+    !qualityBlocked &&
+    editScheduleFilled &&
+    (!editScheduleBaseline || editScheduleBaseline.date !== editDate || editScheduleBaseline.time !== editTime);
 
   const isSlugLocked =
     Boolean(currentItem.publishedAtUtc) || ['PUBLISHED', 'PUBLISHING'].includes(currentItem.status);
@@ -349,16 +375,18 @@ function PipelineItemCard({
     setEditTitle(currentItem.topic || '');
     setEditSlug(currentItem.slug || '');
     setEditError(null);
-    if (currentItem.scheduledAtUtc) {
+    if (currentItem.status === 'SCHEDULED' && currentItem.scheduledAtUtc) {
       const base = new Date(currentItem.scheduledAtUtc);
-      setPublishDate(toDateInputValue(base));
-      setPublishTime(toTimeInputValue(base));
-      setHasCustomSchedule(true);
+      const baseline = { date: toDateInputValue(base), time: toTimeInputValue(base) };
+      setEditDate(baseline.date);
+      setEditTime(baseline.time);
+      setEditTimezone(currentItem.scheduledTimezone || publishTimezoneDefault());
+      setEditScheduleBaseline(baseline);
     } else {
-      const base = buildDefaultPublishBaseDate(defaultScheduleDelayHours);
-      setPublishDate(toDateInputValue(base));
-      setPublishTime(toTimeInputValue(base));
-      setHasCustomSchedule(false);
+      setEditDate('');
+      setEditTime('');
+      setEditTimezone(publishTimezoneDefault());
+      setEditScheduleBaseline(null);
     }
     setIsPreviewOpen(true);
   };
@@ -397,13 +425,15 @@ function PipelineItemCard({
         contentId: currentItem.id,
         content: editContentText,
         platform: currentItem.channel,
-        publishDate,
-        publishTime,
-        timezone: publishTimezone,
+        // Empty unless the user asked to schedule: the server then leaves
+        // the status and any existing time alone.
+        publishDate: editScheduleRequested ? editDate : '',
+        publishTime: editScheduleRequested ? editTime : '',
+        timezone: editTimezone,
       });
       setCurrentItem(updated);
       setIsPreviewOpen(false);
-      if (updated.status === 'SCHEDULED') {
+      if (editScheduleRequested && updated.status === 'SCHEDULED') {
         router.push({ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'calendar' } });
       }
     } catch (e) {
@@ -951,7 +981,7 @@ function PipelineItemCard({
               ) : null}
             </div>
 
-            {isLiveEdit ? null : (
+            {isLiveEdit || qualityBlocked ? null : (
             <div className="flex flex-col gap-6">
               <div className="rounded-2xl bg-chalk-sunk/50 border border-rule p-5">
                 <div className="flex items-center gap-2 mb-4 text-moss">
@@ -964,8 +994,8 @@ function PipelineItemCard({
                     <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('pipeline.editor.dateOptional')}</label>
                     <input 
                       type="date" 
-                      value={publishDate}
-                      onChange={e => setPublishDate(e.target.value)}
+                      value={editDate}
+                      onChange={e => setEditDate(e.target.value)}
                       className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     />
                   </div>
@@ -973,16 +1003,16 @@ function PipelineItemCard({
                     <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('pipeline.editor.timeOptional')}</label>
                     <input 
                       type="time" 
-                      value={publishTime}
-                      onChange={e => setPublishTime(e.target.value)}
+                      value={editTime}
+                      onChange={e => setEditTime(e.target.value)}
                       className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-moss-muted uppercase tracking-wider mb-1.5">{t('common.timezone')}</label>
                     <select 
-                      value={publishTimezone} 
-                      onChange={e => setPublishTimezone(e.target.value)}
+                      value={editTimezone} 
+                      onChange={e => setEditTimezone(e.target.value)}
                       className="w-full rounded-lg border-rule bg-chalk-raised focus:ring-2 focus:ring-saffron p-2.5 text-sm outline-none transition"
                     >
                       <option value="America/Toronto">{t('timezones.America/Toronto')}</option>
@@ -990,7 +1020,12 @@ function PipelineItemCard({
                       <option value="Europe/London">{t('timezones.Europe/London')}</option>
                     </select>
                   </div>
-                  <p className="text-[11px] text-moss-muted leading-tight">{t('pipeline.editor.blankNote')}</p>
+                  <p className="text-[11px] text-moss-muted leading-tight">
+                    {editScheduleBaseline ? t('pipeline.editor.scheduledNote') : t('pipeline.editor.blankNote')}
+                  </p>
+                  {editSchedulePartial ? (
+                    <p className="text-[11px] font-semibold text-amber-700 leading-tight">{t('pipeline.editor.partialNote')}</p>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -1021,7 +1056,11 @@ function PipelineItemCard({
                 className="bg-moss flex items-center gap-1.5 text-chalk px-5 py-2 rounded-xl text-sm font-bold hover:bg-moss-700 transition-colors disabled:opacity-60"
               >
                 {isSavingEdits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {isLiveEdit ? t('pipeline.editor.saveLive') : t('pipeline.editor.save')}
+                {isLiveEdit
+                  ? t('pipeline.editor.saveLive')
+                  : editScheduleRequested
+                    ? t('pipeline.editor.saveAndSchedule')
+                    : t('pipeline.editor.save')}
               </button>
            </div>
           </div>

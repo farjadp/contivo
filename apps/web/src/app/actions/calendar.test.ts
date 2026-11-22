@@ -57,10 +57,12 @@ describe('updateContentAndSchedule time zone', () => {
     expect(updateData().scheduledAtUtc?.toISOString()).toBe('2026-07-01T08:00:00.000Z');
   });
 
-  it('keeps the item READY with no schedule when no date is given', async () => {
+  it('a text-only edit (no date) leaves status and schedule untouched', async () => {
     await updateContentAndSchedule(payload({ publishDate: '', publishTime: '' }));
-    expect(updateData().scheduledAtUtc).toBeNull();
-    expect(updateData().status).toBe('READY');
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('status');
+    expect(data).not.toHaveProperty('scheduledAtUtc');
+    expect(data.content).toBe('Body');
   });
 
   it('rejects a date and time it cannot read instead of saving a wrong instant', async () => {
@@ -92,7 +94,7 @@ describe('quality gate enforcement', () => {
     blocked();
     await updateContentAndSchedule(payload());
     const data = prismaMock.contentItem.update.mock.calls[0][0].data;
-    expect(data.status).toBe('GENERATED');
+    expect(data).not.toHaveProperty('status');
     expect(data.scheduledAtUtc).toBeNull();
     expect(data.content).toBe('Body');
   });
@@ -130,8 +132,8 @@ describe('quality gate enforcement', () => {
   });
 
   it('editing the body of a gated item resets it to not_checked and holds it unscheduled', async () => {
-    prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1', content: 'Old body', qualityVerdict: { approved: true, source: 'pipeline' } });
-    await updateContentAndSchedule(payload({ content: 'New body' }));
+    prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1', status: 'SCHEDULED', content: 'Old body', qualityVerdict: { approved: true, source: 'pipeline' } });
+    await updateContentAndSchedule(payload({ content: 'New body', publishDate: '', publishTime: '' }));
     const data = prismaMock.contentItem.update.mock.calls[0][0].data;
     expect(data.qualityVerdict).toMatchObject({ approved: false, rejectedBy: 'not_checked' });
     expect(data.status).toBe('GENERATED');
@@ -153,5 +155,71 @@ describe('edit + publish anyway', () => {
     const data = prismaMock.contentItem.update.mock.calls[0][0].data;
     expect(data.status).toBe('SCHEDULED');
     expect(data.qualityVerdict).toMatchObject({ rejectedBy: 'not_checked', override: { userId: 'user-1' } });
+  });
+});
+
+// QA 22 Nov: fixing a typo in the editor must never schedule a post.
+describe('editor save never schedules by itself', () => {
+  function item(status: string, extra: object = {}) {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status, content: 'Old body', qualityVerdict: null,
+      scheduledAtUtc: null, ...extra,
+    });
+  }
+  const textOnly = { content: 'Fixed typo', publishDate: '', publishTime: '' };
+
+  it('an edit of a READY item stays READY with nothing scheduled', async () => {
+    item('READY');
+    await updateContentAndSchedule(payload(textOnly));
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('status');
+    expect(data).not.toHaveProperty('scheduledAtUtc');
+  });
+
+  it('an edit of a SCHEDULED item keeps its time when the schedule is not changed', async () => {
+    item('SCHEDULED', { scheduledAtUtc: new Date('2026-11-30T14:00:00Z') });
+    await updateContentAndSchedule(payload(textOnly));
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('status');
+    expect(data).not.toHaveProperty('scheduledAtUtc');
+    expect(data).not.toHaveProperty('scheduledTimezone');
+  });
+
+  it('an edit of a SCHEDULED item moves its time when a new one is given', async () => {
+    item('SCHEDULED', { scheduledAtUtc: new Date('2026-11-30T14:00:00Z') });
+    await updateContentAndSchedule(payload({ content: 'Fixed typo' }));
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data.status).toBe('SCHEDULED');
+    expect(data.scheduledAtUtc.toISOString()).toBe('2026-11-24T14:00:00.000Z');
+  });
+
+  it('a DRAFT or GENERATED item keeps its status on a text-only edit', async () => {
+    for (const status of ['DRAFT', 'GENERATED']) {
+      vi.clearAllMocks();
+      prismaMock.contentItem.update.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1' });
+      item(status);
+      await updateContentAndSchedule(payload(textOnly));
+      expect(prismaMock.contentItem.update.mock.calls[0][0].data).not.toHaveProperty('status');
+    }
+  });
+
+  it('logs CONTENT_EDITED for a text-only edit', async () => {
+    item('READY');
+    await updateContentAndSchedule(payload(textOnly));
+    expect(activityLogMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_EDITED' }));
+  });
+
+  it('logs CONTENT_EDITED_AND_SCHEDULED only when a schedule was set', async () => {
+    item('READY');
+    await updateContentAndSchedule(payload({ content: 'Fixed typo' }));
+    expect(activityLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'CONTENT_EDITED_AND_SCHEDULED', detail: expect.objectContaining({ scheduledAtUtc: '2026-11-24T14:00:00.000Z' }) }),
+    );
+  });
+
+  it('a held (blocked) edit with a date is logged as CONTENT_EDITED, not scheduled', async () => {
+    item('GENERATED', { qualityVerdict: { approved: false, rejectedBy: 'low_score' } });
+    await updateContentAndSchedule(payload({ content: 'Old body' }));
+    expect(activityLogMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_EDITED' }));
   });
 });
