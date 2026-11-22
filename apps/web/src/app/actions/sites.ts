@@ -8,6 +8,7 @@ import { writeActivityLog } from '@/lib/activity-log';
 import { generateSiteKey } from '@/lib/site-api/keys';
 import { actionError } from '@/lib/action-errors';
 import { getTranslations } from 'next-intl/server';
+import { checkOutboundUrl } from '@/lib/safe-outbound-url';
 
 export type SiteSummary = {
   id: string;
@@ -219,6 +220,10 @@ async function normalize(input: SiteInput) {
   if (revalidateUrlRaw) {
     const err = await validateHttpUrl(revalidateUrlRaw, 'revalidateUrl');
     if (err) return { error: err };
+    // We POST to this URL from our servers on every publish and edit, so it
+    // must be a public address (SSRF). Checked again before each request.
+    const outboundErr = await validateOutboundUrl(revalidateUrlRaw);
+    if (outboundErr) return { error: outboundErr };
   }
 
   return {
@@ -251,5 +256,27 @@ async function validateHttpUrl(
     return null;
   } catch {
     return t('urlInvalid', { label });
+  }
+}
+
+/** Messages for a revalidate URL that parses but is not safe to call. */
+async function validateOutboundUrl(value: string): Promise<string | null> {
+  const check = await checkOutboundUrl(value);
+  if (check.ok) return null;
+  const t = await getTranslations('errors');
+  const label = t('fields.revalidateUrl');
+  switch (check.reason) {
+    case 'httpsRequired':
+      return t('urlHttpsRequired', { label });
+    case 'credentials':
+      return t('urlCredentials', { label });
+    case 'unresolvable':
+      return t('urlUnresolvable', { label });
+    case 'scheme':
+      return t('urlScheme', { label });
+    case 'invalid':
+      return t('urlInvalid', { label });
+    default:
+      return t('urlNotPublic', { label });
   }
 }
