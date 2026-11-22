@@ -21,7 +21,7 @@ import { AiProviderError } from './errors';
 import { forcedFailure } from './force-fail';
 import { CRITICAL_COOLDOWN_MS, ProviderHealth } from './health';
 import { createModelResolver, modelFor, type ModelResolver } from './models';
-import { parseJsonText, validateJsonSchema } from './output';
+import { extractJsonObject, normaliseAndValidate, parseJsonText } from './output';
 import { anthropicAdapter } from './providers/anthropic';
 import { geminiAdapter } from './providers/gemini';
 import { openAiAdapter } from './providers/openai';
@@ -156,7 +156,9 @@ export function createAiRunner(deps: AiRunnerDeps): AiRunner {
       return result;
     }
 
-    const json = parseJsonText(result.text);
+    // Claude runs json_object (and web-search JSON) without a format constraint
+    // and may wrap the object in prose; the other providers are constrained.
+    let json = provider === 'anthropic' ? extractJsonObject(result.text) : parseJsonText(result.text);
     if (json === null) {
       throw new AiProviderError({ provider, errorClass: 'invalid_output', status: 200, message: 'reply is not JSON' });
     }
@@ -164,15 +166,16 @@ export function createAiRunner(deps: AiRunnerDeps): AiRunner {
       throw new AiProviderError({ provider, errorClass: 'invalid_output', status: 200, message: 'reply is not a JSON object' });
     }
     if (request.output.kind === 'json_schema') {
-      const problems = validateJsonSchema(json, request.output.schema);
-      if (problems.length > 0) {
+      const checked = normaliseAndValidate(json, request.output.schema);
+      if (checked.errors.length > 0) {
         throw new AiProviderError({
           provider,
           errorClass: 'invalid_output',
           status: 200,
-          message: `reply fails schema ${request.output.name}: ${problems.slice(0, 5).join('; ')}`,
+          message: `reply fails schema ${request.output.name}: ${checked.errors.slice(0, 5).join('; ')}`,
         });
       }
+      json = checked.value;
     }
     return { ...result, json };
   }

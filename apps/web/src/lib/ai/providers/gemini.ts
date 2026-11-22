@@ -47,7 +47,8 @@ const GEMINI_SCHEMA_KEYS = new Set([
 /**
  * JSON Schema → Gemini responseSchema: drops unsupported keys (incl.
  * additionalProperties) recursively, turns `type: ["x","null"]` into
- * `type: "x", nullable: true`, and `const` into a one-value enum.
+ * `type: "x", nullable: true`, `const` into a one-value enum, and adds
+ * `propertyOrdering` from the schema's key order.
  */
 export function toGeminiSchema(schema: unknown): unknown {
   if (Array.isArray(schema)) return schema.map(toGeminiSchema);
@@ -71,6 +72,8 @@ export function toGeminiSchema(schema: unknown): unknown {
       out.properties = Object.fromEntries(
         Object.entries(value as Record<string, unknown>).map(([name, child]) => [name, toGeminiSchema(child)]),
       );
+      // Gemini orders output keys alphabetically unless told; keep the schema's order.
+      if (input.propertyOrdering === undefined) out.propertyOrdering = Object.keys(value as Record<string, unknown>);
       continue;
     }
     if (key === 'items' || key === 'anyOf') {

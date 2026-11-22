@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { fixtureHeaders, fixtureResponse, loadFixture } from './__fixtures__/load';
 import { AiProviderError } from './errors';
-import { parseJsonText, validateJsonSchema } from './output';
+import { extractJsonObject, normaliseAndValidate, parseJsonText, validateJsonSchema } from './output';
 import {
   buildAnthropicParams,
   createAnthropicAdapter,
@@ -80,7 +80,31 @@ describe('output validation', () => {
     expect(validateJsonSchema({ judgments: [{ domain: 'a.com', type: 'OTHER', note: 'x' }] }, SCHEMA)).not.toEqual([]);
     expect(validateJsonSchema({ judgments: [], extra: 1 }, SCHEMA)).toContain('$.extra: not allowed');
     expect(validateJsonSchema({}, SCHEMA)).toContain('$.judgments: required');
-    expect(validateJsonSchema({ judgments: [{ domain: 'x'.repeat(30), type: 'DIRECT', note: null }] }, SCHEMA)).not.toEqual([]);
+  });
+
+  it('B2: enum match is case-insensitive and normalised to the schema casing', () => {
+    const out = normaliseAndValidate({ judgments: [{ domain: 'a.com', type: 'direct', note: null }] }, SCHEMA);
+    expect(out.errors).toEqual([]);
+    expect(out.value).toEqual({ judgments: [{ domain: 'a.com', type: 'DIRECT', note: null }] });
+  });
+
+  it('B3: maxItems, minItems > 1, maxLength and integer min/max do not hard-fail; empty array with minItems does; number ranges do', () => {
+    const schema = {
+      type: 'object',
+      properties: {
+        list: { type: 'array', minItems: 3, maxItems: 1, items: { type: 'string', maxLength: 2 } },
+        count: { type: 'integer', minimum: 1, maximum: 5 },
+        score: { type: 'number', minimum: 0, maximum: 1 },
+      },
+    };
+    expect(validateJsonSchema({ list: ['abcd', 'efgh'], count: 99, score: 0.5 }, schema)).toEqual([]);
+    expect(validateJsonSchema({ list: [], count: 1, score: 0.5 }, schema)).toEqual(['$.list: empty array']);
+    expect(validateJsonSchema({ list: ['a'], count: 1, score: 7 }, schema)).toEqual(['$.score: above 1']);
+  });
+
+  it('B6: extractJsonObject pulls the object out of surrounding prose', () => {
+    expect(extractJsonObject('Here is the JSON you asked for:\n{"a": {"b": 1}}\nHope that helps.')).toEqual({ a: { b: 1 } });
+    expect(extractJsonObject('no json here')).toBeNull();
   });
 });
 
@@ -98,6 +122,12 @@ describe('toGeminiSchema', () => {
     expect(converted.properties.judgments.maxItems).toBe(3);
   });
 
+  it('B4: emits propertyOrdering from the schema key order', () => {
+    const converted = toGeminiSchema(SCHEMA) as Record<string, any>;
+    expect(converted.propertyOrdering).toEqual(['judgments']);
+    expect(converted.properties.judgments.items.propertyOrdering).toEqual(['domain', 'type', 'note']);
+  });
+
   it('turns const into a one-value enum', () => {
     expect(toGeminiSchema({ const: 'x' })).toEqual({ enum: ['x'], type: 'string' });
   });
@@ -110,6 +140,7 @@ describe('geminiAdapter', () => {
     const result = await geminiAdapter.call({ task: 'competitor_judge', request: jsonSchemaRequest, model: 'gemini-3.7-flash', apiKey: 'AIzaTESTKEY' });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).not.toContain('AIzaTESTKEY');
+    expect(url).not.toContain('key=');
     expect((init.headers as Record<string, string>)['x-goog-api-key']).toBe('AIzaTESTKEY');
     const body = JSON.parse(String(init.body));
     expect(body.systemInstruction).toEqual({ parts: [{ text: 'sys' }] });

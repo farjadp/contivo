@@ -233,6 +233,36 @@ describe('runAiTask chain walk', () => {
   });
 });
 
+describe('llm-engineer corrections', () => {
+  it('B5: AiResult.model and ai_usage_logs use the model that actually answered (e.g. a Claude server-side fallback)', async () => {
+    const h = makeRunner({ openai: ['billing'] });
+    h.anthropic.adapter.call = async () => ({ model: 'claude-opus-4-8', text: 'served by fallback', usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2 } });
+    const result = await h.runner.runAiTask('competitor_judge', text);
+    expect(result.ok && result.model).toBe('claude-opus-4-8');
+    expect(h.recordUsage).toHaveBeenCalledWith(expect.objectContaining({ provider: 'anthropic', model: 'claude-opus-4-8' }));
+  });
+
+  it('B6: Claude json_object wrapped in prose is extracted, not invalid_output', async () => {
+    const h = makeRunner({ openai: ['billing'], anthropic: [{ ok: 'Sure! {"a":"x"} Let me know.' }] });
+    const result = await h.runner.runAiTask('keywords', { prompt: 'p', output: { kind: 'json_object' }, timeoutMs: 1000 });
+    expect(result).toMatchObject({ ok: true, provider: 'anthropic', json: { a: 'x' } });
+  });
+
+  it('B6: other providers stay strict (prose-wrapped JSON from OpenAI is invalid_output)', async () => {
+    const h = makeRunner({ openai: [{ ok: 'Sure! {"a":"x"}' }], anthropic: [{ ok: '{"a":"y"}' }] });
+    const result = await h.runner.runAiTask('keywords', { prompt: 'p', output: { kind: 'json_object' }, timeoutMs: 1000 });
+    expect(result.ok && result.provider).toBe('anthropic');
+    expect(h.alerts.failed.map((f) => f.errorClass)).toEqual(['invalid_output', 'invalid_output']);
+  });
+
+  it('B2: normalised enum value is what the caller gets', async () => {
+    const schema = { type: 'object', required: ['t'], properties: { t: { type: 'string', enum: ['DIRECT', 'INDIRECT'] } } };
+    const h = makeRunner({ openai: [{ ok: '{"t":"indirect"}' }] });
+    const result = await h.runner.runAiTask('competitor_judge', { prompt: 'p', output: { kind: 'json_schema', name: 's', schema }, timeoutMs: 1000 });
+    expect(result).toMatchObject({ ok: true, provider: 'openai', json: { t: 'INDIRECT' } });
+  });
+});
+
 describe('cool-down and probe', () => {
   it('transient errors cool down only after 3 in a row, then the first call after expiry is the probe', async () => {
     const h = makeRunner({ openai: ['server', 'server', 'server', { ok: 'back' }] });
