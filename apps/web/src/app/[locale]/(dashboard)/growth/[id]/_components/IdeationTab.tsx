@@ -221,6 +221,9 @@ export function IdeationTab({
           result.ideas.map((idea) => ({
             ...idea,
             target_word_count: normalizedTargetWordCount,
+            // The platform these ideas were generated for decides their
+            // channel; the model's format label does not.
+            selected_platform: platform,
           })),
         );
         setFrameworkMeta(result.framework || null);
@@ -621,7 +624,11 @@ function IdeaCard({
   const handleSaveToPipeline = async () => {
     setIsSaving(true);
     try {
-      const res = await saveIdeaToPipeline(workspaceId, idea);
+      // A generated preview is the post itself: save it, not the outline.
+      const res = await saveIdeaToPipeline(
+        workspaceId,
+        previewText.trim() ? { ...idea, preview_text: previewText } : idea,
+      );
       if (res && 'success' in res && res.success) {
         setSaved(true);
         router.refresh();
