@@ -28,6 +28,8 @@ vi.mock('@/lib/gemini', () => ({
 vi.mock('@/lib/report-readiness', () => ({
   matricesGate: () => ({ ok: true, competitorBasis: 'ACCEPTED' }),
 }));
+const { evaluateMock } = vi.hoisted(() => ({ evaluateMock: vi.fn() }));
+vi.mock('@/lib/autopilot/quality-gate', async (orig) => ({ ...(await orig<object>()), evaluateDraft: evaluateMock }));
 vi.mock('@/lib/humanize', () => ({ humanizeDraft: vi.fn() }));
 vi.mock('@/lib/content-image', () => ({ generateImageForContentItem: vi.fn() }));
 vi.mock('@/lib/narrative/context', () => ({
@@ -42,7 +44,7 @@ vi.mock('@/lib/app-settings', () => ({
     email: { min: 150, max: 400 },
     instagram: { min: 50, max: 200 },
   })),
-  getDefaultScheduleDelayHours: vi.fn(),
+  getDefaultScheduleDelayHours: vi.fn(async () => 24),
   getIdeationMaxContentCount: vi.fn(async () => 10),
 }));
 
@@ -63,6 +65,9 @@ const idea = { topic: 'Why audits matter', format: 'LinkedIn post', angle: 'x' }
 
 beforeEach(() => {
   vi.clearAllMocks();
+  process.env.JWT_SECRET = 'test-secret';
+  prismaMock.contentItem.findMany.mockResolvedValue([]);
+  prismaMock.contentItem.count.mockResolvedValue(0);
   prismaMock.workspace.findUnique.mockImplementation(
     async ({ where }: { where: { id: string; userId: string } }) =>
       where.id === WORKSPACE && where.userId === OWNER ? { id: WORKSPACE } : null,
@@ -344,5 +349,97 @@ describe('pipeline generation stores plain text for LinkedIn (B15)', () => {
 
     expect(prismaMock.contentItem.update).toHaveBeenCalled();
     expect(prismaMock.contentItem.update.mock.calls[0][0].data.content).toBe('Why\n\nShort answer.');
+  });
+});
+
+/*
+  B8: AI drafts made by hand are quality-gated once per generated text, and a
+  failed draft is never left SCHEDULED.
+*/
+describe('quality gate on manual drafts (B8)', () => {
+  const PASS = { approved: true, rejectedBy: null, reasons: [], checks: [], scores: null, judge: 'openai', judgeModel: 'm1' };
+  const FAIL = { approved: false, rejectedBy: 'low_score', reasons: ['Below threshold: clarity 4/10.'], checks: [], scores: null, judge: 'openai', judgeModel: 'm1' };
+  const ws = {
+    id: WORKSPACE,
+    userId: OWNER,
+    contentLanguage: 'EN',
+    brandSummary: { industry: 'Dental clinic' },
+    contentItems: [{ id: 'item-1', topic: 'Why audits matter', channel: 'linkedin', content: '', storylineId: null, scheduledAtUtc: null, scheduledTimezone: null }],
+  };
+
+  beforeEach(() => {
+    prismaMock.workspace.findUnique.mockImplementation(async ({ where }: { where: { id: string; userId: string } }) =>
+      where.id === WORKSPACE && where.userId === OWNER ? ws : null,
+    );
+    prismaMock.contentItem.update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({ id: 'item-1', topic: 'Why audits matter', channel: 'linkedin', ...data }));
+    draftMock.mockResolvedValue('A finished LinkedIn post body.');
+  });
+
+  it('preview: gates once and returns the verdict with a token', async () => {
+    evaluateMock.mockResolvedValue(FAIL);
+    const result: any = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+    expect(evaluateMock).toHaveBeenCalledTimes(1);
+    expect(evaluateMock.mock.calls[0][0]).toMatchObject({ content: 'A finished LinkedIn post body.', channel: 'linkedin', aiContext: { userId: OWNER, workspaceId: WORKSPACE } });
+    expect(result.verdict).toMatchObject({ approved: false, rejectedBy: 'low_score', source: 'preview' });
+    expect(typeof result.verdictToken).toBe('string');
+  });
+
+  it('preview: a judge provider failure is a fail, not a pass', async () => {
+    evaluateMock.mockRejectedValue(new Error('provider down'));
+    const result: any = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+    expect(result.verdict).toMatchObject({ approved: false, rejectedBy: 'gate_unavailable' });
+  });
+
+  it('save: a valid token stores the preview verdict with no second gate call', async () => {
+    evaluateMock.mockResolvedValue(PASS);
+    const preview: any = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+    evaluateMock.mockClear();
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, idea, { body: preview.preview, verdictToken: preview.verdictToken });
+    expect(evaluateMock).not.toHaveBeenCalled();
+    const data = prismaMock.contentItem.create.mock.calls[0][0].data;
+    expect(data.status).toBe('GENERATED');
+    expect(data.qualityVerdict).toMatchObject({ approved: true, source: 'preview' });
+  });
+
+  it('save: changed text or a missing token stores not_checked, with no gate call', async () => {
+    evaluateMock.mockResolvedValue(PASS);
+    const preview: any = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+    evaluateMock.mockClear();
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, idea, { body: `${preview.preview} edited`, verdictToken: preview.verdictToken });
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, idea, { body: preview.preview });
+    expect(evaluateMock).not.toHaveBeenCalled();
+    for (const call of prismaMock.contentItem.create.mock.calls) {
+      expect(call[0].data.qualityVerdict).toMatchObject({ approved: false, rejectedBy: 'not_checked' });
+    }
+  });
+
+  it('save without a preview (outline only) stays ungated', async () => {
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+    expect(prismaMock.contentItem.create.mock.calls[0][0].data.qualityVerdict).toBeUndefined();
+  });
+
+  it('pipeline generate: a pass is SCHEDULED with the verdict stored', async () => {
+    evaluateMock.mockResolvedValue(PASS);
+    await generateDraftForItem({ userId: OWNER, workspaceId: WORKSPACE }, 'item-1');
+    expect(evaluateMock).toHaveBeenCalledTimes(1);
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data.status).toBe('SCHEDULED');
+    expect(data.scheduledAtUtc).toBeInstanceOf(Date);
+    expect(data.qualityVerdict).toMatchObject({ approved: true, source: 'pipeline' });
+  });
+
+  it('pipeline generate: a fail is GENERATED with no schedule', async () => {
+    evaluateMock.mockResolvedValue(FAIL);
+    await generateDraftForItem({ userId: OWNER, workspaceId: WORKSPACE }, 'item-1');
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data.status).toBe('GENERATED');
+    expect(data.scheduledAtUtc).toBeNull();
+    expect(data.qualityVerdict).toMatchObject({ approved: false, rejectedBy: 'low_score' });
+  });
+
+  it('autopilot source: no gate call here (the runner gates), still SCHEDULED', async () => {
+    await generateDraftForItem({ userId: OWNER, workspaceId: WORKSPACE }, 'item-1', { source: 'autopilot' });
+    expect(evaluateMock).not.toHaveBeenCalled();
+    expect(prismaMock.contentItem.update.mock.calls[0][0].data.status).toBe('SCHEDULED');
   });
 });

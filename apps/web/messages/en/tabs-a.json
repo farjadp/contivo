@@ -400,6 +400,51 @@
       "pillarsTitle": "Core Content Pillars",
       "pillarLabel": "Pillar {index, number}",
       "noPillars": "No pillars defined."
+    },
+    "quality": {
+      "badge": {
+        "failed": "Quality check failed",
+        "notChecked": "Not checked",
+        "passed": "Passed the quality check",
+        "overridden": "Publishing anyway"
+      },
+      "showReasons": "Why?",
+      "hideReasons": "Hide",
+      "checkAgain": "Check again",
+      "checking": "Checking…",
+      "publishAnyway": "Publish anyway…",
+      "heldNote": "Held: it won't publish until it passes or you choose Publish anyway.",
+      "overriddenNote": "You chose to publish this without passing the check.",
+      "error": "The check couldn't run. Try again.",
+      "previewPassed": "This draft passed the quality check.",
+      "previewFailed": "This draft didn't pass the quality check. You can still add it to the Pipeline, but it won't publish until it passes or you choose Publish anyway.",
+      "reviewerNotes": "Reviewer's notes",
+      "dialog": {
+        "title": "Publish without passing the quality check?",
+        "body": "The quality check held this draft back because:",
+        "note": "If you continue, you can schedule and publish it like any other post. We record that you chose to publish it anyway.",
+        "confirm": "Publish anyway",
+        "cancel": "Keep it held",
+        "saving": "Saving…"
+      },
+      "reasons": {
+        "empty": "The draft is empty.",
+        "platform_char_limit": "It's longer than this platform allows.",
+        "word_count": "It's too short or too long for this platform.",
+        "leakage": "It still has template placeholders or assistant chatter in it.",
+        "avoid_list": "It mentions a phrase you asked us to avoid.",
+        "duplicate": "It repeats a post you published or scheduled recently.",
+        "unavailable": "The quality check couldn't run, so nobody has reviewed this text.",
+        "judge_veto": "The reviewer judged it unsafe to publish: it may make claims you can't back up, give medical, legal or financial advice, or read as machine-written.",
+        "not_checked": "The text changed after it was checked, so this version hasn't been reviewed.",
+        "brandFit": "It doesn't sound like your brand (score {score, number}/{max, number}).",
+        "factualSafety": "It makes claims nobody can verify (score {score, number}/{max, number}).",
+        "clarity": "It isn't clear or finished enough (score {score, number}/{max, number}).",
+        "storylineFit": "It doesn't move your storyline forward (score {score, number}/{max, number}).",
+        "evidenceDiscipline": "It leans on proof you haven't given us (score {score, number}/{max, number}).",
+        "low_score": "It scored below the bar on the reviewer's checks.",
+        "other": "It didn't pass one of the quality checks."
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 
 import { Sparkles, Loader2, FileText, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { generateIdeas, saveIdeaToPipeline, generateDraftPreviewFromIdea } from '@/app/actions/workspace';
+import { QualityVerdictNotice } from './QualityVerdictNotice';
 import { useRouter } from '@/i18n/navigation';
 import {
   CONTENT_GOAL_OPTIONS,
@@ -591,6 +592,10 @@ function IdeaCard({
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewText, setPreviewText] = useState<string>('');
   const [previewChannel, setPreviewChannel] = useState<string>('');
+  // B8: the gate's verdict on this preview, and the signed token that lets
+  // Add to Pipeline store it without judging the same text twice.
+  const [previewVerdict, setPreviewVerdict] = useState<unknown>(null);
+  const [previewVerdictToken, setPreviewVerdictToken] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
   const handleGeneratePreview = async () => {
@@ -613,6 +618,8 @@ function IdeaCard({
       if (result && 'success' in result && result.success) {
         setPreviewText(String(result.preview || ''));
         setPreviewChannel(String(result.channel || idea?.channel || ''));
+        setPreviewVerdict('verdict' in result ? result.verdict ?? null : null);
+        setPreviewVerdictToken('verdictToken' in result ? result.verdictToken ?? null : null);
         setIsPreviewOpen(true);
       }
     } catch {
@@ -626,7 +633,11 @@ function IdeaCard({
     setIsSaving(true);
     try {
       // A preview already generated is the post: save it, not the outline.
-      const res = await saveIdeaToPipeline(workspaceId, idea, previewText ? { body: previewText } : undefined);
+      const res = await saveIdeaToPipeline(
+        workspaceId,
+        idea,
+        previewText ? { body: previewText, verdictToken: previewVerdictToken } : undefined,
+      );
       if (res && 'success' in res && res.success) {
         setSaved(true);
         router.refresh();
@@ -714,6 +725,7 @@ function IdeaCard({
               <div className="mb-3 inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss-muted">
                 <bdi>{previewChannel ? channelLabel(t, previewChannel) : t('ideation.channelFallback')}</bdi>
               </div>
+              <QualityVerdictNotice verdict={previewVerdict} variant="preview" />
               <p className="whitespace-pre-wrap text-sm leading-7 text-moss">
                 {previewText || t('ideation.noPreview')}
               </p>
