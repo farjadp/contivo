@@ -2,6 +2,7 @@ import { redirect } from '@/i18n/navigation';
 
 import { AppShell } from '@/components/layout/app-shell';
 import { getSession } from '@/lib/auth';
+import { touchLastSeen } from '@/lib/last-seen';
 import { getLocale } from 'next-intl/server';
 
 /**
@@ -17,6 +18,9 @@ import { getLocale } from 'next-intl/server';
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
+
+  // lastSeenAt + SESSION_STARTED. Never throws; skips the database for 5 min per user.
+  await touchLastSeen(session.userId);
 
   return <AppShell>{children}</AppShell>;
 }
