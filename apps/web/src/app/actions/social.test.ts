@@ -103,11 +103,20 @@ describe('reconnectSocialConnection', () => {
   });
 
   it('a platform without an OAuth flow returns an error, no url', async () => {
-    reply(200, { connection: { id: 'c1' }, reconnect: { platform: 'telegram', flow: 'unsupported' } });
+    reply(200, { connection: { id: 'c1' }, reconnect: { platform: 'threads', flow: 'unsupported' } });
     const result = await reconnectSocialConnection('c1', 'w1');
     expect(connectUrlMock).not.toHaveBeenCalled();
     expect(result.code).toBe('reconnect_unsupported');
     expect(result.error).toBeTruthy();
+  });
+
+  it('telegram returns its flow and no url: the caller opens the Telegram panel', async () => {
+    reply(200, { connection: { id: 'c1', status: 'PENDING_REAUTH' }, reconnect: { platform: 'telegram', flow: 'telegram' } });
+    const result = await reconnectSocialConnection('c1', 'w1');
+    expect(connectUrlMock).not.toHaveBeenCalled();
+    expect(result.error).toBeUndefined();
+    expect(result.data?.url).toBeNull();
+    expect(result.data?.reconnect.flow).toBe('telegram');
   });
 });
 

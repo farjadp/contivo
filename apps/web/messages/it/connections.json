@@ -41,7 +41,9 @@
         "facebookLabel": "Pagina Facebook",
         "facebookDescription": "Pubblica post e link su una Pagina <bdi>Facebook</bdi> che gestisci.",
         "tiktokLabel": "TikTok",
-        "tiktokDescription": "Pubblica caroselli di foto e video sul tuo account <bdi>TikTok</bdi>."
+        "tiktokDescription": "Pubblica caroselli di foto e video sul tuo account <bdi>TikTok</bdi>.",
+        "telegramLabel": "Telegram",
+        "telegramDescription": "Pubblica in un canale o gruppo <bdi>Telegram</bdi> che gestisci."
       },
       "unavailableTitle": "{platform} non ha credenziali API in questo deployment.",
       "unavailableDescription": "Non configurato in questo deployment: mancano ancora le credenziali API.",
@@ -52,7 +54,8 @@
       "permissionsTitle": "Autorizzazioni richieste",
       "securityNote": "Il tuo token di accesso è crittografato e conservato in modo sicuro. Non viene mai esposto al frontend. Puoi revocare l'accesso in qualsiasi momento.",
       "preparing": "Preparazione…",
-      "continueOAuth": "Continua con l'OAuth di {platform}"
+      "continueOAuth": "Continua con l'OAuth di {platform}",
+      "telegramUnavailable": "Non ancora attivo."
     },
     "accounts": {
       "title": "Account collegati",
@@ -81,12 +84,19 @@
         "revoked": "L'accesso a questo account <bdi>{platform}</bdi> è stato revocato. Ricollegalo per tornare a pubblicare.",
         "pendingReauth": "<bdi>{platform}</bdi> chiede di accedere di nuovo prima che <bdi>Contivo</bdi> possa pubblicare.",
         "failed": "Il collegamento con <bdi>{platform}</bdi> non funziona più. Ricollegalo per tornare a pubblicare.",
-        "unsupported": "Questo collegamento <bdi>{platform}</bdi> non funziona più e per ora non si può ricollegare da questa pagina."
+        "unsupported": "Questo collegamento <bdi>{platform}</bdi> non funziona più e per ora non si può ricollegare da questa pagina.",
+        "telegramBotRemoved": "Il bot di Contivo è stato rimosso da questo canale, quindi le pubblicazioni non riusciranno. Ricollegalo per aggiungere di nuovo il bot.",
+        "telegramBotRightsLost": "Il bot di Contivo ha perso il permesso di pubblicare in questo canale, quindi le pubblicazioni non riusciranno. Ricollegalo per restituirgli il permesso."
       },
       "errors": {
         "disconnect": "Non è stato possibile scollegare questo account.",
         "setDefault": "Non è stato possibile impostare questo account come predefinito.",
         "reconnect": "Non è stato possibile avviare il ricollegamento."
+      },
+      "telegramChatType": {
+        "channel": "Canale",
+        "group": "Gruppo",
+        "supergroup": "Gruppo"
       }
     },
     "rules": {
@@ -196,6 +206,62 @@
       "keyCopySnippet": "Copia snippet",
       "keyStore": "Salva la key come <code>CONTIVO_API_KEY</code> sul tuo sito, solo lato server.",
       "keySinglePost": "Post singolo: <code>/api/v1/posts/{slug}</code>"
+    },
+    "telegram": {
+      "stepOf": "Passo {step, number} di {total, number}",
+      "starting": "Preparazione del link Telegram…",
+      "openTitle": "Apri il bot di Contivo su Telegram",
+      "openBody": "Tocca Avvia nella chat che si apre. Questa pagina passa da sola al passo successivo.",
+      "openButton": "Apri Telegram",
+      "waitingStart": "In attesa che tu tocchi Avvia…",
+      "chooseTitle": "Scegli il tuo canale",
+      "chooseBody": "Su Telegram tocca «Scegli un canale» e seleziona il tuo canale. Il bot di Contivo viene aggiunto come amministratore che può solo pubblicare messaggi.",
+      "waitingChoice": "In attesa della tua scelta su Telegram…",
+      "openAgain": "Apri di nuovo Telegram",
+      "usernameLink": "Il mio canale è pubblico e il bot è già amministratore",
+      "usernameTitle": "Collega un canale pubblico",
+      "usernameBody": "Rendi il bot di Contivo amministratore con il permesso di pubblicare messaggi, poi inserisci il nome utente pubblico del canale.",
+      "usernameLabel": "Nome utente del canale",
+      "usernameSubmit": "Trova il canale",
+      "usernameBack": "Torna alla scelta su Telegram",
+      "codeTitle": "Inserisci il codice",
+      "codeBody": "Inserisci il codice di 6 cifre che il bot ti ha inviato su Telegram.",
+      "codeLabel": "Codice",
+      "codeSubmit": "Conferma",
+      "attemptsLeft": "{count, plural, one {Resta # tentativo.} other {Restano # tentativi.}}",
+      "working": "Verifica…",
+      "connectedTitle": "Telegram collegato",
+      "connectedBody": "Contivo pubblicherà in <bdi>{name}</bdi>.",
+      "chatType": {
+        "channel": "Canale",
+        "group": "Gruppo",
+        "supergroup": "Gruppo"
+      },
+      "done": "Fatto",
+      "expiredTitle": "Questo link è scaduto",
+      "expiredBody": "Un link di collegamento vale solo pochi minuti. Ricomincia per averne uno nuovo.",
+      "failedTitle": "Il collegamento si è interrotto",
+      "startAgain": "Ricomincia",
+      "retry": "Riprova",
+      "errors": {
+        "bot_not_admin": "Il bot di Contivo non può ancora pubblicare lì. Rendilo amministratore con il permesso di pubblicare messaggi, poi scegli di nuovo il canale.",
+        "user_not_admin": "Il tuo account Telegram deve essere un amministratore che può pubblicare in quel canale.",
+        "chat_not_found": "Telegram non ha trovato un canale o gruppo pubblico con quel nome utente, oppure il bot non ne fa parte.",
+        "not_a_channel_or_group": "Non è un canale né un gruppo. Scegli un canale o un gruppo.",
+        "telegram_unavailable": "Telegram non ha risposto. Riprova tra un minuto.",
+        "too_many_attempts": "Il codice è stato inserito male troppe volte. Ricomincia per riceverne uno nuovo.",
+        "wrong_code": "Il codice non è corretto. Controlla l’ultimo messaggio del bot.",
+        "not_pending": "Nessun canale è ancora in attesa di un codice. Prima scegli il canale su Telegram.",
+        "start_bot_first": "Prima apri Telegram e tocca Avvia nel bot.",
+        "invalid_username": "Inserisci il nome utente pubblico del canale, quello che inizia con @.",
+        "session_not_found": "Questo link di collegamento è scaduto. Ricomincia.",
+        "telegram_not_configured": "Telegram non è ancora attivo su Contivo.",
+        "store_unavailable": "Al momento non è possibile collegarsi. Riprova tra un minuto.",
+        "session_expired": "La tua sessione Contivo è terminata. Accedi di nuovo.",
+        "forbidden": "Non hai accesso a questo workspace.",
+        "unreachable": "Impossibile raggiungere il servizio di pubblicazione. Riprova tra un minuto.",
+        "api_error": "Qualcosa è andato storto da parte nostra. Riprova tra un minuto."
+      }
     }
   }
 }
