@@ -1,6 +1,7 @@
 /**
  * Regression tests for the channels security review (P2-1..3, P3-1..2).
- * P1-1 (workspace scoping of createJob/retry) ships as a separate hotfix from main.
+ * P1-1 (workspace scoping of createJob/retry/worker) came from the main hotfix;
+ * its tests are social-workspace-scope.test.ts plus the P1 block below.
  * Run: pnpm --filter @contivo/api test
  */
 import { strict as assert } from 'node:assert';
@@ -13,6 +14,7 @@ import { AdapterFactory } from '../src/modules/social/adapters/adapter.factory';
 import { failedPublishResult } from '../src/modules/social/adapters/http-health';
 import { LinkedInAdapter } from '../src/modules/social/adapters/linkedin.adapter';
 import { XAdapter } from '../src/modules/social/adapters/x.adapter';
+import { memoryOAuthStore } from '../src/modules/social/oauth-store';
 import { SocialConnectionsService } from '../src/modules/social/social-connections.service';
 import { SocialOAuthService } from '../src/modules/social/social-oauth.service';
 import { SocialPublishService } from '../src/modules/social/social-publish.service';
@@ -203,6 +205,8 @@ describe('P3-2 platform error bodies are capped', () => {
 });
 
 describe('P2-3 OAuth state is bound to the browser and single-use', () => {
+  // The nonce cookie, replay and cross-user cases live in social-oauth-csrf.test.ts
+  // (from the P2-A hotfix). These pin what that file does not.
   const saved = { ...process.env };
   const realFetch = globalThis.fetch;
   beforeEach(() => {
@@ -224,37 +228,20 @@ describe('P2-3 OAuth state is bound to the browser and single-use', () => {
       user: [{ id: 'u1', role: 'USER' }, { id: 'u2', role: 'USER' }],
       workspace: [{ id: 'w1', userId: 'u1' }],
     });
-    const svc = new SocialOAuthService(new SocialConnectionsService(prisma), prisma, memoryLocks());
+    const svc = new SocialOAuthService(new SocialConnectionsService(prisma), memoryOAuthStore());
     return { prisma, svc };
   }
   const stateOf = (url: string) => new URL(url).searchParams.get('state')!;
+  const ticketOf = (url: string) => new URL(url).searchParams.get('pending')!;
 
-  it('happy path: matching cookie nonce connects the account', async () => {
+  it('happy path: the callback parks the account, finalize by the same user saves it', async () => {
     const { svc, prisma } = oauth();
     const { url, nonce } = svc.startAuth('linkedin', 'w1', 'u1');
     const redirect = await svc.handleCallback('linkedin', 'code', stateOf(url), nonce);
-    assert.match(redirect, /connected=linkedin/);
+    assert.match(redirect, /\/connections\?pending=/);
+    assert.equal(prisma.socialConnection.rows.length, 0, 'nothing saved before finalize');
+    await svc.finalizeConnect(ticketOf(redirect), 'u1');
     assert.equal(prisma.socialConnection.rows.length, 1);
-  });
-
-  it('no cookie (state replayed in another browser) is rejected before the code exchange', async () => {
-    const { svc, prisma } = oauth();
-    const { url } = svc.startAuth('linkedin', 'w1', 'u1');
-    await assert.rejects(svc.handleCallback('linkedin', 'code', stateOf(url), undefined), /start the connection again/i);
-    assert.equal(prisma.socialConnection.rows.length, 0);
-  });
-
-  it('a different nonce is rejected', async () => {
-    const { svc } = oauth();
-    const { url } = svc.startAuth('linkedin', 'w1', 'u1');
-    await assert.rejects(svc.handleCallback('linkedin', 'code', stateOf(url), 'not-the-nonce'), /start the connection again/i);
-  });
-
-  it('the same state cannot be used twice', async () => {
-    const { svc } = oauth();
-    const { url, nonce } = svc.startAuth('linkedin', 'w1', 'u1');
-    await svc.handleCallback('linkedin', 'code', stateOf(url), nonce);
-    await assert.rejects(svc.handleCallback('linkedin', 'code', stateOf(url), nonce), /already used/i);
   });
 
   it('a state issued for one platform cannot complete another', async () => {
@@ -263,11 +250,12 @@ describe('P2-3 OAuth state is bound to the browser and single-use', () => {
     await assert.rejects(svc.handleCallback('x', 'code', stateOf(url), nonce), /platform/i);
   });
 
-  it('state carries the user; one who lost workspace access is refused', async () => {
+  it('a user who lost workspace access between connect and finalize is refused', async () => {
     const { svc, prisma } = oauth();
     const { url, nonce } = svc.startAuth('linkedin', 'w1', 'u1');
+    const redirect = await svc.handleCallback('linkedin', 'code', stateOf(url), nonce);
     prisma.workspace.rows[0].userId = 'u2';
-    await assert.rejects(svc.handleCallback('linkedin', 'code', stateOf(url), nonce), /access/i);
+    await assert.rejects(svc.finalizeConnect(ticketOf(redirect), 'u1'));
     assert.equal(prisma.socialConnection.rows.length, 0);
   });
 });

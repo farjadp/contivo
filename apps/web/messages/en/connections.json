@@ -9,6 +9,11 @@
       "cta": "Create workspace"
     },
     "workspaceLabel": "Workspace",
+    "connectResult": {
+      "ok": "Account connected to this workspace.",
+      "foreign": "Nothing was connected: this link was started from another Contivo account. If you didn't start it, ignore it. To connect your own account, use the Connect Account button below.",
+      "failed": "The connection didn't finish or has expired. Nothing was connected. Try again."
+    },
     "tabs": {
       "social": "Social Channels",
       "websites": "Websites"

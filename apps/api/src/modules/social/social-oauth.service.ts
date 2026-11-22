@@ -4,39 +4,49 @@
  * Handles OAuth 2.0 flows for all supported social platforms.
  *
  * Flow:
- *   1. Frontend → GET /social/oauth/:platform/connect?workspaceId=xxx
- *      → getAuthUrl() → 302 redirect to platform authorization page
+ *   1. Web → GET /social/oauth/:platform/connect?t=<handoff>
+ *      → startAuth() → nonce cookie on the API host + 302 to the platform
  *
  *   2. Platform → GET /social/oauth/:platform/callback?code=yyy&state=zzz
- *      → handleCallback() → exchange code for token → save connection → redirect to frontend
+ *      → handleCallback() → checks state + nonce cookie, exchanges the code,
+ *        PARKS the account in Redis under a one-time ticket and redirects to
+ *        the web /connections?pending=<ticket>. Nothing is saved yet.
  *
- * CSRF protection: AES-GCM state naming workspace, user, platform and a nonce;
- * the nonce is also an httpOnly cookie and is single-use (see handleCallback).
+ *   3. Web (signed-in session) → POST /social/oauth/finalize { ticket }
+ *      → finalizeConnect() → saves the connection only if the session user is
+ *        the user who started step 1.
+ *
+ * Why step 3: the API host cannot see the contivo.app session cookie, so the
+ * nonce cookie only proves "the same browser that opened /connect". An
+ * attacker can mint a valid /connect link for their own workspace and send it
+ * to a victim; without step 3 the victim's LinkedIn landed in the attacker's
+ * workspace (connection CSRF). Step 3 is checked against the web session.
  *
  * Security:
  *   - Client secrets only live server-side (NestJS env).
- *   - Tokens are immediately encrypted via SocialConnectionsService before DB write.
+ *   - Tokens are encrypted (token-crypto) before they are parked or saved.
  *   - The access token is never logged or returned to the frontend.
  */
 
 import * as crypto from 'crypto';
 
-import { Inject, Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  GoneException,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 
-import { PrismaService } from '../../common/prisma/prisma.service';
-
+import type { CreateSocialConnectionDto } from './dto/create-social-connection.dto';
 import { getOAuthStateSecret } from './oauth-state-secret';
+import { OAUTH_STORE, type OAuthStore } from './oauth-store';
 import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
-import { LOCK_STORE, type LockStore } from './token-refresh.service';
+import * as tokenCrypto from './token-crypto';
 
-
-// ─── Platform config helper ───────────────────────────────────────────────────
-
-// OAuth platforms come from platforms.ts (typed against the Prisma enum).
-type Platform = OAuthPlatform;
-
-/** OAuth state lifetime; the nonce cookie lives as long. */
+/** OAuth state lifetime; the nonce cookie and the pending ticket live as long. */
 export const STATE_TTL_MS = 10 * 60 * 1000;
 export const OAUTH_NONCE_COOKIE = 'contivo_oauth_nonce';
 
@@ -47,14 +57,38 @@ interface StateContext {
   nonce: string;
 }
 
+/** What a platform callback learned, before it is bound to a workspace. */
+type ExchangedAccount = Omit<CreateSocialConnectionDto, 'workspaceId'>;
+
+/** Parked in Redis between the callback and the web confirmation. */
+interface PendingConnect {
+  userId: string;
+  workspaceId: string;
+  platform: Platform;
+  accounts: Array<
+    Omit<ExchangedAccount, 'accessToken' | 'refreshToken' | 'tokenExpiresAt'> & {
+      encAccess: string;
+      encRefresh?: string;
+      tokenExpiresAt?: string;
+    }
+  >;
+}
+
+const pendingKey = (ticket: string) => `social:oauth-pending:${ticket}`;
+const nonceKey = (nonce: string) => `social:oauth-state:${nonce}`;
+
+// ─── Platform config helper ───────────────────────────────────────────────────
+
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
+
 @Injectable()
 export class SocialOAuthService {
   private readonly logger = new Logger(SocialOAuthService.name);
 
   constructor(
     private readonly connections: SocialConnectionsService,
-    private readonly prisma: PrismaService,
-    @Inject(LOCK_STORE) private readonly locks: LockStore,
+    @Inject(OAUTH_STORE) private readonly store: OAuthStore,
   ) {
     // Fail at boot, not on the first connect attempt.
     getOAuthStateSecret();
@@ -90,9 +124,9 @@ export class SocialOAuthService {
   }
 
   /**
-   * Starts a connect flow. The returned `nonce` must be set by the controller
-   * as an httpOnly cookie on the API host; the callback only succeeds in the
-   * browser that holds it. The state also names the user and the platform.
+   * Starts a connect flow for `userId` into `workspaceId`. The returned
+   * `nonce` must be set by the controller as an httpOnly cookie on the API
+   * host; the callback only proceeds in the browser that holds it.
    */
   startAuth(platform: Platform, workspaceId: string, userId: string): { url: string; nonce: string } {
     const missing = this.missingConfig(platform);
@@ -103,7 +137,12 @@ export class SocialOAuthService {
       );
     }
 
-    const ctx: StateContext = { workspaceId, userId, platform, nonce: crypto.randomBytes(18).toString('base64url') };
+    const ctx: StateContext = {
+      workspaceId,
+      userId,
+      platform,
+      nonce: crypto.randomBytes(18).toString('base64url'),
+    };
     let url: string;
     switch (platform) {
       case 'linkedin': url = this.linkedInAuthUrl(ctx); break;
@@ -118,11 +157,10 @@ export class SocialOAuthService {
   // ─── Step 2: Handle callback ─────────────────────────────────────────────
 
   /**
-   * Checks, in order, before any code is exchanged: the state decrypts and is
-   * fresh; it was issued for this platform; the browser holds the nonce cookie
-   * set at /connect (a state lifted into another browser fails here); the
-   * nonce was not used before (Redis SET NX, single use); the user named in
-   * the state still has access to the workspace.
+   * Checks, before any code is exchanged: the state decrypts and is fresh;
+   * it was issued for this platform; the browser holds the nonce cookie set
+   * at /connect; the nonce was not used before. Then exchanges the code and
+   * parks the account for finalizeConnect(). Returns the web URL to go to.
    */
   async handleCallback(
     platform: Platform,
@@ -131,7 +169,7 @@ export class SocialOAuthService {
     cookieNonce: string | undefined,
   ): Promise<string> {
     const stateObj = this.verifyState(stateParam);
-    const { workspaceId, userId, nonce } = stateObj as { workspaceId?: string; userId?: string; nonce?: string };
+    const { workspaceId, userId, nonce } = stateObj as Partial<StateContext>;
 
     if (stateObj.platform !== platform) {
       throw new BadRequestException('This sign-in was started for a different platform. Start the connection again.');
@@ -142,30 +180,84 @@ export class SocialOAuthService {
         'This sign-in did not start in this browser, or it took too long. Start the connection again from the Connections page.',
       );
     }
-
-    let first: string | null;
-    try {
-      first = await this.locks.acquire(`social:oauth-state:${nonce}`, STATE_TTL_MS + 60_000);
-    } catch (err) {
-      throw new BadRequestException(`Could not verify the sign-in right now (${(err as Error).message}). Try again.`);
-    }
-    if (!first) {
+    if (!(await this.store.claimOnce(nonceKey(nonce), STATE_TTL_MS + 60_000))) {
       throw new BadRequestException('This sign-in link was already used. Start the connection again from the Connections page.');
     }
 
-    try {
-      await this.connections.validateWorkspaceAccess(workspaceId, userId);
-    } catch {
-      throw new ForbiddenException('You no longer have access to this workspace.');
-    }
-
+    let accounts: ExchangedAccount[];
     switch (platform) {
-      case 'linkedin': return this.linkedInCallback(workspaceId, code);
-      case 'x':        return this.xCallback(workspaceId, code, stateObj.codeVerifier);
-      case 'facebook': return this.facebookCallback(workspaceId, code);
-      case 'tiktok':   return this.tikTokCallback(workspaceId, code);
+      case 'linkedin': accounts = await this.linkedInCallback(workspaceId, code); break;
+      case 'x':        accounts = await this.xCallback(workspaceId, code, stateObj.codeVerifier); break;
+      case 'facebook': accounts = await this.facebookCallback(workspaceId, code); break;
+      case 'tiktok':   accounts = await this.tikTokCallback(workspaceId, code); break;
       default:         throw new BadRequestException(`Unsupported platform: ${platform}`);
     }
+
+    const pending: PendingConnect = {
+      userId,
+      workspaceId,
+      platform,
+      accounts: accounts.map(({ accessToken, refreshToken, tokenExpiresAt, ...rest }) => ({
+        ...rest,
+        encAccess: tokenCrypto.encryptToken(accessToken),
+        ...(refreshToken && { encRefresh: tokenCrypto.encryptToken(refreshToken) }),
+        ...(tokenExpiresAt && { tokenExpiresAt: tokenExpiresAt.toISOString() }),
+      })),
+    };
+    const ticket = crypto.randomBytes(24).toString('base64url');
+    await this.store.put(pendingKey(ticket), JSON.stringify(pending), STATE_TTL_MS);
+
+    this.logger.log(`OAuth callback parked: ${platform} workspace=${workspaceId} accounts=${accounts.length}`);
+    const web = process.env.WEB_APP_URL ?? 'http://localhost:3000';
+    return `${web}/connections?pending=${encodeURIComponent(ticket)}&platform=${platform}`;
+  }
+
+  // ─── Step 3: Confirm from the web session ─────────────────────────────────
+
+  /**
+   * Saves a parked connection, but only for the user who started the flow.
+   * The ticket is consumed on the first attempt whatever the outcome, so a
+   * mismatched attempt (a victim's browser landing on an attacker's flow)
+   * destroys it and the attacker cannot finalize it afterwards.
+   */
+  async finalizeConnect(ticket: string, sessionUserId: string): Promise<{ platform: Platform; accounts: number }> {
+    if (!ticket || typeof ticket !== 'string') throw new BadRequestException('ticket is required.');
+    const raw = await this.store.take(pendingKey(ticket));
+    if (!raw) throw new GoneException('This connection attempt expired or was already used. Connect again.');
+
+    const pending = JSON.parse(raw) as PendingConnect;
+    if (pending.userId !== sessionUserId) {
+      this.logger.warn(
+        `OAuth finalize refused: ${pending.platform} flow for workspace=${pending.workspaceId} was started by another user`,
+      );
+      throw new ForbiddenException(
+        'This connection was started from another Contivo account. Nothing was connected. Start again from your Connections page.',
+      );
+    }
+    await this.connections.validateWorkspaceAccess(pending.workspaceId, sessionUserId);
+
+    for (const acct of pending.accounts) {
+      const { encAccess, encRefresh, tokenExpiresAt, ...rest } = acct;
+      const accessToken = tokenCrypto.decryptToken(encAccess);
+      const refreshToken = encRefresh ? tokenCrypto.decryptToken(encRefresh) : undefined;
+      const expires = tokenExpiresAt ? new Date(tokenExpiresAt) : undefined;
+
+      // One upsert path: SocialConnectionsService.create() upserts on
+      // (workspaceId, platform, accountIdentifier), so a reconnect keeps the
+      // row id (publish history stays attached) instead of duplicating it.
+      await this.connections.create({
+        ...rest,
+        workspaceId: pending.workspaceId,
+        accessToken,
+        refreshToken,
+        tokenExpiresAt: expires,
+      });
+    }
+
+    this.logger.log(
+      `OAuth connected: ${pending.platform} workspace=${pending.workspaceId} accounts=${pending.accounts.length}`,
+    );
+    return { platform: pending.platform, accounts: pending.accounts.length };
   }
 
   private sameNonce(a: string, b: string): boolean {
@@ -193,7 +285,7 @@ export class SocialOAuthService {
     return `https://www.linkedin.com/oauth/v2/authorization?${params.toString()}`;
   }
 
-  private async linkedInCallback(workspaceId: string, code: string): Promise<string> {
+  private async linkedInCallback(_workspaceId: string, code: string): Promise<ExchangedAccount[]> {
     const clientId     = process.env.LINKEDIN_CLIENT_ID!;
     const clientSecret = process.env.LINKEDIN_CLIENT_SECRET!;
     const redirectUri  = process.env.LINKEDIN_REDIRECT_URI!;
@@ -239,8 +331,7 @@ export class SocialOAuthService {
       ? new Date(Date.now() + expires_in * 1000)
       : undefined;
 
-    await this.connections.create({
-      workspaceId,
+    return [{
       platform:          'LINKEDIN',
       accountName:       user.name ?? user.email ?? 'LinkedIn Account',
       accountIdentifier: user.sub,
@@ -249,10 +340,7 @@ export class SocialOAuthService {
       tokenExpiresAt,
       scopes:            ['openid', 'profile', 'email', 'w_member_social'],
       isDefault:         true,
-    });
-
-    this.logger.log(`LinkedIn connected: workspace=${workspaceId} sub=${user.sub}`);
-    return `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/connections?connected=linkedin`;
+    }];
   }
 
   // ─── X (Twitter) ─────────────────────────────────────────────────────────
@@ -280,7 +368,7 @@ export class SocialOAuthService {
     return `https://twitter.com/i/oauth2/authorize?${params.toString()}`;
   }
 
-  private async xCallback(workspaceId: string, code: string, codeVerifier: string): Promise<string> {
+  private async xCallback(_workspaceId: string, code: string, codeVerifier: string): Promise<ExchangedAccount[]> {
     const clientId     = process.env.TWITTER_CLIENT_ID!;
     const clientSecret = process.env.TWITTER_CLIENT_SECRET!;
     const redirectUri  = process.env.TWITTER_REDIRECT_URI!;
@@ -320,8 +408,7 @@ export class SocialOAuthService {
 
     const tokenExpiresAt = expires_in ? new Date(Date.now() + expires_in * 1000) : undefined;
 
-    await this.connections.create({
-      workspaceId,
+    return [{
       platform:          'X',
       accountName:       `@${xUser.username}`,
       accountIdentifier: xUser.id,
@@ -330,10 +417,7 @@ export class SocialOAuthService {
       tokenExpiresAt,
       scopes:            ['tweet.read', 'tweet.write', 'users.read'],
       isDefault:         true,
-    });
-
-    this.logger.log(`X connected: workspace=${workspaceId} user=@${xUser.username}`);
-    return `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/connections?connected=x`;
+    }];
   }
 
   // ─── Facebook ─────────────────────────────────────────────────────────────
@@ -355,7 +439,7 @@ export class SocialOAuthService {
     return `https://www.facebook.com/v19.0/dialog/oauth?${params.toString()}`;
   }
 
-  private async facebookCallback(workspaceId: string, code: string): Promise<string> {
+  private async facebookCallback(workspaceId: string, code: string): Promise<ExchangedAccount[]> {
     const appId       = process.env.FACEBOOK_APP_ID!;
     const appSecret   = process.env.FACEBOOK_APP_SECRET!;
     const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
@@ -391,38 +475,16 @@ export class SocialOAuthService {
       throw new BadRequestException('No Facebook Pages found. Please ensure you selected a Page during authorization.');
     }
 
-    // Save a connection for every Page the user authorized
-    for (const page of pages) {
-      // Check if connection already exists to avoid duplicates
-      const existing = await this.prisma.socialConnection.findFirst({
-        where: { workspaceId, platform: 'FACEBOOK', accountIdentifier: page.id },
-      });
-
-      if (existing) {
-        // Update token if it already exists
-        await this.prisma.socialConnection.update({
-          where: { id: existing.id },
-          data: {
-            encryptedAccessTokenRef: this.connections.encryptToken(page.access_token),
-            status: 'CONNECTED',
-          },
-        });
-        this.logger.log(`Facebook page updated: workspace=${workspaceId} page=${page.name}`);
-      } else {
-        await this.connections.create({
-          workspaceId,
-          platform:          'FACEBOOK',
-          accountName:       page.name,
-          accountIdentifier: page.id,
-          accessToken:       page.access_token,
-          scopes:            ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list'],
-          isDefault:         pages.indexOf(page) === 0, // First page is default if none exist
-        });
-        this.logger.log(`Facebook page connected: workspace=${workspaceId} page=${page.name}`);
-      }
-    }
-
-    return `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/connections?connected=facebook`;
+    // One connection per Page the user authorized; finalizeConnect() updates
+    // a Page already connected to the workspace instead of duplicating it.
+    return pages.map((page, i) => ({
+      platform:          'FACEBOOK' as const,
+      accountName:       page.name,
+      accountIdentifier: page.id,
+      accessToken:       page.access_token,
+      scopes:            ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list'],
+      isDefault:         i === 0,
+    }));
   }
 
   // ─── TikTok ───────────────────────────────────────────────────────────────
@@ -445,7 +507,7 @@ export class SocialOAuthService {
     return `https://www.tiktok.com/v2/auth/authorize/?${params.toString()}`;
   }
 
-  private async tikTokCallback(workspaceId: string, code: string): Promise<string> {
+  private async tikTokCallback(_workspaceId: string, code: string): Promise<ExchangedAccount[]> {
     const clientKey    = process.env.TIKTOK_CLIENT_KEY!;
     const clientSecret = process.env.TIKTOK_CLIENT_SECRET!;
     const redirectUri  = process.env.TIKTOK_REDIRECT_URI!;
@@ -489,8 +551,7 @@ export class SocialOAuthService {
     const openId      = tokenData.open_id;
     const tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
 
-    await this.connections.create({
-      workspaceId,
+    return [{
       platform:          'TIKTOK',
       accountName:       displayName,
       accountIdentifier: openId,
@@ -499,10 +560,7 @@ export class SocialOAuthService {
       tokenExpiresAt,
       scopes:            ['user.info.basic', 'video.publish', 'video.upload'],
       isDefault:         true,
-    });
-
-    this.logger.log(`TikTok connected: workspace=${workspaceId} open_id=${openId}`);
-    return `${process.env.WEB_APP_URL ?? 'http://localhost:3000'}/connections?connected=tiktok`;
+    }];
   }
 
   // ─── State helpers (CSRF) ────────────────────────────────────────────────
@@ -512,7 +570,7 @@ export class SocialOAuthService {
     const key = crypto.createHash('sha256').update(secret).digest();
     const iv = crypto.randomBytes(12);
 
-    const payloadObj = { ...ctx, ts: Date.now(), ...extraData };
+    const payloadObj = { ...extraData, ...ctx, ts: Date.now() };
     const payloadBuffer = Buffer.from(JSON.stringify(payloadObj), 'utf8');
 
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -541,7 +599,7 @@ export class SocialOAuthService {
       const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
       const payloadObj = JSON.parse(decrypted.toString('utf8'));
 
-      if (Date.now() - payloadObj.ts > STATE_TTL_MS) {
+      if (typeof payloadObj.ts !== 'number' || Date.now() - payloadObj.ts > STATE_TTL_MS) {
         throw new Error('State expired');
       }
 

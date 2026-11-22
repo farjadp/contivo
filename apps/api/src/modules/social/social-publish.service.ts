@@ -85,6 +85,31 @@ export class SocialPublishService {
     await this.connections.validateWorkspaceAccess(dto.workspaceId, userId);
     const platform: SocialPlatform = dto.platform;
 
+    // 0. Every id in the body must belong to the workspace just authorised.
+    //    Authorising the workspace alone let a signed-in user publish through
+    //    another customer's connection by naming its id. 404, not 403: do not
+    //    confirm that someone else's id exists (and name no id in the body).
+    const connection = await this.prisma.socialConnection.findFirst({
+      where: { id: dto.socialConnectionId, workspaceId: dto.workspaceId },
+      select: { id: true, platform: true },
+    });
+    if (!connection) {
+      throw new NotFoundException({ message: 'This social connection was not found.', code: 'NO_CONNECTION' });
+    }
+    if (connection.platform !== platform) {
+      throw new BadRequestException({
+        message: 'The connection is for a different platform than this post.',
+        code:    'NO_CONNECTION',
+      });
+    }
+    if (dto.contentItemId) {
+      const owned = await this.prisma.contentItem.findFirst({
+        where: { id: dto.contentItemId, workspaceId: dto.workspaceId },
+        select: { id: true },
+      });
+      if (!owned) throw new NotFoundException({ message: 'This post was not found.', code: 'INVALID_CONTENT' });
+    }
+
     // 1. Build payload for validation
     const payload: PublishPayload = {
       body:     dto.body,
@@ -229,8 +254,10 @@ export class SocialPublishService {
         refusal('NO_CONTENT_ITEM', 'This job has no post attached, so there is nothing to publish again.'),
       );
     }
-    const item = await this.prisma.contentItem.findUnique({
-      where: { id: job.contentItemId },
+    // Scoped to the job's workspace: a job row planted before the P1 fix
+    // must not re-publish another workspace's post.
+    const item = await this.prisma.contentItem.findFirst({
+      where: { id: job.contentItemId, workspaceId: job.workspaceId },
       select: { id: true, topic: true, content: true, slug: true },
     });
     if (!item) {
@@ -363,12 +390,25 @@ export class SocialPublishService {
         throw new PermanentPublishError((err as Error).message, 'NO_PUBLISHER');
       }
 
-      const row = await this.prisma.socialConnection.findUnique({
-        where: { id: connectionId },
-        select: { accountIdentifier: true, platform: true, status: true, metaJson: true },
+      // The connection must live in the job's own workspace. createJob
+      // enforces this, but rows written before that fix (or by any future
+      // path that forgets) must not reach a platform with someone else's token.
+      const owner = await this.prisma.socialPublishJob.findUnique({
+        where: { id: jobId },
+        select: { workspaceId: true },
       });
+      const row = owner
+        ? await this.prisma.socialConnection.findFirst({
+            where: { id: connectionId, workspaceId: owner.workspaceId },
+            select: { accountIdentifier: true, platform: true, status: true, metaJson: true },
+          })
+        : null;
       if (!row) {
-        throw new PermanentPublishError('Social connection no longer exists. Reconnect the account.', 'NO_CONNECTION');
+        this.logger.error(`Job ${jobId} refused: its connection is not in the job's workspace (or no longer exists).`);
+        throw new PermanentPublishError(
+          'Social connection not found in this workspace. Reconnect the account.',
+          'NO_CONNECTION',
+        );
       }
       if (row.status !== 'CONNECTED') {
         throw new PermanentPublishError(

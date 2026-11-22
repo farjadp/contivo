@@ -8,26 +8,44 @@
  *     → Redirects user to the platform's OAuth authorization page.
  *
  *   GET /api/v1/social/oauth/:platform/callback?code=yyy&state=zzz
- *     → Exchanges code for token, saves connection, redirects user back to the
- *       frontend connections page with a success query param.
+ *     → Checks state + nonce cookie, exchanges the code, parks the account and
+ *       redirects to the web /connections?pending=<ticket> (nothing saved yet).
+ *
+ *   POST /api/v1/social/oauth/finalize { ticket }
+ *     → Session-authenticated (minted bearer from a web server action). Saves
+ *       the parked connection only if the session user started the flow.
  *
  * Authentication:
- *   The /connect endpoint requires a valid workspaceId in the query.
- *   The /callback endpoint validates the HMAC-signed state param (no session needed).
+ *   /connect: short-lived handoff token signed by the web app.
+ *   /callback: encrypted state + the nonce cookie set by /connect (single use).
+ *   /finalize: the web session (SessionAuthGuard). This is the step that binds
+ *   the flow to the person who is signed in, which the API host cannot
+ *   otherwise see — see social-oauth.service.ts.
  */
 
-import { Controller, Get, Param, Query, Redirect, Logger, Req, Res, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Logger,
+  Param,
+  Post,
+  Query,
+  Redirect,
+  Req,
+  Res,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request, Response } from 'express';
 
+import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
-import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
+import type { OAuthPlatform } from './platforms';
 import { OAUTH_NONCE_COOKIE, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
-
-// OAuth platforms come from platforms.ts (typed against the Prisma enum).
-type Platform = OAuthPlatform;
 
 /**
  * The nonce cookie lives on the API host: the browser navigates to the API for
@@ -42,8 +60,8 @@ const NONCE_COOKIE_OPTS = {
   path: '/api/v1/social/oauth',
 };
 
-function readCookie(req: Request, name: string): string | undefined {
-  const header = req.headers.cookie;
+export function readCookie(req: Pick<Request, 'headers'>, name: string): string | undefined {
+  const header = req.headers?.cookie;
   if (!header) return undefined;
   for (const part of header.split(';')) {
     const eq = part.indexOf('=');
@@ -57,6 +75,9 @@ function readCookie(req: Request, name: string): string | undefined {
   }
   return undefined;
 }
+
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
 
 @Controller('social/oauth')
 export class SocialOAuthController {
@@ -118,9 +139,8 @@ export class SocialOAuthController {
    *
    * The provider redirects the user's browser here, so like /connect it can
    * carry no Authorization header and must be @Public. Its authentication is
-   * the `state` parameter (AES-GCM, issued in step 1, naming user, workspace,
-   * platform and a nonce) plus the nonce cookie set in step 1, so a state
-   * replayed from another browser, or twice, is refused.
+   * the `state` parameter: AES-GCM encrypted and issued by us in step 1, so a
+   * forged callback cannot name a workspace we did not authorise.
    *
    * Exchanges the code for a token, saves the connection, then redirects
    * the user back to the frontend /connections page.
@@ -148,5 +168,18 @@ export class SocialOAuthController {
 
     const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce);
     return { url: redirectUrl, statusCode: 302 };
+  }
+
+  /**
+   * Step 3 — the signed-in web session confirms the parked connection.
+   * Called by a web server action with a bearer minted from the session.
+   */
+  @Post('finalize')
+  @HttpCode(200)
+  async finalize(
+    @Body() body: { ticket?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.oauthService.finalizeConnect(String(body?.ticket ?? ''), user.id);
   }
 }

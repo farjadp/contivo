@@ -2,7 +2,7 @@
 
 import { createHmac } from 'crypto';
 
-import { getSession } from '@/lib/auth';
+import { getSession, mintApiToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { actionError } from '@/lib/action-errors';
 
@@ -75,4 +75,39 @@ export async function getSocialConnectUrl(
   )}&t=${encodeURIComponent(`${body}.${signature}`)}`;
 
   return { url };
+}
+
+export type FinalizeConnectResult = 'ok' | 'foreign' | 'failed';
+
+/**
+ * Step 3 of a social connect: confirms the account the OAuth callback parked
+ * under `ticket`, as the user signed in HERE.
+ *
+ * The API cannot see this app's session cookie, so it cannot tell who is
+ * really in the browser that came back from LinkedIn. It parks the account
+ * and lets this action decide: the API saves it only when the session user is
+ * the user who started the flow. A victim who opens an attacker's connect link
+ * lands here with their own session, gets 'foreign', and nothing is connected.
+ */
+export async function finalizeSocialConnect(ticket: string): Promise<FinalizeConnectResult> {
+  const session = await getSession();
+  if (!session || !ticket) return 'failed';
+
+  try {
+    const token = await mintApiToken();
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
+    const res = await fetch(`${apiBase}/api/v1/social/oauth/finalize`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ticket }),
+      cache: 'no-store',
+    });
+    if (res.ok) return 'ok';
+    if (res.status === 403) return 'foreign';
+    console.error(`Social connect finalize failed: HTTP ${res.status}`);
+    return 'failed';
+  } catch (error) {
+    console.error('Social connect finalize failed:', error);
+    return 'failed';
+  }
 }

@@ -165,7 +165,7 @@ export class SocialSchedulerService {
       );
     } catch (err) {
       this.logger.error(`Scheduler: failed to create job for item=${item.id}: ${(err as Error).message}`);
-      // createJob's 400s carry { code } (NO_PUBLISHER / INVALID_CONTENT).
+      // createJob refusals carry { code } (NO_PUBLISHER / INVALID_CONTENT / NO_CONNECTION).
       const response = (err as { getResponse?: () => unknown }).getResponse?.() as
         | { code?: PublishFailureCode; message?: string }
         | undefined;
