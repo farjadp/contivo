@@ -10,7 +10,8 @@
  *   POST   /                     Save a new OAuth-connected account
  *   PATCH  /:id                  Update connection (default flag, display name)
  *   DELETE /:id                  Disconnect an account
- *   POST   /:id/reconnect        Mark connection as PENDING_REAUTH
+ *   POST   /:id/reconnect        Start a reconnect: returns { connection, reconnect: { platform, flow } }.
+ *                                 flow 'oauth' → web calls getSocialConnectUrl(platform, workspaceId).
  * Auth: Protected by global SessionAuthGuard. User identity available via @CurrentUser().
  * SECURITY: No token fields are ever included in responses.
  */
@@ -93,7 +94,6 @@ export class SocialConnectionsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
-    const connection = await this.service.markForReauth(id, workspaceId, user.id);
-    return { connection };
+    return this.service.markForReauth(id, workspaceId, user.id);
   }
 }

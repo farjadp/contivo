@@ -25,12 +25,14 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 import { getOAuthStateSecret } from './oauth-state-secret';
+import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 
 
 // ─── Platform config helper ───────────────────────────────────────────────────
 
-type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
 
 @Injectable()
 export class SocialOAuthService {

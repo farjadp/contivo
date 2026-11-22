@@ -21,10 +21,12 @@ import { Controller, Get, Param, Query, Redirect, Logger, UnauthorizedException 
 import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
+import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import { SocialOAuthService } from './social-oauth.service';
 
-type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
 
 @Controller('social/oauth')
 export class SocialOAuthController {
