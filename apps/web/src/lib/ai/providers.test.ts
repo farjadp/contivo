@@ -9,6 +9,7 @@ import {
   CLAUDE_COMPETITOR_SEARCH_SYSTEM,
   COMPETITOR_SEARCH_MAX_USES,
   createAnthropicAdapter,
+  UNSUPPORTED_SEARCH_COUNTRIES,
   defaultAnthropicClient,
   parseAnthropicContent,
   type AnthropicClientLike,
@@ -276,8 +277,12 @@ describe('buildAnthropicParams (claude-api skill rules)', () => {
   it('web search: web_search_20260209 server tool with max_uses and country, and no format (citations conflict)', () => {
     const params = buildAnthropicParams({ ...searchRequest, output: { kind: 'json_schema', name: 'x', schema: SCHEMA } }, 'claude-sonnet-5-5') as unknown as Record<string, any>;
     expect(params.tools).toEqual([
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 3, user_location: { type: 'approximate', country: 'IR' } },
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 3 },
     ]);
+    // IR is rejected by the API (400), so it is never sent as user_location
+    expect(UNSUPPORTED_SEARCH_COUNTRIES.has('IR')).toBe(true);
+    const ca = buildAnthropicParams({ ...searchRequest, webSearch: { country: 'CA' } }, 'claude-sonnet-5-5') as unknown as Record<string, any>;
+    expect(ca.tools[0].user_location).toEqual({ type: 'approximate', country: 'CA' });
     expect(params.output_config.format).toBeUndefined();
   });
 
@@ -347,6 +352,29 @@ describe('anthropic adapter', () => {
     expect(sent.tools[0].allowed_callers).toEqual(['direct']);
     expect(result.webSearch?.citations).toEqual([]);
     expect(result.webSearch?.sourceUrls).toHaveLength(9);
+  });
+
+  it('a "country code not supported" 400 for a country not on the list → retried once without user_location', async () => {
+    const f = loadFixture('anthropic-400-country-unsupported.json');
+    const unsupported = Anthropic.APIError.generate(f.status, f.body as object, undefined, fixtureHeaders(f));
+    const { client, create } = fakeClient(unsupported, body('anthropic-web-search-success.json'));
+    const adapter = createAnthropicAdapter(() => client);
+    const request: AiRequest = { ...searchRequest, webSearch: { country: 'KP' } };
+    const result = await adapter.call({ task: 'competitor_web_search', request, model: 'claude-sonnet-5-5', apiKey: 'k' });
+    expect(create).toHaveBeenCalledTimes(2);
+    expect((create.mock.calls[0][0] as unknown as Record<string, any>).tools[0].user_location).toEqual({ type: 'approximate', country: 'KP' });
+    expect((create.mock.calls[1][0] as unknown as Record<string, any>).tools[0].user_location).toBeUndefined();
+    expect(result.webSearch?.citations).toHaveLength(2);
+  });
+
+  it('any other 400 is not retried', async () => {
+    const f = loadFixture('anthropic-400-bad-request.json');
+    const bad = Anthropic.APIError.generate(f.status, f.body as object, undefined, fixtureHeaders(f));
+    const { client, create } = fakeClient(bad);
+    const adapter = createAnthropicAdapter(() => client);
+    const error = await rejection(adapter.call({ task: 'competitor_web_search', request: { ...searchRequest, webSearch: { country: 'CA' } }, model: 'claude-sonnet-5-5', apiKey: 'k' }));
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(error).toBeInstanceOf(AiProviderError);
   });
 
   it('web_search_tool_result error object (HTTP 200) with no results → classified, too_many_requests = rate_limit', async () => {

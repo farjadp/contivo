@@ -13,6 +13,9 @@
  *    instruction and direct (non-code-execution) search, because Claude
  *    otherwise writes homepages from memory and cites nothing — see
  *    docs/evals/2026-11-22-claude-search-citations.md;
+ *  - country codes the search tool rejects (IR: 400 "Country code IR is not
+ *    supported") are never sent as user_location, and any other such 400 is
+ *    retried once without it;
  *  - server-side refusal fallback (`fallbacks: 'default'`, beta
  *    server-side-fallback-2026-07-01), and `stop_reason === 'refusal'` is
  *    checked before reading content.
@@ -77,6 +80,20 @@ export const CLAUDE_COMPETITOR_SEARCH_SYSTEM = [
  */
 export const COMPETITOR_SEARCH_MAX_USES = 5;
 
+/**
+ * Country codes the web search tool rejects with a 400 ("Country code IR is
+ * not supported", live 22 Nov). Searches for these markets go out without
+ * `user_location`; the query language still carries the market.
+ */
+export const UNSUPPORTED_SEARCH_COUNTRIES = new Set(['IR']);
+
+const UNSUPPORTED_COUNTRY_MESSAGE = /country code \w+ is not supported/i;
+
+function searchLocation(country: string | undefined) {
+  if (!country || UNSUPPORTED_SEARCH_COUNTRIES.has(country.toUpperCase())) return {};
+  return { user_location: { type: 'approximate' as const, country } };
+}
+
 function isCompetitorSearch(request: AiRequest, task: AiTask | undefined): boolean {
   return task === 'competitor_web_search' && Boolean(request.webSearch) && request.output.kind === 'text';
 }
@@ -116,9 +133,7 @@ export function buildAnthropicParams(request: AiRequest, model: string, task?: A
         // the model itself read, so competitor search calls it directly.
         ...(competitorSearch ? { allowed_callers: ['direct' as const] } : {}),
         ...(maxUses ? { max_uses: maxUses } : {}),
-        ...(request.webSearch.country
-          ? { user_location: { type: 'approximate' as const, country: request.webSearch.country } }
-          : {}),
+        ...searchLocation(request.webSearch.country),
       },
     ];
   }
@@ -184,6 +199,24 @@ function searchErrorClass(code: SearchErrorCode): 'rate_limit' | 'server' | 'inv
   return 'invalid_output';
 }
 
+/**
+ * After a "country code not supported" 400: the same params without
+ * `user_location`, or null when the error is anything else.
+ */
+export function withoutUnsupportedLocation(params: CreateParams, error: unknown): CreateParams | null {
+  const status = (error as { status?: unknown })?.status;
+  const message = (error as { message?: unknown })?.message;
+  if (status !== 400 || typeof message !== 'string' || !UNSUPPORTED_COUNTRY_MESSAGE.test(message)) return null;
+  if (!params.tools?.some((tool) => 'user_location' in tool && tool.user_location)) return null;
+  const tools = params.tools.map((tool) => {
+    if (!('user_location' in tool) || !tool.user_location) return tool;
+    const copy = { ...tool };
+    delete copy.user_location;
+    return copy;
+  });
+  return { ...params, tools };
+}
+
 export function createAnthropicAdapter(
   makeClient: (apiKey: string) => AnthropicClientLike = defaultAnthropicClient,
   now: () => number = Date.now,
@@ -193,7 +226,7 @@ export function createAnthropicAdapter(
     keyEnv: 'ANTHROPIC_API_KEY',
     async call({ task, request, model, apiKey }: ProviderCallInput): Promise<ProviderSuccess> {
       const client = makeClient(apiKey);
-      const params = buildAnthropicParams(request, model, task);
+      let params = buildAnthropicParams(request, model, task);
       const deadline = now() + request.timeoutMs;
       const usage: AiTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, webSearchCalls: 0 };
       const allBlocks: BetaContentBlock[] = [];
@@ -207,7 +240,16 @@ export function createAnthropicAdapter(
         try {
           message = await client.beta.messages.create(params, { timeout: remaining });
         } catch (error) {
-          throw classifyAnthropic(error);
+          // A country code not on our list that the API also rejects: send
+          // the search once more without a location instead of failing over.
+          const retryParams = withoutUnsupportedLocation(params, error);
+          if (!retryParams) throw classifyAnthropic(error);
+          params = retryParams;
+          try {
+            message = await client.beta.messages.create(params, { timeout: Math.max(1, deadline - now()) });
+          } catch (retryError) {
+            throw classifyAnthropic(retryError);
+          }
         }
         addUsage(usage, message);
         allBlocks.push(...message.content);

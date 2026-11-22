@@ -19,6 +19,9 @@ export const QUERIES = [
   { q: 'AI content marketing software for small business', country: 'CA', lang: 'en' },
   { q: 'فروشگاه ساز اینترنتی', country: 'IR', lang: 'fa' },
 ];
+// The API rejects some markets' country codes (live 22 Nov: "Country code IR is not supported").
+// EXP_NO_COUNTRY=IR sends those queries without user_location, as the adapter now does.
+const NO_COUNTRY = new Set((process.env.EXP_NO_COUNTRY || '').split(',').filter(Boolean));
 
 // Current production prompt (search.ts buildSearchPrompt).
 const basePrompt = (q) => `Search the web for: "${q}". List the companies or products that offer this, each with its website. Be brief.`;
@@ -51,7 +54,7 @@ async function runOne(variantName, v, { q, country }) {
     max_tokens: 16000,
     messages: [{ role: 'user', content: basePrompt(q) }],
     output_config: { effort: v.effort },
-    tools: [{ type: v.tool, name: 'web_search', ...(v.direct ? { allowed_callers: ['direct'] } : {}), ...(v.maxUses ? { max_uses: v.maxUses } : {}), user_location: { type: 'approximate', country } }],
+    tools: [{ type: v.tool, name: 'web_search', ...(v.direct ? { allowed_callers: ['direct'] } : {}), ...(v.maxUses ? { max_uses: v.maxUses } : {}), ...(NO_COUNTRY.has(country) ? {} : { user_location: { type: 'approximate', country } }) }],
   };
   if (v.system) params.system = v.system;
   const t0 = Date.now();
@@ -77,6 +80,7 @@ async function runOne(variantName, v, { q, country }) {
     webSearchRequests: msg.usage?.server_tool_use?.web_search_requests,
     sources: sources.length, citations: citations.length,
     citedDomains: [...new Set(citations.map(host).filter(Boolean))],
+    citedUrls: [...new Set(citations)],
     sourceDomains: [...new Set(sources.map(host).filter(Boolean))],
     errors, blockTypes: blocks.map((b) => b.type).join(','),
     inTok: msg.usage?.input_tokens, outTok: msg.usage?.output_tokens,
