@@ -15,6 +15,7 @@ import {
 } from '@/app/actions/autopilot';
 import { AGENT_RECIPES } from '@/lib/autopilot/recipes';
 import { CHANNEL_LABELS, CHANNEL_TO_PLATFORM, PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
+import { LINKEDIN_RECONNECT_REQUIRED, runNeedsLinkedInReconnect } from '@/lib/connection-health';
 
 type Props = {
   workspaceId: string;
@@ -753,7 +754,15 @@ function RunRow({ run }: { run: SerializedRun }) {
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
-      {run.error && <p className="mt-2 text-xs text-red-700">{run.error}</p>}
+      {run.error && run.error !== LINKEDIN_RECONNECT_REQUIRED && <p className="mt-2 text-xs text-red-700">{run.error}</p>}
+      {runNeedsLinkedInReconnect(run) && (
+        <p className="mt-2 text-xs text-red-700">
+          {t.rich(`autopilot.runCodes.${LINKEDIN_RECONNECT_REQUIRED}`, { bdi: (c) => <bdi>{c}</bdi> })}{' '}
+          <Link href="/connections" className="font-semibold underline underline-offset-2">
+            {t('autopilot.runCodes.reconnectCta')}
+          </Link>
+        </p>
+      )}
       {open && (
         <ol
           dir="ltr"

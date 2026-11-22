@@ -204,6 +204,10 @@
         "RUNNING": "running",
         "QUEUED": "queued",
         "SKIPPED": "skipped"
+      },
+      "runCodes": {
+        "LINKEDIN_RECONNECT_REQUIRED": "<bdi>LinkedIn</bdi> needs reconnecting. Its sign-in has expired, so this run skipped <bdi>LinkedIn</bdi>.",
+        "reconnectCta": "Reconnect"
       }
     },
     "ideation": {
