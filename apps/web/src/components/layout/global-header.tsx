@@ -28,6 +28,7 @@ export function GlobalHeader() {
     '/team',
     '/privacy',
     '/terms',
+    '/disclaimer',
     '/contact',
     '/about',
     '/blog',
