@@ -16,7 +16,7 @@ vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
 vi.mock('./posts', () => ({ buildUniqueSlug: buildUniqueSlugMock }));
 
-import { publishDueWebContent } from './publisher';
+import { publishDueWebContent, revalidateWorkspaceSite } from './publisher';
 
 type UpdateManyArgs = { where: Record<string, unknown>; data: { slug: string; status: string } };
 
@@ -24,8 +24,12 @@ function dueItem(overrides: Record<string, unknown> = {}) {
   return { id: 'item-1', workspaceId: 'ws-1', topic: 'چطور محتوا بنویسیم', userId: 'user-1', slug: null, ...overrides };
 }
 
+const fetchMock = vi.fn();
+
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.stubGlobal('fetch', fetchMock);
+  prismaMock.siteConnection.update.mockResolvedValue({});
   prismaMock.siteConnection.findFirst.mockResolvedValue({
     id: 'site-1',
     name: 'Site',
@@ -67,5 +71,80 @@ describe('publishDueWebContent slug', () => {
     const [outcome] = await publishDueWebContent();
     expect(buildUniqueSlugMock).toHaveBeenCalled();
     expect(outcome?.slug).toBe('post-abcdefgh');
+  });
+});
+
+describe('publishDueWebContent revalidate event', () => {
+  it('still sends post.published', async () => {
+    prismaMock.siteConnection.findFirst.mockResolvedValue({
+      id: 'site-1',
+      name: 'Site',
+      revalidateUrl: 'https://site.test/api/revalidate',
+      revalidateSecret: null,
+    });
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    prismaMock.contentItem.findMany.mockResolvedValue([dueItem({ slug: 'live' })]);
+    await publishDueWebContent();
+    const init = fetchMock.mock.calls[0]?.[1] as { body: string };
+    expect(JSON.parse(init.body)).toEqual({ slug: 'live', event: 'post.published' });
+  });
+});
+
+describe('revalidateWorkspaceSite', () => {
+  const activeSite = {
+    id: 'site-1',
+    name: 'Site',
+    revalidateUrl: 'https://site.test/api/revalidate',
+    revalidateSecret: 'shh',
+  };
+
+  it('returns null when the workspace has no active site', async () => {
+    prismaMock.siteConnection.findFirst.mockResolvedValue(null);
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBeNull();
+    expect(prismaMock.siteConnection.findFirst).toHaveBeenCalledWith({
+      where: { workspaceId: 'ws-1', status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('returns null when the site has no revalidate URL', async () => {
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('posts the slug and event with the bearer secret', async () => {
+    prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
+    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(true);
+    const [url, init] = fetchMock.mock.calls[0] as [string, { method: string; headers: Record<string, string>; body: string }];
+    expect(url).toBe('https://site.test/api/revalidate');
+    expect(init.method).toBe('POST');
+    expect(init.headers.Authorization).toBe('Bearer shh');
+    expect(JSON.parse(init.body)).toEqual({ slug: 'live', event: 'post.updated' });
+    expect(prismaMock.siteConnection.update).toHaveBeenCalledWith({
+      where: { id: 'site-1' },
+      data: { lastRevalidateAt: expect.any(Date), lastRevalidateStatus: 200 },
+    });
+  });
+
+  it('returns false on a non-2xx response', async () => {
+    prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
+    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+  });
+
+  it('returns false and does not throw when fetch fails', async () => {
+    prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
+    fetchMock.mockRejectedValue(new Error('network down'));
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+  });
+
+  it('returns false and does not throw when the site lookup fails', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    prismaMock.siteConnection.findFirst.mockRejectedValue(new Error('db down'));
+    expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+    expect(errSpy.mock.calls[0]?.[0]).toBe('[site-publisher] revalidate failed');
+    errSpy.mockRestore();
   });
 });

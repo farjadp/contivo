@@ -20,6 +20,8 @@ const WEB_CHANNELS = ['blog'] as const;
 
 const REVALIDATE_TIMEOUT_MS = 8000;
 
+export type RevalidateEvent = 'post.published' | 'post.updated';
+
 export type PublishOutcome = {
   itemId: string;
   workspaceId: string;
@@ -105,7 +107,7 @@ async function publishItem(item: {
       return { ...base, slug: null, published: false, revalidated: null, error: 'already_published' };
     }
 
-    const revalidated = await pingRevalidate(site, slug);
+    const revalidated = await pingRevalidate(site, slug, 'post.published');
 
     await writeActivityLog({
       userId: item.userId,
@@ -130,12 +132,37 @@ async function publishItem(item: {
 }
 
 /**
- * Tells the site a post went live. Fire-and-check: a failed revalidate must
+ * Pings the workspace's first active site to refresh one post (used when a
+ * published post is edited in place). Never throws: the Content API already
+ * serves the new text, so a failed ping only delays the site cache.
+ * Returns null when there is no active site or it has no revalidate URL.
+ */
+export async function revalidateWorkspaceSite(
+  workspaceId: string,
+  slug: string,
+  event: RevalidateEvent,
+): Promise<boolean | null> {
+  try {
+    const site = await prisma.siteConnection.findFirst({
+      where: { workspaceId, status: 'ACTIVE' },
+      orderBy: { createdAt: 'asc' },
+    });
+    if (!site) return null;
+    return await pingRevalidate(site, slug, event);
+  } catch (err) {
+    console.error('[site-publisher] revalidate failed', workspaceId, slug, err);
+    return false;
+  }
+}
+
+/**
+ * Tells the site a post went live or changed. Fire-and-check: a failed revalidate must
  * never un-publish the post — the content is already available from the API.
  */
 async function pingRevalidate(
   site: { id: string; revalidateUrl: string | null; revalidateSecret: string | null },
   slug: string,
+  event: RevalidateEvent,
 ): Promise<boolean | null> {
   if (!site.revalidateUrl) return null;
 
@@ -148,7 +175,7 @@ async function pingRevalidate(
         'Content-Type': 'application/json',
         ...(site.revalidateSecret ? { Authorization: `Bearer ${site.revalidateSecret}` } : {}),
       },
-      body: JSON.stringify({ slug, event: 'post.published' }),
+      body: JSON.stringify({ slug, event }),
       signal: controller.signal,
     });
     await prisma.siteConnection.update({
