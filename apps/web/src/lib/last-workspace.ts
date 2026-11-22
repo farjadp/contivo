@@ -30,6 +30,26 @@ export function workspaceIdFromPath(pathname: string): string | null {
   return id && !NOT_A_WORKSPACE.has(id) ? id : null;
 }
 
+/**
+ * The workspace the current route is inside, for client components.
+ *
+ * next-intl's `usePathname` returns the route TEMPLATE for routes listed in
+ * `routing.pathnames` (`/growth/[id]`, never `/growth/cm3abc`), so the id has
+ * to come from the route params. A real path is still accepted, in case a
+ * caller passes one.
+ */
+export function workspaceIdFromRoute(
+  pathname: string,
+  params: Record<string, string | string[] | undefined> | null | undefined,
+): string | null {
+  if (/^\/growth\/\[id\](\/|$)/.test(pathname)) {
+    const id = params?.id;
+    return typeof id === 'string' && isPlausibleWorkspaceId(id) && !NOT_A_WORKSPACE.has(id) ? id : null;
+  }
+  const fromPath = workspaceIdFromPath(pathname);
+  return isPlausibleWorkspaceId(fromPath) ? fromPath : null;
+}
+
 /** Workspace ids are cuid/uuid-like; anything else is not worth a cookie. */
 export function isPlausibleWorkspaceId(value: string | undefined | null): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(value);
