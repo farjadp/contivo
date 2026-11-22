@@ -1,8 +1,9 @@
 'use client';
 
 
-import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, Paperclip, Send, Save } from 'lucide-react';
+import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, Paperclip, Send, Save, PenLine } from 'lucide-react';
 import { updateContentStatus, scheduleContentItem, updateContentAndSchedule } from '@/app/actions/calendar';
+import { updateOwnPostMeta } from '@/app/actions/own-post';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -14,6 +15,8 @@ import {
   WORD_COUNT_PLATFORM_LABELS,
   type ContentWordCountLimits,
 } from '@/lib/content-word-count';
+import { normalizeSlugInput, POST_TITLE_MAX } from '@/lib/content-slug';
+import { WritePostPanel, ownPostErrorField, ownPostErrorMessage } from './WritePostPanel';
 
 type SourceFileState = {
   name: string;
@@ -134,8 +137,34 @@ export function PipelineTab({
   defaultScheduleDelayHours: number;
 }) {
   const t = useTranslations('tabsA.pipeline');
+  const router = useRouter();
+  const [localItems, setLocalItems] = useState<any[]>(items);
+  const [isWriteOpen, setIsWriteOpen] = useState(false);
 
-  if (items.length === 0) {
+  // A refresh brings the server's list; keep any just-created item the server has not returned yet.
+  useEffect(() => {
+    setLocalItems((prev) => {
+      const serverIds = new Set(items.map((item) => item.id));
+      const pending = prev.filter((item) => item.__ownPostCreated && !serverIds.has(item.id));
+      return [...pending, ...items];
+    });
+  }, [items]);
+
+  const handleCreated = (item: any) => {
+    setLocalItems((prev) => [{ ...item, __ownPostCreated: true }, ...prev.filter((entry) => entry.id !== item.id)]);
+    router.refresh();
+  };
+
+  const writePanel = isWriteOpen ? (
+    <WritePostPanel
+      workspaceId={workspace.id}
+      onCreated={handleCreated}
+      onClose={() => setIsWriteOpen(false)}
+    />
+  ) : null;
+
+  if (localItems.length === 0) {
+    if (writePanel) return <div className="py-2">{writePanel}</div>;
     return (
       <div className="rounded-2xl border-2 border-dashed border-rule bg-chalk-raised flex flex-col items-center justify-center p-16 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
         <div className="w-12 h-12 bg-chalk-sunk rounded-xl flex items-center justify-center mb-4 text-moss-muted">
@@ -143,22 +172,44 @@ export function PipelineTab({
         </div>
         <h2 className="text-lg font-bold text-moss mb-1">{t('empty.title')}</h2>
         <p className="text-sm text-moss-muted max-w-sm mb-6 leading-relaxed">{t('empty.body')}</p>
-        <Link
-          href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
-          className="inline-flex items-center gap-2 bg-moss text-chalk px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-moss hover:scale-[1.02] transition-all"
-        >
-          <LightbulbIcon className="w-4 h-4 text-saffron-ink" />
-          {t('empty.cta')}
-        </Link>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
+            className="inline-flex items-center gap-2 bg-moss text-chalk px-5 py-2.5 rounded-xl text-sm font-bold shadow-lg hover:bg-moss hover:scale-[1.02] transition-all"
+          >
+            <LightbulbIcon className="w-4 h-4 text-saffron-ink" />
+            {t('empty.cta')}
+          </Link>
+          <button
+            type="button"
+            onClick={() => setIsWriteOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl border border-rule-strong bg-chalk px-5 py-2.5 text-sm font-bold text-moss transition-colors hover:border-moss hover:bg-chalk-sunk"
+          >
+            <PenLine className="w-4 h-4" />
+            {t('write.open')}
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-4 animate-in fade-in py-2">
+       <div className="flex justify-end">
+         <button
+           type="button"
+           onClick={() => setIsWriteOpen((open) => !open)}
+           aria-expanded={isWriteOpen}
+           className="inline-flex items-center gap-2 rounded-xl border border-rule-strong bg-chalk-raised px-4 py-2 text-sm font-bold text-moss transition-colors hover:border-moss hover:bg-chalk-sunk"
+         >
+           <PenLine className="w-4 h-4" />
+           {t('write.open')}
+         </button>
+       </div>
+       {writePanel}
        {/* Future Kanban board could go here, for now using a clean list */}
        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item: any) => (
+          {localItems.map((item: any) => (
             <PipelineItemCard
               key={item.id}
               item={item}
@@ -190,6 +241,9 @@ function PipelineItemCard({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [editContentText, setEditContentText] = useState('');
+  const [editTitle, setEditTitle] = useState('');
+  const [editSlug, setEditSlug] = useState('');
+  const [editError, setEditError] = useState<{ field: 'title' | 'slug' | 'body' | 'form'; message: string } | null>(null);
   const [isSavingEdits, setIsSavingEdits] = useState(false);
   const [showManualSource, setShowManualSource] = useState(true);
   const [manualSourceNotes, setManualSourceNotes] = useState('');
@@ -243,8 +297,14 @@ function PipelineItemCard({
     setHasCustomSchedule(false);
   }, [currentItem.id, currentItem.scheduledAtUtc, defaultScheduleDelayHours]);
 
+  const isSlugLocked =
+    Boolean(currentItem.publishedAtUtc) || ['PUBLISHED', 'PUBLISHING'].includes(currentItem.status);
+
   const openEditorModal = () => {
     setEditContentText(currentItem.content || '');
+    setEditTitle(currentItem.topic || '');
+    setEditSlug(currentItem.slug || '');
+    setEditError(null);
     if (currentItem.scheduledAtUtc) {
       const base = new Date(currentItem.scheduledAtUtc);
       setPublishDate(toDateInputValue(base));
@@ -271,7 +331,24 @@ function PipelineItemCard({
 
   const handleSaveEdits = async () => {
     setIsSavingEdits(true);
+    setEditError(null);
     try {
+      const titleChanged = editTitle.trim() !== String(currentItem.topic || '').trim();
+      const slugChanged =
+        currentItem.channel === 'blog' && !isSlugLocked && normalizeSlugInput(editSlug) !== String(currentItem.slug || '');
+      if (titleChanged || slugChanged) {
+        const meta = await updateOwnPostMeta({
+          contentId: currentItem.id,
+          title: editTitle,
+          ...(slugChanged ? { slug: normalizeSlugInput(editSlug) || null } : {}),
+        });
+        if (!meta.ok) {
+          setEditError({ field: ownPostErrorField(meta.error), message: ownPostErrorMessage(t, meta.error) });
+          return;
+        }
+        setCurrentItem(meta.item);
+      }
+
       const updated = await updateContentAndSchedule({
         contentId: currentItem.id,
         content: editContentText,
@@ -287,6 +364,7 @@ function PipelineItemCard({
       }
     } catch (e) {
       console.error(e);
+      setEditError({ field: 'form', message: t('pipeline.editor.saveFailed') });
     } finally {
       setIsSavingEdits(false);
     }
@@ -442,8 +520,8 @@ function PipelineItemCard({
          </button>
        </div>
        
-       <h3 className="font-bold text-moss leading-snug mb-2 line-clamp-2" title={item.topic}>
-          {item.topic}
+       <h3 dir="auto" className="font-bold text-moss leading-snug mb-2 line-clamp-2 text-start" title={currentItem.topic}>
+          {currentItem.topic}
        </h3>
        
        <div className="flex flex-wrap gap-2 mb-4 mt-auto">
@@ -702,7 +780,7 @@ function PipelineItemCard({
           <div className="flex items-center justify-between border-b border-rule px-6 py-5 bg-chalk/50">
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-moss">{t('pipeline.editor.eyebrow')}</p>
-              <h4 className="text-lg font-bold text-moss line-clamp-1 mt-0.5">{currentItem.topic}</h4>
+              <h4 dir="auto" className="text-lg font-bold text-moss line-clamp-1 mt-0.5 text-start">{editTitle || currentItem.topic}</h4>
             </div>
             <button
               onClick={() => setIsPreviewOpen(false)}
@@ -715,12 +793,76 @@ function PipelineItemCard({
           
           <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 flex flex-col h-full">
+              <div className="mb-4">
+                <label htmlFor={`edit-title-${currentItem.id}`} className="block text-xs font-bold uppercase tracking-wider text-moss-muted mb-2">
+                  {t('pipeline.editor.titleLabel')}
+                </label>
+                <input
+                  id={`edit-title-${currentItem.id}`}
+                  type="text"
+                  dir="auto"
+                  value={editTitle}
+                  maxLength={POST_TITLE_MAX}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  aria-invalid={editError?.field === 'title'}
+                  className="w-full rounded-xl border border-rule bg-chalk-raised px-4 py-2.5 text-start text-sm font-semibold text-moss outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition-all"
+                />
+                {editError?.field === 'title' ? (
+                  <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">{editError.message}</p>
+                ) : null}
+              </div>
+
+              {currentItem.channel === 'blog' ? (
+                <div className="mb-4">
+                  <label htmlFor={`edit-slug-${currentItem.id}`} className="block text-xs font-bold uppercase tracking-wider text-moss-muted mb-2">
+                    {t('pipeline.editor.slugLabel')}
+                  </label>
+                  {isSlugLocked ? (
+                    <>
+                      <p
+                        id={`edit-slug-${currentItem.id}`}
+                        dir={currentItem.slug ? 'ltr' : undefined}
+                        className="rounded-xl border border-rule bg-chalk-sunk/60 px-4 py-2.5 text-start font-plexmono text-sm text-moss"
+                      >
+                        {currentItem.slug || t('pipeline.editor.slugAuto')}
+                      </p>
+                      <p className="mt-1.5 text-[11px] text-moss-muted">{t('pipeline.editor.slugFrozen')}</p>
+                    </>
+                  ) : (
+                    <>
+                      <input
+                        id={`edit-slug-${currentItem.id}`}
+                        type="text"
+                        dir="ltr"
+                        value={editSlug}
+                        onChange={(e) => setEditSlug(e.target.value)}
+                        autoComplete="off"
+                        spellCheck={false}
+                        aria-invalid={editError?.field === 'slug'}
+                        className="w-full rounded-xl border border-rule bg-chalk-raised px-4 py-2.5 font-plexmono text-sm text-moss outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition-all"
+                      />
+                      {editError?.field === 'slug' ? (
+                        <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">{editError.message}</p>
+                      ) : null}
+                      <p className="mt-1.5 text-[11px] text-moss-muted">
+                        {editSlug.trim() ? t('pipeline.write.slugHint') : t('pipeline.editor.slugAuto')}
+                      </p>
+                    </>
+                  )}
+                </div>
+              ) : null}
+
               <label className="text-xs font-bold uppercase tracking-wider text-moss-muted mb-2">{t('pipeline.editor.draftLabel')}</label>
               <textarea
+                dir="auto"
                 value={editContentText}
                 onChange={(e) => setEditContentText(e.target.value)}
-                className="flex-1 min-h-[400px] w-full resize-none rounded-xl border border-rule bg-chalk-raised p-4 text-sm leading-relaxed text-moss outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition-all font-sans"
+                aria-invalid={editError?.field === 'body'}
+                className="flex-1 min-h-[400px] w-full resize-none rounded-xl border border-rule bg-chalk-raised p-4 text-start text-sm leading-relaxed text-moss outline-none focus:border-moss focus:ring-1 focus:ring-saffron transition-all font-sans"
               />
+              {editError?.field === 'body' ? (
+                <p role="alert" className="mt-1.5 text-xs font-medium text-red-600">{editError.message}</p>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-6">
@@ -767,9 +909,14 @@ function PipelineItemCard({
             </div>
           </div>
 
-          <div className="border-t border-rule px-6 py-4 flex items-center justify-between bg-chalk/50">
-           <div className="inline-flex items-center rounded-full bg-chalk-sunk/60 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss">
-             <bdi>{channelLabel(t, currentItem.channel)}</bdi>
+          <div className="border-t border-rule px-6 py-4 flex items-center justify-between gap-4 bg-chalk/50">
+           <div className="flex min-w-0 items-center gap-3">
+             <div className="inline-flex shrink-0 items-center rounded-full bg-chalk-sunk/60 px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss">
+               <bdi>{channelLabel(t, currentItem.channel)}</bdi>
+             </div>
+             {editError?.field === 'form' ? (
+               <p role="alert" className="text-xs font-medium text-red-600">{editError.message}</p>
+             ) : null}
            </div>
            
            <div className="flex gap-2">

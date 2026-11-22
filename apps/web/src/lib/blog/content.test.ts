@@ -43,6 +43,77 @@ describe('parseMarkdown', () => {
   });
 });
 
+describe('parseMarkdown tables', () => {
+  it('parses a basic table with inline markdown kept in the cells', () => {
+    expect(parseMarkdown('| Plan | Price |\n| --- | --- |\n| **Pro** | [$29](/en/pricing) |\n| Free | `0` |')).toEqual([
+      {
+        kind: 'table',
+        header: ['Plan', 'Price'],
+        align: [null, null],
+        rows: [
+          ['**Pro**', '[$29](/en/pricing)'],
+          ['Free', '`0`'],
+        ],
+      },
+    ]);
+  });
+
+  it('reads column alignment from the delimiter row', () => {
+    const [table] = parseMarkdown('| a | b | c | d |\n|:---|:---:|---:|---|\n| 1 | 2 | 3 | 4 |');
+    expect(table).toMatchObject({ kind: 'table', align: ['left', 'center', 'right', null] });
+  });
+
+  it('accepts rows without outer pipes', () => {
+    expect(parseMarkdown('a | b\n--- | ---\n1 | 2')).toEqual([
+      { kind: 'table', header: ['a', 'b'], align: [null, null], rows: [['1', '2']] },
+    ]);
+  });
+
+  it('keeps an escaped pipe inside a cell', () => {
+    expect(parseMarkdown('| expr | means |\n| --- | --- |\n| a \\| b | either |')).toEqual([
+      { kind: 'table', header: ['expr', 'means'], align: [null, null], rows: [['a | b', 'either']] },
+    ]);
+  });
+
+  it('pads short rows and truncates long ones to the header width', () => {
+    const [table] = parseMarkdown('| a | b | c |\n| --- | --- | --- |\n| 1 |\n| 1 | 2 | 3 | 4 |');
+    expect(table).toMatchObject({ rows: [['1', '', ''], ['1', '2', '3']] });
+  });
+
+  it('ends the table at a blank line or a line without a pipe', () => {
+    expect(parseMarkdown('| a | b |\n| --- | --- |\n| 1 | 2 |\nAfter.')).toEqual([
+      { kind: 'table', header: ['a', 'b'], align: [null, null], rows: [['1', '2']] },
+      { kind: 'paragraph', text: 'After.' },
+    ]);
+  });
+
+  it('leaves a sentence with a pipe as a paragraph when no delimiter row follows', () => {
+    expect(parseMarkdown('Search | Answer engines are different.\nSecond line.')).toEqual([
+      { kind: 'paragraph', text: 'Search | Answer engines are different. Second line.' },
+    ]);
+    // A delimiter row with the wrong column count is not a table either.
+    expect(parseMarkdown('a | b | c\n--- | ---')[0]).toMatchObject({ kind: 'paragraph' });
+  });
+
+  it('starts a table directly after a paragraph line', () => {
+    expect(parseMarkdown('Compare the plans:\n| a | b |\n| --- | --- |\n| 1 | 2 |')).toEqual([
+      { kind: 'paragraph', text: 'Compare the plans:' },
+      { kind: 'table', header: ['a', 'b'], align: [null, null], rows: [['1', '2']] },
+    ]);
+  });
+
+  it('parses Persian cell text', () => {
+    expect(parseMarkdown('| ابزار | کاربرد |\n| :--- | ---: |\n| **گوگل** | جست‌وجوی کلی |')).toEqual([
+      {
+        kind: 'table',
+        header: ['ابزار', 'کاربرد'],
+        align: ['left', 'right'],
+        rows: [['**گوگل**', 'جست‌وجوی کلی']],
+      },
+    ]);
+  });
+});
+
 describe('parseInline', () => {
   it('parses emphasis, code and links', () => {
     expect(parseInline('a **b** *c* `d` [e](https://x.test)')).toEqual([

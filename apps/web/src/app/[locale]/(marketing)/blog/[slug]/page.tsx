@@ -13,20 +13,20 @@ import { ArticleBody } from '@/components/blog/article-body';
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
 import { Link, permanentRedirect } from '@/i18n/navigation';
-import { fetchAllPosts, fetchPost } from '@/lib/blog/api';
+import { fetchPost } from '@/lib/blog/api';
 import { parseMarkdown, readingMinutes } from '@/lib/blog/content';
 import { blogAuthor, isBlogLocale, postJsonLd, postMetadata, serializeJsonLd } from '@/lib/blog/metadata';
 
-// Literal on purpose: Next reads segment config statically and ignores an imported constant.
-export const revalidate = 600;
-export const dynamicParams = true;
+// Rendered per request, not ISR. A slug not prerendered at build (every post
+// published after a deploy, and every unknown slug) was rendered on demand in
+// static mode, where the `cookies()` read in i18n/request.ts throws
+// DYNAMIC_SERVER_USAGE: production answered 500 for new posts and unknown
+// slugs alike (reproduced on a local `next build && next start`, 2026-11-21).
+// The Content API fetch is still cached for 600 s under the `blog` tag, so
+// the API is not hit per view and /api/blog/revalidate still clears it.
+export const dynamic = 'force-dynamic';
 
 type Params = { params: Promise<{ locale: string; slug: string }> };
-
-export async function generateStaticParams() {
-  const posts = await fetchAllPosts();
-  return posts.map((p) => ({ locale: p.locale, slug: p.slug }));
-}
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;

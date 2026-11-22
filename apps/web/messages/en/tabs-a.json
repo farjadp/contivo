@@ -258,7 +258,7 @@
     "pipeline": {
       "empty": {
         "title": "Your pipeline is empty",
-        "body": "You haven't generated any content for this brand yet. Head over to the Ideation Station to get started.",
+        "body": "Nothing here yet. Generate ideas in the Ideation Station, or write a post yourself.",
         "cta": "Go to Ideation"
       },
       "wordsTarget": "{count, number} words target",
@@ -296,7 +296,12 @@
         "dateOptional": "Date (Optional)",
         "timeOptional": "Time (Optional)",
         "blankNote": "Leave date and time blank to save simply as \"Ready\", or fill them out to automatically mark this post as \"Scheduled\".",
-        "save": "Save Changes"
+        "save": "Save Changes",
+        "titleLabel": "Title",
+        "slugLabel": "URL slug",
+        "slugFrozen": "Fixed after publishing, so the post's address never changes.",
+        "slugAuto": "Generated from the title when published.",
+        "saveFailed": "Your changes were not saved. Try again."
       },
       "scheduleModal": {
         "title": "Schedule Content",
@@ -304,7 +309,35 @@
       },
       "errors": {
         "maxFiles": "You can attach up to {count, number} files.",
-        "readFailed": "Failed to read \"{name}\". Use PDF/TXT/MD/CSV/JSON files or paste the text manually."
+        "readFailed": "Failed to read \"{name}\". Use PDF/TXT/MD/CSV/JSON files or paste the text manually.",
+        "own": {
+          "title_required": "Add a title.",
+          "title_too_long": "Keep the title to {max, number} characters or fewer.",
+          "body_required": "Write the post before saving.",
+          "body_too_long": "The post is longer than {max, number} characters.",
+          "slug_invalid": "Use only lowercase Latin letters, digits and single hyphens.",
+          "slug_taken": "Another post in this workspace already uses this slug.",
+          "slug_frozen": "This post is published, so its slug can no longer change.",
+          "not_found": "This post no longer exists. Refresh the page.",
+          "invalid_channel": "Choose Blog or LinkedIn.",
+          "unknown": "Something went wrong. Try again."
+        }
+      },
+      "write": {
+        "open": "Write a post",
+        "title": "Write your own post",
+        "intro": "Your text, saved as Ready. Schedule it like any other post. No AI and no credits.",
+        "channelLabel": "Publish to",
+        "titleLabel": "Title",
+        "titlePlaceholder": "The headline readers see",
+        "slugLabel": "URL slug (optional)",
+        "slugHint": "Lowercase Latin letters, digits and hyphens. Leave it empty to generate one from the title.",
+        "slugHintNonLatin": "A title that is not in Latin letters turns into post-xxxx. Set a slug yourself for a readable address.",
+        "bodyLabel": "Post (Markdown)",
+        "bodyPlaceholder": "Write in Markdown: ## for headings, - for lists, **bold**.",
+        "save": "Save post",
+        "saving": "Saving…",
+        "close": "Close"
       }
     },
     "calendar": {
