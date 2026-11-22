@@ -66,7 +66,17 @@ async function loadRunAiTask(): Promise<RunAiTask> {
   return mod.runAiTask as RunAiTask;
 }
 
-export function layerTransport(provider: JudgeProvider, loader: () => Promise<RunAiTask> = loadRunAiTask): JudgeTransport {
+/**
+ * `model` pins the forced provider's model through the layer's
+ * `modelOverride` (e.g. a before/after run: gpt-4.1 vs gpt-6.2-astra). The
+ * answer must come from that model's family: the report records
+ * `result.model` as the provider reported it.
+ */
+export function layerTransport(
+  provider: JudgeProvider,
+  loader: () => Promise<RunAiTask> = loadRunAiTask,
+  model?: string,
+): JudgeTransport {
   let runAiTask: RunAiTask | null = null;
   return {
     provider,
@@ -82,6 +92,7 @@ export function layerTransport(provider: JudgeProvider, loader: () => Promise<Ru
           prompt: request.prompt,
           output: { kind: 'json_object' },
           timeoutMs: request.timeoutMs,
+          ...(model ? { modelOverride: { [provider]: model } } : {}),
         });
       } catch (error) {
         return { ok: false, error: `threw: ${(error as Error).message}`, latencyMs: Date.now() - started };

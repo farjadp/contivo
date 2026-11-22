@@ -207,6 +207,18 @@ describe('layerTransport', () => {
     if (!res.ok) expect(res.error).toMatch(/^provider_mismatch/);
   });
 
+  test('pins the model through modelOverride when asked (before/after runs)', async () => {
+    const seen: Array<Record<string, unknown>> = [];
+    const loader = async () => async (_task: string, req: Record<string, unknown>) => {
+      seen.push(req);
+      return { ok: true as const, provider: 'openai', model: 'gpt-4.1-2025-04-14', text: APPROVE, failedOver: [] };
+    };
+    await layerTransport('openai', loader, 'gpt-4.1').call({ system: 's', prompt: 'p', timeoutMs: 5 });
+    await layerTransport('openai', loader).call({ system: 's', prompt: 'p', timeoutMs: 5 });
+    expect(seen[0].modelOverride).toEqual({ openai: 'gpt-4.1' });
+    expect(seen[1]).not.toHaveProperty('modelOverride');
+  });
+
   test('passes through a clean answer from the forced provider', async () => {
     const t = layerTransport('gemini', async () => async () => ({
       ok: true,
