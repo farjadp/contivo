@@ -10,9 +10,12 @@
  * Anything with a caveat the customer would care about carries `note`, whose
  * copy sits under `features.notes.<note>`.
  *
- * Which plan each feature lands on belongs with billing, which is not live;
- * it is added back here when the plan grid ships, not before.
+ * Most features are on every plan. The few that are not carry `plan`: the
+ * lowest plan that includes them, from `lib/plan-catalogue.ts`. Billing is not
+ * live, so during early access every live feature is free on any account.
  */
+
+import type { PlanId } from './plan-catalogue';
 
 /** The six stages of the loop, the same spine as the app and the home page. */
 export type Stage = 'know' | 'watch' | 'think' | 'make' | 'ship' | 'learn';
@@ -25,6 +28,8 @@ export interface FeatureEntry {
   status: 'live' | 'soon';
   /** Key under `features.notes` for a caveat worth saying out loud. */
   note?: string;
+  /** Lowest plan that includes it; absent means every plan. */
+  plan?: Exclude<PlanId, 'founder'>;
 }
 
 export const FEATURES: readonly FeatureEntry[] = [
@@ -32,7 +37,7 @@ export const FEATURES: readonly FeatureEntry[] = [
   { id: 'brandMemory', stage: 'know', status: 'live' },
   { id: 'brandAssets', stage: 'know', status: 'live' },
   { id: 'language', stage: 'know', status: 'live' },
-  { id: 'brands', stage: 'know', status: 'live' },
+  { id: 'brands', stage: 'know', status: 'live', plan: 'agency' },
 
   // 02 · Watch
   { id: 'discovery', stage: 'watch', status: 'live', note: 'discoveryChecked' },
@@ -40,7 +45,7 @@ export const FEATURES: readonly FeatureEntry[] = [
   { id: 'matrices', stage: 'watch', status: 'live', note: 'estimated' },
   { id: 'keywords', stage: 'watch', status: 'live' },
   { id: 'offerings', stage: 'watch', status: 'live' },
-  { id: 'monitoring', stage: 'watch', status: 'soon' },
+  { id: 'monitoring', stage: 'watch', status: 'soon', plan: 'growth' },
 
   // 03 · Think
   { id: 'lock', stage: 'think', status: 'live' },
@@ -54,7 +59,7 @@ export const FEATURES: readonly FeatureEntry[] = [
   { id: 'gate', stage: 'make', status: 'live' },
   { id: 'images', stage: 'make', status: 'live' },
   { id: 'imageTemplate', stage: 'make', status: 'soon' },
-  { id: 'imageQuality', stage: 'make', status: 'soon' },
+  { id: 'imageQuality', stage: 'make', status: 'soon', plan: 'growth' },
   { id: 'instant', stage: 'make', status: 'live' },
 
   // 05 · Ship
@@ -62,6 +67,7 @@ export const FEATURES: readonly FeatureEntry[] = [
   { id: 'calendar', stage: 'ship', status: 'live' },
   { id: 'website', stage: 'ship', status: 'live' },
   { id: 'social', stage: 'ship', status: 'live' },
+  { id: 'socialNext', stage: 'ship', status: 'soon' },
   { id: 'socialMore', stage: 'ship', status: 'soon' },
   { id: 'autopilot', stage: 'ship', status: 'live' },
   { id: 'video', stage: 'ship', status: 'soon' },
@@ -69,8 +75,8 @@ export const FEATURES: readonly FeatureEntry[] = [
   // 06 · Learn
   { id: 'runLog', stage: 'learn', status: 'live' },
   { id: 'report', stage: 'learn', status: 'live', note: 'reportTime' },
-  { id: 'whiteLabel', stage: 'learn', status: 'soon' },
-  { id: 'shareLinks', stage: 'learn', status: 'soon' },
+  { id: 'whiteLabel', stage: 'learn', status: 'soon', plan: 'agency' },
+  { id: 'shareLinks', stage: 'learn', status: 'soon', plan: 'agency' },
 ];
 
 export function featuresForStage(stage: Stage): FeatureEntry[] {
