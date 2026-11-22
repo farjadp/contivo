@@ -122,26 +122,7 @@ export async function listSocialConnections(workspaceId: string) {
       createdAt: string;
     }>;
     total: number;
-  }>(`/social/connections?workspaceId=${workspaceId}`);
-}
-
-/** Save a new social connection (called after OAuth callback). */
-export async function createSocialConnection(data: {
-  workspaceId: string;
-  platform: string;
-  accountName: string;
-  accountIdentifier: string;
-  accessToken: string;
-  refreshToken?: string;
-  scopes?: string[];
-  isDefault?: boolean;
-}) {
-  const result = await apiFetch('/social/connections', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
-  revalidatePath('/connections');
-  return result;
+  }>(`/social/connections?workspaceId=${encodeURIComponent(workspaceId)}`);
 }
 
 /** Set a connection as default for its platform. */
@@ -149,7 +130,7 @@ export async function setDefaultConnection(
   id: string,
   workspaceId: string,
 ) {
-  const result = await apiFetch(`/social/connections/${id}?workspaceId=${workspaceId}`, {
+  const result = await apiFetch(`/social/connections/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(workspaceId)}`, {
     method: 'PATCH',
     body: JSON.stringify({ isDefault: true }),
   });
@@ -160,7 +141,7 @@ export async function setDefaultConnection(
 /** Disconnect a social account. */
 export async function disconnectSocialConnection(id: string, workspaceId: string) {
   const result = await apiFetch(
-    `/social/connections/${id}?workspaceId=${workspaceId}`,
+    `/social/connections/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(workspaceId)}`,
     { method: 'DELETE' },
   );
   revalidatePath('/connections');
@@ -231,7 +212,7 @@ export async function listPublishJobs(workspaceId: string, status?: string) {
 /** Retry a failed publish job. */
 export async function retryPublishJob(id: string, workspaceId: string) {
   const result = await apiFetch(
-    `/social/publish-jobs/${id}/retry?workspaceId=${workspaceId}`,
+    `/social/publish-jobs/${encodeURIComponent(id)}/retry?workspaceId=${encodeURIComponent(workspaceId)}`,
     { method: 'POST' },
   );
   revalidatePath('/connections');
@@ -241,7 +222,7 @@ export async function retryPublishJob(id: string, workspaceId: string) {
 /** Cancel a pending/scheduled publish job. */
 export async function cancelPublishJob(id: string, workspaceId: string) {
   const result = await apiFetch(
-    `/social/publish-jobs/${id}?workspaceId=${workspaceId}`,
+    `/social/publish-jobs/${encodeURIComponent(id)}?workspaceId=${encodeURIComponent(workspaceId)}`,
     { method: 'DELETE' },
   );
   revalidatePath('/connections');

@@ -84,6 +84,15 @@ describe('actions/social auth', () => {
   });
 });
 
+describe('path encoding (P3-4)', () => {
+  it('ids and workspaceId cannot change the path or add query params', async () => {
+    reply(200, {});
+    await retryPublishJob('../connections/x?evil=1', 'w1&status=FAILED');
+    const [url] = fetchMock.mock.calls[0] as [string];
+    expect(url).toContain('/social/publish-jobs/..%2Fconnections%2Fx%3Fevil%3D1/retry?workspaceId=w1%26status%3DFAILED');
+  });
+});
+
 describe('reconnectSocialConnection', () => {
   it('returns the OAuth url for the platform the API names', async () => {
     reply(200, { connection: { id: 'c1', status: 'PENDING_REAUTH' }, reconnect: { platform: 'linkedin', flow: 'oauth' } });
