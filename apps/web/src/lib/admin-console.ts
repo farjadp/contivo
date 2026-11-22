@@ -15,6 +15,7 @@ import { listUserAccessStates, listWorkspaceArchiveStates } from '@/lib/admin-st
 import { getFrameworkUsageSummary, listRecentFrameworkMetadata } from '@/lib/framework-metadata-log';
 import { listAllActivityLogs } from '@/lib/activity-log';
 import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
+import { PROVIDER_IDS, getProviderHealthSnapshot, sanitizeAiMessage, type ProviderHealthSnapshot } from '@/lib/ai';
 
 export type AdminSection =
   | 'overview'
@@ -738,5 +739,167 @@ export async function getAdminSettingsState() {
     ideationMaxContentCount,
     defaultScheduleDelayHours,
     wordCountLimits,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// AI providers card (spec 2026-11-22-ai-provider-failover-design.md, "Loud, never silent" point 4)
+// ---------------------------------------------------------------------------
+
+/** Upper bound on the events one admin page load reads; a day of a bad outage stays well under it. */
+const AI_EVENT_SCAN_LIMIT = 2000;
+const AI_RECENT_EVENT_COUNT = 12;
+
+export type AiProviderEventRow = {
+  provider: string;
+  task: string;
+  errorClass: string;
+  status: number | null;
+  message: string | null;
+  failedOverTo: string | null;
+  eventType: string;
+  createdAt: Date;
+};
+
+export type AiTaskFailoverSummary = {
+  task: string;
+  /** Failed attempts the layer recovered from by moving to the next provider. */
+  failovers: number;
+  /** Requests where every provider in the chain failed or was skipped. */
+  allUnavailable: number;
+  /** Failed attempts with no next provider to move to. */
+  unrecovered: number;
+  /** The failover routes, e.g. "openai → anthropic", with how often each was taken. */
+  routes: Array<{ from: string; to: string; count: number }>;
+  lastAt: Date;
+};
+
+/**
+ * Groups a window of ai_provider_events by task. Pure: the 24 h window is
+ * applied by the query, this only counts what it is handed.
+ */
+export function summariseAiFailovers(events: AiProviderEventRow[]): AiTaskFailoverSummary[] {
+  const byTask = new Map<string, AiTaskFailoverSummary & { routeMap: Map<string, { from: string; to: string; count: number }> }>();
+
+  for (const event of events) {
+    if (event.eventType !== 'attempt_failed' && event.eventType !== 'all_unavailable') continue;
+    let entry = byTask.get(event.task);
+    if (!entry) {
+      entry = { task: event.task, failovers: 0, allUnavailable: 0, unrecovered: 0, routes: [], lastAt: event.createdAt, routeMap: new Map() };
+      byTask.set(event.task, entry);
+    }
+    if (event.createdAt > entry.lastAt) entry.lastAt = event.createdAt;
+
+    if (event.eventType === 'all_unavailable') {
+      entry.allUnavailable += 1;
+    } else if (event.failedOverTo) {
+      entry.failovers += 1;
+      const key = `${event.provider}>${event.failedOverTo}`;
+      const route = entry.routeMap.get(key) ?? { from: event.provider, to: event.failedOverTo, count: 0 };
+      route.count += 1;
+      entry.routeMap.set(key, route);
+    } else {
+      entry.unrecovered += 1;
+    }
+  }
+
+  return Array.from(byTask.values())
+    .map(({ routeMap, ...rest }) => ({ ...rest, routes: Array.from(routeMap.values()).sort((a, b) => b.count - a.count) }))
+    .sort((a, b) => b.allUnavailable - a.allUnavailable || b.failovers - a.failovers || b.lastAt.getTime() - a.lastAt.getTime());
+}
+
+export type AdminAiProviderRow = {
+  provider: string;
+  configured: boolean;
+  /** null when this server process could not report live health. */
+  healthy: boolean | null;
+  coolingDownUntil: Date | null;
+  reason: string | null;
+  lastErrorClass: string | null;
+  lastErrorAt: Date | null;
+  /** Failed attempts on this provider in the window. */
+  failedAttempts: number;
+};
+
+export type AdminAiProviders = Awaited<ReturnType<typeof getAdminAiProviders>>;
+
+/**
+ * Live health from this process's runner, merged with the last 24 h of
+ * ai_provider_events and ai_usage_logs. Each source fails on its own: a missing
+ * table (migration not yet run) must not take the whole admin page down, so a
+ * failed query is reported as unavailable instead of thrown.
+ */
+export async function getAdminAiProviders(
+  options: { now?: Date; snapshot?: () => ProviderHealthSnapshot[] } = {},
+) {
+  const now = options.now ?? new Date();
+  const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const readSnapshot = options.snapshot ?? getProviderHealthSnapshot;
+
+  let snapshot: ProviderHealthSnapshot[] | null;
+  try {
+    snapshot = readSnapshot();
+  } catch {
+    snapshot = null;
+  }
+
+  const [eventsResult, usageResult] = await Promise.allSettled([
+    prisma.aiProviderEvent.findMany({
+      where: { createdAt: { gte: since } },
+      orderBy: { createdAt: 'desc' },
+      take: AI_EVENT_SCAN_LIMIT,
+      select: { provider: true, task: true, errorClass: true, status: true, message: true, failedOverTo: true, eventType: true, createdAt: true },
+    }),
+    prisma.aiUsageLog.groupBy({
+      by: ['provider'],
+      where: { createdAt: { gte: since } },
+      _count: { _all: true },
+      _sum: { estimatedCostUsd: true },
+    }),
+  ]);
+
+  const events: AiProviderEventRow[] = eventsResult.status === 'fulfilled' ? eventsResult.value : [];
+
+  const providers: AdminAiProviderRow[] = PROVIDER_IDS.map((provider) => {
+    const live = snapshot?.find((row) => row.provider === provider) ?? null;
+    const failed = events.filter((e) => e.provider === provider && e.eventType === 'attempt_failed');
+    // Events are newest first; the runner's memory may be younger than the table (or empty after a restart).
+    const recorded = failed[0] ?? null;
+    const useRecorded = recorded && (!live?.lastErrorAt || recorded.createdAt > live.lastErrorAt);
+    return {
+      provider,
+      configured: live?.configured ?? false,
+      healthy: live ? live.healthy : null,
+      coolingDownUntil: live?.coolingDownUntil ?? null,
+      reason: live?.reason ?? null,
+      lastErrorClass: useRecorded ? recorded.errorClass : (live?.lastErrorClass ?? null),
+      lastErrorAt: useRecorded ? recorded.createdAt : (live?.lastErrorAt ?? null),
+      failedAttempts: failed.length,
+    };
+  });
+
+  return {
+    since,
+    liveHealthAvailable: snapshot !== null,
+    eventsAvailable: eventsResult.status === 'fulfilled',
+    usageAvailable: usageResult.status === 'fulfilled',
+    eventsTruncated: events.length >= AI_EVENT_SCAN_LIMIT,
+    providers,
+    failoversByTask: summariseAiFailovers(events),
+    recentEvents: events.slice(0, AI_RECENT_EVENT_COUNT).map((e) => ({
+      ...e,
+      message: e.message ? sanitizeAiMessage(e.message).slice(0, 160) : null,
+    })),
+    answeredBy:
+      usageResult.status === 'fulfilled'
+        ? usageResult.value
+            .map((row) => ({
+              // Rows written before the provider column existed carry no provider.
+              provider: row.provider ?? null,
+              requests: row._count._all,
+              costUsd: toNumber(row._sum.estimatedCostUsd),
+            }))
+            .sort((a, b) => b.requests - a.requests)
+        : [],
   };
 }

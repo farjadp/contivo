@@ -547,6 +547,44 @@
       "refundsTitle": "Refunds",
       "refundsSubtitle": "Money returned to customers",
       "noRefunds": "No refunds."
+    },
+    "aiProviders": {
+      "title": "AI providers",
+      "subtitle": "Which provider is answering, which is cooling down, and every failover in the last 24 hours.",
+      "liveHealthNote": "Live health is this server process's view. Cool-downs reset when it restarts; billing and auth cool-downs are restored from the event log.",
+      "liveHealthUnavailable": "Live health could not be read on this server. The figures below come from the event log only.",
+      "state": {
+        "healthy": "Healthy",
+        "coolingDown": "Cooling down",
+        "notConfigured": "No API key",
+        "unknown": "Unknown"
+      },
+      "coolingDownUntil": "Cooling down until",
+      "reason": "Reason",
+      "lastError": "Last error",
+      "none": "None",
+      "failedAttempts": "Failed attempts (24h)",
+      "failoversTitle": "Failovers by task (24h)",
+      "failoversSubtitle": "A failover is a failed attempt the next provider in the chain picked up.",
+      "colTask": "Task",
+      "colFailovers": "Failovers",
+      "colUnrecovered": "Failed, no next provider",
+      "colAllUnavailable": "All providers down",
+      "colLast": "Last",
+      "routeCount": "{count, plural, one {# time} other {# times}}",
+      "noFailovers": "No failovers in the last 24 hours.",
+      "eventsUnavailable": "The provider event log could not be read. Check that the ai_provider_events migration has run.",
+      "eventsTruncated": "Only the newest events were counted; the real totals are higher.",
+      "answeredTitle": "Answered by provider (24h)",
+      "answeredSubtitle": "Successful calls recorded in the usage log, with their estimated cost.",
+      "colProvider": "Provider",
+      "colRequests": "Requests",
+      "colCost": "Cost",
+      "providerUnrecorded": "Not recorded",
+      "noUsage": "No AI calls in the last 24 hours.",
+      "usageUnavailable": "The usage log could not be read.",
+      "recentTitle": "Latest provider events",
+      "recentSubtitle": "The newest entries in the event log. Messages are redacted before they are stored."
     }
   }
 }
