@@ -26,6 +26,10 @@ model User {
   role                  UserRole               @default(USER)
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
+  /// Last signed-in request, throttled; drives SESSION_STARTED and "stalled".
+  lastSeenAt            DateTime?
+  /// Allow-listed cohort tag (e.g. a mentee team). Null = not in a cohort.
+  cohort                String?
   aiUsageLogs           AiUsageLog[]
   contentItems          ContentItem[]
   contentJobs           ContentJob[]
@@ -38,6 +42,7 @@ model User {
 
   @@index([clerkId])
   @@index([email])
+  @@index([cohort])
   @@map("users")
 }
 
@@ -684,20 +689,26 @@ model SocialPublishLog {
 }
 
 /// Immutable AI cost audit trail.
+/// userId is null when a call runs outside any user context (cron, system).
+/// estimatedCostUsd is null for a model with no known price; never a fake 0.
+/// workspaceId is a plain column, no FK: an audit row outlives its workspace.
 model AiUsageLog {
   id               String   @id @default(cuid())
-  userId           String
+  userId           String?
+  workspaceId      String?
+  provider         String?
   model            String
   feature          String
   promptTokens     Int
   completionTokens Int
   totalTokens      Int
-  estimatedCostUsd Decimal  @db.Decimal(10, 6)
+  estimatedCostUsd Decimal? @db.Decimal(10, 6)
   jobId            String?
   createdAt        DateTime @default(now())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([workspaceId])
   @@index([createdAt])
   @@map("ai_usage_logs")
 }
