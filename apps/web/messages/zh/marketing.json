@@ -264,7 +264,14 @@
       "pricing": {
         "title": "费用",
         "body": "早期体验期间，新账户免费。开始计费后：",
-        "link": "查看完整价格"
+        "link": "查看完整价格",
+        "picker": {
+          "postsLabel": "每个品牌每周帖子数",
+          "brandsLabel": "品牌数",
+          "result": "每月约 {count, number} 篇帖子。<b>{plan}</b> 套餐就够用。",
+          "over": "每月约 {count, number} 篇帖子，超出了 {plan} 套餐的额度（{limit, number} 篇）。可以降低频率，或写信给我们。",
+          "fits": "适合你"
+        }
       },
       "faq": {
         "title": "常见问题",
