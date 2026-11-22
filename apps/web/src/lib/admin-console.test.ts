@@ -8,6 +8,7 @@ const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
     aiProviderEvent: { findMany: vi.fn() },
     aiUsageLog: { groupBy: vi.fn() },
+    socialConnection: { count: vi.fn() },
   },
 }));
 
@@ -23,7 +24,12 @@ vi.mock('@/lib/framework-metadata-log', () => ({}));
 vi.mock('@/lib/activity-log', () => ({}));
 vi.mock('@/lib/competitor-counts', () => ({ COUNTED_COMPETITOR_WHERE: {} }));
 
-import { getAdminAiProviders, summariseAiFailovers, type AiProviderEventRow } from './admin-console';
+import {
+  getAdminAiProviders,
+  getLinkedInExpiryCounts,
+  summariseAiFailovers,
+  type AiProviderEventRow,
+} from './admin-console';
 
 const NOW = new Date('2026-11-22T12:00:00Z');
 const at = (hoursAgo: number) => new Date(NOW.getTime() - hoursAgo * 3_600_000);
@@ -159,5 +165,29 @@ describe('getAdminAiProviders', () => {
     expect(result.usageAvailable).toBe(true);
     expect(result.providers.map((p) => p.healthy)).toEqual([null, null, null]);
     expect(result.failoversByTask).toEqual([]);
+  });
+});
+
+describe('getLinkedInExpiryCounts', () => {
+  it('counts expired (stored EXPIRED, or CONNECTED past its expiry) and expiring within 7 days', async () => {
+    prismaMock.socialConnection.count.mockResolvedValueOnce(3).mockResolvedValueOnce(2);
+
+    const result = await getLinkedInExpiryCounts(NOW);
+
+    expect(result).toEqual({ expired: 3, expiringSoon: 2 });
+    const [expiredQuery, soonQuery] = prismaMock.socialConnection.count.mock.calls.map((c) => c[0]);
+    expect(expiredQuery).toEqual({
+      where: {
+        platform: 'LINKEDIN',
+        OR: [{ status: 'EXPIRED' }, { status: 'CONNECTED', tokenExpiresAt: { lte: NOW } }],
+      },
+    });
+    expect(soonQuery).toEqual({
+      where: {
+        platform: 'LINKEDIN',
+        status: 'CONNECTED',
+        tokenExpiresAt: { gt: NOW, lte: new Date('2026-11-29T12:00:00Z') },
+      },
+    });
   });
 });

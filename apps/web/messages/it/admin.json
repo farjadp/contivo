@@ -124,7 +124,9 @@
       "geminiKeyMissing": "GEMINI_API_KEY mancante.",
       "openAiKeyMissing": "OPENAI_API_KEY mancante.",
       "credentialsConfigured": "Credenziali configurate.",
-      "credentialsMissing": "Credenziali non configurate."
+      "credentialsMissing": "Credenziali non configurate.",
+      "linkedinExpiryTitle": "Accessi <bdi>LinkedIn</bdi>",
+      "linkedinExpiryDescription": "{expired, number} scaduti, {soon, number} in scadenza entro {days, number} giorni. Un accesso dura {period, number} giorni e non si rinnova senza l'utente."
     },
     "banner": {
       "saved": "Modifica salvata.",

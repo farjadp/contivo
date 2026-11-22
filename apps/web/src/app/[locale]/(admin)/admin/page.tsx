@@ -7,6 +7,7 @@ import { AdminBarChart, AdminPieChart } from './charts';
 import { createAdminFormat } from './_components/AdminUi';
 import { AiProvidersCard } from './_components/AiProvidersCard';
 import { FinanceSection } from './_components/FinanceSection';
+import { LinkedInExpiryCard } from './_components/LinkedInExpiryCard';
 import { getAdminFinance } from '@/lib/finance/ledger';
 import {
   adjustCredits,
@@ -149,6 +150,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         {section === 'overview' ? (
           <OverviewSection overview={overview} analytics={analytics} />
         ) : null}
+        {section === 'overview' ? <LinkedInExpiryCard /> : null}
 
         {section === 'users' ? (
           <UsersSection
