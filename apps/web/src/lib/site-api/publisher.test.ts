@@ -148,3 +148,16 @@ describe('revalidateWorkspaceSite', () => {
     errSpy.mockRestore();
   });
 });
+
+describe('publishDueWebContent with no site connection', () => {
+  it('parks the item as FAILED with a NO_SITE coded reason', async () => {
+    prismaMock.contentItem.findMany.mockResolvedValue([dueItem()]);
+    prismaMock.siteConnection.findFirst.mockResolvedValue(null);
+    const [outcome] = await publishDueWebContent();
+    expect(outcome?.published).toBe(false);
+    expect(outcome?.error).toBe('no_site_connection');
+    const args = prismaMock.contentItem.update.mock.calls[0]?.[0] as { data: { status: string; failedReason: string } };
+    expect(args.data.status).toBe('FAILED');
+    expect(args.data.failedReason).toMatch(/^\[NO_SITE\] No active site connection/);
+  });
+});
