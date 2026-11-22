@@ -1,0 +1,13 @@
+{
+  "source": "recorded 2026-11-21 with curl against api.openai.com/v1/chat/completions using a fake key (sk-invalid-for-fixture)",
+  "status": 401,
+  "body": {
+    "error": {
+      "message": "Incorrect API key provided: sk-inval**********ture. You can find your API key at https://platform.openai.com/account/api-keys.",
+      "type": "invalid_request_error",
+      "code": "invalid_api_key",
+      "param": null
+    },
+    "status": 401
+  }
+}

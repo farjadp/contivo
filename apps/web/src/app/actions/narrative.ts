@@ -164,7 +164,7 @@ export async function proposeChange(
   const ctx = await loadContext(actor);
   if ('error' in ctx) return { ok: false, error: ctx.error };
 
-  const proposed = await proposeChanges(ctx);
+  const proposed = await proposeChanges(ctx, { userId: actor.userId, workspaceId: actor.workspaceId });
   if (!proposed) {
     return {
       ok: false,
@@ -226,6 +226,7 @@ export async function generateStorylines(
     ctx,
     narrative.change,
     evidence.map((e) => ({ kind: e.kind, value: e.value, detail: e.detail })),
+    { userId: actor.userId, workspaceId: actor.workspaceId },
   );
   if (!drafted) {
     return {

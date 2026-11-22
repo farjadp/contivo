@@ -1,0 +1,15 @@
+{
+  "source": "COMMUNITY body (https://github.com/anthropics/claude-code/issues/54839) + retry-after header per docs; not recorded",
+  "status": 429,
+  "headers": {
+    "retry-after": "7"
+  },
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "This request would exceed your account's rate limit. Please try again later."
+    },
+    "request_id": "req_011CaYBHTj6A97X17K2kvbsU"
+  }
+}

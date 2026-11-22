@@ -1,0 +1,12 @@
+{
+  "source": "recorded 2026-11-21 with curl against api.openai.com/v1/chat/completions with the local OPENAI_API_KEY (org out of credit since 22 Nov)",
+  "status": 429,
+  "body": {
+    "error": {
+      "message": "You have no credits remaining. Add credits to continue using the API at https://platform.openai.com/settings/organization/billing/.",
+      "type": "insufficient_quota",
+      "param": null,
+      "code": "credit_balance_exhausted"
+    }
+  }
+}

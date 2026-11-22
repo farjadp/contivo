@@ -156,7 +156,10 @@
         "themesHint": "Comma or newline separated. Passed to the AI as steering.",
         "avoid": "Never write about",
         "avoidPlaceholder": "e.g. pricing, politics, competitor names",
-        "avoidHint": "Ideas whose topic contains any of these phrases are dropped."
+        "avoidHint": "Ideas whose topic contains any of these phrases are dropped.",
+        "requireReview": "Review drafts before they publish",
+        "requireReviewOff": "Off: drafts that pass the quality checks publish on schedule.",
+        "requireReviewOn": "On: every draft waits for you in the pipeline until you approve it."
       },
       "channelDot": {
         "ready": "Ready to publish",

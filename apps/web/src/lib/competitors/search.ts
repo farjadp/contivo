@@ -1,8 +1,8 @@
-import { parseOpenAiResponsesUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext } from '@/lib/ai';
 
 import { normalizeCandidateDomain } from './domains';
-import { readTokenUsage } from './queries';
-import { sanitizeUpstreamText } from './redact';
+import { tokensFromUsage } from './queries';
+import { describeAiFailure } from './run-errors';
 import { newEvidenceId } from './types';
 import type { Candidate, EvidenceItem, TargetMarket } from './types';
 
@@ -101,49 +101,6 @@ export function mergeQueryResults(
   return candidates;
 }
 
-type OpenAiAnnotation = { url?: unknown; title?: unknown };
-type OpenAiContentItem = { annotations?: OpenAiAnnotation[] };
-type OpenAiMessageItem = { type: 'message'; content?: OpenAiContentItem[] };
-type OpenAiWebSearchCallItem = {
-  type: 'web_search_call';
-  action?: { sources?: Array<{ url?: unknown }> };
-};
-type OpenAiOutputItem = OpenAiMessageItem | OpenAiWebSearchCallItem | { type: string };
-
-function extractQueryHarvest(query: string, data: unknown): QueryHarvestResult {
-  const output = Array.isArray((data as { output?: unknown })?.output)
-    ? ((data as { output: OpenAiOutputItem[] }).output)
-    : [];
-
-  const citations: Array<{ url: string; title?: string }> = [];
-  const sourceUrls: string[] = [];
-
-  for (const item of output) {
-    if (item.type === 'message') {
-      const content = (item as OpenAiMessageItem).content ?? [];
-      for (const block of content) {
-        for (const annotation of block.annotations ?? []) {
-          if (typeof annotation.url === 'string' && annotation.url) {
-            citations.push({
-              url: annotation.url,
-              title: typeof annotation.title === 'string' ? annotation.title : undefined,
-            });
-          }
-        }
-      }
-    } else if (item.type === 'web_search_call') {
-      const sources = (item as OpenAiWebSearchCallItem).action?.sources ?? [];
-      for (const source of sources) {
-        if (typeof source.url === 'string' && source.url) {
-          sourceUrls.push(source.url);
-        }
-      }
-    }
-  }
-
-  return { query, citations, sourceUrls };
-}
-
 /**
  * Wall-clock bound on one web-search call. Live searches took 17-98 s, so
  * this leaves headroom while still ending a hung call long before the
@@ -151,46 +108,44 @@ function extractQueryHarvest(query: string, data: unknown): QueryHarvestResult {
  */
 export const SEARCH_REQUEST_TIMEOUT_MS = 150_000;
 
+/** The instruction each provider's web-search call answers. */
+export function buildSearchPrompt(query: string): string {
+  return `Search the web for: "${query}". List the companies or products that offer this, each with its website. Be brief.`;
+}
+
 async function runOneQuery(
   query: string,
   market: TargetMarket,
-  apiKey: string,
+  ctx: AiCallContext | undefined,
 ): Promise<{ result: QueryHarvestResult; tokens: number | null } | { error: string }> {
   try {
-    const model = process.env.OPENAI_SEARCH_MODEL || 'gpt-5-mini';
-    const res = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      signal: AbortSignal.timeout(SEARCH_REQUEST_TIMEOUT_MS),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+    // The search model comes from env inside the layer (OPENAI_SEARCH_MODEL
+    // for OpenAI); each provider maps `webSearch` to its own search tool.
+    const result = await runAiTask(
+      'competitor_web_search',
+      {
+        prompt: buildSearchPrompt(query),
+        output: { kind: 'text' },
+        webSearch: market.country ? { country: market.country } : {},
+        timeoutMs: SEARCH_REQUEST_TIMEOUT_MS,
       },
-      body: JSON.stringify({
-        model,
-        tools: [
-          {
-            type: 'web_search',
-            search_context_size: 'low',
-            ...(market.country ? { user_location: { type: 'approximate', country: market.country } } : {}),
-          },
-        ],
-        include: ['web_search_call.action.sources'],
-        input: `Search the web for: "${query}". List the companies or products that offer this, each with its website. Be brief.`,
-      }),
-    });
+      ctx,
+    );
 
-    if (!res.ok) {
-      return { error: `Search query failed for "${query}": ${res.status} ${sanitizeUpstreamText(await res.text())}` };
+    if (!result.ok) {
+      return { error: describeAiFailure(`Search query failed for "${query}"`, result) };
+    }
+    if (!result.webSearch) {
+      // The provider answered without searching: that is not "no
+      // competitors", so it must not pass for an empty result.
+      return { error: `Search query for "${query}" returned no web search results (${result.provider})` };
     }
 
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature: 'competitor_web_search',
-      usage: parseOpenAiResponsesUsage(data),
-    });
-    return { result: extractQueryHarvest(query, data), tokens: readTokenUsage(data) };
+    // The query label is ours: the provider's own `webSearch.query` may be ''.
+    return {
+      result: { query, citations: result.webSearch.citations, sourceUrls: result.webSearch.sourceUrls },
+      tokens: tokensFromUsage(result.usage),
+    };
   } catch (error) {
     return { error: `Search query threw for "${query}": ${(error as Error).message}` };
   }
@@ -218,13 +173,9 @@ export async function harvestFromWebSearch(
   queries: string[],
   market: TargetMarket,
   exclude: Set<string>,
+  ctx?: AiCallContext,
 ): Promise<{ candidates: Candidate[]; tokens: number | null; errors: string[] }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set — cannot harvest from web search');
-  }
-
-  const outcomes = await runWithConcurrency(queries, CONCURRENCY, (query) => runOneQuery(query, market, apiKey));
+  const outcomes = await runWithConcurrency(queries, CONCURRENCY, (query) => runOneQuery(query, market, ctx));
 
   const errors: string[] = [];
   const queryResults: QueryHarvestResult[] = [];

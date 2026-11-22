@@ -1,6 +1,7 @@
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext } from '@/lib/ai';
+import type { AiTokenUsage } from '@/lib/ai-usage';
 
-import { sanitizeUpstreamText } from './redact';
+import { describeAiFailure } from './run-errors';
 import type { TargetMarket } from './types';
 
 export type BrandBrief = {
@@ -247,63 +248,49 @@ export function readTokenUsage(data: unknown): number | null {
  */
 export const QUERY_REQUEST_TIMEOUT_MS = 60_000;
 
-export async function generateQueries(brief: BrandBrief): Promise<{ queries: string[]; tokens: number | null }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set — cannot generate discovery queries');
-  }
+/**
+ * Total tokens from the layer's usage, or `null` when the provider reported
+ * none. A successful call never costs zero tokens, so 0 here means "not
+ * read", and must stay distinguishable from a real figure (see readTokenUsage).
+ */
+export function tokensFromUsage(usage: AiTokenUsage | null | undefined): number | null {
+  const total = usage?.totalTokens;
+  return typeof total === 'number' && Number.isFinite(total) && total > 0 ? total : null;
+}
 
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
-  const prompt = buildQueryGenerationPrompt(brief);
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    signal: AbortSignal.timeout(QUERY_REQUEST_TIMEOUT_MS),
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model,
-      response_format: { type: 'json_object' },
+export async function generateQueries(
+  brief: BrandBrief,
+  ctx?: AiCallContext,
+): Promise<{ queries: string[]; tokens: number | null }> {
+  const result = await runAiTask(
+    'competitor_queries',
+    {
+      system: 'You are precise and factual. Return only valid JSON.',
+      prompt: buildQueryGenerationPrompt(brief),
+      output: { kind: 'json_object' },
       temperature: 0.3,
-      messages: [
-        {
-          role: 'system',
-          content: 'You are precise and factual. Return only valid JSON.',
-        },
-        { role: 'user', content: prompt },
-      ],
-    }),
-  });
+      timeoutMs: QUERY_REQUEST_TIMEOUT_MS,
+    },
+    ctx,
+  );
 
-  if (!res.ok) {
+  if (!result.ok) {
     // This throw propagates out of `runDiscoveryPipeline`'s QUERIES stage
-    // into its outer catch, which writes `error.message` straight to
-    // `DiscoveryRun.error` — the same reason judge.ts's and search.ts's
-    // batch/query errors are sanitized before they're built.
-    throw new Error(`OpenAI query generation failed: ${res.status} ${sanitizeUpstreamText(await res.text())}`);
+    // into its outer catch, which writes the message to `DiscoveryRun.error`;
+    // describeAiFailure carries the AI_UNAVAILABLE code when it applies and
+    // never the raw upstream body.
+    throw new Error(describeAiFailure('Query generation failed', result));
   }
 
-  const data = await res.json();
-  void recordAiUsage({
-    provider: 'openai',
-    model: resolveResponseModel(data, model),
-    feature: 'competitor_queries',
-    usage: parseOpenAiChatUsage(data),
-  });
-  const content = data?.choices?.[0]?.message?.content;
-  if (!content || typeof content !== 'string') {
-    throw new Error('OpenAI query generation returned no content');
-  }
+  const tokens = tokensFromUsage(result.usage);
 
-  const tokens = readTokenUsage(data);
-
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(content);
-  } catch (error) {
-    throw new Error(`OpenAI query generation returned invalid JSON: ${(error as Error).message}`);
+  let parsed: unknown = result.json;
+  if (parsed === undefined) {
+    try {
+      parsed = JSON.parse(result.text);
+    } catch (error) {
+      throw new Error(`Query generation returned invalid JSON (${result.provider}): ${(error as Error).message}`);
+    }
   }
 
   const rawQueries = Array.isArray((parsed as Record<string, unknown>)?.queries)

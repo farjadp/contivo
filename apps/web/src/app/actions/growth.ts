@@ -160,10 +160,11 @@ async function enrichWorkspaceInAiContext(workspaceId: string): Promise<Enrichme
     next to English competitor descriptions.
   */
   const workspaceLanguage = asContentLanguage(workspace.contentLanguage);
+  const aiCtx = { userId: session.userId as string, workspaceId: workspace.id };
 
   // ── Brand memory ──────────────────────────────────────────────────────────
   try {
-    const aiResult = await analyzeWebsiteWithGemini(url, scrapedText, workspaceLanguage);
+    const aiResult = await analyzeWebsiteWithGemini(url, scrapedText, workspaceLanguage, aiCtx);
     if (aiResult) {
       brandSummary = {
         heroMessage: aiResult.heroMessage,
@@ -194,7 +195,7 @@ async function enrichWorkspaceInAiContext(workspaceId: string): Promise<Enrichme
 
   // ── Competitors (best effort — a failure must not lose the brand memory) ──
   try {
-    const comps = await discoverCompetitorsWithGemini(brandSummary, workspaceLanguage);
+    const comps = await discoverCompetitorsWithGemini(brandSummary, workspaceLanguage, aiCtx);
     if (comps && comps.length > 0) {
       competitorsData = comps;
     } else {

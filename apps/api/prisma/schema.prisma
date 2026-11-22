@@ -164,6 +164,10 @@ model AutopilotPolicy {
   /// working and quietly gains a position once one exists.
   storylineIds String[] @default([])
 
+  /// User's choice: when true every gate-approved draft waits in the pipeline
+  /// for the user instead of publishing on schedule. Default off = old behaviour.
+  requireReview Boolean @default(false)
+
   // Scheduling bookkeeping
   lastRunAt DateTime?
   nextRunAt DateTime?
@@ -714,6 +718,31 @@ model AiUsageLog {
   @@index([workspaceId])
   @@index([createdAt])
   @@map("ai_usage_logs")
+}
+
+/// One row per failed AI provider attempt, health change, or full outage.
+/// eventType: attempt_failed | health_changed | all_unavailable.
+/// provider / failedOverTo: openai | anthropic | gemini.
+/// message is sanitised and truncated to 500 chars by the app.
+/// workspaceId/userId are plain columns, no FK: events must be writable and
+/// survive even when the workspace or user is gone.
+model AiProviderEvent {
+  id           String   @id @default(cuid())
+  createdAt    DateTime @default(now())
+  provider     String
+  task         String
+  errorClass   String
+  status       Int?
+  message      String?
+  failedOverTo String?
+  eventType    String   @default("attempt_failed")
+  workspaceId  String?
+  userId       String?
+
+  @@index([provider, createdAt])
+  @@index([createdAt])
+  @@index([errorClass, createdAt])
+  @@map("ai_provider_events")
 }
 
 model activity_logs {

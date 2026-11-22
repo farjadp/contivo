@@ -8,7 +8,7 @@ import {
   languageInstructions,
 } from '@/lib/content-language';
 import { prisma } from '@/lib/db';
-import { requestJsonFromAi } from '@/lib/gemini';
+import { runAiTask } from '@/lib/ai';
 import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { actionError } from '@/lib/action-errors';
 import { countCompetitors } from '@/lib/competitor-counts';
@@ -157,14 +157,23 @@ The button they will click: ${stepAction}
 Write JSON only:
 {"headline": "max 8 words, imperative, no fluff", "body": "2-3 sentences, max 55 words. Say what this step will do FOR THIS BRAND specifically, and what it unlocks next. No greetings, no marketing language, no exclamation marks."}`;
 
-  const ai = await requestJsonFromAi<{ headline?: unknown; body?: unknown }>(
-    prompt,
-    'You write short, factual in-product guidance. Return only valid JSON.',
+  const ai = await runAiTask(
+    'guide',
+    {
+      system: 'You write short, factual in-product guidance. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: 60_000,
+    },
+    { userId, workspaceId },
   );
-  if (!ai) return fallback;
+  // The deterministic guide (source: 'fallback') is real advice from the
+  // journey model, labelled as such — not a stand-in for model output.
+  if (!ai.ok) return fallback;
 
-  const headline = String(ai.data.headline || '').trim();
-  const body = String(ai.data.body || '').trim();
+  const reply = (ai.json ?? {}) as { headline?: unknown; body?: unknown };
+  const headline = String(reply.headline || '').trim();
+  const body = String(reply.body || '').trim();
   if (!headline || !body || body.length > 420) return fallback;
 
   return { stepTitle, headline, body, action: stepAction, href: step.href, source: 'ai' };

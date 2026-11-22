@@ -1,0 +1,54 @@
+{
+  "source": "documented shape of OpenAI Responses API + web_search, the fields lib/competitors/search.ts extractQueryHarvest reads; NOT recorded (local org out of credit)",
+  "status": 200,
+  "body": {
+    "id": "resp_1",
+    "model": "gpt-5-mini-2025-08-07",
+    "output": [
+      {
+        "type": "web_search_call",
+        "id": "ws_1",
+        "status": "completed",
+        "action": {
+          "type": "search",
+          "query": "cloud accounting software",
+          "sources": [
+            {
+              "type": "url",
+              "url": "https://sepidar.example/"
+            },
+            {
+              "type": "url",
+              "url": "https://noise.example/list"
+            }
+          ]
+        }
+      },
+      {
+        "type": "message",
+        "id": "msg_1",
+        "role": "assistant",
+        "content": [
+          {
+            "type": "output_text",
+            "text": "Sepidar offers it.",
+            "annotations": [
+              {
+                "type": "url_citation",
+                "url": "https://sepidar.example/",
+                "title": "Sepidar",
+                "start_index": 0,
+                "end_index": 7
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "usage": {
+      "input_tokens": 800,
+      "output_tokens": 120,
+      "total_tokens": 920
+    }
+  }
+}

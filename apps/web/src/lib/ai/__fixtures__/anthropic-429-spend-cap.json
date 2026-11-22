@@ -1,0 +1,15 @@
+{
+  "source": "from docs, not recorded: https://platform.claude.com/docs/en/api/rate-limits ('Reaching your spend cap'), body as quoted in .claude/agent-org/work/data/2026-11-22-ai-provider-error-bodies.md §3; no retry-after",
+  "status": 429,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "You have reached your API usage limits: your organization has crossed its monthly API usage threshold… You will regain access on 2026-09-01 at 00:00 UTC.",
+      "details": {
+        "error_code": "enforced_spend_limit_reached"
+      }
+    },
+    "request_id": "req_docs"
+  }
+}

@@ -287,7 +287,7 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
       marketMatrices: competitiveMatrices,
       competitorBasis,
       competitorKeywordsIntel,
-    });
+    }, { userId, workspaceId });
     if (!ideation) {
       return { error: 'Failed to generate ideas.' };
     }
@@ -519,8 +519,10 @@ export async function generateDraftPreviewCore(
       },
       null,
       asContentLanguage(workspace.contentLanguage),
+      { userId, workspaceId },
     );
 
+    // Null = the provider chain failed. Nothing is saved; there is no template draft.
     if (!generatedBody) return { error: 'AI generation failed' };
 
     await writeActivityLog({
@@ -651,8 +653,11 @@ export async function generateDraftForItem(
       },
       storyline ? storylinePromptBlock(storyline) : null,
       asContentLanguage(workspace.contentLanguage),
+      { userId, workspaceId },
     );
 
+    // Null = the provider chain failed. The item is left exactly as it was:
+    // there is no template draft to save, schedule or publish.
     if (!generatedBody) {
       return { error: 'AI generation failed' };
     }
@@ -686,6 +691,7 @@ export async function generateDraftForItem(
         minWords,
         // Blog posts are rendered as web pages; hashtags only belong on social.
         hashtags: hashtagCount,
+        ctx: { userId, workspaceId },
       });
       let passes = 1;
 
@@ -702,6 +708,7 @@ export async function generateDraftForItem(
           targetWords: targetWordCount,
           minWords,
           hashtags: hashtagCount,
+          ctx: { userId, workspaceId },
         });
         if (countWords(next.text) <= before) break;
         humanized = next;

@@ -1,0 +1,17 @@
+{
+  "source": "recorded LIVE 2026-11-22 01:26 UTC by contivo-mlops-engineer (.claude/agent-org/work/data/2026-11-22-ai-provider-error-bodies.md §4), no key (message/status/reason as recorded; ErrorInfo domain/metadata trimmed in the evidence file)",
+  "status": 403,
+  "body": {
+    "error": {
+      "code": 403,
+      "message": "Permission denied on the service.",
+      "status": "PERMISSION_DENIED",
+      "details": [
+        {
+          "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+          "reason": "ACCESS_DENIED"
+        }
+      ]
+    }
+  }
+}

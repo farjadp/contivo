@@ -13,13 +13,14 @@
  *      and clarity, with a hard veto for anything unsafe to publish
  *      unattended (unverifiable claims, fabricated numbers, off-brand voice).
  *
- * Failure policy is deliberately FAIL-CLOSED: if both providers are down we
+ * Failure policy is deliberately FAIL-CLOSED: if no provider in the
+ * `quality_gate` chain answers (Gemini → OpenAI → Claude, lib/ai) we
  * do NOT publish an unvetted draft. The item stays a DRAFT and the next run
  * (3h later) tries again. A quiet week is recoverable; an unreviewed post on
  * a real brand account is not.
  */
 
-import { requestJsonFromAi } from '@/lib/gemini';
+import { runAiTask, type AiCallContext, type ProviderId } from '@/lib/ai';
 import { storylinePromptBlock, type StorylineContext } from '@/lib/narrative/context';
 import { getContentWordCountLimits } from '@/lib/app-settings';
 import {
@@ -55,6 +56,16 @@ const PLATFORM_CHAR_LIMITS: Record<string, number> = {
   // LinkedIn rejects a share over 3,000 characters outright.
   linkedin: 3000,
 };
+
+/** Per provider attempt; the judge's existing budget (spec: "judge 90 s (existing)"). */
+export const JUDGE_TIMEOUT_MS = 90_000;
+
+/**
+ * The judge's system prompt. Exported so the calibration eval
+ * (scripts/eval-judge) replays exactly what production sends.
+ */
+export const JUDGE_SYSTEM_PROMPT =
+  'You are a strict brand editor. You reject anything you would not want published unattended on a real company account. Return ONLY valid JSON.';
 
 /** Word count tolerance either side of the configured range. */
 const WORD_COUNT_TOLERANCE = 0.25;
@@ -122,7 +133,14 @@ export type GateVerdict = {
   reasons: string[];
   checks: GateCheck[];
   scores: GateScores | null;
-  judge: 'gemini' | 'openai' | 'unavailable' | 'skipped';
+  /** The provider that judged, or why none did. */
+  judge: ProviderId | 'unavailable' | 'skipped';
+  /**
+   * The model that actually answered (from the layer's result), null when no
+   * judge ran. A judge that changes model changes its scores, so every
+   * verdict carries it.
+   */
+  judgeModel: string | null;
 };
 
 export type GateInput = {
@@ -149,6 +167,8 @@ export type GateInput = {
    * without one keeps publishing.
    */
   storyline?: StorylineContext | null;
+  /** Who the judge call is attributed to in ai_usage_logs / provider events. */
+  aiContext?: AiCallContext;
 };
 
 // ---------------------------------------------------------------------------
@@ -163,7 +183,7 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
   const fail = (id: string, detail: string): GateVerdict => {
     checks.push({ id, passed: false, detail });
     reasons.push(detail);
-    return { approved: false, rejectedBy: id, reasons, checks, scores: null, judge: 'skipped' };
+    return { approved: false, rejectedBy: id, reasons, checks, scores: null, judge: 'skipped', judgeModel: null };
   };
   const pass = (id: string, detail: string) => checks.push({ id, passed: true, detail });
 
@@ -243,10 +263,11 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
       checks,
       scores: null,
       judge: 'unavailable',
+      judgeModel: null,
     };
   }
 
-  const { scores, verdict, notes, provider } = judged;
+  const { scores, verdict, notes, provider, model } = judged;
   const below: string[] = [];
   if (scores.brandFit < THRESHOLDS.brandFit) below.push(`brand fit ${scores.brandFit}/10`);
   if (scores.factualSafety < THRESHOLDS.factualSafety)
@@ -272,6 +293,7 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
       checks,
       scores,
       judge: provider,
+      judgeModel: model,
     };
   }
 
@@ -284,7 +306,7 @@ export async function evaluateDraft(input: GateInput): Promise<GateVerdict> {
         ? ` · storyline ${scores.storylineFit}/10 · evidence ${scores.evidenceDiscipline}/10`
         : ''),
   });
-  return { approved: true, rejectedBy: null, reasons: notes, checks, scores, judge: provider };
+  return { approved: true, rejectedBy: null, reasons: notes, checks, scores, judge: provider, judgeModel: model };
 }
 
 // ---------------------------------------------------------------------------
@@ -303,13 +325,26 @@ type JudgeReply = {
 
 async function runJudge(input: GateInput, content: string, platform: string) {
   const prompt = buildJudgePrompt(input, content, platform);
-  const result = await requestJsonFromAi<JudgeReply>(
-    prompt,
-    'You are a strict brand editor. You reject anything you would not want published unattended on a real company account. Return ONLY valid JSON.',
+  // json_object, not a schema: the calibration eval measured this prompt as
+  // json_object, and a schema is a prompt change that needs its own eval run.
+  const result = await runAiTask(
+    'quality_gate',
+    {
+      system: JUDGE_SYSTEM_PROMPT,
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: JUDGE_TIMEOUT_MS,
+    },
+    input.aiContext,
   );
-  if (!result) return null;
+  // Fail closed: no judge answered, so the caller holds the draft.
+  if (!result.ok) {
+    console.error('[autopilot] quality judge unavailable', result.kind, result.firstErrorClass);
+    return null;
+  }
+  if (!result.json || typeof result.json !== 'object' || Array.isArray(result.json)) return null;
 
-  const raw = result.data;
+  const raw = result.json as JudgeReply;
   const scores: GateScores = {
     brandFit: clampScore(raw.brand_fit),
     factualSafety: clampScore(raw.factual_safety),
@@ -324,10 +359,10 @@ async function runJudge(input: GateInput, content: string, platform: string) {
     ? raw.notes.map((n) => String(n).slice(0, 300)).slice(0, 5)
     : [];
 
-  return { scores, verdict, notes, provider: result.provider };
+  return { scores, verdict, notes, provider: result.provider, model: result.model };
 }
 
-function buildJudgePrompt(input: GateInput, content: string, platform: string): string {
+export function buildJudgePrompt(input: GateInput, content: string, platform: string): string {
   const brand = input.brandSummary && typeof input.brandSummary === 'object' ? input.brandSummary : {};
   return `You are reviewing a social post that will be published AUTOMATICALLY with no human review.
 

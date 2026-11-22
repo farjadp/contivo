@@ -1,0 +1,12 @@
+{
+  "source": "documented shape from OpenAI's error-codes guide (https://platform.openai.com/docs/guides/error-codes); NOT recorded",
+  "status": 400,
+  "body": {
+    "error": {
+      "message": "Invalid schema for response_format 'competitor_judgments': In context=(), 'required' is required to be supplied and to be an array including every key in properties.",
+      "type": "invalid_request_error",
+      "param": "response_format",
+      "code": null
+    }
+  }
+}

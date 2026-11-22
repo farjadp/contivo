@@ -123,6 +123,7 @@
           "timedOut": "The run took too long and was stopped. Try again.",
           "dispatch": "The run could not start because of a problem on our side. Try again in a moment.",
           "notEnoughEvidence": "Fewer than two competitors have anything on their site to score them on. Re-run competitor discovery, then try again.",
+          "aiUnavailable": "The AI service is unavailable right now. We've been alerted and are fixing it. Your work is saved.",
           "generic": "Something went wrong in our system. Try again."
         },
         "empty": {

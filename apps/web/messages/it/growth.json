@@ -221,6 +221,7 @@
           "judgeOutage": "Il servizio che verifica ogni azienda sulla base delle prove non era disponibile, quindi non è stato possibile verificare nulla. Il problema non è il mercato che hai scelto.",
           "searchUnavailable": "La ricerca web che individua i concorrenti non era disponibile, quindi non ne è stato trovato nessuno. Il problema non è il mercato che hai scelto.",
           "rateLimited": "Il servizio AI sta ricevendo troppe richieste in questo momento. Attendi qualche minuto, poi riprova.",
+          "aiUnavailable": "Il servizio AI non è disponibile in questo momento. Siamo già stati avvisati e ci stiamo lavorando. Il tuo lavoro è salvato.",
           "generic": "Qualcosa è andato storto nel nostro sistema."
         },
         "pollStopped": "Questa pagina ha smesso di controllare lo stato della ricerca. Ricarica per vedere a che punto è.",

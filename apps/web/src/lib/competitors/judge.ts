@@ -5,11 +5,12 @@ import type { IncomingMessage } from 'node:http';
 import { request as nodeHttpsRequest } from 'node:https';
 import type { LookupFunction } from 'node:net';
 
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext } from '@/lib/ai';
 
 import { isBlockedAddress, isHostnameSafeToFetch } from './network-guard';
 import { sanitizeUpstreamText } from './redact';
-import { explainRejectionReason, readTokenUsage, sanitizePromptField } from './queries';
+import { explainRejectionReason, sanitizePromptField, tokensFromUsage } from './queries';
+import { describeAiFailure } from './run-errors';
 import type { BrandBrief } from './queries';
 import { newEvidenceId } from './types';
 import type {
@@ -941,7 +942,9 @@ export function buildJudgePrompt(brief: BrandBrief, batch: EnrichedCandidate[]):
   return lines.join('\n');
 }
 
-type BatchOutcome = { judged: JudgedCandidate[]; tokens: number | null } | { error: string };
+type BatchOutcome =
+  | { judged: JudgedCandidate[]; tokens: number | null; provider: string; model: string }
+  | { error: string };
 
 /**
  * Wall-clock bound on one judge call. Without it only undici's default 300 s
@@ -953,57 +956,34 @@ export const JUDGE_REQUEST_TIMEOUT_MS = 90_000;
 async function runOneBatch(
   brief: BrandBrief,
   batch: EnrichedCandidate[],
-  apiKey: string,
-  model: string,
+  ctx: AiCallContext | undefined,
 ): Promise<BatchOutcome> {
   try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      signal: AbortSignal.timeout(JUDGE_REQUEST_TIMEOUT_MS),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
+    const result = await runAiTask(
+      'competitor_judge',
+      {
+        system: 'You are precise and evidence-based. Return only valid JSON matching the schema.',
+        prompt: buildJudgePrompt(brief, batch),
+        output: { kind: 'json_schema', name: 'competitor_judgments', schema: JUDGE_SCHEMA },
         temperature: 0.2,
-        response_format: {
-          type: 'json_schema',
-          json_schema: { name: 'competitor_judgments', strict: true, schema: JUDGE_SCHEMA },
-        },
-        messages: [
-          {
-            role: 'system',
-            content: 'You are precise and evidence-based. Return only valid JSON matching the schema.',
-          },
-          { role: 'user', content: buildJudgePrompt(brief, batch) },
-        ],
-      }),
-    });
+        timeoutMs: JUDGE_REQUEST_TIMEOUT_MS,
+      },
+      ctx,
+    );
 
-    if (!res.ok) {
-      return { error: `Judge batch failed: ${res.status} ${sanitizeUpstreamText(await res.text())}` };
+    if (!result.ok) {
+      return { error: describeAiFailure('Judge batch failed', result) };
     }
 
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature: 'competitor_judge',
-      usage: parseOpenAiChatUsage(data),
-    });
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') {
-      return { error: 'Judge batch returned no content' };
-    }
-
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(content);
-    } catch (error) {
-      // A response that will not parse is an error, not an approval — the
-      // candidates in this batch are dropped, never defaulted to accepted.
-      return { error: `Judge batch returned invalid JSON: ${(error as Error).message}` };
+    let parsed: unknown = result.json;
+    if (parsed === undefined) {
+      try {
+        parsed = JSON.parse(result.text);
+      } catch (error) {
+        // A response that will not parse is an error, not an approval — the
+        // candidates in this batch are dropped, never defaulted to accepted.
+        return { error: `Judge batch returned invalid JSON: ${(error as Error).message}` };
+      }
     }
 
     const rawResults = Array.isArray((parsed as Record<string, unknown>)?.results)
@@ -1056,7 +1036,7 @@ async function runOneBatch(
       });
     }
 
-    return { judged, tokens: readTokenUsage(data) };
+    return { judged, tokens: tokensFromUsage(result.usage), provider: result.provider, model: result.model };
   } catch (error) {
     return { error: `Judge batch threw: ${(error as Error).message}` };
   }
@@ -1069,19 +1049,25 @@ export type JudgeResult = {
   errors: string[];
   batches: number;
   failedBatches: number;
+  /**
+   * Which provider/model judged the batches that succeeded, in first-seen
+   * order. A judge that changes model changes its scores, so runs are only
+   * comparable within one judge (spec §Judge consistency 1). More than one
+   * entry means this run's batches were judged by a mix.
+   */
+  judges: Array<{ provider: string; model: string }>;
 };
 
-export async function judgeCandidates(brief: BrandBrief, candidates: EnrichedCandidate[]): Promise<JudgeResult> {
-  if (candidates.length === 0) return { judged: [], tokens: 0, errors: [], batches: 0, failedBatches: 0 };
+export async function judgeCandidates(
+  brief: BrandBrief,
+  candidates: EnrichedCandidate[],
+  ctx?: AiCallContext,
+): Promise<JudgeResult> {
+  if (candidates.length === 0) return { judged: [], tokens: 0, errors: [], batches: 0, failedBatches: 0, judges: [] };
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set — cannot judge competitor candidates');
-  }
-
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
   const batches = chunk(candidates, JUDGE_BATCH_SIZE);
-  const outcomes = await runWithConcurrency(batches, JUDGE_CONCURRENCY, (batch) => runOneBatch(brief, batch, apiKey, model));
+  const outcomes = await runWithConcurrency(batches, JUDGE_CONCURRENCY, (batch) => runOneBatch(brief, batch, ctx));
+  const judges: Array<{ provider: string; model: string }> = [];
 
   const judged: JudgedCandidate[] = [];
   const errors: string[] = [];
@@ -1102,6 +1088,9 @@ export async function judgeCandidates(brief: BrandBrief, candidates: EnrichedCan
       continue;
     }
     judged.push(...outcome.judged);
+    if (!judges.some((j) => j.provider === outcome.provider && j.model === outcome.model)) {
+      judges.push({ provider: outcome.provider, model: outcome.model });
+    }
     if (outcome.tokens != null) {
       sawReadableUsage = true;
       tokenSum = (tokenSum ?? 0) + outcome.tokens;
@@ -1109,5 +1098,5 @@ export async function judgeCandidates(brief: BrandBrief, candidates: EnrichedCan
   }
 
   const tokens = sawReadableUsage ? tokenSum : null;
-  return { judged, tokens, errors, batches: batches.length, failedBatches: errors.length };
+  return { judged, tokens, errors, batches: batches.length, failedBatches: errors.length, judges };
 }

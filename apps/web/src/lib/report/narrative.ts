@@ -11,14 +11,18 @@
  * is worth more than an error message.
  */
 
-import { parseGeminiUsage, parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext } from '@/lib/ai';
 import {
   DEFAULT_CONTENT_LANGUAGE,
   languageInstructions,
   type ContentLanguage,
 } from '@/lib/content-language';
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || 'gemini-2.5-pro';
+/*
+  Models come from the failover layer (task report_narrative): Gemini is the
+  admin setting, like every other content task. This file used to read
+  GEMINI_MODEL with a gemini-2.5-pro default, which Google retires on 1 Dec.
+*/
 
 export interface ReportNarrative {
   /** Two short paragraphs opening the report. */
@@ -44,73 +48,6 @@ export const EMPTY_NARRATIVE: ReportNarrative = {
   positioningOpportunity: '',
   recommendations: { immediate: [], mediumTerm: [], longTerm: [] },
 };
-
-async function callGemini(prompt: string): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('GEMINI_API_KEY is not set');
-
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 8192,
-          temperature: 0.4,
-          responseMimeType: 'application/json',
-        },
-      }),
-    },
-  );
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`Gemini API error ${res.status}: ${body.slice(0, 200)}`);
-  }
-  const data = await res.json();
-  void recordAiUsage({
-    provider: 'gemini',
-    model: resolveResponseModel(data, GEMINI_MODEL),
-    feature: 'report_narrative',
-    usage: parseGeminiUsage(data),
-  });
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-}
-
-async function callOpenAi(prompt: string): Promise<string> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new Error('OPENAI_API_KEY is not set');
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
-
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4000,
-      temperature: 0.4,
-      response_format: { type: 'json_object' },
-      messages: [{ role: 'user', content: prompt }],
-    }),
-  });
-  if (!res.ok) {
-    const body = await res.text().catch(() => '');
-    throw new Error(`OpenAI API error ${res.status}: ${body.slice(0, 200)}`);
-  }
-  const data = await res.json();
-  void recordAiUsage({
-    provider: 'openai',
-    model: resolveResponseModel(data, model),
-    feature: 'report_narrative',
-    usage: parseOpenAiChatUsage(data),
-  });
-  return data?.choices?.[0]?.message?.content ?? '';
-}
-
-function stripFences(text: string): string {
-  return text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
-}
 
 function asStringArray(value: unknown, max: number): string[] {
   if (!Array.isArray(value)) return [];
@@ -221,28 +158,30 @@ RULES:
  */
 export async function generateNarrative(
   input: NarrativeInput,
+  ctx?: AiCallContext,
 ): Promise<{ narrative: ReportNarrative; degraded: boolean }> {
   const prompt = buildPrompt(input);
 
-  let raw = '';
-  try {
-    raw = await callGemini(prompt);
-  } catch (geminiErr) {
-    console.warn('[report/narrative] Gemini failed, trying OpenAI:', geminiErr);
-    try {
-      raw = await callOpenAi(prompt);
-    } catch (openAiErr) {
-      console.error('[report/narrative] both providers failed:', openAiErr);
-      return { narrative: EMPTY_NARRATIVE, degraded: true };
-    }
-  }
-
-  try {
-    const narrative = coerce(JSON.parse(stripFences(raw)));
-    const empty = narrative.executiveSummary.length === 0;
-    return { narrative, degraded: empty };
-  } catch (parseErr) {
-    console.error('[report/narrative] unparseable model output:', parseErr);
+  const result = await runAiTask(
+    'report_narrative',
+    {
+      prompt,
+      output: { kind: 'json_object' },
+      // Long prose reply (spec §Timeouts: long drafts 120 s).
+      timeoutMs: 120_000,
+      maxTokens: 8192,
+      temperature: 0.4,
+    },
+    ctx,
+  );
+  if (!result.ok) {
+    console.error(
+      `[report/narrative] AI ${result.kind} (first error: ${result.firstErrorClass}); rendering without commentary`,
+    );
     return { narrative: EMPTY_NARRATIVE, degraded: true };
   }
+
+  const narrative = coerce(result.json);
+  const empty = narrative.executiveSummary.length === 0;
+  return { narrative, degraded: empty };
 }

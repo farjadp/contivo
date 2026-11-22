@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prismaMock, activityLogMock, frameworkLogMock } = vi.hoisted(() => ({
   prismaMock: {
     workspace: { findUnique: vi.fn() },
-    contentItem: { create: vi.fn() },
+    contentItem: { create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
   },
   activityLogMock: vi.fn(),
   frameworkLogMock: vi.fn(),
@@ -20,9 +20,13 @@ vi.mock('@/lib/framework-metadata-log', () => ({
   logFrameworkMetadata: frameworkLogMock,
   getLatestFrameworkMetadataForContentItem: vi.fn(),
 }));
+const { ideasMock, draftMock } = vi.hoisted(() => ({ ideasMock: vi.fn(), draftMock: vi.fn() }));
 vi.mock('@/lib/gemini', () => ({
-  generateContentIdeasWithGemini: vi.fn(),
-  generateContentDraftWithGemini: vi.fn(),
+  generateContentIdeasWithGemini: ideasMock,
+  generateContentDraftWithGemini: draftMock,
+}));
+vi.mock('@/lib/report-readiness', () => ({
+  matricesGate: () => ({ ok: true, competitorBasis: 'ACCEPTED' }),
 }));
 vi.mock('@/lib/humanize', () => ({ humanizeDraft: vi.fn() }));
 vi.mock('@/lib/content-image', () => ({ generateImageForContentItem: vi.fn() }));
@@ -31,12 +35,24 @@ vi.mock('@/lib/narrative/context', () => ({
   storylinePromptBlock: vi.fn(),
 }));
 vi.mock('@/lib/app-settings', () => ({
-  getContentWordCountLimits: vi.fn(),
+  getContentWordCountLimits: vi.fn(async () => ({
+    linkedin: { min: 100, max: 300 },
+    blog: { min: 600, max: 1200 },
+    twitter: { min: 50, max: 280 },
+    email: { min: 150, max: 400 },
+    instagram: { min: 50, max: 200 },
+  })),
   getDefaultScheduleDelayHours: vi.fn(),
-  getIdeationMaxContentCount: vi.fn(),
+  getIdeationMaxContentCount: vi.fn(async () => 10),
 }));
 
-import { resolveChannelFromFormat, saveIdeaToPipelineCore } from './content-engine';
+import {
+  generateDraftForItem,
+  generateDraftPreviewCore,
+  ideateForWorkspace,
+  resolveChannelFromFormat,
+  saveIdeaToPipelineCore,
+} from './content-engine';
 
 const OWNER = 'user-a';
 const INTRUDER = 'user-b';
@@ -102,5 +118,63 @@ describe('resolveChannelFromFormat', () => {
     [undefined, 'linkedin'],
   ])('%s → %s', (format, channel) => {
     expect(resolveChannelFromFormat(format)).toBe(channel);
+  });
+});
+
+/*
+  When the AI provider chain fails, the generators return null. They used to
+  return template text that was then saved, scheduled and published. These
+  pin that a null leaves the database untouched.
+*/
+describe('AI chain failure (generators return null)', () => {
+  const ownedWorkspace = {
+    id: WORKSPACE,
+    userId: OWNER,
+    contentLanguage: 'en',
+    brandSummary: { industry: 'Dental clinic' },
+    audienceInsights: {
+      competitiveMatrices: { charts: [{}] },
+      competitorKeywordsIntel: { competitors: [{ competitor: 'X' }] },
+    },
+    contentItems: [{ id: 'item-1', topic: 'Why audits matter', channel: 'LINKEDIN', content: '', storylineId: null }],
+  };
+
+  beforeEach(() => {
+    prismaMock.workspace.findUnique.mockResolvedValue(ownedWorkspace);
+  });
+
+  it('generateDraftForItem returns an error and writes nothing', async () => {
+    draftMock.mockResolvedValue(null);
+
+    const result = await generateDraftForItem({ userId: OWNER, workspaceId: WORKSPACE }, 'item-1');
+
+    expect(result).toEqual({ error: 'AI generation failed' });
+    expect(draftMock).toHaveBeenCalledTimes(1);
+    // The call carries who the usage/alerts belong to.
+    expect(draftMock.mock.calls[0][7]).toEqual({ userId: OWNER, workspaceId: WORKSPACE });
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(prismaMock.contentItem.updateMany).not.toHaveBeenCalled();
+    expect(prismaMock.contentItem.create).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
+  it('generateDraftPreviewCore returns an error and logs nothing', async () => {
+    draftMock.mockResolvedValue(null);
+
+    const result = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
+
+    expect(result).toEqual({ error: 'AI generation failed' });
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
+  it('ideateForWorkspace returns an error and logs nothing', async () => {
+    ideasMock.mockResolvedValue(null);
+
+    const result = await ideateForWorkspace({ userId: OWNER, workspaceId: WORKSPACE });
+
+    expect(result).toEqual({ error: 'Failed to generate ideas.' });
+    expect(ideasMock.mock.calls[0][2]).toEqual({ userId: OWNER, workspaceId: WORKSPACE });
+    expect(activityLogMock).not.toHaveBeenCalled();
+    expect(frameworkLogMock).not.toHaveBeenCalled();
   });
 });
