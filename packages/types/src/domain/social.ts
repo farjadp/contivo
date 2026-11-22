@@ -9,10 +9,40 @@
 
 import { z } from 'zod';
 
+import type { ContentChannel } from './content';
+
 // ─── Enums ────────────────────────────────────────────────────────────────────
 
-export const SocialPlatform = z.enum(['LINKEDIN', 'X', 'FACEBOOK', 'INSTAGRAM', 'TIKTOK']);
+// Must match `enum SocialPlatform` in apps/api/prisma/schema.prisma.
+export const SocialPlatform = z.enum([
+  'LINKEDIN',
+  'X',
+  'FACEBOOK',
+  'INSTAGRAM',
+  'TIKTOK',
+  'TELEGRAM',
+  'THREADS',
+]);
 export type SocialPlatform = z.infer<typeof SocialPlatform>;
+
+/** Every SocialPlatform value, in schema order. Iterate this; do not copy the list. */
+export const PLATFORM_KEYS: readonly SocialPlatform[] = SocialPlatform.options;
+
+/**
+ * The one channel → platform table. `null` = the channel is not published
+ * through a SocialConnection (`blog` belongs to the web Content-API publisher;
+ * `email` has no sender yet). Typed as a full Record so adding a ContentChannel
+ * without deciding its platform is a compile error.
+ */
+export const CHANNEL_TO_PLATFORM: Readonly<Record<ContentChannel, SocialPlatform | null>> = {
+  linkedin: 'LINKEDIN',
+  twitter: 'X',
+  instagram: 'INSTAGRAM',
+  telegram: 'TELEGRAM',
+  threads: 'THREADS',
+  blog: null,
+  email: null,
+};
 
 export const SocialConnectionStatus = z.enum([
   'CONNECTED',
