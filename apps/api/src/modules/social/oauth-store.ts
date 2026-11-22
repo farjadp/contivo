@@ -4,7 +4,8 @@
  * Short-lived server-side state for the OAuth connect flow, in Redis:
  *   - single-use OAuth state nonces (a replayed callback is refused);
  *   - pending connections waiting for the web session to confirm them
- *     (see SocialOAuthService.finalizeConnect).
+ *     (see SocialOAuthService.finalizeConnect);
+ *   - Telegram connect sessions (telegram/telegram-connect.service.ts).
  *
  * Behind an interface so tests can use an in-memory store.
  */
@@ -17,6 +18,10 @@ export interface OAuthStore {
   /** True the first time a key is claimed within ttlMs, false afterwards. */
   claimOnce(key: string, ttlMs: number): Promise<boolean>;
   put(key: string, value: string, ttlMs: number): Promise<void>;
+  /** Reads without consuming (Telegram connect sessions are polled). */
+  get(key: string): Promise<string | null>;
+  /** Removes a key; no-op when absent. */
+  del(key: string): Promise<void>;
   /** Reads and deletes in one step, so a value can be taken only once. */
   take(key: string): Promise<string | null>;
 }
@@ -28,6 +33,12 @@ export function redisOAuthStore(redis: Redis): OAuthStore {
     },
     async put(key, value, ttlMs) {
       await redis.set(key, value, 'PX', ttlMs);
+    },
+    async get(key) {
+      return redis.get(key);
+    },
+    async del(key) {
+      await redis.del(key);
     },
     async take(key) {
       // MULTI GET + DEL rather than GETDEL: works on Redis < 6.2 too.
@@ -56,6 +67,12 @@ export function memoryOAuthStore(): OAuthStore & { keys(): string[] } {
     },
     async put(key, value, ttlMs) {
       data.set(key, { value, exp: Date.now() + ttlMs });
+    },
+    async get(key) {
+      return live(key)?.value ?? null;
+    },
+    async del(key) {
+      data.delete(key);
     },
     async take(key) {
       const hit = live(key);
