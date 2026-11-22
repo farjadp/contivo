@@ -1,6 +1,6 @@
 'use server';
 
-import { createHmac } from 'crypto';
+import { createHmac, randomBytes } from 'crypto';
 
 import { getSession, mintApiToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -64,7 +64,8 @@ export async function getSocialConnectUrl(
 
   const secret = getOAuthStateSecret();
   const body = Buffer.from(
-    JSON.stringify({ userId, workspaceId, exp: Date.now() + TTL_MS }),
+    // `n`: every link is distinct; the API lets each link start one flow only.
+    JSON.stringify({ userId, workspaceId, exp: Date.now() + TTL_MS, n: randomBytes(9).toString('base64url') }),
     'utf8',
   ).toString('base64url');
   const signature = createHmac('sha256', secret).update(body).digest('base64url');

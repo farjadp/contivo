@@ -147,6 +147,7 @@ export class SocialOAuthController {
       throw new UnauthorizedException('Connect link does not match the requested workspace.');
     }
     await this.connections.validateWorkspaceAccess(targetWorkspaceId, handoff.userId);
+    await this.oauthService.claimHandoff(handoffToken!);
 
     const { url, nonce } = this.oauthService.startAuth(platform, targetWorkspaceId, handoff.userId);
     res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...nonceCookieOpts(req), maxAge: STATE_TTL_MS });

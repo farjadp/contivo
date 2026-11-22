@@ -35,10 +35,13 @@ import {
   ForbiddenException,
   GoneException,
   Inject,
+  ServiceUnavailableException,
+  UnauthorizedException,
   Injectable,
   Logger,
 } from '@nestjs/common';
 
+import { HANDOFF_TTL_MS } from './connect-handoff';
 import type { CreateSocialConnectionDto } from './dto/create-social-connection.dto';
 import { getOAuthStateSecret } from './oauth-state-secret';
 import { OAUTH_STORE, type OAuthStore } from './oauth-store';
@@ -76,6 +79,8 @@ interface PendingConnect {
 
 const pendingKey = (ticket: string) => `social:oauth-pending:${ticket}`;
 const nonceKey = (nonce: string) => `social:oauth-state:${nonce}`;
+const handoffKey = (token: string) =>
+  `social:oauth-handoff:${crypto.createHash('sha256').update(token).digest('base64url')}`;
 
 /** Every platform call in the connect flow gives up after this long. */
 const PLATFORM_TIMEOUT_MS = 10_000;
@@ -142,6 +147,24 @@ export class SocialOAuthService {
     return Object.fromEntries(
       platforms.map((p) => [p, this.missingConfig(p).length === 0]),
     ) as Record<Platform, boolean>;
+  }
+
+  /**
+   * A connect link (web handoff token) starts one flow. A leaked or replayed
+   * link is refused for its whole lifetime. Keyed on sha256(token), so the
+   * token itself is never stored. Fails closed when the store is down.
+   */
+  async claimHandoff(token: string): Promise<void> {
+    let first: boolean;
+    try {
+      first = await this.store.claimOnce(handoffKey(token), HANDOFF_TTL_MS + 60_000);
+    } catch (err) {
+      this.logger.error(`OAuth connect blocked: store unavailable (${capped((err as Error).message)})`);
+      throw new ServiceUnavailableException('Connecting is unavailable right now. Try again in a minute.');
+    }
+    if (!first) {
+      throw new UnauthorizedException('This connect link was already used. Reopen the Connections page and try again.');
+    }
   }
 
   /**
