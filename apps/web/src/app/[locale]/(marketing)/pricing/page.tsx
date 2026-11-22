@@ -1,10 +1,11 @@
 /**
  * Pricing.
  *
- * Chalk & Saffron, like the rest of the site and the app. Every fact is
- * unchanged: the tiers, the numbers and the early-access notice say exactly
- * what they said before, because billing still is not wired and the page must
- * not pretend otherwise. The plan worth recommending sits on the dark field.
+ * Chalk & Saffron, like the rest of the site. The plans and numbers come from
+ * `lib/plan-catalogue.ts`, never from this file or the message catalogue.
+ * Billing is not live, so the page says plainly that nothing is charged yet,
+ * every CTA starts early access, and anything not built sits under "soon"
+ * with no quota attached. The plan worth recommending sits on the dark field.
  */
 
 import type { Metadata } from 'next';
@@ -13,6 +14,7 @@ import { getTranslations } from 'next-intl/server';
 
 import { Link } from '@/i18n/navigation';
 import { pageAlternates } from '@/lib/page-metadata';
+import { IMAGE_PACK, PLAN_OFFERS, usd, type PlanOffer } from '@/lib/plan-catalogue';
 
 import { SiteFooter } from '@/components/marketing/site-footer';
 import { SiteNav } from '@/components/marketing/site-nav';
@@ -25,7 +27,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   const t = await getTranslations({ locale, namespace: 'pricing.meta' });
-  return { title: t('title'), alternates: pageAlternates(locale, '/pricing') };
+  return { title: t('title'), description: t('description'), alternates: pageAlternates(locale, '/pricing') };
 }
 
 /**
@@ -40,36 +42,100 @@ const accent = (chunks: React.ReactNode) => (
   </span>
 );
 
-/*
-  Billing is not wired yet; these are the intended tiers so the page tells the
-  truth about the shape of the offer without pretending to charge. The plan ids
-  index into the `pricing.plans` namespace — the tier names, taglines, periods
-  and feature lines all live in the message catalogue, including the prices:
-  the amount stays in its original currency ("$49") in both languages, because
-  it is a figure on a price tag rather than a sentence.
-*/
-const PLANS = [
-  {
-    id: 'solo',
-    features: ['workspaces', 'memory', 'narrative', 'autopilot', 'channels', 'gate'],
-    href: '/sign-up',
-    highlighted: false,
-  },
-  {
-    id: 'founder',
-    features: ['workspaces', 'everything', 'autopilot', 'channels', 'report'],
-    href: '/sign-up',
-    highlighted: true,
-  },
-  {
-    id: 'agency',
-    features: ['workspaces', 'everything', 'windows', 'keys', 'support'],
-    href: '/sign-up',
-    highlighted: false,
-  },
-] as const;
+const AGENCY_EXTRA_BRAND = PLAN_OFFERS.find((p) => p.id === 'agency')?.extraBrandUsd ?? null;
 
-const FAQ = ['post', 'approve', 'down'] as const;
+function PlanCard({ plan: p }: { plan: PlanOffer }) {
+  const t = useTranslations('pricing');
+  const dark = p.highlighted;
+  const muted = dark ? 'text-forest-muted' : 'text-moss-muted';
+  const line = dark ? 'border-forest-line' : 'border-rule';
+
+  const included = [
+    t('included.brands', { count: p.brands }),
+    t('included.posts', { count: p.postsPerMonth }),
+    t('included.images', { count: p.imagesPerMonth }),
+    t('included.reports', { count: p.reportsPerMonth }),
+    t('included.loop'),
+    t('included.channels'),
+  ];
+
+  return (
+    <article
+      className={`flex h-full flex-col gap-5 rounded-2xl p-7 transition-transform duration-300 hover:-translate-y-1 ${
+        dark ? 'bg-forest text-chalk' : 'border border-rule bg-chalk-raised'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="font-display text-[26px] font-bold">
+            <bdi>{t(`plans.${p.id}.name`)}</bdi>
+          </h2>
+          <p className={`mt-1 text-[15px] ${muted}`}>{t(`plans.${p.id}.tagline`)}</p>
+        </div>
+        {p.highlighted && (
+          <span className="shrink-0 rounded bg-saffron px-2 py-1 font-plexmono text-[11px] uppercase tracking-widest text-moss">
+            {t('mostUseful')}
+          </span>
+        )}
+      </div>
+
+      <div>
+        <div className="flex items-baseline gap-2.5">
+          {/* A price tag, not prose: it keeps its "$" and Latin digits on
+              both sides, and `bdi` stops the Persian around it reordering. */}
+          <bdi className="tnum font-plexmono text-[clamp(2.4rem,3.6vw,3rem)] font-medium leading-none">
+            {usd(p.monthlyUsd)}
+          </bdi>
+          <span className={`text-[14px] leading-snug ${muted}`}>{t('perMonth')}</span>
+        </div>
+        <p className={`mt-2 text-[14px] ${muted}`}>
+          {t.rich('annual', { amount: usd(p.annualUsd), bdi: (c) => <bdi className="tnum">{c}</bdi> })}
+        </p>
+      </div>
+
+      <Link
+        href="/sign-up"
+        className={`inline-flex h-12 items-center justify-center rounded-xl text-[15px] font-semibold transition-colors duration-200 ${
+          dark ? 'bg-saffron text-moss hover:bg-saffron-soft' : 'bg-moss text-chalk hover:bg-moss-700'
+        }`}
+      >
+        {t('cta')}
+      </Link>
+
+      <ul className={`border-b text-[15px] ${line}`}>
+        {included.map((text) => (
+          <li key={text} className={`border-t py-2.5 leading-snug ${line}`}>
+            {text}
+          </li>
+        ))}
+        {p.extraBrandUsd !== null && (
+          <li className={`border-t py-2.5 leading-snug ${line}`}>
+            {t.rich('included.extraBrand', { amount: usd(p.extraBrandUsd), bdi: (c) => <bdi className="tnum">{c}</bdi> })}
+          </li>
+        )}
+      </ul>
+
+      {p.soon.length > 0 && (
+        <div>
+          <p className={`font-plexmono text-[11.5px] uppercase tracking-[0.12em] rtl:tracking-normal ${muted}`}>{t('soonTitle')}</p>
+          <ul className="mt-2 space-y-1.5 text-[14px]">
+            {p.soon.map((perk) => (
+              <li key={perk} className={`flex items-baseline gap-2 ${muted}`}>
+                <span
+                  aria-hidden
+                  className={`inline-block h-1.5 w-1.5 shrink-0 translate-y-[-1px] rotate-45 border ${dark ? 'border-forest-muted' : 'border-moss-muted'}`}
+                />
+                {t(`soon.${perk}`)}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </article>
+  );
+}
+
+const FAQ = ['post', 'image', 'runOut', 'approve', 'down', 'cancel', 'pay'] as const;
 
 export default function PricingPage() {
   const t = useTranslations('pricing');
@@ -89,70 +155,44 @@ export default function PricingPage() {
 
       <div className="mx-auto max-w-[90rem] px-5 md:px-16">
         <p className="rounded-xl border border-dashed border-rule-strong px-5 py-3.5 text-[15px] leading-relaxed">
-          {t('earlyAccess')}
+          <span className="font-semibold">{t('earlyAccess.lead')} </span>
+          {t('earlyAccess.body')}
         </p>
       </div>
 
       {/* Plans */}
       <section className="mx-auto grid max-w-[90rem] gap-5 px-5 py-10 md:grid-cols-3 md:px-16">
-        {PLANS.map((p, i) => (
+        {PLAN_OFFERS.map((p, i) => (
           <Reveal key={p.id} delay={i * 100} className="h-full">
-            <article
-              className={`flex h-full flex-col gap-5 rounded-2xl p-7 transition-transform duration-300 hover:-translate-y-1 ${
-                p.highlighted ? 'bg-forest text-chalk' : 'border border-rule bg-chalk-raised'
-              }`}
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="font-display text-[26px] font-bold">
-                    <bdi>{t(`plans.${p.id}.name`)}</bdi>
-                  </h2>
-                  <p className={`mt-1 text-[15px] ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>
-                    {t(`plans.${p.id}.tagline`)}
-                  </p>
-                </div>
-                {p.highlighted && (
-                  <span className="shrink-0 rounded bg-saffron px-2 py-1 font-plexmono text-[11px] uppercase tracking-widest text-moss">
-                    {t('mostUseful')}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-baseline gap-2.5">
-                {/* The amount is a figure, not prose: it keeps its currency
-                    and its Latin digits on both sides, and `bdi` stops the
-                    Persian around it from reordering the "$". */}
-                <bdi className="tnum font-plexmono text-[clamp(2.4rem,3.6vw,3rem)] font-medium leading-none">
-                  {t(`plans.${p.id}.price`)}
-                </bdi>
-                <span className={`text-[14px] leading-snug ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>
-                  {t(`plans.${p.id}.period`)}
-                </span>
-              </div>
-
-              <Link
-                href={p.href}
-                className={`inline-flex h-12 items-center justify-center rounded-xl text-[15px] font-semibold transition-colors duration-200 ${
-                  p.id === 'solo'
-                    ? 'bg-saffron text-moss hover:bg-saffron-soft'
-                    : p.highlighted
-                      ? 'bg-chalk text-moss hover:bg-chalk-sunk'
-                      : 'bg-moss text-chalk hover:bg-moss-700'
-                }`}
-              >
-                {t(`plans.${p.id}.cta`)}
-              </Link>
-
-              <ul className={`border-b text-[15px] ${p.highlighted ? 'border-forest-line' : 'border-rule'}`}>
-                {p.features.map((f) => (
-                  <li key={f} className={`border-t py-2.5 leading-snug ${p.highlighted ? 'border-forest-line' : 'border-rule'}`}>
-                    {t(`plans.${p.id}.features.${f}`)}
-                  </li>
-                ))}
-              </ul>
-            </article>
+            <PlanCard plan={p} />
           </Reveal>
         ))}
+      </section>
+
+      {/* Add-ons */}
+      <section className="mx-auto max-w-[90rem] px-5 pb-6 md:px-16">
+        <h2 className="font-display text-[clamp(1.5rem,2.6vw,1.9rem)] font-bold leading-[1.1]">{t('addOns.title')}</h2>
+        <ul className="mt-5 grid gap-4 md:grid-cols-2">
+          <li className="flex items-start justify-between gap-6 rounded-2xl border border-rule bg-chalk-raised p-6">
+            <div>
+              <p className="text-[17px] font-semibold">{t('addOns.imagePack.name', { count: IMAGE_PACK.credits })}</p>
+              <p className="mt-1.5 text-[15px] leading-[1.6] text-moss-muted">{t('addOns.imagePack.body')}</p>
+            </div>
+            <bdi className="tnum shrink-0 font-plexmono text-[22px]">{usd(IMAGE_PACK.usd)}</bdi>
+          </li>
+          {AGENCY_EXTRA_BRAND !== null && (
+            <li className="flex items-start justify-between gap-6 rounded-2xl border border-rule bg-chalk-raised p-6">
+              <div>
+                <p className="text-[17px] font-semibold">{t('addOns.extraBrand.name')}</p>
+                <p className="mt-1.5 text-[15px] leading-[1.6] text-moss-muted">{t('addOns.extraBrand.body')}</p>
+              </div>
+              <p className="shrink-0 text-end">
+                <bdi className="tnum block font-plexmono text-[22px]">{usd(AGENCY_EXTRA_BRAND)}</bdi>
+                <span className="text-[13px] text-moss-muted">{t('perMonth')}</span>
+              </p>
+            </li>
+          )}
+        </ul>
       </section>
 
       {/* Questions */}

@@ -1,70 +1,91 @@
 {
   "pricing": {
     "meta": {
-      "title": "Pricing — Contivo"
+      "title": "Pricing — Contivo",
+      "description": "Founder $55, Growth $89 and Agency $233 a month, or ten months' price for a year. Free during early access: billing has not started."
     },
     "headline": "Priced by how much runs <accent>without</accent> you.",
-    "intro": "Workspaces × posts per week × channels. No per-seat fees — the point is that there is nobody sitting in the seat.",
-    "earlyAccess": "Early access — billing is not live yet. Everything is free while we run it on our own sites first.",
+    "intro": "Brands, posts and images a month. No per-seat fees: the point is that nobody has to sit in the seat.",
+    "earlyAccess": {
+      "lead": "Early access: nothing is charged yet.",
+      "body": "Billing has not started, so everything that is built is free while we prove it. These are the prices once it starts, and you pick a plan then. No card is asked for today."
+    },
     "mostUseful": "Most useful",
+    "perMonth": "/ month",
+    "annual": "or <bdi>{amount}</bdi> a year, two months free",
+    "cta": "Start free in early access",
+    "included": {
+      "brands": "{count, plural, one {# brand} other {# brands}}",
+      "posts": "{count, number} posts a month",
+      "images": "{count, number} images a month",
+      "reports": "{count, plural, one {# strategy report} other {# strategy reports}} a month",
+      "loop": "Brand memory, competitive map, narrative and autopilot",
+      "channels": "Publishes to LinkedIn and your own website",
+      "extraBrand": "More brands at <bdi>{amount}</bdi> each a month"
+    },
+    "soonTitle": "Coming to this plan",
+    "soon": {
+      "monitoring": "Weekly competitor watch",
+      "imageQuality": "Choose the quality of each image",
+      "videoScripts": "Video scripts",
+      "templateVideos": "Template videos",
+      "whiteLabel": "White-label reports",
+      "shareLinks": "Client share links"
+    },
     "plans": {
-      "solo": {
-        "name": "Solo",
-        "price": "$0",
-        "period": "while in early access",
-        "tagline": "One brand, on autopilot.",
-        "features": {
-          "workspaces": "1 workspace",
-          "memory": "Brand memory + competitive map",
-          "narrative": "A narrative every post has to advance",
-          "autopilot": "Autopilot: up to 3 posts / week",
-          "channels": "LinkedIn + your website",
-          "gate": "Quality gate on every post"
-        },
-        "cta": "Start free"
-      },
       "founder": {
         "name": "Founder",
-        "price": "$49",
-        "period": "per month, coming soon",
-        "tagline": "All your properties, one autopilot.",
-        "features": {
-          "workspaces": "3 workspaces",
-          "everything": "Everything in Solo",
-          "autopilot": "Autopilot: up to 14 posts / week each",
-          "channels": "LinkedIn · websites",
-          "report": "Strategic PDF report, 5 / month"
-        },
-        "cta": "Join the list"
+        "tagline": "One brand, publishing steadily."
+      },
+      "growth": {
+        "name": "Growth",
+        "tagline": "One brand, at full volume."
       },
       "agency": {
         "name": "Agency",
-        "price": "$149",
-        "period": "per month, coming soon",
-        "tagline": "Run marketing for clients, hands-off.",
-        "features": {
-          "workspaces": "10 workspaces",
-          "everything": "Everything in Founder",
-          "windows": "Per-client publish windows and steering",
-          "keys": "Content API keys per client site",
-          "support": "Priority support"
-        },
-        "cta": "Talk to us"
+        "tagline": "Five client brands, hands-off."
+      }
+    },
+    "addOns": {
+      "title": "Add-ons",
+      "imagePack": {
+        "name": "{count, number} image credits",
+        "body": "A one-off pack for any paid plan. Spent only after the month's images run out."
+      },
+      "extraBrand": {
+        "name": "Extra brand",
+        "body": "Agency only. Its own memory, competitors, narrative and channels, on top of your five."
       }
     },
     "faqTitle": "Before you ask.",
     "faq": {
       "post": {
         "q": "What counts as a post?",
-        "a": "One published item on one channel. A LinkedIn post and a blog article from the same idea are two."
+        "a": "One finished draft for one channel. Ideas and previews do not count. A LinkedIn post and a blog article from the same idea are two."
+      },
+      "image": {
+        "q": "What is an image credit?",
+        "a": "One image generated for a post."
+      },
+      "runOut": {
+        "q": "What happens when I run out?",
+        "a": "Nothing you made is deleted or hidden. New posts or images pause until the next month, an add-on, or a bigger plan."
       },
       "approve": {
         "q": "Can I approve before it publishes?",
-        "a": "Yes — turn Autopilot off and everything stays in the pipeline for you to review. Or leave it on and let the quality gate be the reviewer."
+        "a": "Yes. Turn Autopilot off and everything stays in the pipeline for you to review. Or leave it on and let the quality gate be the reviewer."
       },
       "down": {
         "q": "What if the AI is down?",
         "a": "The post waits. Contivo never publishes something the gate could not review."
+      },
+      "cancel": {
+        "q": "Can I cancel?",
+        "a": "Yes, any time. The plan runs to the end of the period you paid for. Today there is nothing to cancel, because billing has not started."
+      },
+      "pay": {
+        "q": "How will I pay?",
+        "a": "By card, once billing starts. If a card does not work where you are, write to us and we will find another way."
       }
     },
     "closeHeadline": "Nothing to decide yet. It is <accent>free</accent> while we prove it.",
