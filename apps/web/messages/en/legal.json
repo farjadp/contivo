@@ -36,7 +36,7 @@
       "summary": [
         "We collect what the product needs to run: your account, your workspace, and the accounts you connect. Nothing for advertising.",
         "We never sell your data, never show you ads, and set no tracking or analytics cookies.",
-        "Your text goes to AI providers (OpenAI and Google) to be analysed and written. That is how the product works, and we say so plainly.",
+        "Your text goes to AI providers (OpenAI, Anthropic and Google) to be analysed and written. That is how the product works, and we say so plainly.",
         "Write to {email} and we delete your account and workspace within 30 days."
       ],
       "sections": [
@@ -80,7 +80,7 @@
           "blocks": [
             "Contivo runs on other companies' infrastructure. Each receives only what its part of the work needs:",
             [
-              "OpenAI and Google (Gemini): your site's content, your brand memory and your instructions, to analyse, plan and write. What they do with API data is governed by their API terms.",
+              "OpenAI, Anthropic (Claude) and Google (Gemini): your site's content, your brand memory and your instructions, to analyse, plan and write. If one of them is unavailable, the same request can go to another. What they do with API data is governed by their API terms.",
               "DataForSEO: keywords and domain names, to fetch search volumes and results pages. No personal information.",
               "LinkedIn and X: the posts you publish, and only once you have connected the account.",
               "Vercel, Railway and Neon: hosting and the database, where everything above is stored.",
@@ -155,7 +155,7 @@
       "summary": [
         "What you bring and what Contivo writes for you both belong to you.",
         "AI can be wrong. The quality gate catches a lot, but you are responsible for what goes out under your name, including what Autopilot publishes.",
-        "Contivo is in early access and free for now. When billing starts, you can cancel any time.",
+        "Contivo is in early access. New accounts are free for now, and some early-access users have paid for a set period. When billing starts in the app, you can cancel any time.",
         "Within 14 days of any payment, ask and we refund it in full. No questions."
       ],
       "sections": [
@@ -172,7 +172,8 @@
           "title": "Early access",
           "blocks": [
             "Contivo is in early access. Features will change, some will be added and some removed, and there will be outages. For now we make no uptime promise.",
-            "While billing is not live, using Contivo is free. Before we start charging, we will tell you what it costs, and nothing is charged without your agreement."
+            "New accounts are free while billing in the app is not live. Before we start charging in the app, we will tell you what it costs, and nothing is charged without your agreement.",
+            "Some early-access users paid a one-time fee of 49 US dollars for three months of early access, arranged directly with us rather than through the app."
           ]
         },
         {
