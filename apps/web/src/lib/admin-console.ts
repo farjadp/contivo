@@ -15,6 +15,7 @@ import { listUserAccessStates, listWorkspaceArchiveStates } from '@/lib/admin-st
 import { getFrameworkUsageSummary, listRecentFrameworkMetadata } from '@/lib/framework-metadata-log';
 import { listAllActivityLogs } from '@/lib/activity-log';
 import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
+import { EXPIRY_WARNING_DAYS } from '@/lib/connection-health';
 import { PROVIDER_IDS, getProviderHealthSnapshotHydrated, sanitizeAiMessage, type ProviderHealthSnapshot } from '@/lib/ai';
 
 export type AdminSection =
@@ -707,6 +708,28 @@ export async function getAdminIntegrations() {
       costUsd: toNumber(entry._sum.estimatedCostUsd),
     })),
   };
+}
+
+/**
+ * LinkedIn connections whose 60-day sign-in has run out or will within
+ * EXPIRY_WARNING_DAYS. "Expired" includes rows still marked CONNECTED whose
+ * tokenExpiresAt has passed: the API only marks them EXPIRED after a 401.
+ * Same rule as effectiveConnectionStatus, expressed as a query.
+ */
+export async function getLinkedInExpiryCounts(now: Date = new Date()) {
+  const warnUntil = new Date(now.getTime() + EXPIRY_WARNING_DAYS * 24 * 60 * 60 * 1000);
+  const [expired, expiringSoon] = await Promise.all([
+    prisma.socialConnection.count({
+      where: {
+        platform: 'LINKEDIN',
+        OR: [{ status: 'EXPIRED' }, { status: 'CONNECTED', tokenExpiresAt: { lte: now } }],
+      },
+    }),
+    prisma.socialConnection.count({
+      where: { platform: 'LINKEDIN', status: 'CONNECTED', tokenExpiresAt: { gt: now, lte: warnUntil } },
+    }),
+  ]);
+  return { expired, expiringSoon };
 }
 
 export async function getAdminSettingsState() {

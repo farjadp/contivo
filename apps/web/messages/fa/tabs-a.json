@@ -206,6 +206,10 @@
         "RUNNING": "در حال اجرا",
         "QUEUED": "در صف",
         "SKIPPED": "ردشده"
+      },
+      "runCodes": {
+        "LINKEDIN_RECONNECT_REQUIRED": "باید دوباره به <bdi>LinkedIn</bdi> وصل شوید. ورود شما منقضی شده بود و این اجرا در <bdi>LinkedIn</bdi> چیزی منتشر نکرد.",
+        "reconnectCta": "اتصال دوباره"
       }
     },
     "ideation": {

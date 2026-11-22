@@ -51,6 +51,13 @@ interface SocialAccount {
   isDefault: boolean;
   lastSyncAt: string | null;
   createdAt: string;
+  /**
+   * Status once tokenExpiresAt is taken into account (lib/connection-health):
+   * a LinkedIn row the API still calls CONNECTED reads EXPIRED or
+   * EXPIRING_SOON here. Falls back to `status`.
+   */
+  effectiveStatus?: string;
+  daysLeft?: number | null;
   /** The safe slice of metaJson (Telegram chat type, public username, why it was revoked). */
   meta?: ConnectionMeta;
 }
@@ -116,6 +123,7 @@ function AccountDetail({ account, label }: { account: SocialAccount; label: stri
 const STATUS_META: Record<string, { key: string; color: string; Icon: React.ElementType }> = {
   CONNECTED:      { key: 'connected',     color: 'text-green-600',  Icon: CheckCircle },
   EXPIRED:        { key: 'expired',       color: 'text-yellow-600', Icon: Clock },
+  EXPIRING_SOON:  { key: 'expiringSoon',  color: 'text-amber-700',  Icon: Clock },
   FAILED:         { key: 'failed',        color: 'text-red-600',    Icon: XCircle },
   REVOKED:        { key: 'revoked',       color: 'text-moss-muted',   Icon: XCircle },
   PENDING_REAUTH: { key: 'pendingReauth', color: 'text-orange-500', Icon: AlertCircle },
@@ -269,12 +277,15 @@ export function ConnectedAccountsSection({
         <div className="space-y-3">
           {accounts.map((account) => {
             const platform = PLATFORM_META[account.platform] ?? PLATFORM_META.LINKEDIN;
-            const status = STATUS_META[account.status] ?? STATUS_META.CONNECTED;
+            const effective = account.effectiveStatus ?? account.status;
+            const status = STATUS_META[effective] ?? STATUS_META.CONNECTED;
+            const days = account.daysLeft ?? 0;
             const StatusIcon = status.Icon;
             const PlatformIcon = platform.Icon;
             const rowBusy = loading?.endsWith(account.id) ?? false;
             const busy = (action: ActionKind) => loading === `${action}-${account.id}`;
-            const showReconnect = needsReconnect(account.status);
+            // Expiring soon: reconnecting now (the row stays CONNECTED) avoids the first failed post.
+            const showReconnect = needsReconnect(effective) || effective === 'EXPIRING_SOON';
             const reconnectable = canStartConnectFlow(account.platform);
             const error = errors[account.id];
             const errorId = `account-error-${account.id}`;
@@ -318,7 +329,7 @@ export function ConnectedAccountsSection({
                     {/* Status */}
                     <span className={`inline-flex items-center gap-1 text-xs font-semibold ${status.color}`}>
                       <StatusIcon className="w-3.5 h-3.5" aria-hidden="true" />
-                      {t(`status.${status.key}`)}
+                      {t(`status.${status.key}`, { days })}
                     </span>
 
                     {/* Last sync */}
@@ -394,6 +405,7 @@ export function ConnectedAccountsSection({
                   <p className="mt-3 text-xs text-amber-800">
                     {t.rich(hintKey(account, status.key, reconnectable), {
                       platform: platform.label,
+                      days,
                       bdi,
                     })}
                   </p>

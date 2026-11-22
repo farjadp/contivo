@@ -124,7 +124,9 @@
       "geminiKeyMissing": "‏GEMINI_API_KEY تنظیم نشده است.",
       "openAiKeyMissing": "‏OPENAI_API_KEY تنظیم نشده است.",
       "credentialsConfigured": "اطلاعات ورود تنظیم شده است.",
-      "credentialsMissing": "اطلاعات ورود تنظیم نشده است."
+      "credentialsMissing": "اطلاعات ورود تنظیم نشده است.",
+      "linkedinExpiryTitle": "ورودهای <bdi>LinkedIn</bdi>",
+      "linkedinExpiryDescription": "{expired, number} اتصال منقضی شده و {soon, number} اتصال تا {days, number} روز آینده منقضی می‌شود. هر ورود {period, number} روز اعتبار دارد و بدون خود کاربر تمدید نمی‌شود."
     },
     "banner": {
       "saved": "تغییر ذخیره شد.",

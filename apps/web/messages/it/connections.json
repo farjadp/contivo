@@ -76,7 +76,8 @@
         "expired": "Scaduto",
         "failed": "Errore",
         "revoked": "Revocato",
-        "pendingReauth": "Serve nuovo accesso"
+        "pendingReauth": "Serve nuovo accesso",
+        "expiringSoon": "Scade tra {days, plural, one {# giorno} other {# giorni}}"
       },
       "reconnecting": "Apertura dell'accesso…",
       "statusHint": {
@@ -86,7 +87,8 @@
         "failed": "Il collegamento con <bdi>{platform}</bdi> non funziona più. Ricollegalo per tornare a pubblicare.",
         "unsupported": "Questo collegamento <bdi>{platform}</bdi> non funziona più e per ora non si può ricollegare da questa pagina.",
         "telegramBotRemoved": "Il bot di Contivo è stato rimosso da questo canale, quindi le pubblicazioni non riusciranno. Ricollegalo per aggiungere di nuovo il bot.",
-        "telegramBotRightsLost": "Il bot di Contivo ha perso il permesso di pubblicare in questo canale, quindi le pubblicazioni non riusciranno. Ricollegalo per restituirgli il permesso."
+        "telegramBotRightsLost": "Il bot di Contivo ha perso il permesso di pubblicare in questo canale, quindi le pubblicazioni non riusciranno. Ricollegalo per restituirgli il permesso.",
+        "expiringSoon": "L'accesso a <bdi>{platform}</bdi> scade tra {days, plural, one {# giorno} other {# giorni}}. Ricollegalo ora perché i post programmati continuino a uscire."
       },
       "errors": {
         "disconnect": "Non è stato possibile scollegare questo account.",
