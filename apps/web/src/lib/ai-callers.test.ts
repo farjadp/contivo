@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /*
-  The call sites that used lib/gemini.ts' requestJsonFromAi (or their own
+  The call sites that used lib/gemini.ts' old JSON helper (or their own
   provider fetch) now call the failover layer directly. Each test pins the
   task, the output kind and what a failed chain does.
 */

@@ -1387,36 +1387,3 @@ Keep your analysis specific, actionable, and grounded in what you actually see i
   );
   return result?.text ?? null;
 }
-
-/**
- * Deprecated thin wrapper over `runAiTask` for callers not yet migrated
- * (today only lib/autopilot/quality-gate.ts, whose migration is in flight).
- * New code calls `runAiTask` from '@/lib/ai' directly.
- *
- * Null when the chain fails; callers decide what an unavailable model means.
- *
- * @deprecated delete once quality-gate.ts calls runAiTask itself.
- */
-export async function requestJsonFromAi<T>(
-  prompt: string,
-  systemPrompt?: string,
-  options: { task?: AiTask; ctx?: AiCallContext; timeoutMs?: number } = {},
-): Promise<{ data: T; provider: 'gemini' | 'openai' } | null> {
-  // Defaults to the only remaining two-argument caller, the autopilot judge.
-  const task = options.task ?? 'quality_gate';
-  const result = await runJson<T>(
-    'requestJsonFromAi',
-    task,
-    {
-      system: systemPrompt || 'You are precise, factual, and follow output format exactly.',
-      prompt,
-      timeoutMs: options.timeoutMs ?? JSON_TIMEOUT_MS,
-    },
-    options.ctx,
-  );
-  if (!result) return null;
-  // The provider can now also be 'anthropic'. The narrow type is kept only so
-  // quality-gate.ts (another stream's file) typechecks until it migrates; the
-  // runtime value is the real answering provider.
-  return { data: result.data, provider: result.provider as 'gemini' | 'openai' };
-}

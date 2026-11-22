@@ -16,7 +16,6 @@ import {
   generateContentIdeasWithGemini,
   generateInstantDraft,
   generatePositioningInsights,
-  requestJsonFromAi,
   scrapeUrl,
 } from './gemini';
 
@@ -215,22 +214,6 @@ describe('analyzeSerpResultsWithGemini', () => {
 
     runAiTaskMock.mockResolvedValueOnce(FAILURE);
     await expect(analyzeSerpResultsWithGemini('kw', [])).resolves.toBeNull();
-  });
-});
-
-describe('requestJsonFromAi (deprecated wrapper)', () => {
-  it('defaults to the quality_gate task, sends the system prompt, and returns the parsed JSON', async () => {
-    runAiTaskMock.mockResolvedValue(ok({ json: { verdict: 'approve' }, provider: 'openai' }));
-    await expect(requestJsonFromAi('p', 'sys')).resolves.toEqual({ data: { verdict: 'approve' }, provider: 'openai' });
-    const [task, request] = runAiTaskMock.mock.calls[0];
-    expect(task).toBe('quality_gate');
-    expect(request).toMatchObject({ system: 'sys', prompt: 'p', output: { kind: 'json_object' } });
-  });
-
-  it('takes an explicit task and returns null on failure', async () => {
-    runAiTaskMock.mockResolvedValue(FAILURE);
-    await expect(requestJsonFromAi('p', undefined, { task: 'guide' })).resolves.toBeNull();
-    expect(runAiTaskMock.mock.calls[0][0]).toBe('guide');
   });
 });
 
