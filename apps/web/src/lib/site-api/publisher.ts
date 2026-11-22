@@ -5,7 +5,7 @@
  * (SocialSchedulerService); blog items had no publisher at all, which is why
  * ContentChannel.blog was a dead enum.
  *
- * Publishing a blog post means: assign a permanent slug, flip the item to
+ * Publishing a blog post means: keep the pre-set slug or assign one, flip the item to
  * PUBLISHED, and tell the site to revalidate. The site itself pulls the body
  * from /api/v1/posts, so we never push content anywhere.
  */
@@ -48,7 +48,7 @@ export async function publishDueWebContent(options: { now?: Date; limit?: number
     },
     orderBy: { scheduledAtUtc: 'asc' },
     take: limit,
-    select: { id: true, workspaceId: true, topic: true, userId: true },
+    select: { id: true, workspaceId: true, topic: true, userId: true, slug: true },
   });
 
   const outcomes: PublishOutcome[] = [];
@@ -63,6 +63,7 @@ async function publishItem(item: {
   workspaceId: string | null;
   topic: string;
   userId: string;
+  slug: string | null;
 }): Promise<PublishOutcome> {
   const workspaceId = item.workspaceId as string;
   const base = { itemId: item.id, workspaceId };
@@ -85,7 +86,12 @@ async function publishItem(item: {
       return { ...base, slug: null, published: false, revalidated: null, error: 'no_site_connection' };
     }
 
-    const slug = await buildUniqueSlug(workspaceId, item.topic, item.id);
+    // A slug the user set before publishing is the URL they chose (validated
+    // and unique-checked when saved); otherwise derive one from the title.
+    const slug =
+      typeof item.slug === 'string' && item.slug.length > 0
+        ? item.slug
+        : await buildUniqueSlug(workspaceId, item.topic, item.id);
     const publishedAt = new Date();
 
     // Conditional on status so a concurrent tick that already published this
