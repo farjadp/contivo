@@ -8,7 +8,7 @@ const { prismaMock, activityLogMock, evaluateMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
-vi.mock('@/lib/autopilot/quality-gate', () => ({ evaluateDraft: evaluateMock }));
+vi.mock('@/lib/autopilot/quality-gate', async (orig) => ({ ...(await orig<object>()), evaluateDraft: evaluateMock }));
 vi.mock('@/lib/narrative/context', () => ({ loadStorylineContext: vi.fn(async () => null) }));
 
 import {

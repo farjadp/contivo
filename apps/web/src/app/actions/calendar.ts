@@ -6,7 +6,7 @@ import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { parseLocalDateTimeToUtc } from '@/lib/autopilot/schedule';
 import { writeActivityLog } from '@/lib/activity-log';
-import { enforceQualityGate, notCheckedVerdict, type StoredVerdict } from '@/lib/quality-verdict';
+import { enforceQualityGate, isBlockedVerdict, notCheckedVerdict, type StoredVerdict } from '@/lib/quality-verdict';
 
 /**
  * B8: every action that moves an item to READY or SCHEDULED checks the
@@ -127,6 +127,10 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
         ? await enforceQualityGate({ item: { ...item, qualityVerdict: reset }, userId: session.userId, override: true })
         : reset;
     hold = !nextVerdict?.override;
+  } else if (isBlockedVerdict(item.qualityVerdict) && payload.override !== true) {
+    // The editor saves; it never publishes a blocked draft. Held, not refused,
+    // so the user's edits are kept.
+    hold = true;
   } else {
     nextVerdict = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
   }

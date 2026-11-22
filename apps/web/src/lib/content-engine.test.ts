@@ -29,7 +29,7 @@ vi.mock('@/lib/report-readiness', () => ({
   matricesGate: () => ({ ok: true, competitorBasis: 'ACCEPTED' }),
 }));
 const { evaluateMock } = vi.hoisted(() => ({ evaluateMock: vi.fn() }));
-vi.mock('@/lib/autopilot/quality-gate', () => ({ evaluateDraft: evaluateMock }));
+vi.mock('@/lib/autopilot/quality-gate', async (orig) => ({ ...(await orig<object>()), evaluateDraft: evaluateMock }));
 vi.mock('@/lib/humanize', () => ({ humanizeDraft: vi.fn() }));
 vi.mock('@/lib/content-image', () => ({ generateImageForContentItem: vi.fn() }));
 vi.mock('@/lib/narrative/context', () => ({

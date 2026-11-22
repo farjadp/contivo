@@ -21,23 +21,18 @@
 
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
-import { evaluateDraft, type GateScores, type GateVerdict } from '@/lib/autopilot/quality-gate';
+import { evaluateDraft, THRESHOLDS, type GateScores, type GateVerdict } from '@/lib/autopilot/quality-gate';
+import {
+  isBlockedVerdict,
+  readStoredVerdict,
+  type StoredVerdict,
+  type VerdictSource,
+} from '@/lib/quality-verdict-shared';
 import { asContentLanguage } from '@/lib/content-language';
 import { loadStorylineContext } from '@/lib/narrative/context';
 
-export type VerdictSource = 'preview' | 'pipeline' | 'autopilot' | 'recheck';
-
-export type StoredVerdict = {
-  approved: boolean;
-  rejectedBy: string | null;
-  reasons: string[];
-  scores: GateScores | null;
-  judge: string;
-  judgeModel: string | null;
-  checkedAt: string;
-  source: VerdictSource;
-  override?: { userId: string; at: string };
-};
+export type { StoredVerdict, VerdictSource } from '@/lib/quality-verdict-shared';
+export { isBlockedVerdict, readStoredVerdict } from '@/lib/quality-verdict-shared';
 
 /** Error code returned/thrown when a blocked item is moved towards publishing. */
 export const QUALITY_GATE_BLOCKED = 'quality_gate_blocked';
@@ -59,11 +54,21 @@ export function toStoredVerdict(verdict: GateVerdict, source: VerdictSource, now
     rejectedBy: verdict.approved ? null : verdict.rejectedBy ?? 'unknown',
     reasons: (verdict.reasons ?? []).map((r) => String(r).slice(0, 300)).slice(0, 8),
     scores: verdict.scores ?? null,
+    below: belowThreshold(verdict.scores ?? null),
     judge: String(verdict.judge),
     judgeModel: verdict.judgeModel ?? null,
     checkedAt: now.toISOString(),
     source,
   };
+}
+
+/** Which scores failed, so the UI can say so in the reader's language. */
+function belowThreshold(scores: GateScores | null): Array<keyof GateScores> {
+  if (!scores) return [];
+  return (Object.keys(THRESHOLDS) as Array<keyof typeof THRESHOLDS>).filter((k) => {
+    const v = scores[k];
+    return typeof v === 'number' && v < THRESHOLDS[k];
+  });
 }
 
 /** Stored when a gated text was changed after it was judged, or its token did not verify. */
@@ -91,27 +96,6 @@ export function gateUnavailableVerdict(source: VerdictSource, now = new Date()):
     checkedAt: now.toISOString(),
     source,
   };
-}
-
-/** Reads the column defensively: it is JSON, so anything can be in it. */
-export function readStoredVerdict(value: unknown): StoredVerdict | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  const v = value as Partial<StoredVerdict>;
-  if (typeof v.approved !== 'boolean') return null;
-  return v as StoredVerdict;
-}
-
-/**
- * Blocked = gated by this system, not approved, and not overridden. A null
- * column is never blocked. A malformed non-null value is blocked: fail closed.
- * An override lasts until the text changes (editing resets it to not_checked),
- * so rescheduling an overridden post does not ask again.
- */
-export function isBlockedVerdict(value: unknown): boolean {
-  if (value === null || value === undefined) return false;
-  const v = readStoredVerdict(value);
-  if (!v) return true;
-  return v.approved !== true && !v.override;
 }
 
 export type ManualGateInput = {

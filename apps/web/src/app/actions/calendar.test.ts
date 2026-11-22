@@ -80,12 +80,21 @@ describe('quality gate enforcement', () => {
     prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1', content: 'Body', qualityVerdict: FAILED });
   }
 
-  it('refuses to approve, schedule or edit-and-schedule a blocked item', async () => {
+  it('refuses to approve or schedule a blocked item', async () => {
     blocked();
     await expect(updateContentStatus('item-1', 'READY')).rejects.toThrow('quality_gate_blocked');
+    await expect(updateContentStatus('item-1', 'SCHEDULED')).rejects.toThrow('quality_gate_blocked');
     await expect(scheduleContentItem(schedule)).rejects.toThrow('quality_gate_blocked');
-    await expect(updateContentAndSchedule(payload())).rejects.toThrow('quality_gate_blocked');
     expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+  });
+
+  it('edit-and-schedule on a blocked item saves the text but holds it unscheduled', async () => {
+    blocked();
+    await updateContentAndSchedule(payload());
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data.status).toBe('GENERATED');
+    expect(data.scheduledAtUtc).toBeNull();
+    expect(data.content).toBe('Body');
   });
 
   it('still lets a blocked item move back to draft or be archived', async () => {

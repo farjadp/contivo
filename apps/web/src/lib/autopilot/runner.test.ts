@@ -27,7 +27,7 @@ const { prismaMock, engine, evaluateDraftMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/content-engine', () => engine);
-vi.mock('./quality-gate', () => ({ evaluateDraft: evaluateDraftMock }));
+vi.mock('./quality-gate', async (orig) => ({ ...(await orig<object>()), evaluateDraft: evaluateDraftMock }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: vi.fn() }));
 vi.mock('@/lib/narrative/context', () => ({ pickStorylineForWorkspace: vi.fn(async () => null) }));
 vi.mock('@/lib/ai-usage', () => ({
