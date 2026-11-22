@@ -1,6 +1,6 @@
 # Publishing channels: Telegram, WordPress, X, Threads — design
 
-Status: **approved by Farjad 2026-11-21**: recommended order (core → Telegram → X → WordPress → Threads), X pay-per-use with a $75/month cap, no links in X posts by default. Open: WordPress default status, bot username, Meta Business Verification start. Author: contivo-cto, 2026-11-21.
+Status: **approved by Farjad 2026-11-21**: recommended order (core → Telegram → X → WordPress → Threads), X pay-per-use with a $75/month cap, no links in X posts by default. WordPress = Contivo pull plugin (§4). Open: WordPress default status, bot username, Meta Business Verification start. Author: contivo-cto, 2026-11-21.
 Base: `origin/main` 9df407f. Branch: `myca/channels-211611`.
 Sources were read on 2026-11-21. [P] = primary/official, [S] = secondary. Line refs are against 9df407f.
 
@@ -22,7 +22,7 @@ Sources were read on 2026-11-21. [P] = primary/official, [S] = secondary. Line r
 | 0 | Publish-core fixes (§1) + migration (§2) | 2.5–3.5 | Every channel depends on it; it also fixes LinkedIn retry/disconnect |
 | 1 | **Telegram** | 4–5 | Free, no review, matters for Persian-speaking customers |
 | 2 | **X** (finish) | 1.5–2.5 | Auth flow already exists; only refresh, counting, media, threads. Needs Farjad's spend approval |
-| 3 | **WordPress** | 4–5 + 2 shared markdown package | Largest new surface (user-supplied URL → SSRF guard) |
+| 3 | **WordPress** (pull plugin) | 5–7 incl. shared renderer | PHP plugin + small Content API additions |
 | 4 | **Threads** | 3–4 + 1–1.5 Meta callbacks/page | Code can start any time; GA blocked on Meta review (2–6 weeks, estimate) |
 | ∥ | Threads paperwork (Farjad) | — | Start now, in parallel with 0–1 |
 
@@ -58,8 +58,8 @@ belongs to PR #15 / the blog stream.
 ## 2. Schema — one additive migration (contivo-database-engineer)
 
 ```
-SocialPlatform  += TELEGRAM, WORDPRESS, THREADS
-ContentChannel  += telegram, wordpress, threads
+SocialPlatform  += TELEGRAM, THREADS   (WordPress needs none: it is a SiteConnection, §4)
+ContentChannel  += telegram, threads
 SocialConnection.metaJson Json?   -- non-secret per-connection settings only
 ```
 
@@ -72,12 +72,9 @@ SocialConnection.metaJson Json?   -- non-secret per-connection settings only
 | Channel | accountIdentifier | authProvider | encryptedAccessTokenRef | encryptedRefreshTokenRef | metaJson |
 |---|---|---|---|---|---|
 | Telegram | chat id as string (`-100…`) | `telegram_bot` | null (bot token is env) | null | `{chatType, linkedByTelegramUserId}` |
-| WordPress | canonical REST root URL | `wp_app_password` | `encrypt(JSON{user_login, appPassword})` | null | `{defaultStatus, wpUserId, canUpload}` |
 | X | X user id | `oauth2` | access token | refresh token | — |
 | Threads | Threads user id | `oauth2` | long-lived token | null | `{lastRefreshedAt}` |
 
-- `ContentChannel.wordpress` is separate from `blog`: `blog` is owned by the web publisher
-  (`site-api/publisher.ts:76-86`), which fails items without a SiteConnection. Sharing it would race two crons.
 - Announce in the CLAUDE.md stream table (video and funnel streams also touch `schema.prisma`).
 
 ## 3. Telegram
@@ -120,49 +117,54 @@ https://core.telegram.org/bots/features , https://core.telegram.org/bots/faq
 `TELEGRAM_BOT_TOKEN`, `TELEGRAM_BOT_USERNAME`, `TELEGRAM_WEBHOOK_SECRET` on contivo-api; run the `setWebhook`
 command we hand over; create a test channel for the end-to-end proof.
 
-## 4. WordPress (self-hosted)
+## 4. WordPress — Contivo plugin that pulls (decided by Farjad 2026-11-21)
 
-**MVP:** WordPress ≥ 5.6 on HTTPS, Application Passwords. WordPress.com Simple sites (OAuth2 via
-public-api.wordpress.com, tokens expire after 2 weeks [P], needs an app registration) wait until a customer needs it.
+Replaces the earlier REST + Application Password design. Farjad chose a plugin; the pull variant was
+recommended and approved.
 
-**Connect.**
-1. User types the site URL → Nest discovers the REST root from the `Link: rel="https://api.w.org/"` header, else
-   `/wp-json/`, else `/?rest_route=/` [P].
-2. If the root JSON has `authentication.application-passwords.endpoints.authorization`, redirect the browser to
-   `/wp-admin/authorize-application.php?app_name=Contivo&app_id=<fixed uuid>&success_url=<api callback with
-   AES-GCM state>&reject_url=…` [P]. If missing: say why (no HTTPS, disabled by a plugin, REST blocked) and offer
-   the manual fallback (paste username + application password).
-3. Callback: verify state, `site_url` host must equal the state host, `GET wp/v2/users/me?context=edit` must
-   show `publish_posts` (and `upload_files`, else "images will be skipped"); encrypt and upsert.
-   The password arrives in a query string: the callback route must not be logged with its query (check Railway logs).
+**Why pull.** Contivo stores no WordPress password; Contivo never makes requests into the customer's site for
+publishing (no SSRF surface, no Cloudflare/Wordfence blocks of Railway, no hosts stripping `Authorization`);
+it reuses what exists: Content API `GET /api/v1/posts` (`apps/web/src/app/api/v1/posts/route.ts`), per-site API
+keys (`lib/site-api/keys.ts`, `auth.ts`), `SiteConnection` (`lastFetchedAt`, `revalidateUrl`), the `blog` channel and
+its web publisher. **No new enum value** (WordPress is a `SiteConnection`, not a `SocialConnection`).
 
-**Publish.** Optional image → `POST wp/v2/media` (raw bytes, `Content-Disposition`), failure = post without
-image + log. Then `POST wp/v2/posts {title, content: html, status, slug, featured_media}`. `status` from
-`metaJson.defaultStatus`. Our scheduler only (no WP `future`). Write-back `id` + `link`; drafts labelled
-"draft in WordPress".
+**Flow.**
+1. Connections → Websites → "WordPress": create a site connection (key shown once) + download the plugin zip.
+2. Customer installs the plugin, pastes the key. Plugin calls a new `GET /api/v1/site` (key check) and shows
+   "Connected to <workspace>".
+3. Contivo publishes a `blog` item (existing web publisher, SCHEDULED → PUBLISHED) and pings `revalidateUrl`
+   = the plugin's REST route `/wp-json/contivo/v1/sync` with the site secret (Bearer). The plugin also syncs on
+   WP-Cron every 5 minutes as a fallback (ping can be blocked; low-traffic sites run WP-Cron late).
+4. Sync: `GET /api/v1/posts?updatedSince=<cursor>` → for each post, find the WP post by meta `_contivo_id`,
+   create or update it (title, `html`, slug, excerpt, status, featured image sideloaded from a Contivo image URL),
+   store the cursor.
+5. Write-back: plugin `POST /api/v1/posts/{id}/ack {wpPostId, permalink, status}` → stored on the ContentItem
+   (needs a field: `externalPostUrl` on ContentItem or a small `SitePublishReceipt` table — database-engineer
+   decides in the WordPress PR) → shown in the Pipeline like social posts.
 
-**Markdown → HTML.** No markdown library in the repo. Move the in-house parser (`apps/web/src/lib/blog/content.ts`
-`parseMarkdown` :63, `parseInline` :163, `safeHref` :153 — never emits raw HTML) into `packages/content-format`
-with `renderHtml()` and `renderTelegramHtml()`. Only after PR #15 merges (it changes that file) and with the blog
-stream's agreement. Telegram ships first with a small local renderer if the package is not ready.
+**Contivo-side changes (WordPress PR).** `updatedSince` filter and an `html` field on the posts API (one renderer
+on our side: move `lib/blog/content.ts` parser into a shared package, `renderHtml()`); `GET /api/v1/site`; ack
+endpoint; public image URL for artwork; Connections "WordPress" card with plugin download, last sync time and
+"not syncing" warning when `lastFetchedAt` is older than 1 h while posts are due; **SSRF guard on the
+`revalidateUrl` ping** (`site-api/publisher.ts:139`, https only, block private ranges, no redirects).
 
-**Errors → status.** 401 `incorrect_password|invalid_username|application_passwords_disabled*` → REVOKED;
-403 `rest_cannot_*` → REVOKED ("user lost permission"); 404 `rest_no_route` → REVOKED ("REST API disabled");
-HTML/non-WP 403 → REVOKED with "blocked by a firewall"; 5xx/timeout → transient.
-Known failure mode: hosts that strip the `Authorization` header make valid passwords fail (ASSUMED common).
+**Plugin (`integrations/wordpress-plugin/contivo/`, PHP ≥ 7.4, WP ≥ 6.0).** Settings page (key, default
+status publish/draft, default category, author), REST sync route (constant-time secret check), cron, idempotent
+upsert by `_contivo_id`, media sideload with size cap, admin notice on 401 ("key revoked — reconnect in Contivo"),
+uninstall cleans options only (never deletes posts). Escapes everything; content `html` passed through
+`wp_kses_post`. Distribution: zip download from contivo.app for the pilot; WordPress.org listing later (review
+takes weeks, optional).
 
-**SSRF guard (required, `apps/api/src/common/net/safe-fetch.ts`).** https/443 only, no userinfo, no IP literals;
-resolve and reject loopback, RFC1918, 100.64/10, 169.254/16, 0/8, multicast, ::1, fc00::/7, fe80::/10, mapped
-forms; pin the checked IP for the connection; manual redirects ≤ 3, each re-checked, drop `Authorization` on a
-cross-host hop; 10 s timeout; 2 MB JSON / 10 MB media cap. Port the existing guard and tests from
-`apps/web/src/lib/competitors/network-guard.ts` (:122, :197) and `judge.ts:300-360`. Reviewed by
-contivo-security-engineer before merge.
+**Expiry/revocation.** Key revoked or site deleted in Contivo → plugin gets 401 → admin notice. Plugin removed or
+blocked → `lastFetchedAt` stale → Connections shows "site not syncing" and due posts show "waiting for your site".
 
-**Cost/policy.** Free. Sources: https://developer.wordpress.org/rest-api/using-the-rest-api/authentication/ ,
-https://make.wordpress.org/core/2020/11/05/application-passwords-integration-guide/ , https://developer.wordpress.com/docs/oauth2/
+**Limits.** Requires a host that allows plugins (WordPress.com Free/Personal/Premium do not). Timing is "within
+minutes", not to the second, when the ping is blocked.
 
-**Farjad does.** Decide default status (recommend publish, with a per-connection switch). Provide one HTTPS test
-WordPress site (any cheap host or a free sandbox) for the proof.
+**Effort (estimate).** Plugin 3–4 dev-days; Contivo side 1–2; shared renderer 1–2.
+
+**Farjad does.** Provide one test WordPress site where a plugin can be installed; default post status
+(recommend publish, switch in plugin settings).
 
 ## 5. X
 
@@ -245,7 +247,7 @@ contivo-api and tester invites.
 | Channel | Detected by | Shown as |
 |---|---|---|
 | Telegram | `my_chat_member` webhook (immediate) + publish errors | REVOKED → "Reconnect" |
-| WordPress | publish/validate 401/403/404 + daily free `users/me` check | REVOKED → "Reconnect", with reason |
+| WordPress | plugin gets 401 (admin notice) + `lastFetchedAt` stale in Contivo | "Site not syncing" → reinstall/re-key |
 | X | refresh failure (400/401) before publish | EXPIRED → "Reconnect" |
 | Threads | refresh cron failure, publish 190 token errors, deauthorize callback | EXPIRED/REVOKED → "Reconnect" |
 
