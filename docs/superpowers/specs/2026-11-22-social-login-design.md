@@ -98,7 +98,7 @@ Lookup by email is **case-insensitive** and, if it matches more than one row (th
 **Known residual risk (cannot be closed without email verification):** an attacker who pre-registers `victim@…` with a password makes rule 4a block the real owner from using Google. It does not give the attacker the owner's data, but it squats the address. Mitigation now: support path (admin can detach the squatter after identity check). Real fix: email verification when Resend is built. This is why rule 4a blocks instead of merging.
 
 **Facebook special case.** Meta documents the email as present only when the user has a valid email and does not expose an "email verified" claim. So for Facebook:
-the email is usable to *create* an account when free (rule 3), stored as `emailVerified = false`, and **never** triggers 4b, never counts as proof for another provider. If the same address later arrives from Google/GitHub (verified), it hits 4c and is refused for support. Decision for Farjad in §12: keep Facebook with this restriction, or drop it.
+the email is usable to *create* an account when free (rule 3), stored as `emailVerified = false`, and never counts as proof for another provider. If the same address later arrives from Google/GitHub (verified), it hits rule 4 and is refused. Decision for Farjad in §12: keep Facebook with this restriction, or drop it.
 
 **Unlink and lockout.**
 - `unlinkProvider` server action (Settings): allowed only if the user would still have a way in: a password exists, or another identity remains. Otherwise refused with a plain message. Logged `OAUTH_UNLINKED`.
@@ -194,7 +194,7 @@ Debt register: (1) no email verification → residual squat case (§5), real fix
 ## 13. Legal review findings (contivo-coo, 22 Nov) — folded in
 
 Wording: `2026-11-22-social-login-legal-wording.md` (English canonical, not legal advice).
-- The Privacy cookies section says "three cookies"; `oauth_tx` and `oauth_pending` (10 min each) make that false, so that section and the meta description are edited in the same PR.
+- The Privacy cookies section says "three cookies"; `__Host-oauth_tx` (10 min) makes that false, so that section and the meta description are edited in the same PR.
 - No self-service account deletion exists. The `delete-account` section says to write to the contact address (`lib/site-identity.ts`), and the 30-day promise relies on a manual user-row delete (which cascades to `oauth_accounts`). Decision for Farjad: ship with manual deletion, or add self-service first (product ask, separate).
 - Facebook-only users have no verified email, so deletion requests are hard to verify; the copy asks for the provider name and allows one confirmation question.
 - Meta may reject a `#fragment` instructions URL; fallback is a `/delete-account` route rendering the same section.
