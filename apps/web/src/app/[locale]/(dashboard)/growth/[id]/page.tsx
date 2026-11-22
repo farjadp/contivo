@@ -54,7 +54,7 @@ import { AutopilotTab } from './_components/AutopilotTab';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { LoopRail } from './_components/LoopRail';
-import { buildJourney, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { buildJourney, matrixFacts, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { buildLoop, stageForTab, STAGES, type StageId } from '@/lib/workspace-loop';
 import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-warnings';
 import { getAutopilotState } from '@/app/actions/autopilot';
@@ -273,9 +273,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: workspace.competitors.filter((c: any) => c.userDecision === 'ACCEPTED').length,
     totalCompetitors: countCompetitors(workspace.competitors),
-    matrixCharts: Array.isArray((workspace.audienceInsights as any)?.competitiveMatrices?.charts)
-      ? (workspace.audienceInsights as any).competitiveMatrices.charts.length
-      : 0,
+    ...matrixFacts(workspace.audienceInsights),
     keywordCompetitors: Array.isArray((workspace.audienceInsights as any)?.competitorKeywordsIntel?.competitors)
       ? (workspace.audienceInsights as any).competitorKeywordsIntel.competitors.length
       : 0,
