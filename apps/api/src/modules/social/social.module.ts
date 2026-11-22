@@ -13,6 +13,7 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../../common/prisma/prisma.module';
+import { redisConnection } from '../jobs/bull-board.provider';
 import { JobsModule } from '../jobs/jobs.module';
 
 // Controllers
@@ -22,6 +23,7 @@ import { InstagramAdapter } from './adapters/instagram.adapter';
 import { LinkedInAdapter } from './adapters/linkedin.adapter';
 import { TikTokAdapter } from './adapters/tiktok.adapter';
 import { XAdapter } from './adapters/x.adapter';
+import { OAUTH_STORE, redisOAuthStore } from './oauth-store';
 import { PublishProcessor } from './publish.processor';
 import { SocialConnectionsController } from './social-connections.controller';
 import { SocialConnectionsService } from './social-connections.service';
@@ -44,6 +46,8 @@ import { SocialSchedulerService } from './social-scheduler.service';
     SocialPublishService,
     SocialOAuthService,
     SocialSchedulerService,
+    // Single-use OAuth nonces and parked connections (Redis, same as BullMQ).
+    { provide: OAUTH_STORE, useFactory: () => redisOAuthStore(redisConnection) },
 
     // Processors
     PublishProcessor,

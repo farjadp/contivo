@@ -9,6 +9,11 @@
       "cta": "Crea workspace"
     },
     "workspaceLabel": "Workspace",
+    "connectResult": {
+      "ok": "Account collegato a questo workspace.",
+      "foreign": "Non è stato collegato nulla: questo link è stato avviato da un altro account Contivo. Se non l'hai avviato tu, ignoralo. Per collegare il tuo account usa il pulsante Collega account qui sotto.",
+      "failed": "Il collegamento non è stato completato o è scaduto. Non è stato collegato nulla. Riprova."
+    },
     "tabs": {
       "social": "Canali social",
       "websites": "Siti web"
