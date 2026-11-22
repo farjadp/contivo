@@ -225,7 +225,7 @@ describe('runner: out of credits', () => {
 
   it('balance raced away between check and charge: same code, not the English exception text', async () => {
     prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
-    vi.mocked(chargeCredits).mockRejectedValueOnce(new InsufficientCreditsError('Insufficient credits. You have 1 but this needs 2.'));
+    vi.mocked(chargeCredits).mockRejectedValueOnce(new InsufficientCreditsError(1, 2));
 
     const result = await runPolicy('agent-1');
 
