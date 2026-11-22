@@ -1,6 +1,6 @@
 # Social sign-in: Google, GitHub, Facebook — design
 
-Date: 2026-11-22 · Owner: contivo-cto · Branch: `myca/social-login-397702` · Status: **spec, awaiting Farjad's go**
+Date: 2026-11-22 · Owner: contivo-cto · Branch: `myca/social-login-397702` · Status: **approved by Farjad 22 Nov: build Google first, then GitHub; Facebook dropped from v1**
 Provider setup list for Farjad: `2026-11-22-social-login-provider-setup.md` (same folder).
 
 ## 1. Goal
@@ -214,3 +214,8 @@ Full review: `side-session-notes/.../social-login-security-review.md`. Decisions
 - **M6:** before build, verify what Railway sends in `X-Forwarded-For`; the OAuth register bucket is charged only when an account is actually created.
 - **L1** `oauth_tx` is an encrypted JWT (`EncryptJWT`) with `typ`/`aud`. **L2** callback sends `Cache-Control: no-store`, `Referrer-Policy: no-referrer`; code/state never logged; Arctic errors wrapped. **L3** Google: accept both `iss` forms, check `azp`, strict boolean `email_verified`, `prompt=select_account`, no offline access, fail closed if JWKS fails. **L4** GitHub `*@users.noreply.github.com` addresses are refused as an email (they prove nothing). **L5** user + identity created in one transaction, `P2002` race handled. **L6** `intent` reduced to link only. **L7** pin Arctic exactly and review `@oslojs/*`.
 - Schema addition: `oauth_tx_used` (§8).
+
+## 15. Farjad's go (22 Nov)
+
+"Go ahead, no Facebook, start Google." So: v1 = Google, then GitHub; Facebook is out (its code, env vars and Meta app are not built; §5 Facebook paragraph and the Facebook column are future work only).
+Open points defaulted by the CTO, to be overridden if Farjad says otherwise: sign-in page buttons also create accounts (fine print shown); account deletion stays manual for now; lawyer review before the provider apps go to review is Farjad's call and does not block the build; the e-mail case normalisation + duplicate query is a separate follow-up PR, not part of this one.
