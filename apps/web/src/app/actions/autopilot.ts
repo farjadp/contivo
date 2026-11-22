@@ -25,6 +25,8 @@ export type AutopilotPolicyInput = {
   avoidTopics?: string[];
   /** Storylines this agent advances. Empty means every storyline on the workspace. */
   storylineIds?: string[];
+  /** Every draft waits in the pipeline for the user's approval. Omitted means unchanged. */
+  requireReview?: boolean;
 };
 
 type UserAuth = { ok: true; userId: string } | { ok: false; error: string };
@@ -147,7 +149,13 @@ export async function saveAutopilotPolicy(
     userId: auth.userId,
     workspaceId,
     action: 'AUTOPILOT_POLICY_SAVED',
-    detail: { agentId: agent.id, enabled: agent.enabled, postsPerWeek: agent.postsPerWeek, channels: agent.channels },
+    detail: {
+      agentId: agent.id,
+      enabled: agent.enabled,
+      postsPerWeek: agent.postsPerWeek,
+      channels: agent.channels,
+      requireReview: agent.requireReview,
+    },
   });
 
   revalidatePath(`/growth/${workspaceId}`);
@@ -244,6 +252,8 @@ async function normalizeInput(input: AutopilotPolicyInput) {
         ? input.storylineIds.map(String).filter(Boolean)
         : [],
       avoidTopics: cleanList(input.avoidTopics),
+      // Only a real boolean changes it; older callers that omit it leave it as stored.
+      requireReview: typeof input.requireReview === 'boolean' ? input.requireReview : undefined,
       // Re-arm so a newly enabled agent runs on the next tick.
       nextRunAt: input.enabled ? null : undefined,
     },
@@ -277,6 +287,7 @@ function serializePolicy(p: {
   topicHints: string[];
   avoidTopics: string[];
   storylineIds: string[];
+  requireReview: boolean;
   lastRunAt: Date | null;
   nextRunAt: Date | null;
 }) {
@@ -295,6 +306,7 @@ function serializePolicy(p: {
     topicHints: p.topicHints,
     avoidTopics: p.avoidTopics,
     storylineIds: p.storylineIds,
+    requireReview: p.requireReview,
     lastRunAt: p.lastRunAt?.toISOString() ?? null,
     nextRunAt: p.nextRunAt?.toISOString() ?? null,
   };
