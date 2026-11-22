@@ -30,6 +30,9 @@ import { describeFetchError, isPreSendNetworkError } from '../adapters/http-heal
 
 export const TELEGRAM_TIMEOUT_MS = 10_000;
 
+/** What the bot subscribes to. Never channel_post: we do not read customers' channels. */
+export const TELEGRAM_ALLOWED_UPDATES = ['message', 'my_chat_member'] as const;
+
 export type TelegramFailureKind =
   | 'revoked'
   | 'rate_limited'
@@ -198,26 +201,30 @@ export function classifyTelegramError(status: number, body: ApiErrorBody | null)
 export interface TelegramClientOptions {
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
+  /** Where TELEGRAM_BOT_TOKEN / TELEGRAM_API_BASE are read; default process.env (read per call). */
+  env?: NodeJS.ProcessEnv;
 }
 
 @Injectable()
 export class TelegramBotClient {
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
+  private readonly env?: NodeJS.ProcessEnv;
   private identity: { token: string; bot: TgUser } | null = null;
 
   constructor(opts: TelegramClientOptions = {}) {
     this.timeoutMs = opts.timeoutMs ?? TELEGRAM_TIMEOUT_MS;
     this.fetchImpl = opts.fetchImpl ?? ((...args) => fetch(...args));
+    this.env = opts.env;
   }
 
   /** Read at call time so a deploy that sets the env later needs no rebuild of this object. */
   private token(): string | undefined {
-    return process.env.TELEGRAM_BOT_TOKEN?.trim() || undefined;
+    return (this.env ?? process.env).TELEGRAM_BOT_TOKEN?.trim() || undefined;
   }
 
   private base(): string {
-    return (process.env.TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org').replace(/\/+$/, '');
+    return ((this.env ?? process.env).TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org').replace(/\/+$/, '');
   }
 
   isConfigured(): boolean {
@@ -304,6 +311,16 @@ export class TelegramBotClient {
 
   setWebhook(params: SetWebhookParams) {
     return this.call<boolean>('setWebhook', { ...params });
+  }
+
+  getWebhookInfo() {
+    return this.call<{
+      url: string;
+      pending_update_count: number;
+      last_error_date?: number;
+      last_error_message?: string;
+      allowed_updates?: string[];
+    }>('getWebhookInfo', {});
   }
 
   deleteWebhook(dropPendingUpdates = false) {
