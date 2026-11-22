@@ -83,7 +83,7 @@
               "OpenAI, Anthropic (Claude) and Google (Gemini): your site's content, your brand memory and your instructions, to analyse, plan and write. If one of them is unavailable, the same request can go to another. What they do with API data is governed by their API terms.",
               "DataForSEO: keywords and domain names, to fetch search volumes and results pages. No personal information.",
               "LinkedIn and X: the posts you publish, and only once you have connected the account.",
-              "Vercel, Railway and Neon: hosting and the database, where everything above is stored.",
+              "Railway and Neon: hosting and the database, where everything above is stored.",
               "Sentry: error reports.",
               "Stripe: payments, once billing is live."
             ],
