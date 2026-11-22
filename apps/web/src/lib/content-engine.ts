@@ -75,12 +75,27 @@ export function buildPipelineDraftContent(idea: any): string {
   return lines.join('\n');
 }
 
-export function resolveChannelFromFormat(formatValue: unknown): any {
-  const format = String(formatValue || '').toLowerCase();
-  if (format.includes('twitter') || format.includes('x')) return 'twitter';
-  if (format.includes('blog') || format.includes('article')) return 'blog';
-  if (format.includes('email') || format.includes('newsletter')) return 'email';
-  if (format.includes('instagram') || format.includes('insta')) return 'instagram';
+/**
+ * Whole-word format keywords → channel, checked in order. Matching words, not
+ * substrings: the old `format.includes('x')` sent "explainer", "text post" and
+ * anything else with an x to X. Only channels with content today; telegram and
+ * threads are chosen explicitly, never guessed from a format label.
+ */
+const FORMAT_CHANNEL_RULES: ReadonlyArray<readonly [ReadonlySet<string>, 'twitter' | 'blog' | 'email' | 'instagram']> = [
+  [new Set(['x', 'twitter', 'tweet', 'tweets']), 'twitter'],
+  [new Set(['blog', 'article', 'articles']), 'blog'],
+  [new Set(['email', 'newsletter']), 'email'],
+  [new Set(['instagram', 'insta', 'ig']), 'instagram'],
+];
+
+export function resolveChannelFromFormat(formatValue: unknown): 'linkedin' | 'twitter' | 'blog' | 'email' | 'instagram' {
+  const words = String(formatValue ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  for (const [keywords, channel] of FORMAT_CHANNEL_RULES) {
+    if (words.some((word) => keywords.has(word))) return channel;
+  }
   return 'linkedin';
 }
 
