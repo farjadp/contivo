@@ -1,6 +1,6 @@
 'use server';
 
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext, type AiFailure } from '@/lib/ai';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -107,15 +107,6 @@ function normalizeDomain(value: string | null | undefined): string {
 function normalizeWebsite(value: string | null | undefined): string {
   const domain = normalizeDomain(value);
   return domain ? `https://${domain}` : '';
-}
-
-function stripCodeFences(value: string): string {
-  return value
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
 }
 
 function toNonNegativeInt(value: unknown): number {
@@ -514,9 +505,11 @@ Output JSON only:
 `;
 }
 
-async function callOpenAiJson(
-  prompt: string,
-): Promise<{
+/** No timeout existed before the failover layer; 60 s per provider attempt. */
+const AI_TIMEOUT_MS = 60_000;
+
+type AiJsonCall = {
+  /** The model's JSON, or null when it answered with something that is not an object. */
   parsed: any | null;
   usage: {
     model: string;
@@ -524,65 +517,50 @@ async function callOpenAiJson(
     completion_tokens: number;
     total_tokens: number;
   } | null;
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
+  /** Set when no provider answered; `parsed` and `usage` are null then. */
+  failure: AiFailure | null;
+};
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: 'Be precise. Use only evidence provided. Return only valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error('OpenAI offerings request error:', await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature: 'growth_offerings',
-      usage: parseOpenAiChatUsage(data),
-    });
-    const usage = {
-      model,
-      prompt_tokens: toNonNegativeInt(data?.usage?.prompt_tokens),
-      completion_tokens: toNonNegativeInt(data?.usage?.completion_tokens),
-      total_tokens: toNonNegativeInt(data?.usage?.total_tokens),
-    };
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') {
-      return { parsed: null, usage };
-    }
-
-    try {
-      return { parsed: JSON.parse(stripCodeFences(content)), usage };
-    } catch (parseError) {
-      console.error('OpenAI offerings JSON parse error:', parseError);
-      return { parsed: null, usage };
-    }
-  } catch (error) {
-    console.error('OpenAI offerings call failed:', error);
-    return null;
+/**
+ * One JSON call through the failover layer (task `offerings`). The layer records
+ * usage on success, so this file no longer does.
+ */
+async function callOpenAiJson(prompt: string, ctx: AiCallContext): Promise<AiJsonCall> {
+  const result = await runAiTask(
+    'offerings',
+    {
+      system: 'Be precise. Use only evidence provided. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: AI_TIMEOUT_MS,
+      temperature: 0.2,
+    },
+    ctx,
+  );
+  if (!result.ok) {
+    console.error('offerings AI call failed:', result.kind, result.firstErrorClass);
+    return { parsed: null, usage: null, failure: result };
   }
+  const json = result.json;
+  return {
+    parsed: json && typeof json === 'object' ? json : null,
+    usage: {
+      model: result.model,
+      prompt_tokens: toNonNegativeInt(result.usage.promptTokens),
+      completion_tokens: toNonNegativeInt(result.usage.completionTokens),
+      total_tokens: toNonNegativeInt(result.usage.totalTokens),
+    },
+    failure: null,
+  };
+}
+
+/**
+ * The error key for a call no provider answered. Only a genuine rate limit on
+ * every provider gets the "try again in a few minutes" copy; billing, auth or
+ * an outage gets the generic one, because waiting will not fix those.
+ */
+function aiFailureErrorKey(failure: AiFailure, rateLimitedKey: string, genericKey: string): string {
+  return failure.allRateLimited ? rateLimitedKey : genericKey;
 }
 
 function normalizePayload(raw: any, input: {
@@ -733,7 +711,8 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
       competitors: competitorSignals,
     });
 
-    const extractResult = await callOpenAiJson(extractionPrompt);
+    const aiCtx = { workspaceId: workspace.id, userId: session.userId as string };
+    const extractResult = await callOpenAiJson(extractionPrompt, aiCtx);
 
     // A failed extraction is never saved and never fed to the comparison
     // prompt: the previous result stays as it was.
@@ -742,9 +721,19 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
         userId: session.userId as string,
         workspaceId: workspace.id,
         action: 'PRODUCTS_SERVICES_INTEL_FAILED',
-        detail: { reason: 'no_ai_result', totalTokens: extractResult?.usage?.total_tokens || 0 },
+        detail: {
+          reason: extractResult.failure ? 'ai_unavailable' : 'no_ai_result',
+          firstErrorClass: extractResult.failure?.firstErrorClass ?? null,
+          totalTokens: extractResult.usage?.total_tokens || 0,
+        },
       });
-      return { error: await actionError('offeringsAiFailed') };
+      return {
+        error: await actionError(
+          extractResult.failure
+            ? aiFailureErrorKey(extractResult.failure, 'offeringsAiFailed', 'offeringsFailed')
+            : 'offeringsAiFailed',
+        ),
+      };
     }
 
     const payload = normalizePayload(extractResult.parsed, {
@@ -758,12 +747,12 @@ export async function generateWorkspaceProductsServicesIntel(workspaceId: string
     const hasOfferings =
       payload.client_offerings.offerings.length > 0 ||
       payload.competitor_offerings.some((item) => item.offerings.length > 0);
-    let compareResult: Awaited<ReturnType<typeof callOpenAiJson>> = null;
+    let compareResult: Awaited<ReturnType<typeof callOpenAiJson>> | null = null;
     if (hasOfferings) {
       compareResult = await callOpenAiJson(buildComparisonPrompt({
         client_offerings: payload.client_offerings,
         competitor_offerings: payload.competitor_offerings,
-      }));
+      }), aiCtx);
       payload.comparison_analysis = normalizeComparisonAnalysis(compareResult?.parsed);
     }
 

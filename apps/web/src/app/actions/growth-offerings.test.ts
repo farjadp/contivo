@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // comparison prompt run on nothing (spec 2026-09-29, D1). No network, no
 // database: prisma, the session, site reading and fetch are mocked.
 
-const { prismaMock, activityLogMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, runAiTaskMock } = vi.hoisted(() => ({
+  runAiTaskMock: vi.fn(),
   prismaMock: {
     workspace: { findUnique: vi.fn(), update: vi.fn() },
   },
@@ -12,6 +13,7 @@ const { prismaMock, activityLogMock } = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
+vi.mock('@/lib/ai', () => ({ runAiTask: runAiTaskMock }));
 vi.mock('@/lib/auth', () => ({ getSession: vi.fn(async () => ({ userId: 'user-1' })) }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
 vi.mock('@/lib/action-errors', () => ({ actionError: vi.fn(async (key: string) => key) }));
@@ -52,15 +54,20 @@ function workspace() {
   };
 }
 
-function openAiReply(content: unknown) {
+function aiOk(json: unknown) {
   return {
-    ok: true,
-    json: async () => ({
-      usage: { prompt_tokens: 100, completion_tokens: 50, total_tokens: 150 },
-      choices: [{ message: { content: typeof content === 'string' ? content : JSON.stringify(content) } }],
-    }),
-    text: async () => '',
+    ok: true as const,
+    provider: 'openai' as const,
+    model: 'gpt-4.1',
+    text: JSON.stringify(json),
+    json,
+    usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
+    failedOver: [],
   };
+}
+
+function aiDown(firstErrorClass: string, allRateLimited = false) {
+  return { ok: false as const, kind: 'all_unavailable' as const, attempts: [], firstErrorClass, allRateLimited };
 }
 
 function extraction(clientOfferings: unknown[], competitorOfferings: unknown[]) {
@@ -75,57 +82,67 @@ function extraction(clientOfferings: unknown[], competitorOfferings: unknown[]) 
 
 beforeEach(() => {
   vi.clearAllMocks();
-  process.env.OPENAI_API_KEY = 'test-key';
   vi.stubGlobal('fetch', fetchMock);
   prismaMock.workspace.findUnique.mockResolvedValue(workspace());
   prismaMock.workspace.update.mockResolvedValue({});
 });
 
 describe('generateWorkspaceProductsServicesIntel never saves an AI failure', () => {
-  it('returns offeringsAiFailed, keeps the previous result and runs no comparison', async () => {
-    fetchMock.mockResolvedValue({ ok: false, text: async () => 'rate limited', json: async () => ({}) });
+  it('rate limit everywhere: offeringsAiFailed, previous result kept, no comparison', async () => {
+    runAiTaskMock.mockResolvedValue(aiDown('rate_limit', true));
 
     const result = await generateWorkspaceProductsServicesIntel('ws-1');
 
     expect(result).toEqual({ error: 'offeringsAiFailed' });
     expect(prismaMock.workspace.update).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(runAiTaskMock).toHaveBeenCalledTimes(1);
+    expect(runAiTaskMock.mock.calls[0][0]).toBe('offerings');
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(activityLogMock).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'PRODUCTS_SERVICES_INTEL_FAILED' }),
     );
   });
 
-  it('treats an unparseable extraction as a failure', async () => {
-    fetchMock.mockResolvedValue(openAiReply('not json'));
+  it('billing or auth: generic offeringsFailed, never the "few minutes" copy', async () => {
+    for (const cls of ['billing', 'auth']) {
+      runAiTaskMock.mockResolvedValue(aiDown(cls));
+      expect(await generateWorkspaceProductsServicesIntel('ws-1')).toEqual({ error: 'offeringsFailed' });
+    }
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+  });
+
+  it('treats a non-object extraction as a failure', async () => {
+    runAiTaskMock.mockResolvedValue(aiOk('not json'));
 
     const result = await generateWorkspaceProductsServicesIntel('ws-1');
 
     expect(result).toEqual({ error: 'offeringsAiFailed' });
     expect(prismaMock.workspace.update).not.toHaveBeenCalled();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(runAiTaskMock).toHaveBeenCalledTimes(1);
   });
 });
 
 describe('generateWorkspaceProductsServicesIntel compares only real offerings', () => {
   it('saves an empty extraction without spending a comparison call', async () => {
-    fetchMock.mockResolvedValue(openAiReply(extraction([], [])));
+    runAiTaskMock.mockResolvedValue(aiOk(extraction([], [])));
 
     const result = await generateWorkspaceProductsServicesIntel('ws-1');
 
     expect(result).toHaveProperty('success', true);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(runAiTaskMock).toHaveBeenCalledTimes(1);
   });
 
   it('runs the comparison when there is something to compare', async () => {
-    fetchMock
-      .mockResolvedValueOnce(openAiReply(extraction([{ name: 'Planner' }], [{ name: 'Scheduler' }])))
-      .mockResolvedValueOnce(openAiReply({ positioning_insight: 'Acme plans, Alpha schedules.' }));
+    runAiTaskMock
+      .mockResolvedValueOnce(aiOk(extraction([{ name: 'Planner' }], [{ name: 'Scheduler' }])))
+      .mockResolvedValueOnce(aiOk({ positioning_insight: 'Acme plans, Alpha schedules.' }));
 
     const result = (await generateWorkspaceProductsServicesIntel('ws-1')) as {
       payload: { comparison_analysis: { positioning_insight: string } };
     };
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(runAiTaskMock).toHaveBeenCalledTimes(2);
+    expect(runAiTaskMock.mock.calls.map((c) => c[0])).toEqual(['offerings', 'offerings']);
     expect(result.payload.comparison_analysis.positioning_insight).toBe('Acme plans, Alpha schedules.');
     expect(prismaMock.workspace.update).toHaveBeenCalledTimes(1);
   });
