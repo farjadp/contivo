@@ -136,6 +136,23 @@ describe('pricing', () => {
     expect(estimateCostUsd('gemini-3.8-flash', usage, after)).toBeCloseTo((1000 * 1.5 + 500 * 7.5) / 1e6, 9);
   });
 
+  it('prices the 22 Nov model-choice candidates from the official pages', () => {
+    expect(estimateCostUsd('gpt-6.2-sol', usage)).toBeCloseTo((1000 * 2 + 500 * 10) / 1e6, 9);
+    expect(estimateCostUsd('gpt-6.2-astra', usage)).toBeCloseTo((1000 * 8 + 500 * 40) / 1e6, 9);
+    expect(
+      estimateCostUsd('gpt-6.2-astra', { promptTokens: 272_001, completionTokens: 0, totalTokens: 272_001 }),
+    ).toBeCloseTo((272_001 * 16) / 1e6, 9);
+    expect(estimateCostUsd('claude-sonnet-5-5', usage)).toBeCloseTo((1000 * 2 + 500 * 10) / 1e6, 9);
+    expect(estimateCostUsd('claude-opus-5-5', usage)).toBeCloseTo((1000 * 4 + 500 * 20) / 1e6, 9);
+  });
+
+  it('doubles gemini-4-argon on 1 Dec 2026', () => {
+    const before = new Date('2026-11-30T23:59:59Z');
+    const after = new Date('2026-12-01T00:00:00Z');
+    expect(estimateCostUsd('gemini-4-argon', usage, before)).toBeCloseTo((1000 * 2 + 500 * 10) / 1e6, 9);
+    expect(estimateCostUsd('gemini-4-argon', usage, after)).toBeCloseTo((1000 * 4 + 500 * 20) / 1e6, 9);
+  });
+
   it('returns null for a model it has no verified price for, and warns once per model', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     expect(estimateCostUsd('gpt-image-1', { ...usage, images: 1 })).toBeNull();

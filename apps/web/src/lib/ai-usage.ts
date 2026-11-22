@@ -114,8 +114,10 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 // only prices read off the provider's own pricing page. A model that is not
 // here is logged with estimatedCostUsd null, never a guess.
 //
-// OpenAI — https://developers.openai.com/api/docs/pricing (checked 2026-11-21)
-//   gpt-4.1     $2.00 in / $8.00 out
+// OpenAI — https://developers.openai.com/api/docs/pricing (checked 2026-11-22)
+//   gpt-4.1     $2.00 in / $8.00 out (deprecated, shutdown 2027-01-14)
+//   gpt-6.2-sol   $2.00 / $10.00; prompts > 272K input tokens $4.00 / $15.00
+//   gpt-6.2-astra $8.00 / $40.00; prompts > 272K input tokens $16.00 / $60.00
 //   gpt-5-mini  $0.25 in / $2.00 out
 //   Web search tool (Responses API): $10.00 / 1k calls + content tokens at model rates
 //   NOT priced: gpt-image-1 (no longer on the page; only gpt-image-1.5 / -mini are)
@@ -126,8 +128,17 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 //                   and are billed at its rates
 //   gemini-3.8-flash $0.75 / $3.75 through 2026-12-31, $1.50 / $7.50 from 2027-01-01
 //   gemini-3.1-flash-lite $0.25 / $1.50 (text/image/video input)
+//   gemini-4-argon $2.00 / $10.00 through 2026-11-30, $4.00 / $20.00 from 2026-12-01
+//                  (https://aistudio.google.com/docs/pricing, checked 2026-11-22)
 //   NOT priced: gemini-3.7-flash (the app's default) and gemini-3.5-flash — neither
-//   is listed on the pricing page, gemini-flash-latest (an alias)
+//   is listed on the pricing page, gemini-flash-latest (an alias). 3.7 Flash
+//   "automatically routes API requests to gemini-3.8-flash" (deprecations page,
+//   2026-11-22), so a routed call reports modelVersion gemini-3.8-flash and is
+//   priced by resolveResponseModel at 3.8 Flash rates.
+//
+// Anthropic — https://platform.claude.com/docs/en/about-claude/pricing (checked 2026-11-22)
+//   claude-sonnet-5-5 $2 / $10; claude-opus-5-5 $4 / $20 (1M context at standard
+//   price; thinking tokens are billed as output and arrive in output_tokens)
 //
 // Cached-input discounts are ignored: calls here do not read cached tokens,
 // so a cached call is slightly over-estimated, never under.
@@ -147,6 +158,18 @@ const GEMINI_38_FLASH: PricePeriod[] = [
 
 const PRICES: Record<string, PricePeriod[]> = {
   'gpt-4.1': [{ inputPerM: 2, outputPerM: 8 }],
+  'gpt-6.2-sol': [
+    { inputPerM: 2, outputPerM: 10, longContext: { abovePromptTokens: 272_000, inputPerM: 4, outputPerM: 15 } },
+  ],
+  'gpt-6.2-astra': [
+    { inputPerM: 8, outputPerM: 40, longContext: { abovePromptTokens: 272_000, inputPerM: 16, outputPerM: 60 } },
+  ],
+  'claude-sonnet-5-5': [{ inputPerM: 2, outputPerM: 10 }],
+  'claude-opus-5-5': [{ inputPerM: 4, outputPerM: 20 }],
+  'gemini-4-argon': [
+    { inputPerM: 2, outputPerM: 10 },
+    { from: '2026-12-01T00:00:00Z', inputPerM: 4, outputPerM: 20 },
+  ],
   'gpt-5-mini': [{ inputPerM: 0.25, outputPerM: 2 }],
   'gemini-2.5-pro': [
     {

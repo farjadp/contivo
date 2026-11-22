@@ -13,7 +13,7 @@ Code: `apps/web/scripts/eval-judge/`.
 |---|---|
 | `export-dataset.mjs` | Builds `dataset.json` from the **local** DB (refuses any non-localhost host). Needs `psql`. |
 | `synthetic.json` | 5 hand-written adversarial drafts, `synthetic: true`. |
-| `dataset.json` | The eval set (generated; committed). |
+| `dataset.json` | The eval set (generated locally; gitignored, see below). |
 | `judge.ts` | Gate prompt (imported from `quality-gate.ts`), parse, and decision (same as `evaluateDraft`). |
 | `transport.ts` | `layerTransport(provider)`: `runAiTask` forced onto one provider; `fixtureTransport` for tests. |
 | `metrics.ts` | Agreement, Wilson 95 % CI, per-criterion disagreement, cost, pass bar. |
@@ -84,6 +84,15 @@ EVAL_PROVIDER=gemini    EVAL_REPEATS=3 pnpm exec vitest run --config scripts/eva
 
 Run OpenAI first. It is the reference judge on the new transport, so it shows how much of any
 disagreement comes from prompt drift and how much from changing provider. `EVAL_ONLY=id1,id2` runs a subset.
+`EVAL_MODEL=<id>` pins the forced provider's model (layer `modelOverride`), for a before/after on one provider:
+
+```bash
+EVAL_PROVIDER=openai EVAL_MODEL=gpt-4.1       EVAL_REPEATS=1 pnpm exec vitest run --config scripts/eval-judge/vitest.config.ts eval.run
+EVAL_PROVIDER=openai EVAL_MODEL=gpt-6.2-astra EVAL_REPEATS=1 pnpm exec vitest run --config scripts/eval-judge/vitest.config.ts eval.run
+```
+
+Since 22 Nov the OpenAI side of `quality_gate` resolves to `OPENAI_MODEL_JUDGE` (default `gpt-6.2-astra`), so an
+unpinned `EVAL_PROVIDER=openai` run measures Astra, not gpt-4.1.
 A red test means the provider missed the bar. The JSON report goes to `scripts/eval-judge/results/`.
 
 Free tests:

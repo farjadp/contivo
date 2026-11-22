@@ -24,9 +24,21 @@ function chatMessages(request: AiRequest) {
   return [{ role: 'system' as const, content: request.system || DEFAULT_SYSTEM }, ...turns];
 }
 
+/**
+ * Reasoning models take no sampling parameters. OpenAI's GPT-6.2 migration
+ * guide (developers.openai.com/api/docs/guides/latest-model, read 22 Nov
+ * 2026): "omit `temperature`, `top_p`, and `top_logprobs`". A rejected
+ * parameter is a 400 `bad_request`, which does not fail over, so sending it
+ * would take the judge and the matrices down on gpt-6.2-astra. gpt-4.1 and
+ * gpt-4o still accept it.
+ */
+export function acceptsTemperature(model: string): boolean {
+  return !/^(gpt-[5-9]|o\d)/i.test(model.trim());
+}
+
 function chatBody(request: AiRequest, model: string): Record<string, unknown> {
   const body: Record<string, unknown> = { model, messages: chatMessages(request) };
-  if (request.temperature !== undefined) body.temperature = request.temperature;
+  if (request.temperature !== undefined && acceptsTemperature(model)) body.temperature = request.temperature;
   if (request.maxTokens !== undefined) body.max_completion_tokens = request.maxTokens;
   if (request.output.kind === 'json_object') body.response_format = { type: 'json_object' };
   if (request.output.kind === 'json_schema') {
@@ -53,7 +65,7 @@ function responsesBody(request: AiRequest, model: string): Record<string, unknow
     input: typeof request.prompt === 'string' ? request.prompt : request.prompt,
   };
   if (request.system) body.instructions = request.system;
-  if (request.temperature !== undefined) body.temperature = request.temperature;
+  if (request.temperature !== undefined && acceptsTemperature(model)) body.temperature = request.temperature;
   if (request.maxTokens !== undefined) body.max_output_tokens = request.maxTokens;
   if (request.output.kind === 'json_object') body.text = { format: { type: 'json_object' } };
   if (request.output.kind === 'json_schema') {
