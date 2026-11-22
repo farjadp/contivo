@@ -29,6 +29,8 @@ import {
 } from '@nestjs/common';
 import type { SocialPlatform } from '@prisma/client';
 
+import { formatFailure, type PublishFailureCode } from '@contivo/types';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 
@@ -84,17 +86,19 @@ export class SocialPublishService {
     // 2. Run platform-specific validation rules BEFORE touching the DB.
     // A platform without an adapter (TELEGRAM before its PR) throws
     // UnsupportedPlatformError here: a clear 400, not a crash.
+    // `code` in the 400 body lets the scheduler store a coded failedReason.
     let adapter;
     try {
       adapter = this.adapterFactory.getAdapter(platform);
     } catch (err) {
-      throw new BadRequestException((err as Error).message);
+      throw new BadRequestException({ message: (err as Error).message, code: 'NO_PUBLISHER' });
     }
     const validation = adapter.validatePayload(payload);
     if (!validation.valid) {
       throw new BadRequestException({
-        message: 'Publish payload failed platform validation.',
+        message: `Publish payload failed platform validation. ${validation.errors.join(' ')}`.trim(),
         errors:  validation.errors,
+        code:    'INVALID_CONTENT',
       });
     }
 
@@ -320,15 +324,15 @@ export class SocialPublishService {
       });
 
       if (!payload?.body?.trim()) {
-        throw new PermanentPublishError('Nothing to publish: the job payload has no body.');
+        throw new PermanentPublishError('Nothing to publish: the job payload has no body.', 'INVALID_CONTENT');
       }
 
       let adapter;
       try {
         adapter = this.adapterFactory.getAdapter(platform);
       } catch (err) {
-        if (err instanceof UnsupportedPlatformError) throw new PermanentPublishError(err.message);
-        throw new PermanentPublishError((err as Error).message);
+        if (err instanceof UnsupportedPlatformError) throw new PermanentPublishError(err.message, 'NO_PUBLISHER');
+        throw new PermanentPublishError((err as Error).message, 'NO_PUBLISHER');
       }
 
       const row = await this.prisma.socialConnection.findUnique({
@@ -336,11 +340,12 @@ export class SocialPublishService {
         select: { accountIdentifier: true, platform: true, status: true, metaJson: true },
       });
       if (!row) {
-        throw new PermanentPublishError('Social connection no longer exists. Reconnect the account.');
+        throw new PermanentPublishError('Social connection no longer exists. Reconnect the account.', 'NO_CONNECTION');
       }
       if (row.status !== 'CONNECTED') {
         throw new PermanentPublishError(
           `${platform} connection is ${row.status}. Reconnect the account in Connections.`,
+          row.status === 'REVOKED' ? 'CONNECTION_REVOKED' : 'CONNECTION_EXPIRED',
         );
       }
 
@@ -348,7 +353,7 @@ export class SocialPublishService {
       // Refreshes first when the access token is about to expire.
       const tokens = await this.tokenRefresh.ensureFreshToken(connectionId, adapter);
       if (adapter.credential === 'stored_token' && !tokens.accessToken) {
-        throw new PermanentPublishError('Social connection token unavailable. Reconnect the account.');
+        throw new PermanentPublishError('Social connection token unavailable. Reconnect the account.', 'CONNECTION_EXPIRED');
       }
 
       const connection: AdapterConnection = {
@@ -365,13 +370,18 @@ export class SocialPublishService {
       const health = await adapter.validateConnection(connection);
       if (!health.ok) {
         if (health.reason === 'transient') {
-          throw new TransientPublishError(health.detail, health.retryAfterSec);
+          throw new TransientPublishError(
+            health.detail,
+            health.retryAfterSec,
+            health.retryAfterSec !== undefined || /429/.test(health.detail) ? 'RATE_LIMITED' : 'UNREACHABLE',
+          );
         }
         const status = health.reason === 'revoked' ? 'REVOKED' : 'EXPIRED';
         await this.connections.markUnusable(connectionId, status, health.detail);
         const hint = /reconnect/i.test(health.detail) ? '' : ' Reconnect the account in Connections.';
         throw new PermanentPublishError(
           `${platform} connection ${status.toLowerCase()}: ${health.detail}${hint}`,
+          status === 'REVOKED' ? 'CONNECTION_REVOKED' : 'CONNECTION_EXPIRED',
         );
       }
 
@@ -379,8 +389,9 @@ export class SocialPublishService {
 
       if (!result.success) {
         const message = result.error ?? 'Unknown publish error';
-        if (result.retryable) throw new TransientPublishError(message, result.retryAfterSec);
-        throw new PermanentPublishError(message);
+        const code = result.failureCode ?? 'PLATFORM_ERROR';
+        if (result.retryable) throw new TransientPublishError(message, result.retryAfterSec, code);
+        throw new PermanentPublishError(message, code);
       }
 
       const publishedAt = new Date();
@@ -412,8 +423,11 @@ export class SocialPublishService {
       this.logger.log(`Job ${jobId} published successfully on ${platform}`);
       return 'PUBLISHED';
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
       const transient = err instanceof TransientPublishError;
+      const code: PublishFailureCode =
+        err instanceof TransientPublishError || err instanceof PermanentPublishError ? err.code : 'PLATFORM_ERROR';
+      // Stored and shown: "[CODE] detail" so the UI can localise on the code.
+      const message = formatFailure(code, err instanceof Error ? err.message : String(err));
 
       if (transient && !isFinalAttempt) {
         // Not the user's problem yet: keep the item PUBLISHING and the

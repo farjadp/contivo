@@ -18,6 +18,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+import { formatFailure, type PublishFailureCode } from '@contivo/types';
+
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 import { channelToPlatform } from './platforms';
@@ -101,13 +103,13 @@ export class SocialSchedulerService {
     if (!platform) {
       // No social publisher for this channel (email today). Park it once with a
       // reason; leaving it SCHEDULED re-read it every minute forever.
-      await this.failItem(item.id, `No publisher for channel ${item.channel}`);
+      await this.failItem(item.id, 'NO_PUBLISHER', `No publisher for channel ${item.channel}`);
       this.logger.warn(`Scheduler: no publisher for channel=${item.channel}, item=${item.id} marked FAILED`);
       return;
     }
 
     if (!item.workspaceId) {
-      await this.failItem(item.id, 'Content item has no workspace, so no connection can publish it.');
+      await this.failItem(item.id, 'NO_CONNECTION', 'Content item has no workspace, so no connection can publish it.');
       return;
     }
 
@@ -115,7 +117,7 @@ export class SocialSchedulerService {
     try {
       payload = buildPublishPayload(item);
     } catch (err) {
-      await this.failItem(item.id, (err as Error).message);
+      await this.failItem(item.id, 'INVALID_CONTENT', (err as Error).message);
       return;
     }
 
@@ -136,6 +138,7 @@ export class SocialSchedulerService {
       );
       await this.failItem(
         item.id,
+        'NO_CONNECTION',
         `No default ${platform} connection found. Please connect your account in the Connections page.`,
       );
       return;
@@ -162,18 +165,25 @@ export class SocialSchedulerService {
       );
     } catch (err) {
       this.logger.error(`Scheduler: failed to create job for item=${item.id}: ${(err as Error).message}`);
+      // createJob's 400s carry { code } (NO_PUBLISHER / INVALID_CONTENT).
+      const response = (err as { getResponse?: () => unknown }).getResponse?.() as
+        | { code?: PublishFailureCode; message?: string }
+        | undefined;
       await this.prisma.contentItem.update({
         where: { id: item.id },
-        data: { status: 'FAILED', failedReason: (err as Error).message },
+        data: {
+          status: 'FAILED',
+          failedReason: formatFailure(response?.code ?? 'PLATFORM_ERROR', response?.message ?? (err as Error).message),
+        },
       });
     }
   }
 
-  /** SCHEDULED → FAILED with a reason, once. */
-  private async failItem(id: string, reason: string) {
+  /** SCHEDULED → FAILED with a coded reason, once. */
+  private async failItem(id: string, code: PublishFailureCode, reason: string) {
     await this.prisma.contentItem.updateMany({
       where: { id, status: 'SCHEDULED' },
-      data:  { status: 'FAILED', failedReason: reason },
+      data:  { status: 'FAILED', failedReason: formatFailure(code, reason) },
     });
   }
 }

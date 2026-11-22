@@ -86,6 +86,16 @@ describe('publish failures carry retryable', () => {
     assert.equal(r.success, false);
     assert.equal(r.retryable, false);
   });
+  it('429 carries RATE_LIMITED, 402 CREDITS_EXHAUSTED, network UNREACHABLE', async () => {
+    respond(429, '{}');
+    assert.equal((await new XAdapter().publish(conn, { body: 'hi' })).failureCode, 'RATE_LIMITED');
+    respond(402, '{"title":"CreditsDepleted"}');
+    const credits = await new XAdapter().publish(conn, { body: 'hi' });
+    assert.equal(credits.failureCode, 'CREDITS_EXHAUSTED');
+    assert.equal(credits.retryable, false);
+    dnsFailure();
+    assert.equal((await new XAdapter().publish(conn, { body: 'hi' })).failureCode, 'UNREACHABLE');
+  });
   it('LinkedIn 422 is a permanent failure', async () => {
     respond(422, '{"message":"duplicate"}');
     const r = await new LinkedInAdapter().publish(conn, { body: 'hello' });

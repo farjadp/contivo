@@ -6,6 +6,8 @@
 import { strict as assert } from 'node:assert';
 import { describe, it } from 'node:test';
 
+import { BadRequestException } from '@nestjs/common';
+
 import { SocialSchedulerService } from '../src/modules/social/social-scheduler.service';
 
 import { fakePrisma } from './helpers/fake-prisma';
@@ -34,7 +36,9 @@ function setup(items: Array<Record<string, unknown>>) {
   const publishService = {
     async createJob(dto: any) {
       created.push(dto);
-      if (dto.platform === 'TELEGRAM') throw new Error('TELEGRAM publishing is not supported yet.');
+      if (dto.platform === 'TELEGRAM') {
+        throw new BadRequestException({ message: 'TELEGRAM publishing is not supported yet.', code: 'NO_PUBLISHER' });
+      }
       return { id: 'job-1' };
     },
   };
@@ -48,10 +52,10 @@ describe('SocialSchedulerService', () => {
     await scheduler.handleScheduledPublishing();
     const item = prisma.contentItem.rows[0];
     assert.equal(item.status, 'FAILED');
-    assert.equal(item.failedReason, 'No publisher for channel email');
+    assert.equal(item.failedReason, '[NO_PUBLISHER] No publisher for channel email');
     assert.equal(created.length, 0);
     await scheduler.handleScheduledPublishing();
-    assert.equal(item.failedReason, 'No publisher for channel email');
+    assert.equal(item.failedReason, '[NO_PUBLISHER] No publisher for channel email');
   });
 
   it('skips blog silently (the web publisher owns it)', async () => {
@@ -77,7 +81,7 @@ describe('SocialSchedulerService', () => {
     const { prisma, scheduler } = setup([{ channel: 'telegram' }]);
     await scheduler.handleScheduledPublishing();
     assert.equal(prisma.contentItem.rows[0].status, 'FAILED');
-    assert.match(prisma.contentItem.rows[0].failedReason, /not supported yet/);
+    assert.match(prisma.contentItem.rows[0].failedReason, /^\[NO_PUBLISHER\] .*not supported yet/);
   });
 
   it('an item with an empty body fails instead of posting the topic', async () => {
@@ -85,6 +89,15 @@ describe('SocialSchedulerService', () => {
     await scheduler.handleScheduledPublishing();
     assert.equal(created.length, 0);
     assert.equal(prisma.contentItem.rows[0].status, 'FAILED');
-    assert.match(prisma.contentItem.rows[0].failedReason, /no body/i);
+    assert.match(prisma.contentItem.rows[0].failedReason, /^\[INVALID_CONTENT\] .*no body/i);
+  });
+});
+
+describe('SocialSchedulerService failure codes', () => {
+  it('no default connection → [NO_CONNECTION]', async () => {
+    const { prisma, scheduler } = setup([{ channel: 'linkedin' }]);
+    prisma.socialConnection.rows.length = 0;
+    await scheduler.handleScheduledPublishing();
+    assert.match(prisma.contentItem.rows[0].failedReason, /^\[NO_CONNECTION\] /);
   });
 });

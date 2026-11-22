@@ -86,9 +86,12 @@ export function healthFromFetchError(err: unknown, label: string): ConnectionHea
  */
 export function failedPublishResult(status: number, error: string, retryAfter?: string | null): PublishResult {
   if (status === 429) {
-    return { success: false, error, retryable: true, retryAfterSec: parseRetryAfter(retryAfter) };
+    return { success: false, error, retryable: true, retryAfterSec: parseRetryAfter(retryAfter), failureCode: 'RATE_LIMITED' };
   }
-  return { success: false, error, retryable: false };
+  // 402: X pay-per-use credits depleted. Retrying only fails again.
+  if (status === 402) return { success: false, error, retryable: false, failureCode: 'CREDITS_EXHAUSTED' };
+  if (status === 401) return { success: false, error, retryable: false, failureCode: 'CONNECTION_EXPIRED' };
+  return { success: false, error, retryable: false, failureCode: 'PLATFORM_ERROR' };
 }
 
 /** A thrown fetch error during publish. Retryable only if nothing was sent. */
@@ -97,5 +100,6 @@ export function failedPublishFromError(err: unknown, label: string): PublishResu
     success: false,
     error: `${label} unreachable: ${describeFetchError(err)}`,
     retryable: isPreSendNetworkError(err),
+    failureCode: 'UNREACHABLE',
   };
 }

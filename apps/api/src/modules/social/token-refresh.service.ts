@@ -143,7 +143,7 @@ export class TokenRefreshService {
       try {
         lockToken = await this.locks.acquire(key, this.opts.lockTtlMs);
       } catch (err) {
-        throw new TransientPublishError(`Could not take the token-refresh lock: ${(err as Error).message}`);
+        throw new TransientPublishError(`Could not take the token-refresh lock: ${(err as Error).message}`, undefined, 'PLATFORM_ERROR');
       }
       if (lockToken) break;
 
@@ -152,7 +152,7 @@ export class TokenRefreshService {
       row = await this.read(connectionId);
       if (!this.needsRefresh(row)) return this.decrypt(row);
       if (Date.now() > deadline) {
-        throw new TransientPublishError(`Token refresh for connection ${connectionId} is still in progress elsewhere.`);
+        throw new TransientPublishError(`Token refresh for connection ${connectionId} is still in progress elsewhere.`, undefined, 'PLATFORM_ERROR');
       }
     }
 
@@ -188,7 +188,7 @@ export class TokenRefreshService {
       }
 
       if (result.reason === 'transient') {
-        throw new TransientPublishError(result.detail);
+        throw new TransientPublishError(result.detail, undefined, 'UNREACHABLE');
       }
 
       // Rejected. Before blaming the user, check whether someone else rotated
@@ -200,7 +200,10 @@ export class TokenRefreshService {
 
       const status = result.reason === 'revoked' ? 'REVOKED' : 'EXPIRED';
       await this.connections.markUnusable(row.id, status, result.detail);
-      throw new PermanentPublishError(`${row.platform} connection ${status.toLowerCase()}: ${result.detail} Reconnect the account.`);
+      throw new PermanentPublishError(
+        `${row.platform} connection ${status.toLowerCase()}: ${result.detail} Reconnect the account.`,
+        status === 'REVOKED' ? 'CONNECTION_REVOKED' : 'CONNECTION_EXPIRED',
+      );
     } finally {
       await this.locks.release(key, lockToken).catch((err) =>
         this.logger.warn(`Could not release token-refresh lock ${key}: ${(err as Error).message}`),
@@ -234,7 +237,7 @@ export class TokenRefreshService {
         metaJson: true,
       },
     })) as ConnectionRow | null;
-    if (!row) throw new PermanentPublishError(`Social connection ${connectionId} no longer exists.`);
+    if (!row) throw new PermanentPublishError(`Social connection ${connectionId} no longer exists.`, 'NO_CONNECTION');
     return row;
   }
 }

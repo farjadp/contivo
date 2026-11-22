@@ -44,6 +44,63 @@ export const CHANNEL_TO_PLATFORM: Readonly<Record<ContentChannel, SocialPlatform
   email: null,
 };
 
+// ─── Publish failure codes ────────────────────────────────────────────────────
+
+/**
+ * Every failure the API publish core writes to ContentItem.failedReason and
+ * SocialPublishJob.lastError starts with one of these in brackets:
+ * `[CONNECTION_EXPIRED] LinkedIn rejected the access token (401). …`.
+ * The UI localises on the code and may show the English detail as secondary.
+ * Rows written before codes existed have none: parseFailure → code null.
+ *
+ * - CONNECTION_EXPIRED: token expired / refresh refused / token missing → reconnect.
+ * - CONNECTION_REVOKED: access withdrawn (403, bot removed) → reconnect.
+ * - NO_CONNECTION: no default connected account for the channel → connect one.
+ * - NO_SITE: blog channel with no active site connection (web publisher; not yet written with a code).
+ * - NO_PUBLISHER: channel or platform Contivo cannot publish to yet.
+ * - INVALID_CONTENT: empty body / fails the platform's rules.
+ * - RATE_LIMITED: platform said slow down, still limited after the last retry.
+ * - CREDITS_EXHAUSTED: platform billing (X pay-per-use credits) ran out.
+ * - UNREACHABLE: platform could not be reached after the last retry.
+ * - PLATFORM_ERROR: anything else the platform rejected.
+ */
+export const PUBLISH_FAILURE_CODES = [
+  'CONNECTION_EXPIRED',
+  'CONNECTION_REVOKED',
+  'NO_CONNECTION',
+  'NO_SITE',
+  'NO_PUBLISHER',
+  'INVALID_CONTENT',
+  'RATE_LIMITED',
+  'CREDITS_EXHAUSTED',
+  'UNREACHABLE',
+  'PLATFORM_ERROR',
+] as const;
+export type PublishFailureCode = (typeof PUBLISH_FAILURE_CODES)[number];
+
+const FAILURE_PREFIX = /^\[([A-Z_]+)\]\s*/;
+
+function isFailureCode(value: string): value is PublishFailureCode {
+  return (PUBLISH_FAILURE_CODES as readonly string[]).includes(value);
+}
+
+/** `[CODE] detail`. A detail that already carries a known code keeps it. */
+export function formatFailure(code: PublishFailureCode, detail: string): string {
+  const existing = FAILURE_PREFIX.exec(detail);
+  if (existing && isFailureCode(existing[1])) return detail;
+  return `[${code}] ${detail}`;
+}
+
+/** Splits a stored reason. Unknown or missing codes give `code: null`, detail unchanged. */
+export function parseFailure(reason: string | null | undefined): { code: PublishFailureCode | null; detail: string } {
+  const text = reason ?? '';
+  const match = FAILURE_PREFIX.exec(text);
+  if (match && isFailureCode(match[1])) {
+    return { code: match[1], detail: text.slice(match[0].length) };
+  }
+  return { code: null, detail: text };
+}
+
 export const SocialConnectionStatus = z.enum([
   'CONNECTED',
   'EXPIRED',

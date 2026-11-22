@@ -20,7 +20,7 @@ export function buildPublishPayload(item: PublishableItem): PublishPayload {
   const body = item.content ?? '';
   if (body.trim().length === 0) {
     // Posting the bare topic instead would publish something nobody wrote.
-    throw new PermanentPublishError(`Content item ${item.id} has no body to publish.`);
+    throw new PermanentPublishError(`Content item ${item.id} has no body to publish.`, 'INVALID_CONTENT');
   }
   return {
     body,

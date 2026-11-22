@@ -143,7 +143,7 @@ describe('processJobAsync', () => {
     );
     assert.equal(conn(prisma).status, 'CONNECTED');
     assert.equal(job(prisma).status, 'PUBLISH_QUEUED');
-    assert.match(job(prisma).lastError, /ENOTFOUND/);
+    assert.match(job(prisma).lastError, /^\[UNREACHABLE\] .*ENOTFOUND/);
     assert.equal(item(prisma).status, 'PUBLISHING');
     assert.ok(actions(prisma).includes('PUBLISH_RETRY_SCHEDULED'));
     assert.ok(!actions(prisma).includes('PUBLISH_FAILURE'));
@@ -158,7 +158,7 @@ describe('processJobAsync', () => {
     assert.equal(conn(prisma).status, 'CONNECTED');
     assert.equal(job(prisma).status, 'FAILED');
     assert.equal(item(prisma).status, 'FAILED');
-    assert.match(item(prisma).failedReason, /ENOTFOUND/);
+    assert.match(item(prisma).failedReason, /^\[UNREACHABLE\] .*ENOTFOUND/);
     assert.ok(actions(prisma).includes('PUBLISH_FAILURE'));
   });
 
@@ -176,7 +176,7 @@ describe('processJobAsync', () => {
     const { prisma, service } = setup(fakeAdapter('LINKEDIN', { result: { success: false, error: 'LinkedIn API 422: dup' } }));
     const out = await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }, { attemptsMade: 0, maxAttempts: 3 });
     assert.equal(out, 'FAILED');
-    assert.equal(job(prisma).lastError, 'LinkedIn API 422: dup');
+    assert.equal(job(prisma).lastError, '[PLATFORM_ERROR] LinkedIn API 422: dup');
   });
 
   it('revoked → connection REVOKED, job FAILED', async () => {
@@ -184,13 +184,14 @@ describe('processJobAsync', () => {
     await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }, { attemptsMade: 0, maxAttempts: 3 });
     assert.equal(conn(prisma).status, 'REVOKED');
     assert.equal(job(prisma).status, 'FAILED');
-    assert.match(job(prisma).lastError, /reconnect/i);
+    assert.match(job(prisma).lastError, /^\[CONNECTION_REVOKED\] .*reconnect/i);
   });
 
   it('expired → connection EXPIRED', async () => {
     const { prisma, service } = setup(fakeAdapter('LINKEDIN', { health: { ok: false, reason: 'expired', detail: '401' } }));
     await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }, { attemptsMade: 0, maxAttempts: 3 });
     assert.equal(conn(prisma).status, 'EXPIRED');
+    assert.match(job(prisma).lastError, /^\[CONNECTION_EXPIRED\] /);
   });
 
   it('platform_env adapter publishes without a stored token', async () => {
@@ -204,7 +205,7 @@ describe('processJobAsync', () => {
     const { prisma, service } = setup(fakeAdapter('LINKEDIN'));
     conn(prisma).encryptedAccessTokenRef = null;
     assert.equal(await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }), 'FAILED');
-    assert.match(job(prisma).lastError, /token/i);
+    assert.match(job(prisma).lastError, /^\[CONNECTION_EXPIRED\] .*token/i);
   });
 
   it('a connection that is not CONNECTED is not published to', async () => {
@@ -213,16 +214,38 @@ describe('processJobAsync', () => {
     conn(prisma).status = 'EXPIRED';
     assert.equal(await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }), 'FAILED');
     assert.equal(adapter.calls.publish.length, 0);
-    assert.match(job(prisma).lastError, /EXPIRED/);
+    assert.match(job(prisma).lastError, /^\[CONNECTION_EXPIRED\] .*EXPIRED/);
   });
 
   it('a platform with no adapter (TELEGRAM) fails with "not supported yet", no crash', async () => {
     const { prisma, service } = setup(fakeAdapter('LINKEDIN'));
     job(prisma).platform = 'TELEGRAM';
     assert.equal(await service.processJobAsync('j1', 'c1', 'TELEGRAM', { body: 'x' }), 'FAILED');
-    assert.match(job(prisma).lastError, /TELEGRAM publishing is not supported yet/);
+    assert.match(job(prisma).lastError, /^\[NO_PUBLISHER\] TELEGRAM publishing is not supported yet/);
     assert.equal(item(prisma).status, 'FAILED');
   });
+});
+
+it('rate-limited on the final attempt → [RATE_LIMITED]', async () => {
+  const { prisma, service } = setup(
+    fakeAdapter('LINKEDIN', { result: { success: false, error: 'LinkedIn API 429: slow', retryable: true, failureCode: 'RATE_LIMITED' } }),
+  );
+  await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }, { attemptsMade: 2, maxAttempts: 3 });
+  assert.match(item(prisma).failedReason, /^\[RATE_LIMITED\] /);
+});
+
+it('credits exhausted → [CREDITS_EXHAUSTED], no retry', async () => {
+  const { prisma, service } = setup(
+    fakeAdapter('LINKEDIN', { result: { success: false, error: 'X API 402', retryable: false, failureCode: 'CREDITS_EXHAUSTED' } }),
+  );
+  assert.equal(await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: 'x' }, { attemptsMade: 0, maxAttempts: 3 }), 'FAILED');
+  assert.match(job(prisma).lastError, /^\[CREDITS_EXHAUSTED\] /);
+});
+
+it('empty body → [INVALID_CONTENT]', async () => {
+  const { prisma, service } = setup(fakeAdapter('LINKEDIN'));
+  await service.processJobAsync('j1', 'c1', 'LINKEDIN', { body: '  ' });
+  assert.match(job(prisma).lastError, /^\[INVALID_CONTENT\] /);
 });
 
 describe('retry()', () => {

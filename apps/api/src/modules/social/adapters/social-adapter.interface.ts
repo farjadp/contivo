@@ -7,6 +7,7 @@
  * Flow: SocialPublishService → AdapterFactory.getAdapter(platform) → adapter.publish()
  */
 
+import type { PublishFailureCode } from '@contivo/types';
 import type { SocialPlatform } from '@prisma/client';
 
 // ─── Shared payload types ─────────────────────────────────────────────────────
@@ -85,6 +86,8 @@ export interface PublishResult {
   retryable?: boolean;
   /** Platform-provided wait before retrying (Retry-After / retry_after). */
   retryAfterSec?: number;
+  /** Stable failure code for the UI; PLATFORM_ERROR when absent. */
+  failureCode?: PublishFailureCode;
 }
 
 /** Validation result returned before attempting publish. */
