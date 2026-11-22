@@ -1,0 +1,11 @@
+{
+  "source": "recorded live 22 Nov 2026 (claude-sonnet-5-5, web_search_20260209 with user_location.country IR); request_id removed",
+  "status": 400,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "invalid_request_error",
+      "message": "tools.0.web_search_20260209: Country code IR is not supported."
+    }
+  }
+}

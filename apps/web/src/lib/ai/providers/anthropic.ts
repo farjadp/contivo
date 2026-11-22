@@ -9,6 +9,13 @@
  *    the API does not support; run.ts re-validates against the original;
  *  - web search = server tool `web_search_20260209`; a `pause_turn` stop is
  *    continued by resending the conversation (capped);
+ *  - competitor search (`competitor_web_search`) gets a Claude-only system
+ *    instruction and direct (non-code-execution) search, because Claude
+ *    otherwise writes homepages from memory and cites nothing — see
+ *    docs/evals/2026-11-22-claude-search-citations.md;
+ *  - country codes the search tool rejects (IR: 400 "Country code IR is not
+ *    supported") are never sent as user_location, and any other such 400 is
+ *    retried once without it;
  *  - server-side refusal fallback (`fallbacks: 'default'`, beta
  *    server-side-fallback-2026-07-01), and `stop_reason === 'refusal'` is
  *    checked before reading content.
@@ -20,7 +27,7 @@ import { transformJSONSchema } from '@anthropic-ai/sdk/lib/transform-json-schema
 import type { AiTokenUsage } from '@/lib/ai-usage';
 
 import { AiProviderError, classifyAnthropic } from '../errors';
-import type { AiRequest, AiWebSearchResult, ProviderAdapter, ProviderCallInput, ProviderSuccess } from '../types';
+import type { AiRequest, AiTask, AiWebSearchResult, ProviderAdapter, ProviderCallInput, ProviderSuccess } from '../types';
 
 export const ANTHROPIC_DEFAULT_MAX_TOKENS = 16_000;
 export const MAX_PAUSE_TURNS = 4;
@@ -50,7 +57,48 @@ export function defaultAnthropicClient(apiKey: string): AnthropicClientLike {
   return client;
 }
 
-export function buildAnthropicParams(request: AiRequest, model: string): CreateParams {
+/**
+ * Claude-only instruction for competitor search. Candidates are created from
+ * `web_search_result_location` citations only (search.ts), and Claude cites a
+ * result only when its text is drawn from that result — live on 22 Nov it
+ * searched (9 sources), then wrote each company's homepage from memory and
+ * cited nothing. This asks for exactly what the citations-only rule needs:
+ * companies taken from results, each line based on the result naming it, and
+ * the company's own site looked up rather than a list article's URL.
+ */
+export const CLAUDE_COMPETITOR_SEARCH_SYSTEM = [
+  'You find companies for a competitor list, using web search.',
+  'Write one short line per company: its name and its website.',
+  'Every line must come from a search result: name only companies that appear in your search results, and base each line on the result where that company appears, so that result is cited.',
+  "Prefer a result that is the company's own website. When a company appears only in a list article, review site or directory, search for that company by name and base its line on its own site.",
+  'Never add a company, or a website address, from memory. If the results name no companies, say so.',
+].join(' ');
+
+/**
+ * Searches Claude may run for one competitor query: one broad search plus
+ * follow-ups for companies' own sites (an explicit `webSearch.maxUses` wins).
+ */
+export const COMPETITOR_SEARCH_MAX_USES = 5;
+
+/**
+ * Country codes the web search tool rejects with a 400 ("Country code IR is
+ * not supported", live 22 Nov). Searches for these markets go out without
+ * `user_location`; the query language still carries the market.
+ */
+export const UNSUPPORTED_SEARCH_COUNTRIES = new Set(['IR']);
+
+const UNSUPPORTED_COUNTRY_MESSAGE = /country code \w+ is not supported/i;
+
+function searchLocation(country: string | undefined) {
+  if (!country || UNSUPPORTED_SEARCH_COUNTRIES.has(country.toUpperCase())) return {};
+  return { user_location: { type: 'approximate' as const, country } };
+}
+
+function isCompetitorSearch(request: AiRequest, task: AiTask | undefined): boolean {
+  return task === 'competitor_web_search' && Boolean(request.webSearch) && request.output.kind === 'text';
+}
+
+export function buildAnthropicParams(request: AiRequest, model: string, task?: AiTask): CreateParams {
   const messages: Anthropic.Beta.Messages.BetaMessageParam[] =
     typeof request.prompt === 'string'
       ? [{ role: 'user', content: request.prompt }]
@@ -71,16 +119,21 @@ export function buildAnthropicParams(request: AiRequest, model: string): CreateP
     betas: [FALLBACK_BETA],
     fallbacks: 'default',
   };
-  if (request.system) params.system = request.system;
+  const competitorSearch = isCompetitorSearch(request, task);
+  const system = [request.system, competitorSearch ? CLAUDE_COMPETITOR_SEARCH_SYSTEM : undefined].filter(Boolean).join('\n\n');
+  if (system) params.system = system;
   if (request.webSearch) {
+    const maxUses = request.webSearch.maxUses ?? (competitorSearch ? COMPETITOR_SEARCH_MAX_USES : undefined);
     params.tools = [
       {
         type: 'web_search_20260209',
         name: 'web_search',
-        ...(request.webSearch.maxUses ? { max_uses: request.webSearch.maxUses } : {}),
-        ...(request.webSearch.country
-          ? { user_location: { type: 'approximate' as const, country: request.webSearch.country } }
-          : {}),
+        // Dynamic filtering runs the search inside code execution and passes
+        // the model only what its code keeps; citations point into results
+        // the model itself read, so competitor search calls it directly.
+        ...(competitorSearch ? { allowed_callers: ['direct' as const] } : {}),
+        ...(maxUses ? { max_uses: maxUses } : {}),
+        ...searchLocation(request.webSearch.country),
       },
     ];
   }
@@ -146,6 +199,24 @@ function searchErrorClass(code: SearchErrorCode): 'rate_limit' | 'server' | 'inv
   return 'invalid_output';
 }
 
+/**
+ * After a "country code not supported" 400: the same params without
+ * `user_location`, or null when the error is anything else.
+ */
+export function withoutUnsupportedLocation(params: CreateParams, error: unknown): CreateParams | null {
+  const status = (error as { status?: unknown })?.status;
+  const message = (error as { message?: unknown })?.message;
+  if (status !== 400 || typeof message !== 'string' || !UNSUPPORTED_COUNTRY_MESSAGE.test(message)) return null;
+  if (!params.tools?.some((tool) => 'user_location' in tool && tool.user_location)) return null;
+  const tools = params.tools.map((tool) => {
+    if (!('user_location' in tool) || !tool.user_location) return tool;
+    const copy = { ...tool };
+    delete copy.user_location;
+    return copy;
+  });
+  return { ...params, tools };
+}
+
 export function createAnthropicAdapter(
   makeClient: (apiKey: string) => AnthropicClientLike = defaultAnthropicClient,
   now: () => number = Date.now,
@@ -153,9 +224,9 @@ export function createAnthropicAdapter(
   return {
     id: 'anthropic',
     keyEnv: 'ANTHROPIC_API_KEY',
-    async call({ request, model, apiKey }: ProviderCallInput): Promise<ProviderSuccess> {
+    async call({ task, request, model, apiKey }: ProviderCallInput): Promise<ProviderSuccess> {
       const client = makeClient(apiKey);
-      const params = buildAnthropicParams(request, model);
+      let params = buildAnthropicParams(request, model, task);
       const deadline = now() + request.timeoutMs;
       const usage: AiTokenUsage = { promptTokens: 0, completionTokens: 0, totalTokens: 0, webSearchCalls: 0 };
       const allBlocks: BetaContentBlock[] = [];
@@ -169,7 +240,16 @@ export function createAnthropicAdapter(
         try {
           message = await client.beta.messages.create(params, { timeout: remaining });
         } catch (error) {
-          throw classifyAnthropic(error);
+          // A country code not on our list that the API also rejects: send
+          // the search once more without a location instead of failing over.
+          const retryParams = withoutUnsupportedLocation(params, error);
+          if (!retryParams) throw classifyAnthropic(error);
+          params = retryParams;
+          try {
+            message = await client.beta.messages.create(params, { timeout: Math.max(1, deadline - now()) });
+          } catch (retryError) {
+            throw classifyAnthropic(retryError);
+          }
         }
         addUsage(usage, message);
         allBlocks.push(...message.content);
