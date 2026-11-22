@@ -48,6 +48,7 @@ import { OAUTH_STORE, type OAuthStore } from './oauth-store';
 import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import * as tokenCrypto from './token-crypto';
+import { connectionsUrl } from './web-return';
 
 /** OAuth state lifetime; the nonce cookie and the pending ticket live as long. */
 export const STATE_TTL_MS = 10 * 60 * 1000;
@@ -211,6 +212,7 @@ export class SocialOAuthService {
     code: string,
     stateParam: string,
     cookieNonce: string | undefined,
+    locale?: string,
   ): Promise<string> {
     const stateObj = this.verifyState(stateParam);
     const { workspaceId, userId, nonce } = stateObj as Partial<StateContext>;
@@ -259,8 +261,7 @@ export class SocialOAuthService {
     }
 
     this.logger.log(`OAuth callback parked: ${platform} workspace=${workspaceId} accounts=${accounts.length}`);
-    const web = process.env.WEB_APP_URL ?? 'http://localhost:3000';
-    return `${web}/connections?pending=${encodeURIComponent(ticket)}&platform=${platform}`;
+    return connectionsUrl({ pending: ticket, platform }, locale);
   }
 
   // ─── Step 3: Confirm from the web session ─────────────────────────────────

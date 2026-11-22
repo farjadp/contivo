@@ -1,10 +1,12 @@
 'use server';
 
 import { createHmac, randomBytes } from 'crypto';
+import { getLocale } from 'next-intl/server';
 
 import { getSession, mintApiToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { actionError } from '@/lib/action-errors';
+import { isSiteOnly, locales } from '@/i18n/routing';
 
 /**
  * Builds the URL that starts an OAuth connect flow.
@@ -39,6 +41,20 @@ function getOAuthStateSecret(): string {
 
 export type ConnectUrlResult = { url: string } | { error: string };
 
+/**
+ * The app locale this request runs in, for the return from the provider
+ * (B18). The API only accepts app locales; anything else is left out and the
+ * return falls back to the default locale, as before.
+ */
+async function appLocale(): Promise<string | undefined> {
+  try {
+    const locale = await getLocale();
+    return (locales as readonly string[]).includes(locale) && !isSiteOnly(locale) ? locale : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export async function getSocialConnectUrl(
   platform: string,
   workspaceId: string,
@@ -63,9 +79,16 @@ export async function getSocialConnectUrl(
   }
 
   const secret = getOAuthStateSecret();
+  const locale = await appLocale();
   const body = Buffer.from(
     // `n`: every link is distinct; the API lets each link start one flow only.
-    JSON.stringify({ userId, workspaceId, exp: Date.now() + TTL_MS, n: randomBytes(9).toString('base64url') }),
+    JSON.stringify({
+      userId,
+      workspaceId,
+      ...(locale && { locale }),
+      exp: Date.now() + TTL_MS,
+      n: randomBytes(9).toString('base64url'),
+    }),
     'utf8',
   ).toString('base64url');
   const signature = createHmac('sha256', secret).update(body).digest('base64url');

@@ -21,6 +21,7 @@ import { memoryOAuthStore } from '../src/modules/social/oauth-store';
 import { SocialConnectionsService } from '../src/modules/social/social-connections.service';
 import { SocialOAuthController } from '../src/modules/social/social-oauth.controller';
 import { OAUTH_NONCE_COOKIE, SocialOAuthService } from '../src/modules/social/social-oauth.service';
+import { OAUTH_LOCALE_COOKIE } from '../src/modules/social/web-return';
 
 type Row = Record<string, any>;
 const ATTACKER = 'user-attacker';
@@ -170,6 +171,40 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
     await ctrl.finalize({ ticket: ticketOf(await victimOpensLink(own())) }, { id: VICTIM });
     await ctrl.finalize({ ticket: ticketOf(await victimOpensLink(own())) }, { id: VICTIM });
     assert.equal(prisma.conns.length, 1);
+  });
+
+  it('B18: the return keeps the locale the connect started in (success, denial, failure)', async () => {
+    const fa = await victimOpensLink(createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim', locale: 'fa' }));
+    assert.match(fa, /^https:\/\/web\.test\/fa\/connections\?pending=/);
+
+    const browser = fakeRes();
+    const start = await ctrl.initiateOAuth(
+      'linkedin', '', navReq() as never, browser as never,
+      createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim', locale: 'he' }),
+    );
+    assert.equal(browser.jar[OAUTH_LOCALE_COOKIE], 'he');
+    const callbackRes = fakeRes();
+    callbackRes.jar[OAUTH_LOCALE_COOKIE] = 'he';
+    const denied = await ctrl.handleCallback(
+      'linkedin', '', stateOf(start.url), reqWithCookie(browser.jar) as never, callbackRes as never, 'user_cancelled',
+    );
+    assert.equal(denied.url, 'https://web.test/he/connections?error=oauth_denied');
+    assert.equal(callbackRes.jar[OAUTH_LOCALE_COOKIE], undefined, 'locale cookie is single use');
+
+    const failed = await ctrl.handleCallback(
+      'linkedin', 'code', 'not-a-state', reqWithCookie({ [OAUTH_LOCALE_COOKIE]: 'fa' }) as never, fakeRes() as never,
+    );
+    assert.match(failed.url, /^https:\/\/web\.test\/fa\/connections\?error=/);
+  });
+
+  it('B18: an unknown or missing locale returns without a prefix, never echoed', async () => {
+    const none = await victimOpensLink(createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
+    assert.match(none, /^https:\/\/web\.test\/connections\?pending=/);
+    const forged = await ctrl.handleCallback(
+      'linkedin', 'code', 'not-a-state',
+      reqWithCookie({ [OAUTH_LOCALE_COOKIE]: 'evil.test/x' }) as never, fakeRes() as never,
+    );
+    assert.match(forged.url, /^https:\/\/web\.test\/connections\?error=/);
   });
 
   it('callback without the nonce cookie, or with a wrong one, is refused before any code exchange', async () => {

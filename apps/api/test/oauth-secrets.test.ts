@@ -50,6 +50,15 @@ describe('OAUTH_STATE_SECRET', () => {
     assert.deepEqual(verifyHandoffToken(token), { userId: 'user-1', workspaceId: 'ws-1' });
   });
 
+  it('B18: the handoff carries an app locale and drops anything else', () => {
+    process.env.OAUTH_STATE_SECRET = STATE_SECRET;
+    assert.deepEqual(verifyHandoffToken(createHandoffToken({ userId: 'u', workspaceId: 'w', locale: 'fa' })), {
+      userId: 'u', workspaceId: 'w', locale: 'fa',
+    });
+    const odd = createHandoffToken({ userId: 'u', workspaceId: 'w', locale: 'xx' as never });
+    assert.deepEqual(verifyHandoffToken(odd), { userId: 'u', workspaceId: 'w' });
+  });
+
   it('a handoff token signed with the old public fallback is rejected', () => {
     const forged = webSignedHandoff('contivo-oauth-state-secret', 'victim', 'ws-1');
     assert.equal(verifyHandoffToken(forged), null);
