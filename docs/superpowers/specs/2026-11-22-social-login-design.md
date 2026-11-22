@@ -36,11 +36,10 @@ and the Nest API stay unchanged. The whole feature lives in `apps/web`, plus one
 | Linking rules | Ours | Ours | Its built-in `allowDangerousEmailAccountLinking` is exactly the takeover we must avoid; we would override its callbacks anyway |
 | Risk | Most surface for subtle protocol bugs (token endpoint quirks: GitHub form vs JSON, Facebook Graph versions) | Provider quirks are handled by a maintained library; protocol checks stay explicit in our code | Large dependency, upgrade churn, we fight the abstraction |
 
-**Pick: B, Arctic + `jose`.** It removes the provider-quirk bugs without taking over the session or the collision policy,
+**Original pick: B, Arctic + `jose` (superseded by the update below).** It removes the provider-quirk bugs without taking over the session or the collision policy,
 which are the two parts that are Contivo-specific and security-critical. Option C is rejected because it does not remove
 code we would write (state, linking, tracking) and puts a second session system next to ours.
-Arctic is a new dependency: pin an exact version, check its changelog and `npm audit` in the PR, contivo-security-engineer signs off.
-Fallback if Arctic is a problem: option A, same module boundaries.
+**Update 22 Nov (CTO): Arctic was dropped before merge. npm marks arctic 3.7.0 and its @oslojs/* packages as unsupported (deprecated), so the build uses option A: auth URL, PKCE and the token POST are plain Node `fetch`/`crypto` in `lib/oauth/google.ts`; all id_token trust decisions stay in `jose`. No OAuth library dependency.**
 
 ## 4. Flow
 
@@ -181,7 +180,7 @@ All in `activity_log` (existing `writeActivityLog`), same shape as the password 
 
 ## 11. Security gate, tests, debt
 
-Security review (contivo-security-engineer) before merge, specifically: state/PKCE/nonce handling, cookie flags and `Path`, open redirect (`locale` and `site` are never used as redirect targets; the redirect is built from our own allow-listed locale), id_token claim checks, constant-time compares, rules 1–5 of §5, enumeration, logging hygiene, the Arctic dependency.
+Security review (contivo-security-engineer) before merge, specifically: state/PKCE/nonce handling, cookie flags and `Path`, open redirect (`locale` and `site` are never used as redirect targets; the redirect is built from our own allow-listed locale), id_token claim checks, constant-time compares, rules 1–5 of §5, enumeration, logging hygiene.
 
 Tests (Vitest, providers mocked at the HTTP boundary): state tampering (flipped bit, wrong provider, missing cookie, expired); replay of the same callback (second use refused); PKCE verifier mismatch; Google nonce mismatch, `email_verified=false`, wrong `aud`; GitHub: no primary-verified email, email only in `/user` ignored rules 1–4 of §5 (known identity, no verified email, create, any existing email refused incl. case-variant duplicates); link requires fresh `authAt`; sealed `linkUserId` must equal the live session user; an identity already owned by another user is refused; unlink lockout; suspended; cohort allowed and not allowed round trip; `site` round trip and garbage dropped; locale preserved incl. fa; the role is never taken from provider data; registration bucket shared; a provider without env is 404 with no button. Then QA drives each provider on production with Farjad's real logins.
 
@@ -216,7 +215,7 @@ Full review: `side-session-notes/.../social-login-security-review.md`. Decisions
 - **M4 email case:** OAuth lookups are case-insensitive and refuse on more than one match. A separate follow-up (own PR, needs a read-only duplicate query on production first, which Farjad must approve) normalises `register`/`login` to lower-case and adds a `lower(email)` unique index. Not part of this PR.
 - **M5:** `redirect_uri` and every redirect are built from a constant (`NEXT_PUBLIC_APP_URL`, validated at start-up), never from the request origin.
 - **M6:** before build, verify what Railway sends in `X-Forwarded-For`; the OAuth register bucket is charged only when an account is actually created.
-- **L1** `oauth_tx` is an encrypted JWT (`EncryptJWT`) with `typ`/`aud`. **L2** callback sends `Cache-Control: no-store`, `Referrer-Policy: no-referrer`; code/state never logged; Arctic errors wrapped. **L3** Google: accept both `iss` forms, check `azp`, strict boolean `email_verified`, `prompt=select_account`, no offline access, fail closed if JWKS fails. **L4** GitHub `*@users.noreply.github.com` addresses are refused as an email (they prove nothing). **L5** user + identity created in one transaction, `P2002` race handled. **L6** `intent` reduced to link only. **L7** pin Arctic exactly and review `@oslojs/*`.
+- **L1** `oauth_tx` is an encrypted JWT (`EncryptJWT`) with `typ`/`aud`. **L2** callback sends `Cache-Control: no-store`, `Referrer-Policy: no-referrer`; code/state never logged; provider errors wrapped. **L3** Google: accept both `iss` forms, check `azp`, strict boolean `email_verified`, `prompt=select_account`, no offline access, fail closed if JWKS fails. **L4** GitHub `*@users.noreply.github.com` addresses are refused as an email (they prove nothing). **L5** user + identity created in one transaction, `P2002` race handled. **L6** `intent` reduced to link only. **L7** (dependency review) closed by dropping Arctic: npm marks it and `@oslojs/*` unsupported, so there is no OAuth library; the token exchange is a plain `fetch` (10 s timeout, no redirects, capped body).
 - Schema addition: `oauth_tx_used` (§8).
 
 ## 15. Farjad's go (22 Nov)

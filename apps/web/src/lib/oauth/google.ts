@@ -1,15 +1,16 @@
 /**
  * Google sign-in: OpenID Connect, authorization code + PKCE + nonce.
  *
- * Arctic builds the authorization URL and does the code exchange (so token
- * endpoint quirks are its problem). Everything that decides whether to trust
- * the result is here, explicit, with `jose`: the id_token signature against
+ * The authorization URL and the code exchange are plain Node (no OAuth
+ * library: the ones we looked at are marked unsupported on npm). Everything
+ * that decides whether to trust the result is explicit, with `jose`: the id_token signature against
  * Google's JWKS, issuer, audience, authorized party, expiry, nonce and a
  * strictly boolean `email_verified`. The access token is never used; nothing
  * the provider returns is stored or logged.
  */
 
-import { Google } from 'arctic';
+import { createHash } from 'node:crypto';
+
 import { createRemoteJWKSet, jwtVerify, type JWTVerifyGetKey } from 'jose';
 
 import { OAuthFlowError } from './errors';
@@ -21,19 +22,63 @@ const GOOGLE_JWKS_URL = 'https://www.googleapis.com/oauth2/v3/certs';
 /** Google signs id_tokens with either form of the issuer. */
 const GOOGLE_ISSUERS = ['https://accounts.google.com', 'accounts.google.com'];
 
-function client(): { arctic: Google; clientId: string } {
+const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
+const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const TOKEN_TIMEOUT_MS = 10_000;
+const TOKEN_MAX_BYTES = 64 * 1024;
+
+function credentials(): { clientId: string; clientSecret: string } {
   const creds = providerCredentials('google');
   if (!creds) throw new OAuthFlowError('provider_error', 'google_not_configured');
-  return { arctic: new Google(creds.clientId, creds.clientSecret, redirectUri('google')), clientId: creds.clientId };
+  return creds;
 }
 
 /** The URL to send the browser to. No offline access, account chooser every time. */
 export function googleAuthorizationUrl(input: { state: string; verifier: string; nonce: string }): URL {
-  const { arctic } = client();
-  const url = arctic.createAuthorizationURL(input.state, input.verifier, GOOGLE_SCOPES);
+  const { clientId } = credentials();
+  const url = new URL(GOOGLE_AUTH_URL);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', redirectUri('google'));
+  url.searchParams.set('scope', GOOGLE_SCOPES.join(' '));
+  url.searchParams.set('state', input.state);
+  url.searchParams.set('code_challenge_method', 'S256');
+  url.searchParams.set('code_challenge', createHash('sha256').update(input.verifier).digest('base64url'));
   url.searchParams.set('nonce', input.nonce);
   url.searchParams.set('prompt', 'select_account');
   return url;
+}
+
+/**
+ * POST the code (with the PKCE verifier) to Google and return only the
+ * id_token. Timeout, no redirects, capped body; the response text is never
+ * logged or surfaced, and the access token is dropped unread.
+ */
+async function exchangeCode(code: string, verifier: string): Promise<string> {
+  const { clientId, clientSecret } = credentials();
+  const response = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', accept: 'application/json' },
+    body: new URLSearchParams({
+      grant_type: 'authorization_code',
+      code,
+      code_verifier: verifier,
+      client_id: clientId,
+      client_secret: clientSecret,
+      redirect_uri: redirectUri('google'),
+    }),
+    redirect: 'manual',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(TOKEN_TIMEOUT_MS),
+  });
+  if (!response.ok) throw new Error('token endpoint refused');
+  const declared = Number(response.headers.get('content-length') ?? 0);
+  if (declared > TOKEN_MAX_BYTES) throw new Error('token response too large');
+  const text = await response.text();
+  if (text.length > TOKEN_MAX_BYTES) throw new Error('token response too large');
+  const body = JSON.parse(text) as { id_token?: unknown };
+  if (typeof body.id_token !== 'string' || !body.id_token) throw new Error('no id_token');
+  return body.id_token;
 }
 
 let jwks: JWTVerifyGetKey | null = null;
@@ -95,7 +140,7 @@ export async function verifyGoogleIdToken(
 
 /**
  * Exchange the authorization code (with the PKCE verifier) and verify the
- * result. Provider and Arctic error text is dropped here: callers see only a
+ * result. Provider error text is dropped here: callers see only a
  * code. Tokens never leave this function.
  */
 export async function googleIdentityFromCode(input: {
@@ -103,11 +148,10 @@ export async function googleIdentityFromCode(input: {
   verifier: string;
   nonce: string;
 }): Promise<ProviderIdentity> {
-  const { arctic, clientId } = client();
+  const { clientId } = credentials();
   let idToken: string;
   try {
-    const tokens = await arctic.validateAuthorizationCode(input.code, input.verifier);
-    idToken = tokens.idToken();
+    idToken = await exchangeCode(input.code, input.verifier);
   } catch {
     throw new OAuthFlowError('provider_error', 'code_exchange_failed');
   }

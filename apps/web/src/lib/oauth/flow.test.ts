@@ -4,7 +4,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 
 // Start + callback end to end. Mocked at the boundary: Prisma, the rate-limit
 // store, the session cookie, activity log, credits, and global fetch (Google's
-// token endpoint and JWKS). Arctic and jose run for real.
+// token endpoint and JWKS). jose runs for real.
 
 const mocks = vi.hoisted(() => ({
   prisma: {
@@ -43,6 +43,7 @@ const APP = 'https://www.contivo.test';
 
 let privateKey: CryptoKey;
 let jwk: JWK;
+let tokenInit: RequestInit | undefined;
 let tokenRequests: Array<{ url: string; body: URLSearchParams }>;
 let jwksStatus = 200;
 let usedJti: Set<string>;
@@ -112,6 +113,7 @@ beforeEach(() => {
       if (url.startsWith('https://oauth2.googleapis.com/token')) {
         const raw = req ? await req.clone().text() : String(init?.body ?? '');
         const body = new URLSearchParams(raw);
+        tokenInit = init;
         tokenRequests.push({ url, body });
         const nonce = lastNonce;
         return new Response(
@@ -335,6 +337,15 @@ describe('callback: provider answers', () => {
     expect(body.get('grant_type')).toBe('authorization_code');
     expect(body.get('code')).toBe('auth-code-1');
     expect(body.get('redirect_uri')).toBe(`${APP}/api/auth/oauth/google/callback`);
+    expect(body.get('client_id')).toBe(CLIENT_ID);
+    expect(body.get('client_secret')).toBe('test-secret');
+    expect([...body.keys()].sort()).toEqual(
+      ['client_id', 'client_secret', 'code', 'code_verifier', 'grant_type', 'redirect_uri'],
+    );
+    expect(tokenInit?.method).toBe('POST');
+    expect(tokenInit?.redirect).toBe('manual');
+    expect(tokenInit?.signal).toBeInstanceOf(AbortSignal);
+    expect(new Headers(tokenInit?.headers).get('content-type')).toBe('application/x-www-form-urlencoded');
     // The verifier hashes to the challenge that was sent to Google at start.
     const { createHash } = await import('node:crypto');
     const challenge = createHash('sha256').update(body.get('code_verifier')!).digest('base64url');
@@ -413,6 +424,21 @@ describe('callback: id_token checks (each refuses, nothing is created, no sessio
     const res = await callback(cbReq({ cookie: t.cookie, state: t.state, code: 'c' }));
     expect(loc(res).search).toBe('?error=provider_error');
     expect(mocks.createSessionCookie).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['a redirect', () => new Response(null, { status: 302, headers: { location: 'https://evil.example' } })],
+    ['non-JSON', () => new Response('<html>oops SECRET-TEXT</html>', { status: 200 })],
+    ['no id_token', () => new Response(JSON.stringify({ access_token: 'x' }), { status: 200 })],
+    ['an oversized body', () => new Response('x'.repeat(70 * 1024), { status: 200 })],
+  ])('refuses a token response that is %s, without logging its text', async (_n, make) => {
+    const t = await begin();
+    vi.stubGlobal('fetch', vi.fn(async () => make()));
+    const spy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const res = await callback(cbReq({ cookie: t.cookie, state: t.state, code: 'c' }));
+    expect(loc(res).search).toBe('?error=provider_error');
+    expect(JSON.stringify(spy.mock.calls)).not.toMatch(/SECRET-TEXT|evil/);
+    spy.mockRestore();
   });
 
   it('fails closed when the token endpoint rejects the code', async () => {
