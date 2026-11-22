@@ -12,7 +12,7 @@ import {
   type AnthropicClientLike,
 } from './providers/anthropic';
 import { geminiAdapter, parseGeminiGrounding, toGeminiSchema } from './providers/gemini';
-import { openAiAdapter } from './providers/openai';
+import { acceptsTemperature, openAiAdapter } from './providers/openai';
 import type { AiRequest } from './types';
 
 const SCHEMA = {
@@ -200,6 +200,17 @@ describe('openAiAdapter', () => {
     expect(body.temperature).toBe(0.2);
     expect(result.model).toBe('gpt-4.1-2025-04-14');
     expect(result.usage.totalTokens).toBe(110);
+  });
+
+  it('drops temperature for reasoning models (GPT-6.2 rejects sampling params; a 400 would not fail over)', async () => {
+    const fetchMock = vi.fn(async () => fixtureResponse('openai-chat-success.json'));
+    vi.stubGlobal('fetch', fetchMock);
+    await openAiAdapter.call({ task: 'competitor_judge', request: { ...jsonSchemaRequest, temperature: 0.2 }, model: 'gpt-6.2-astra', apiKey: 'sk-test' });
+    const body = JSON.parse(String((fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1].body));
+    expect(body).not.toHaveProperty('temperature');
+    expect(acceptsTemperature('gpt-4.1')).toBe(true);
+    expect(acceptsTemperature('gpt-4o-mini')).toBe(true);
+    for (const m of ['gpt-6.2-astra', 'gpt-6.2-sol', 'gpt-6-luna', 'gpt-5-mini', 'o3']) expect(acceptsTemperature(m)).toBe(false);
   });
 
   it('web search: Responses API with country hint, extracted like search.ts', async () => {
