@@ -248,6 +248,7 @@
       "generatePreview": "Genera anteprima",
       "generatingPreview": "Generazione anteprima...",
       "addToPipeline": "Aggiungi alla pipeline",
+      "addPreviewToPipeline": "Aggiungi questa bozza alla pipeline",
       "addedToPipeline": "Aggiunto alla pipeline",
       "contentPreview": "Anteprima contenuto",
       "closePreview": "Chiudi anteprima",

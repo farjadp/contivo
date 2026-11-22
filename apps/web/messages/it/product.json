@@ -1,0 +1,122 @@
+{
+  "product": {
+    "meta": {
+      "title": "Come funziona Contivo, dall'inizio alla fine",
+      "description": "Ogni passo dalla registrazione ai post che escono da soli: il tuo sito, i tuoi concorrenti, una narrazione, LinkedIn e il tuo sito, e Autopilot. Cosa fai tu, cosa fa Contivo, e cosa sapere."
+    },
+    "eyebrow": "Come funziona",
+    "headline": "Da un indirizzo a una settimana che <accent>si pubblica da sola</accent>.",
+    "intro": "Sette passi, nell'ordine in cui il prodotto ti accompagna. Per ognuno trovi cosa fai tu e cosa fa Contivo, così sai a cosa ti iscrivi prima di farlo.",
+    "stepsTitle": "I passi",
+    "itDoes": "Contivo",
+    "steps": {
+      "signUp": {
+        "title": "Registrati",
+        "you": "Nome, email e password. Nessuna carta, e non viene pubblicato nulla finché non colleghi tu un canale.",
+        "it": "Apre il tuo account in accesso anticipato, gratis, e ti offre due strade: creare un workspace o provare subito un singolo post."
+      },
+      "website": {
+        "title": "Dagli il tuo sito",
+        "you": "Scrivi il nome dell'azienda e l'indirizzo del sito.",
+        "it": "Legge le tue pagine e ti restituisce una memoria del brand: cosa fai, cosa prometti, a chi ti rivolgi e con che tono. Correggi tu ciò che ha sbagliato. Fa anche una prima ipotesi sui tuoi concorrenti."
+      },
+      "competitors": {
+        "title": "Conferma i concorrenti",
+        "you": "Accetta, scarta o aggiungi concorrenti. Tutto ciò che segue si basa su quelli che tieni.",
+        "it": "Costruisce grafici di posizionamento che ti collocano tra loro, poi legge cosa vende ciascuno e per quali ricerche compare. Le idee restano bloccate finché grafici e ricerca non ci sono."
+      },
+      "narrative": {
+        "title": "Concorda la narrazione",
+        "you": "Leggi i filoni che propone e modificali: cosa afferma ciascuno, a chi si rivolge e cosa non deve mai dire.",
+        "it": "Scrive tre o quattro filoni a partire dalla ricerca. Da qui in poi ogni idea è legata a uno di essi."
+      },
+      "connect": {
+        "title": "Collega dove pubblica",
+        "you": "Accedi a LinkedIn una volta, oppure crea una chiave per il tuo sito e falla collegare a uno sviluppatore.",
+        "it": "Pubblica sul tuo profilo personale LinkedIn e rende disponibili al tuo sito gli articoli pubblicati, tramite un'API in sola lettura."
+      },
+      "autopilot": {
+        "title": "Attiva Autopilot",
+        "you": "Scegli una ricetta di partenza, i giorni e le ore in cui può pubblicare, il fuso orario e quanti post a settimana, da uno a quattordici. Decidi se approvare ogni post prima.",
+        "it": "Con l'approvazione disattivata, ogni bozza deve comunque superare il controllo qualità prima di essere programmata. Con l'approvazione attiva, le bozze ti aspettano."
+      },
+      "running": {
+        "title": "Lascialo lavorare",
+        "you": "Dai un'occhiata quando vuoi. Ogni esecuzione è nel registro, compreso cosa è stato scartato e perché.",
+        "it": "Tiene pianificati i prossimi sette giorni, ricontrolla ogni giorno, riprova quando qualcosa fallisce e distribuisce i post nella tua fascia. Un report strategico su tutto ciò che ha capito del tuo mercato è pronto quando ti serve."
+      }
+    },
+    "recipesTitle": "Da dove parte quasi tutti",
+    "recipesIntro": "Autopilot offre cinque punti di partenza. Ognuno è solo un'impostazione predefinita: cambia giorni, ore e numero di post come preferisci. Un workspace può eseguirne fino a otto insieme.",
+    "perWeek": "{count, plural, one {# post a settimana} other {# post a settimana}}",
+    "recipes": {
+      "linkedinVoice": {
+        "name": "Voce LinkedIn",
+        "body": "Post in prima persona dalla tua memoria del brand e dagli spazi lasciati liberi dai concorrenti.",
+        "when": "LinkedIn · da lunedì a venerdì, dalle 9:00 alle 18:00"
+      },
+      "blogWriter": {
+        "name": "Autore del blog",
+        "body": "Articoli da 600 a 2.200 parole mirati ai vuoti emersi dalla ricerca sui concorrenti, pubblicati sul tuo sito.",
+        "when": "Il tuo sito · martedì, dalle 8:00 alle 12:00"
+      },
+      "thoughtLeader": {
+        "name": "Opinion leader",
+        "body": "Uno o due post sostanziosi a settimana che prendono posizione, per quando preferisci essere citato che visto ogni giorno.",
+        "when": "LinkedIn · martedì e giovedì, dalle 7:00 alle 10:00"
+      },
+      "productOffers": {
+        "name": "Prodotti e offerte",
+        "body": "Post su ciò che vendi, messo a confronto con ciò che offrono i concorrenti.",
+        "when": "LinkedIn · lunedì e mercoledì, dalle 10:00 alle 16:00"
+      },
+      "custom": {
+        "name": "Personalizzato",
+        "body": "Lo stesso motore, senza preferenze: ritmo, canali, fascia e direzione li decidi tu.",
+        "when": "LinkedIn o il tuo sito · a tua scelta"
+      }
+    },
+    "needTitle": "Cosa ti serve",
+    "need": {
+      "website": {
+        "title": "Un sito web",
+        "body": "Contivo parte da ciò che il tuo sito dice di te."
+      },
+      "linkedin": {
+        "title": "Un account LinkedIn, per pubblicarci",
+        "body": "I post escono sul tuo profilo personale. Le pagine aziendali non sono ancora supportate."
+      },
+      "developer": {
+        "title": "Uno sviluppatore, una volta, per pubblicare sul sito",
+        "body": "Il tuo sito prende gli articoli dall'API di Contivo, su qualsiasi tecnologia. Qualcuno deve aggiungerlo una volta sola. La documentazione per sviluppatori spiega come."
+      }
+    },
+    "knowTitle": "Buono a sapersi",
+    "know": {
+      "confirm": {
+        "title": "I concorrenti aspettano il tuo sì",
+        "body": "Le prime ipotesi sono solo suggerimenti. Nulla viene analizzato finché non le accetti."
+      },
+      "review": {
+        "title": "L'approvazione è spenta, a meno che non la attivi",
+        "body": "Di default, i post che superano il controllo qualità escono da soli. Attiva l'approvazione se vuoi vederli prima."
+      },
+      "reconnect": {
+        "title": "LinkedIn chiede di nuovo ogni 60 giorni",
+        "body": "L'accesso a LinkedIn dura circa due mesi. Quando scade, lo ricolleghi."
+      },
+      "estimates": {
+        "title": "I punteggi di posizionamento sono stime",
+        "body": "Il modello legge prove pubbliche e mostra il suo ragionamento, così puoi non essere d'accordo."
+      },
+      "languages": {
+        "title": "Inglese o persiano",
+        "body": "I contenuti sono scritti in una di queste due lingue, scelta per ogni brand."
+      }
+    },
+    "featuresLink": "Vedi tutte le funzioni, comprese quelle in arrivo",
+    "closeHeadline": "Parti dal primo passo. Bastano un nome e un indirizzo.",
+    "closeCta": "Inizia gratis in accesso anticipato",
+    "closeWhy": "Perché Contivo"
+  }
+}

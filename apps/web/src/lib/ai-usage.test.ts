@@ -23,6 +23,12 @@ import {
   runWithAiContext,
   setAiContext,
 } from './ai-usage';
+import {
+  DEFAULT_ANTHROPIC_JUDGE_MODEL,
+  DEFAULT_ANTHROPIC_MODEL,
+  DEFAULT_OPENAI_MODEL,
+  DEFAULT_OPENAI_SEARCH_MODEL,
+} from './ai/models';
 
 const usage = { promptTokens: 1000, completionTokens: 500, totalTokens: 1500 };
 
@@ -134,6 +140,39 @@ describe('pricing', () => {
     const after = new Date('2027-01-01T00:00:00Z');
     expect(estimateCostUsd('gemini-3.8-flash', usage, before)).toBeCloseTo((1000 * 0.75 + 500 * 3.75) / 1e6, 9);
     expect(estimateCostUsd('gemini-3.8-flash', usage, after)).toBeCloseTo((1000 * 1.5 + 500 * 7.5) / 1e6, 9);
+  });
+
+  it('prices Claude: Sonnet 5.5 $2 / $10, Opus 5.5 $4 / $20, web search $0.01 per call', () => {
+    expect(estimateCostUsd('claude-sonnet-5-5', usage)).toBeCloseTo((1000 * 2 + 500 * 10) / 1e6, 9);
+    expect(estimateCostUsd('claude-opus-5-5', usage)).toBeCloseTo((1000 * 4 + 500 * 20) / 1e6, 9);
+    expect(estimateCostUsd('claude-sonnet-5-5', { ...usage, webSearchCalls: 3 })).toBeCloseTo(
+      (1000 * 2 + 500 * 10) / 1e6 + 0.03,
+      9,
+    );
+  });
+
+  // Production on 22 Nov: 24 anthropic rows, cost null on every one, because
+  // no Claude model was in the price table. Every model the layer uses by
+  // default must have a price, or the cost card under-reports silently.
+  it.each([
+    ['openai', DEFAULT_OPENAI_MODEL],
+    ['openai search', DEFAULT_OPENAI_SEARCH_MODEL],
+    ['anthropic', DEFAULT_ANTHROPIC_MODEL],
+    ['anthropic judge', DEFAULT_ANTHROPIC_JUDGE_MODEL],
+    // gemini-3.7-flash is routed by Google and reports gemini-3.8-flash.
+    ['gemini (as reported)', 'gemini-3.8-flash'],
+  ])('a non-empty %s call (%s) gets a cost above zero', (_label, model) => {
+    const cost = estimateCostUsd(model, usage);
+    expect(cost).not.toBeNull();
+    expect(cost!).toBeGreaterThan(0);
+  });
+
+  it('the anthropic backfill script prices every Claude model exactly like the app', async () => {
+    const { CLAUDE_PRICES, claudeCostUsd } = await import('../../../api/scripts/backfill-anthropic-cost');
+    for (const model of Object.keys(CLAUDE_PRICES)) {
+      expect(claudeCostUsd(model, 1000, 500)).toBeCloseTo(estimateCostUsd(model, usage)!, 9);
+    }
+    expect(Object.keys(CLAUDE_PRICES).sort()).toEqual([DEFAULT_ANTHROPIC_JUDGE_MODEL, DEFAULT_ANTHROPIC_MODEL].sort());
   });
 
   it('returns null for a model it has no verified price for, and warns once per model', () => {

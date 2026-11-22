@@ -88,7 +88,7 @@ describe('models', () => {
     expect(await resolve('openai', 'competitor_web_search')).toBe('gpt-search');
     expect(await resolve('openai', 'content_draft')).toBe('gpt-admin');
     expect(await resolve('openai', 'competitor_judge')).toBe('gpt-4.1');
-    expect(await createModelResolver({}, settings)('openai', 'competitor_web_search')).toBe('gpt-5-mini');
+    expect(await createModelResolver({}, settings)('openai', 'competitor_web_search')).toBe('gpt-6.2-sol');
     // C: gpt-5-mini shuts down 11 Dec; the replacement is an env change, no code
     expect(await createModelResolver({ OPENAI_SEARCH_MODEL: 'gpt-6-luna' }, settings)('openai', 'competitor_web_search')).toBe('gpt-6-luna');
   });

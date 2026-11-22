@@ -69,6 +69,11 @@ export default function AboutPage() {
         <p className="mt-8 max-w-[42rem] text-[19px] leading-[1.65] text-moss-muted motion-safe:animate-blur-rise motion-safe:[animation-delay:160ms]">
           {t('intro', { entity: siteIdentity.entity })}
         </p>
+        <p className="mt-5 text-[16px]">
+          <Link href="/team" className="font-semibold underline decoration-2 underline-offset-[6px] hover:decoration-saffron">
+            {t('teamLink')}
+          </Link>
+        </p>
       </header>
 
       {/* Principles, each dated to the change that made it true */}

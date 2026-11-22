@@ -16,11 +16,12 @@ import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 
 import { buildUniqueSlug } from './posts';
+import { safeOutboundPost } from '@/lib/safe-outbound-url';
 
 /** Channels served by the Content API rather than a social adapter. */
 const WEB_CHANNELS = ['blog'] as const;
 
-const REVALIDATE_TIMEOUT_MS = 8000;
+const REVALIDATE_TIMEOUT_MS = 5000;
 
 export type RevalidateEvent = 'post.published' | 'post.updated';
 
@@ -171,32 +172,24 @@ async function pingRevalidate(
 ): Promise<boolean | null> {
   if (!site.revalidateUrl) return null;
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REVALIDATE_TIMEOUT_MS);
-  try {
-    const res = await fetch(site.revalidateUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(site.revalidateSecret ? { Authorization: `Bearer ${site.revalidateSecret}` } : {}),
-      },
-      body: JSON.stringify({ slug, event }),
-      signal: controller.signal,
-    });
-    await prisma.siteConnection.update({
-      where: { id: site.id },
-      data: { lastRevalidateAt: new Date(), lastRevalidateStatus: res.status },
-    });
-    return res.ok;
-  } catch {
-    await prisma.siteConnection
-      .update({
-        where: { id: site.id },
-        data: { lastRevalidateAt: new Date(), lastRevalidateStatus: 0 },
-      })
-      .catch(() => undefined);
-    return false;
-  } finally {
-    clearTimeout(timer);
+  // The URL is customer input: safeOutboundPost refuses private/internal
+  // addresses (also after DNS), never follows redirects, and never throws.
+  const result = await safeOutboundPost(site.revalidateUrl, {
+    headers: {
+      'Content-Type': 'application/json',
+      ...(site.revalidateSecret ? { Authorization: `Bearer ${site.revalidateSecret}` } : {}),
+    },
+    body: JSON.stringify({ slug, event }),
+    timeoutMs: REVALIDATE_TIMEOUT_MS,
+  });
+  if (!result.ok && result.reason === 'blockedHost') {
+    console.warn('[site-publisher] revalidate URL blocked (non-public address)', site.id);
   }
+  await prisma.siteConnection
+    .update({
+      where: { id: site.id },
+      data: { lastRevalidateAt: new Date(), lastRevalidateStatus: result.status },
+    })
+    .catch(() => undefined);
+  return result.ok;
 }

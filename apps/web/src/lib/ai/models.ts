@@ -2,17 +2,23 @@
  * Default model per provider and task (spec §Models + Decisions 1).
  *
  * OpenAI keeps today's sources exactly: web search OPENAI_SEARCH_MODEL
- * (gpt-5-mini); the tasks that lived in lib/gemini.ts use the admin
+ * (gpt-6.2-sol); the tasks that lived in lib/gemini.ts use the admin
  * "OpenAI fallback model" setting; the rest OPENAI_DEFAULT_MODEL (gpt-4.1).
  * Claude: ANTHROPIC_MODEL_JUDGE (Opus 5.5) for judges/matrices/quality gate,
  * ANTHROPIC_MODEL (Sonnet 5.5) for everything else.
  * Gemini: the admin setting lib/gemini.ts reads today.
  */
 
+import { warnIfRetiring } from './retirements';
 import type { AiRequest, AiTask, ProviderId } from './types';
 
 export const DEFAULT_OPENAI_MODEL = 'gpt-4.1';
-export const DEFAULT_OPENAI_SEARCH_MODEL = 'gpt-5-mini';
+/**
+ * Competitor web search. gpt-5-mini shuts down 2026-12-11; gpt-6.2-sol won the
+ * live eval (docs/evals/2026-11-22-openai-search-model.md): steady citations
+ * in English and Persian, p50 12 s vs 34 s, about the same cost per query.
+ */
+export const DEFAULT_OPENAI_SEARCH_MODEL = 'gpt-6.2-sol';
 export const DEFAULT_ANTHROPIC_MODEL = 'claude-sonnet-5-5';
 export const DEFAULT_ANTHROPIC_JUDGE_MODEL = 'claude-opus-5-5';
 
@@ -84,5 +90,7 @@ export async function modelFor(
   request: AiRequest,
 ): Promise<string> {
   const override = request.modelOverride?.[provider]?.trim();
-  return override || resolver(provider, task);
+  const model = override || (await resolver(provider, task));
+  warnIfRetiring(model);
+  return model;
 }

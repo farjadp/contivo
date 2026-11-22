@@ -229,7 +229,7 @@
   },
   "footer": {
     "blurb": "Reads your website into brand memory and a competitive map, then writes, reviews and publishes on a schedule you set.",
-    "provenance": "Built and run first on its founder's own sites. 23 early-access users have paid for it since; none is named here without their say-so.",
+    "provenance": "Built and run first on its own sites. 23 early-access users have paid for it since; none is named here without their say-so.",
     "productTitle": "The product",
     "intelligence": "Intelligence",
     "qualityGate": "The quality gate",
@@ -251,6 +251,11 @@
     "soon": "Soon",
     "writeTo": "Write to a person",
     "navLabel": "Site",
-    "features": "Features"
+    "features": "Features",
+    "compare": "Compare",
+    "product": "How it works",
+    "why": "Why Contivo",
+    "team": "Team",
+    "roadmap": "Roadmap"
   }
 }

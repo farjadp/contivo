@@ -1,0 +1,100 @@
+{
+  "why": {
+    "meta": {
+      "title": "Why Contivo, for a small business with no content team",
+      "description": "Why a small business would use Contivo instead of an agency, a freelancer, ChatGPT or a social scheduler, and who it is not for yet."
+    },
+    "eyebrow": "Why Contivo",
+    "headline": "You know you should publish. Nobody has the <accent>hours</accent>.",
+    "intro": "Most small businesses know that steady content and an eye on the market would help. The hard part is not the writing. It is the research before it, the checking after it, and doing both again every week.",
+    "usualTitle": "The usual ways to get it done, and what each leaves with you",
+    "leftWithYou": "Still on your desk:",
+    "usual": {
+      "agency": {
+        "title": "Hire an agency",
+        "good": "People who do this for a living, with a monthly retainer to match.",
+        "left": "Teaching them your market, approving every piece, and the retainer when the work slows down."
+      },
+      "freelancer": {
+        "title": "A freelance writer",
+        "good": "Good writing, paid by the piece.",
+        "left": "The research, the brief, the plan for next week, and the posting."
+      },
+      "assistant": {
+        "title": "ChatGPT or Claude, by hand",
+        "good": "Fast drafts for about twenty dollars a month.",
+        "left": "Finding competitors, keeping the context, checking every fact, and copying it all onto LinkedIn and your site."
+      },
+      "scheduler": {
+        "title": "A social scheduler",
+        "good": "Posts go out on time, on many networks.",
+        "left": "Deciding what to say and writing it. It publishes what you give it."
+      }
+    },
+    "compareLink": "See the full comparison, including where Contivo is behind",
+    "insteadTitle": "What Contivo does instead",
+    "instead": {
+      "research": {
+        "title": "Research before a word is written",
+        "body": "It reads your site, finds the competitors at your scale, and plots where you stand. Ideas stay locked until that exists."
+      },
+      "refuse": {
+        "title": "It refuses to make things up",
+        "body": "A judge vetoes invented statistics, studies and client stories. If no model can review a post, the post does not go out."
+      },
+      "runs": {
+        "title": "It keeps running without you",
+        "body": "Set a cadence and a publishing window, and it keeps the next seven days full on LinkedIn and your own website. Review everything yourself, or let the quality gate do it."
+      },
+      "persian": {
+        "title": "Persian, written as Persian",
+        "body": "A Persian brand gets content written in Persian from the start, not English with a translation laid over it."
+      }
+    },
+    "forTitle": "It is for you if",
+    "for": {
+      "noTeam": {
+        "title": "You have a website and no content team",
+        "body": "One address is all it needs to start."
+      },
+      "founder": {
+        "title": "You want a steady presence on LinkedIn",
+        "body": "Posts go out on your personal profile, inside the hours you choose."
+      },
+      "persian": {
+        "title": "You sell to Persian speakers",
+        "body": "Content in Persian that does not read like a translation."
+      },
+      "agency": {
+        "title": "You run content for several clients",
+        "body": "The Agency plan holds five brands, each with its own memory, competitors and channels."
+      }
+    },
+    "notForTitle": "It is not for you yet if",
+    "notFor": {
+      "channels": {
+        "title": "You need Instagram, TikTok or Facebook",
+        "body": "Today it publishes to LinkedIn personal profiles and your own website."
+      },
+      "languages": {
+        "title": "You publish in another language",
+        "body": "Content is written in English or Persian."
+      },
+      "everyWord": {
+        "title": "You want to write every word yourself",
+        "body": "You can edit anything, but it is built to do the work, not to be a word processor."
+      },
+      "analytics": {
+        "title": "You need performance analytics",
+        "body": "It does not yet show how a post performed."
+      }
+    },
+    "behindTitle": "Who is behind it",
+    "behindBody": "Contivo is built by four founders and ran first on its own sites. Twenty-three early-access users have paid for it since. Most of the rules it follows, from refusing to invent to showing no number it did not measure, came from a mistake it made once and was then built never to repeat.",
+    "aboutLink": "Read the rules, and how it got here",
+    "closeHeadline": "Hand it your website and see what it finds.",
+    "closeCta": "Start free in early access",
+    "closeProduct": "How it works, start to finish",
+    "teamLink": "Meet the four founders"
+  }
+}

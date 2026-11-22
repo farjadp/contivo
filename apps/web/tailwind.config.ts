@@ -100,9 +100,14 @@ const config: Config = {
       keyframes: {
         /* Marketing site motion (Chalk & Saffron). Every one of these is
            wrapped in motion-safe: at the call site. */
+        /* Text is never hidden while it waits to move. These used to start at
+           opacity 0 (and blur-rise at blur(6px)) with fill-mode `both`, so a
+           busy main thread or a slow phone left the hero H1 and intro blank
+           for seconds: the LCP element itself was invisible. Now the text is
+           painted at full opacity on first paint and only slides a short way. */
         rise: {
-          from: { opacity: '0', transform: 'translateY(24px)' },
-          to: { opacity: '1', transform: 'none' },
+          from: { transform: 'translateY(12px)' },
+          to: { transform: 'none' },
         },
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
         pop: {
@@ -111,11 +116,11 @@ const config: Config = {
           '100%': { opacity: '1', transform: 'scale(1)' },
         },
         sweep: { from: { backgroundSize: '0% 34%' }, to: { backgroundSize: '100% 34%' } },
-        /* Text arriving out of focus rather than out of nowhere: a short rise
-           with a blur that clears as it lands. Used for staggered lines. */
+        /* Same rule as `rise`: a short slide for staggered lines, with no fade
+           and no blur, so the words are readable the moment they paint. */
         'blur-rise': {
-          from: { opacity: '0', transform: 'translateY(12px)', filter: 'blur(6px)' },
-          to: { opacity: '1', transform: 'none', filter: 'blur(0)' },
+          from: { transform: 'translateY(8px)' },
+          to: { transform: 'none' },
         },
         draw: { from: { strokeDashoffset: '461' }, to: { strokeDashoffset: '0' } },
         ripple: {
@@ -143,11 +148,11 @@ const config: Config = {
         }
       },
       animation: {
-        rise: 'rise .9s cubic-bezier(.2,.7,.2,1) both',
+        rise: 'rise .4s cubic-bezier(.2,.7,.2,1) both',
         'fade-in': 'fade-in .5s ease both',
         pop: 'pop .55s cubic-bezier(.2,.7,.2,1) both',
         sweep: 'sweep .8s .9s cubic-bezier(.2,.7,.2,1) both',
-        'blur-rise': 'blur-rise .7s cubic-bezier(.22,1,.36,1) both',
+        'blur-rise': 'blur-rise .4s cubic-bezier(.22,1,.36,1) both',
         draw: 'draw 1.6s .5s cubic-bezier(.6,0,.2,1) both',
         ripple: 'ripple 1.8s ease-out 2s infinite',
         shake: 'shake .5s cubic-bezier(.36,.07,.19,.97)',

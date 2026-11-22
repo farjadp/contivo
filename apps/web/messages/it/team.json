@@ -1,0 +1,34 @@
+{
+  "team": {
+    "meta": {
+      "title": "Il team di Contivo",
+      "description": "I quattro fondatori che portano Contivo dall'idea al prodotto."
+    },
+    "eyebrow": "Team",
+    "headline": "Quattro fondatori, <accent>un</accent> problema semplice.",
+    "intro": "Le quattro persone che portano Contivo dall'idea al prodotto, per le piccole aziende che sanno di dover pubblicare con costanza e tenere d'occhio il mercato, ma non hanno nessuno con il tempo per farlo.",
+    "foundersTitle": "Fondatori",
+    "linkedin": "{name} su LinkedIn",
+    "founders": {
+      "mohajer": {
+        "name": "Hamidreza Salmanmohajer",
+        "role": "CEO, vendite e marketing"
+      },
+      "souzangar": {
+        "name": "Saeed Souzangar",
+        "role": "CTO, rete e sicurezza"
+      },
+      "kavian": {
+        "name": "Mohsen Kavian",
+        "role": "COO"
+      },
+      "khamouddoust": {
+        "name": "Bahareh Khamouddoust",
+        "role": "Project manager e Scrum Master"
+      }
+    },
+    "closeHeadline": "Scrivi a chi lo sta costruendo.",
+    "closeCta": "Contattaci",
+    "closeAbout": "Chi siamo"
+  }
+}

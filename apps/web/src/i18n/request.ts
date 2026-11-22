@@ -38,6 +38,11 @@ const NAMESPACES = [
   'admin',
   'errors',
   'blog',
+  'compare',
+  'why',
+  'product',
+  'roadmap',
+  'team',
 ] as const;
 
 /**
