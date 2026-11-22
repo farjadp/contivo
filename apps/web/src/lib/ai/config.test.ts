@@ -87,10 +87,23 @@ describe('models', () => {
     const resolve = createModelResolver({ OPENAI_SEARCH_MODEL: 'gpt-search' }, settings);
     expect(await resolve('openai', 'competitor_web_search')).toBe('gpt-search');
     expect(await resolve('openai', 'content_draft')).toBe('gpt-admin');
-    expect(await resolve('openai', 'competitor_judge')).toBe('gpt-4.1');
+    expect(await resolve('openai', 'keywords')).toBe('gpt-4.1');
     expect(await createModelResolver({}, settings)('openai', 'competitor_web_search')).toBe('gpt-5-mini');
     // C: gpt-5-mini shuts down 11 Dec; the replacement is an env change, no code
     expect(await createModelResolver({ OPENAI_SEARCH_MODEL: 'gpt-6-luna' }, settings)('openai', 'competitor_web_search')).toBe('gpt-6-luna');
+  });
+
+  it('OpenAI: GPT-6.2 Astra for judges/matrices/gate, ignoring OPENAI_DEFAULT_MODEL and the admin setting (22 Nov)', async () => {
+    const resolve = createModelResolver({ OPENAI_DEFAULT_MODEL: 'gpt-default' }, settings);
+    for (const task of ['competitor_judge', 'matrix_propose_axes', 'matrix_score_chart', 'matrix_summarise', 'quality_gate'] as const) {
+      expect(await resolve('openai', task)).toBe('gpt-6.2-astra');
+    }
+    // quality_gate is also an admin-setting task; the judge set wins
+    expect(await resolve('openai', 'humanize')).toBe('gpt-admin');
+    expect(await resolve('openai', 'keywords')).toBe('gpt-default');
+    expect(await createModelResolver({ OPENAI_MODEL_JUDGE: 'gpt-j' }, settings)('openai', 'quality_gate')).toBe('gpt-j');
+    const request = { prompt: 'x', output: { kind: 'text' as const }, timeoutMs: 1, modelOverride: { openai: 'gpt-4.1' } };
+    expect(await modelFor(resolve, 'openai', 'competitor_judge', request)).toBe('gpt-4.1');
   });
 
   it('Gemini uses the admin setting; modelOverride wins', async () => {
