@@ -77,6 +77,13 @@ SocialConnection.metaJson Json?   -- non-secret per-connection settings only
 
 - Announce in the CLAUDE.md stream table (video and funnel streams also touch `schema.prisma`).
 
+### OAuth rule for every new channel (from hotfix PR #20, 22 Nov)
+The OAuth callback never saves a connection. It parks the exchanged account in Redis under a one-time ticket and
+redirects to `/connections?pending=<ticket>`; the signed-in web page calls `POST /social/oauth/finalize`, which saves
+only if the session user is the user who started the flow. X and Threads use this path. Telegram's connect (§3) must
+bind the same way: the connect session is created by the signed-in web user and the `chat_shared` result is saved only
+for that session's user and workspace. Every id from a request is scoped to the caller's workspace.
+
 ## 3. Telegram
 
 **Auth.** One Contivo bot. Token only in `TELEGRAM_BOT_TOKEN` on contivo-api; connection rows hold no secret.
