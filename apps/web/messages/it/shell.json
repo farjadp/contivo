@@ -16,6 +16,13 @@
       "label": "{count, number} crediti"
     },
     "navLabel": "Principale",
-    "account": "Account"
+    "account": "Account",
+    "notFound": {
+      "eyebrow": "Errore {code, number}",
+      "title": "Questa pagina non c'è",
+      "body": "Il link potrebbe essere vecchio, oppure il post è stato spostato o mai pubblicato.",
+      "home": "Torna alla home",
+      "blog": "Leggi il blog"
+    }
   }
 }

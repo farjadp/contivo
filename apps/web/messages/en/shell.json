@@ -16,6 +16,13 @@
       "label": "{count, number} credits"
     },
     "navLabel": "Main",
-    "account": "Account"
+    "account": "Account",
+    "notFound": {
+      "eyebrow": "Error {code, number}",
+      "title": "This page is not here",
+      "body": "The link may be old, or the post was moved or never published.",
+      "home": "Back to home",
+      "blog": "Read the blog"
+    }
   }
 }
