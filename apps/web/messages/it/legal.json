@@ -18,6 +18,10 @@
         "contact": {
           "title": "Contatti",
           "body": "Se questa pagina non risponde alla tua domanda, scrivi a una persona."
+        },
+        "disclaimer": {
+          "title": "Avvertenze",
+          "body": "Ciò che il sito e il prodotto non promettono."
         }
       }
     },
@@ -254,6 +258,94 @@
           "blocks": [
             "Se modifichiamo questi termini, cambia la data in alto. Per le modifiche rilevanti ti avvisiamo via email almeno 14 giorni prima che entrino in vigore. Se continui a usare Contivo dopo quella data, accetti i nuovi termini. Se non li accetti, puoi chiudere il tuo account.",
             "Le domande su questi termini vanno inviate a {email}."
+          ]
+        }
+      ]
+    },
+    "disclaimer": {
+      "meta": {
+        "title": "Avvertenze — Contivo",
+        "description": "Cosa Contivo e questo sito non promettono: nessuna consulenza professionale, un'AI che può sbagliare, stime che restano stime, nessun risultato garantito, e nomi di altre aziende usati solo per confronto."
+      },
+      "eyebrow": "Avvertenze",
+      "headline": "Ciò che <accent>non</accent> promettiamo.",
+      "intro": "Questa pagina chiarisce i limiti di ciò che Contivo e questo sito promettono. Si affianca ai Termini d'uso, che sono l'accordo tra te e {entity}. Dove i due testi differiscono, valgono i Termini.",
+      "summary": [
+        "Niente su questo sito è consulenza legale, finanziaria o professionale.",
+        "Contivo scrive con l'AI. Può sbagliare, e ciò che esce a tuo nome è tua responsabilità.",
+        "I risultati sui concorrenti e i punteggi di posizionamento sono stime da informazioni pubbliche, non dati misurati.",
+        "Nessun posizionamento, traffico, contatto o vendita è garantito.",
+        "I nomi di altre aziende compaiono solo per confronto, con dati letti sulle loro pagine alla data indicata."
+      ],
+      "sections": [
+        {
+          "id": "advice",
+          "title": "Non è consulenza professionale",
+          "blocks": [
+            "Gli articoli, le guide e i confronti su questo sito e sul blog di Contivo sono informazioni generali sul content marketing. Non sono consulenza legale, fiscale, finanziaria, di investimento o professionale di altro tipo. Per una decisione che dipende dalla tua situazione, rivolgiti a un professionista qualificato.",
+            "Ciò che Contivo scrive per la tua azienda è contenuto di marketing. Se tocca temi legali, finanziari, sanitari o altri ambiti regolamentati, fallo controllare da una persona qualificata prima di pubblicarlo."
+          ]
+        },
+        {
+          "id": "ai",
+          "title": "I testi dell'AI",
+          "blocks": [
+            "Contivo scrive con modelli di AI di fornitori terzi. I modelli sbagliano: un fatto errato, un dettaglio superato, un'affermazione che la tua azienda non può sostenere. Il controllo qualità è pensato per respingere statistiche, studi e storie di clienti inventati, ma non intercetta ogni errore. I testi dell'AI possono anche somigliare molto a testi esistenti: verifica che ciò che pubblichi non copi il lavoro di qualcun altro.",
+            "Per impostazione predefinita, Autopilot pubblica senza chiederti nulla: i post che superano il controllo qualità escono prima che tu li abbia letti. Attiva l'approvazione se vuoi vederli uno per uno. I Termini d'uso ne parlano alla voce “Ciò che scrive l'AI”."
+          ]
+        },
+        {
+          "id": "estimates",
+          "title": "Le stime sono stime",
+          "blocks": [
+            "La ricerca dei concorrenti, i grafici di posizionamento, le parole chiave e il report strategico si basano su informazioni pubbliche e sulla loro lettura da parte del modello. Un concorrente “verificato” è un'azienda il cui sito risponde, non un rivale confermato. Un punteggio è la stima del modello, mostrata con il suo ragionamento, non una misurazione.",
+            "I volumi di ricerca arrivano da un fornitore di dati collegato. Se non ce n'è uno disponibile, Contivo non mostra alcun numero invece di una stima."
+          ]
+        },
+        {
+          "id": "results",
+          "title": "Nessun risultato garantito",
+          "blocks": [
+            "Contivo ti aiuta a pubblicare con costanza e secondo una strategia. Non garantisce alcun posizionamento, traffico, follower, contatto, vendita o altro risultato commerciale, e nulla su questo sito va letto come promessa di uno di essi."
+          ]
+        },
+        {
+          "id": "comparisons",
+          "title": "Confronti e nomi di altre aziende",
+          "blocks": [
+            "La pagina di confronto cita altri prodotti per descrivere categorie di strumenti. Quei dati sono stati letti sulle pagine pubbliche di ciascuna azienda alla data indicata lì. Possono essere cambiati da allora, e quelle aziende non hanno rivisto né approvato il confronto. Controlla i loro siti prima di decidere. Il modo in cui descriviamo dove si colloca Contivo, e dove è carente, è una nostra opinione, non un'affermazione di fatto su quei prodotti.",
+            "Nomi di prodotto e marchi appartengono ai rispettivi titolari. Sono usati qui solo per identificare i prodotti confrontati e il loro uso non implica alcuna affiliazione con Contivo né alcuna approvazione."
+          ]
+        },
+        {
+          "id": "third-party",
+          "title": "Altre piattaforme e link",
+          "blocks": [
+            "Contivo pubblica tramite piattaforme di altre aziende, come LinkedIn. Le loro regole, la disponibilità e l'accesso possono cambiare, e un post può non uscire o essere rimosso per motivi fuori dal nostro controllo.",
+            "I link ad altri siti sono lì per comodità. Non controlliamo quei siti e non siamo responsabili di ciò che dicono.",
+            "Contivo non è affiliato né approvato da LinkedIn o da altre piattaforme su cui pubblica."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Accesso anticipato",
+          "blocks": [
+            "Contivo è in accesso anticipato. Funzioni, piani e prezzi descritti su questo sito possono cambiare, e ciò che è indicato come “in arrivo” non è ancora disponibile. Il sito descrive ciò che funziona alla data del suo ultimo aggiornamento."
+          ]
+        },
+        {
+          "id": "accuracy",
+          "title": "Accuratezza di questo sito",
+          "blocks": [
+            "Cerchiamo di mantenere questo sito accurato e aggiornato, ma può contenere errori o non essere aggiornato.",
+            "Se una traduzione di questa pagina differisce dalla versione inglese, prevale la versione inglese."
+          ]
+        },
+        {
+          "id": "questions",
+          "title": "Domande",
+          "blocks": [
+            "Se qualcosa qui non è chiaro, o pensi che qualcosa su questo sito sia sbagliato, scrivi a {email}."
           ]
         }
       ]

@@ -12,7 +12,7 @@
  * about what the user should do next.
  */
 
-import { REQUIRED_MATRIX_CHARTS } from '@/lib/report-readiness';
+import { REQUIRED_MATRIX_CHARTS, matricesGate } from '@/lib/report-readiness';
 
 export type StepId = 'brand' | 'market' | 'keywords' | 'narrative' | 'channel' | 'autopilot';
 
@@ -59,6 +59,14 @@ export type WorkspaceFacts = {
   acceptedCompetitors: number;
   totalCompetitors: number;
   matrixCharts: number;
+  /**
+   * Whether ideation (and so autopilot) will accept the stored charts. This is
+   * the server's own answer — `matricesGate`, the check content-engine runs —
+   * not a chart count: the server also refuses fewer than
+   * REQUIRED_MATRIX_CHARTS, a new-pipeline blob with no confirmed competitor
+   * basis, and a fabricated legacy blob. Build it with `matrixFacts`.
+   */
+  matricesReady: boolean;
   keywordCompetitors: number;
   /** Storylines on the workspace's narrative. Zero means it has no position yet. */
   storylines: number;
@@ -79,6 +87,24 @@ export type Journey = {
   percent: number;
   isComplete: boolean;
 };
+
+/**
+ * The two matrix facts, computed the one way every builder of WorkspaceFacts
+ * must compute them. Takes the workspace's raw `audienceInsights` and reads
+ * `competitiveMatrices` exactly as loadIdeationContext does, so the tab strip
+ * cannot open ideation on charts the server will then refuse.
+ */
+export function matrixFacts(audienceInsights: unknown): Pick<WorkspaceFacts, 'matrixCharts' | 'matricesReady'> {
+  const insights =
+    audienceInsights && typeof audienceInsights === 'object'
+      ? (audienceInsights as Record<string, unknown>)
+      : {};
+  const matrices = insights.competitiveMatrices as { charts?: unknown } | undefined;
+  return {
+    matrixCharts: Array.isArray(matrices?.charts) ? matrices.charts.length : 0,
+    matricesReady: matricesGate(matrices).ok,
+  };
+}
 
 export function buildJourney(f: WorkspaceFacts): Journey {
   const tab = (t: string) => `/growth/${f.workspaceId}?tab=${t}`;
@@ -105,9 +131,16 @@ export function buildJourney(f: WorkspaceFacts): Journey {
       title: m('market.title'),
       why: m('market.why'),
       href: tab('matrices'),
+      // Enough charts that ideation still refuses means they were built on an
+      // unconfirmed competitor set or without evidence: the fix is a re-run.
       action:
-        f.acceptedCompetitors < 2 ? m('market.actionDiscover') : m('market.actionCharts'),
-      done: f.matrixCharts > 0 && f.acceptedCompetitors >= 2,
+        f.acceptedCompetitors < 2
+          ? m('market.actionDiscover')
+          : f.matrixCharts >= REQUIRED_MATRIX_CHARTS && !f.matricesReady
+            ? m('market.actionRerunCharts')
+            : m('market.actionCharts'),
+      // Done means ideation will accept the map, not that a chart exists.
+      done: f.matricesReady && f.acceptedCompetitors >= 2,
       detail:
         f.matrixCharts > 0
           ? m('market.detailDone', {
@@ -149,6 +182,8 @@ export function buildJourney(f: WorkspaceFacts): Journey {
           : m('narrative.detailTodo'),
       // Needs a market frame and something to be positioned against. Keywords
       // sharpen it but are not required, so this is reachable without them.
+      // One chart, not matricesReady: this mirrors the narrative action's own
+      // check (actions/narrative.ts loadContext), which is looser than ideation's.
       blockedBy:
         f.hasBrandSummary && f.matrixCharts > 0 && f.acceptedCompetitors >= 2
           ? undefined
@@ -178,7 +213,7 @@ export function buildJourney(f: WorkspaceFacts): Journey {
       detail: f.autopilotEnabled ? m('autopilot.detailOn') : m('autopilot.detailOff'),
       blockedBy: f.autopilotEnabled
         ? undefined
-        : f.hasBrandSummary && f.matrixCharts > 0 && f.keywordCompetitors > 0
+        : f.hasBrandSummary && f.matricesReady && f.keywordCompetitors > 0
           ? f.storylines > 0
             ? f.hasChannel
               ? undefined
@@ -234,8 +269,10 @@ export function tabGate(f: WorkspaceFacts): Record<string, Msg | undefined> {
   const g = (key: string): Msg => ({ key: `gates.${key}` });
   return {
     keywords: f.acceptedCompetitors >= 1 ? undefined : g('acceptCompetitors'),
-    ideation: f.matrixCharts > 0 && f.keywordCompetitors > 0 ? undefined : g('matricesAndKeywords'),
+    // Same rule as loadIdeationContext: matricesGate plus competitor keywords.
+    ideation: f.matricesReady && f.keywordCompetitors > 0 ? undefined : g('matricesAndKeywords'),
     offerings: f.acceptedCompetitors >= 1 ? undefined : g('acceptCompetitors'),
+    // The narrative action asks for one chart and two accepted competitors.
     narrative: f.matrixCharts > 0 && f.acceptedCompetitors >= 2 ? undefined : g('marketMap'),
     // An agent that is already running is not blocked, whatever it is missing —
     // the runner never required a narrative and does not now. Telling someone
@@ -243,7 +280,7 @@ export function tabGate(f: WorkspaceFacts): Record<string, Msg | undefined> {
     // that false warning is the whole risk of adding a step to a live chain.
     autopilot: f.autopilotEnabled
       ? undefined
-      : f.matrixCharts > 0 && f.keywordCompetitors > 0
+      : f.matricesReady && f.keywordCompetitors > 0
         ? f.storylines > 0
           ? undefined
           : g('narrative')

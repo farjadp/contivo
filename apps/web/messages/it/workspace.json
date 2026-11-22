@@ -13,6 +13,7 @@
         "why": "Accetta i concorrenti che sono davvero tuoi, poi genera i grafici di posizionamento. Le idee nascono dagli spazi vuoti che emergono.",
         "actionDiscover": "Scopri e accetta almeno 2 concorrenti",
         "actionCharts": "Genera le matrici di posizionamento",
+        "actionRerunCharts": "Rigenera i grafici sui concorrenti accettati",
         "detailDone": "{charts, number} grafici · {competitors, number} concorrenti accettati",
         "detailPartial": "{accepted, number} concorrenti accettati su {total, number} · ancora nessun grafico",
         "detailNone": "Nessun concorrente individuato finora"

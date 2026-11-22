@@ -19,6 +19,22 @@ export function isOAuthPlatform(value: string): value is OAuthPlatform {
   return (OAUTH_PLATFORMS as readonly string[]).includes(value);
 }
 
+/**
+ * How the web (re)connects a platform:
+ * - `oauth`: getSocialConnectUrl(platform, workspaceId) and navigate.
+ * - `telegram`: POST /social/telegram/connect-sessions, show the t.me deep
+ *   link, poll the session, then confirm with the code the bot sent.
+ * - `unsupported`: no connect flow on this deployment yet.
+ */
+export type ConnectFlow = 'oauth' | 'telegram' | 'unsupported';
+
+export function connectFlowFor(platform: string): ConnectFlow {
+  const key = String(platform ?? '').toLowerCase();
+  if (isOAuthPlatform(key)) return 'oauth';
+  if (key === 'telegram') return 'telegram';
+  return 'unsupported';
+}
+
 /** ContentItem.channel → SocialPlatform, from the shared table. null = not a social channel. */
 export function channelToPlatform(channel: string): SocialPlatform | null {
   const key = String(channel ?? '').trim().toLowerCase() as ContentChannel;

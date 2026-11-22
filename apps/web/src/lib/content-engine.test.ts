@@ -51,6 +51,7 @@ import {
   generateDraftPreviewCore,
   ideateForWorkspace,
   resolveChannelFromFormat,
+  resolveIdeaChannel,
   saveIdeaToPipelineCore,
 } from './content-engine';
 
@@ -114,6 +115,9 @@ describe('resolveChannelFromFormat', () => {
     ['Long-form article', 'blog'],
     ['Email newsletter', 'email'],
     ['instagram caption', 'instagram'],
+    ['telegram', 'telegram'],
+    ['Telegram channel post', 'telegram'],
+    ['LinkedIn text post with an expert example', 'linkedin'],
     ['', 'linkedin'],
     [undefined, 'linkedin'],
   ])('%s → %s', (format, channel) => {
@@ -176,5 +180,115 @@ describe('AI chain failure (generators return null)', () => {
     expect(ideasMock.mock.calls[0][2]).toEqual({ userId: OWNER, workspaceId: WORKSPACE });
     expect(activityLogMock).not.toHaveBeenCalled();
     expect(frameworkLogMock).not.toHaveBeenCalled();
+  });
+});
+
+/*
+  B6 (e2e handover 2026-11-22): a LinkedIn idea was saved as an X post because
+  the channel was guessed from the model's format text. The platform the user
+  picked is now carried on the idea and always wins.
+*/
+describe('resolveIdeaChannel', () => {
+  it('uses the stamped channel over a format that names another channel', () => {
+    expect(resolveIdeaChannel({ channel: 'linkedin', format: 'X thread' })).toBe('linkedin');
+  });
+  it('maps the ideation platform value x to twitter', () => {
+    expect(resolveIdeaChannel({ platform: 'x', format: 'LinkedIn post' })).toBe('twitter');
+  });
+  it('falls back to the format for ideas with no channel', () => {
+    expect(resolveIdeaChannel({ format: 'LinkedIn text post … example' })).toBe('linkedin');
+    expect(resolveIdeaChannel({ channel: 'landing_page', format: 'blog article' })).toBe('blog');
+  });
+  it('keeps telegram and threads when chosen explicitly (autopilot runner)', () => {
+    expect(resolveIdeaChannel({ channel: 'telegram', format: 'LinkedIn post' })).toBe('telegram');
+    expect(resolveIdeaChannel({ channel: 'threads', format: 'LinkedIn post' })).toBe('threads');
+  });
+  it('ignores prototype keys', () => {
+    expect(resolveIdeaChannel({ channel: 'constructor', format: '' })).toBe('linkedin');
+  });
+});
+
+describe('LinkedIn idea → preview → pipeline (B6, B7)', () => {
+  const ownedWorkspace = {
+    id: WORKSPACE,
+    userId: OWNER,
+    contentLanguage: 'en',
+    brandSummary: { industry: 'Dental clinic' },
+    audienceInsights: {
+      competitiveMatrices: { charts: [{}] },
+      competitorKeywordsIntel: { competitors: [{ competitor: 'X' }] },
+    },
+  };
+  const modelIdea = { topic: 'Why audits matter', format: 'LinkedIn text post with one example (X-ray of a clinic)', angle: 'a' };
+
+  beforeEach(() => {
+    prismaMock.workspace.findUnique.mockResolvedValue(ownedWorkspace);
+  });
+
+  it('ideation stamps the chosen platform on every idea', async () => {
+    ideasMock.mockResolvedValue({
+      ideas: [modelIdea, { ...modelIdea, format: 'Twitter-style hook' }],
+      framework: { framework_id: 'f', framework_name: 'F' },
+      quality_scores: {},
+      fallback_used: false,
+      fallback_framework_id: null,
+    });
+
+    const result = await ideateForWorkspace({ userId: OWNER, workspaceId: WORKSPACE }, { platform: 'linkedin' });
+
+    expect('ideas' in result && result.ideas?.map((i) => i.channel)).toEqual(['linkedin', 'linkedin']);
+  });
+
+  it('the preview is drafted for the stamped channel', async () => {
+    draftMock.mockResolvedValue('The full post.');
+
+    const result = await generateDraftPreviewCore(
+      { userId: OWNER, workspaceId: WORKSPACE },
+      { ...modelIdea, format: 'X-style thread', channel: 'linkedin' },
+    );
+
+    expect(result).toMatchObject({ success: true, channel: 'linkedin', preview: 'The full post.' });
+    expect(draftMock.mock.calls[0][3]).toBe('linkedin');
+    expect(draftMock.mock.calls[0][4].wordCount.platform).toBe('linkedin');
+  });
+
+  it('saves the stamped channel, not one guessed from the format', async () => {
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, { ...modelIdea, format: 'X thread', channel: 'linkedin' });
+
+    expect(prismaMock.contentItem.create.mock.calls[0][0].data).toMatchObject({ channel: 'linkedin', status: 'DRAFT' });
+  });
+
+  it('keeps a generated preview as the body, status GENERATED', async () => {
+    await saveIdeaToPipelineCore(
+      { userId: OWNER, workspaceId: WORKSPACE },
+      { ...modelIdea, channel: 'linkedin' },
+      { body: '  The full 265-word post.  ' },
+    );
+
+    expect(prismaMock.contentItem.create.mock.calls[0][0].data).toMatchObject({
+      channel: 'linkedin',
+      content: 'The full 265-word post.',
+      status: 'GENERATED',
+    });
+    expect(activityLogMock.mock.calls[0][0].detail).toMatchObject({ fromPreview: true });
+  });
+
+  it('saves the outline when there is no preview (or a blank one)', async () => {
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, modelIdea, { body: '   ' });
+
+    const data = prismaMock.contentItem.create.mock.calls[0][0].data;
+    expect(data.status).toBe('DRAFT');
+    expect(data.content).toMatch(/^ANGLE\/HOOK: /);
+  });
+
+  it('refuses a preview body over the size limit', async () => {
+    const result = await saveIdeaToPipelineCore(
+      { userId: OWNER, workspaceId: WORKSPACE },
+      modelIdea,
+      { body: 'a'.repeat(100_001) },
+    );
+
+    expect(result).toEqual({ error: 'Preview is too long to save.' });
+    expect(prismaMock.contentItem.create).not.toHaveBeenCalled();
   });
 });

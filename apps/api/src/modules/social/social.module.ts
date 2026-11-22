@@ -2,11 +2,12 @@
  * social.module.ts
  *
  * NestJS module that bundles all social publishing functionality:
- *   - Platform adapters (LinkedIn, X, Facebook, Instagram)
+ *   - Platform adapters (LinkedIn, X, Facebook, Instagram, TikTok, Telegram)
  *   - AdapterFactory for platform → adapter resolution
  *   - SocialConnectionsService (CRUD + token encryption)
  *   - SocialPublishService (job orchestration + async execution)
  *   - SocialOAuthService / SocialOAuthController (OAuth 2.0 flow)
+ *   - Telegram connect sessions + bot webhook (telegram/)
  *   - REST controllers
  */
 
@@ -21,6 +22,7 @@ import { AdapterFactory } from './adapters/adapter.factory';
 import { FacebookAdapter } from './adapters/facebook.adapter';
 import { InstagramAdapter } from './adapters/instagram.adapter';
 import { LinkedInAdapter } from './adapters/linkedin.adapter';
+import { TelegramAdapter } from './adapters/telegram.adapter';
 import { TikTokAdapter } from './adapters/tiktok.adapter';
 import { XAdapter } from './adapters/x.adapter';
 import { OAUTH_STORE, redisOAuthStore } from './oauth-store';
@@ -32,6 +34,10 @@ import { SocialOAuthService } from './social-oauth.service';
 import { SocialPublishController } from './social-publish.controller';
 import { SocialPublishService } from './social-publish.service';
 import { SocialSchedulerService } from './social-scheduler.service';
+import { TelegramBotClient } from './telegram/telegram-bot.client';
+import { TelegramConnectService } from './telegram/telegram-connect.service';
+import { TelegramPollingService } from './telegram/telegram-polling.service';
+import { TelegramController } from './telegram/telegram.controller';
 import { LOCK_STORE, RedisLockStore, TokenRefreshService } from './token-refresh.service';
 
 @Module({
@@ -40,6 +46,7 @@ import { LOCK_STORE, RedisLockStore, TokenRefreshService } from './token-refresh
     SocialConnectionsController,
     SocialPublishController,
     SocialOAuthController,
+    TelegramController,
   ],
   providers: [
     // Services
@@ -48,6 +55,11 @@ import { LOCK_STORE, RedisLockStore, TokenRefreshService } from './token-refresh
     SocialOAuthService,
     SocialSchedulerService,
     TokenRefreshService,
+    // Telegram: one Contivo bot (TELEGRAM_BOT_TOKEN), connect sessions, dev polling.
+    // Factory: the client's optional constructor options are not DI tokens.
+    { provide: TelegramBotClient, useFactory: () => new TelegramBotClient() },
+    TelegramConnectService,
+    TelegramPollingService,
     // Per-connection refresh lock on the same Redis BullMQ uses.
     { provide: LOCK_STORE, useFactory: () => new RedisLockStore(redisConnection) },
     // Single-use OAuth nonces and parked connections (Redis, same as BullMQ).
@@ -62,6 +74,7 @@ import { LOCK_STORE, RedisLockStore, TokenRefreshService } from './token-refresh
     FacebookAdapter,
     InstagramAdapter,
     TikTokAdapter,
+    TelegramAdapter,
     AdapterFactory,
   ],
   exports: [

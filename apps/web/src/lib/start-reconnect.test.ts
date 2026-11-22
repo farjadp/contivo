@@ -30,6 +30,19 @@ describe('startReconnect', () => {
     expect(await startReconnect('c1', 'w1', navigate)).toEqual({ kind: 'message', key: 'api_error' });
   });
 
+  it('a Telegram connection opens the connect panel instead of navigating', async () => {
+    const openTelegram = vi.fn();
+    reconnectMock.mockResolvedValueOnce({ data: { url: null, reconnect: { platform: 'telegram', flow: 'telegram' } } });
+    expect(await startReconnect('c1', 'w1', navigate, openTelegram)).toBeNull();
+    expect(openTelegram).toHaveBeenCalledOnce();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('a Telegram reconnect with nowhere to open the panel says so', async () => {
+    reconnectMock.mockResolvedValueOnce({ data: { url: null, reconnect: { platform: 'telegram', flow: 'telegram' } } });
+    expect(await startReconnect('c1', 'w1', navigate)).toEqual({ kind: 'message', key: 'reconnect_unsupported' });
+  });
+
   it('a thrown error becomes its message', async () => {
     reconnectMock.mockRejectedValueOnce(new Error('network down'));
     expect(await startReconnect('c1', 'w1', navigate)).toEqual({ kind: 'raw', text: 'network down' });

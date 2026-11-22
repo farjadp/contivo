@@ -131,6 +131,7 @@
       "CREDITS_EXHAUSTED": "Publishing credits on this platform have run out.",
       "UNREACHABLE": "The platform could not be reached, even after retries.",
       "PLATFORM_ERROR": "The platform rejected the post."
-    }
+    },
+    "creditRequestFailed": "Your request could not be sent. Please try again."
   }
 }

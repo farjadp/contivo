@@ -116,7 +116,8 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 //
 // OpenAI — https://developers.openai.com/api/docs/pricing (checked 2026-11-21)
 //   gpt-4.1     $2.00 in / $8.00 out
-//   gpt-5-mini  $0.25 in / $2.00 out
+//   gpt-5-mini  $0.25 in / $2.00 out (shutdown 2026-12-11)
+//   gpt-6.2-sol $2.00 in / $10.00 out (checked 2026-11-22; prompts > 272K: $4 / $15)
 //   Web search tool (Responses API): $10.00 / 1k calls + content tokens at model rates
 //   NOT priced: gpt-image-1 (no longer on the page; only gpt-image-1.5 / -mini are)
 //
@@ -128,6 +129,13 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 //   gemini-3.1-flash-lite $0.25 / $1.50 (text/image/video input)
 //   NOT priced: gemini-3.7-flash (the app's default) and gemini-3.5-flash — neither
 //   is listed on the pricing page, gemini-flash-latest (an alias)
+//
+// Anthropic — Claude API pricing (claude-api skill models reference, checked 2026-11-22)
+//   claude-sonnet-5-5 $2.00 in / $10.00 out
+//   claude-opus-5-5   $4.00 in / $20.00 out
+//   Web search server tool: $10 per 1,000 searches (same as OpenAI's per-call fee)
+//   The adapter counts cache reads and writes as input; no call sets
+//   cache_control today, so this matches the bill.
 //
 // Cached-input discounts are ignored: calls here do not read cached tokens,
 // so a cached call is slightly over-estimated, never under.
@@ -148,6 +156,9 @@ const GEMINI_38_FLASH: PricePeriod[] = [
 const PRICES: Record<string, PricePeriod[]> = {
   'gpt-4.1': [{ inputPerM: 2, outputPerM: 8 }],
   'gpt-5-mini': [{ inputPerM: 0.25, outputPerM: 2 }],
+  'gpt-6.2-sol': [
+    { inputPerM: 2, outputPerM: 10, longContext: { abovePromptTokens: 272_000, inputPerM: 4, outputPerM: 15 } },
+  ],
   'gemini-2.5-pro': [
     {
       inputPerM: 1.25,
@@ -159,9 +170,11 @@ const PRICES: Record<string, PricePeriod[]> = {
   ],
   'gemini-3.8-flash': GEMINI_38_FLASH,
   'gemini-3.1-flash-lite': [{ inputPerM: 0.25, outputPerM: 1.5 }],
+  'claude-sonnet-5-5': [{ inputPerM: 2, outputPerM: 10 }],
+  'claude-opus-5-5': [{ inputPerM: 4, outputPerM: 20 }],
 };
 
-/** OpenAI web_search tool: $10.00 per 1,000 calls (pricing page above). */
+/** Web search: $10.00 per 1,000 calls on OpenAI and on Claude (pricing notes above). */
 const WEB_SEARCH_CALL_USD = 0.01;
 
 const DATE_SUFFIX = /-\d{4}-\d{2}-\d{2}$/;

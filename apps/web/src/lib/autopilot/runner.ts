@@ -37,6 +37,7 @@ import {
 } from '@/lib/content-engine';
 
 import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
+import { AUTOPILOT_RUN_ERROR } from './run-errors';
 import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
 import { pickStorylineForWorkspace } from '@/lib/narrative/context';
@@ -239,9 +240,8 @@ async function runPolicyInAiContext(
     const runFloor = AI_OPERATION_COST.AUTOPILOT_IDEATION + AI_OPERATION_COST.AUTOPILOT_DRAFT_ATTEMPT;
     if (startingBalance < runFloor) {
       note('out_of_credits', { balance: startingBalance, needed: runFloor });
-      return finish('SKIPPED', zero, {
-        error: `Not enough credits to run: ${startingBalance} left, ${runFloor} needed for one post.`,
-      });
+      // A code, not a sentence: the tab translates it (lib/autopilot/run-errors.ts).
+      return finish('SKIPPED', zero, { error: AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS });
     }
     note('credits', { balance: startingBalance });
 
@@ -364,6 +364,7 @@ async function runPolicyInAiContext(
       if (!(await canAfford(policy.userId, 'AUTOPILOT_IDEATION'))) {
         note('out_of_credits_mid_run', { channel, stage: 'ideation' });
         itemsSkipped += want;
+        outOfCredits = true;
         break;
       }
 
@@ -416,10 +417,11 @@ async function runPolicyInAiContext(
             break;
           }
 
-          // Force the channel: idea.format drives channel resolution in the engine.
+          // Force the channel: an explicit channel wins over anything ideation stamped.
           const saved = await saveIdeaToPipelineCore(actor, {
             ...idea,
             agent_id: policy.id,
+            channel,
             format: channel,
             auto_insert_to_calendar: false,
             framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),
@@ -554,9 +556,7 @@ async function runPolicyInAiContext(
     // An account that ran dry mid-run is not a failure to fix, so it is
     // reported as its own outcome rather than as a broken run.
     if (outOfCredits && itemsScheduled === 0 && itemsHeld === 0) {
-      return finish('SKIPPED', counts, {
-        error: 'Ran out of credits before anything could be scheduled.',
-      });
+      return finish('SKIPPED', counts, { error: AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN });
     }
     if (outOfCredits) {
       note('stopped_out_of_credits', { itemsScheduled });
@@ -580,7 +580,7 @@ async function runPolicyInAiContext(
     // failed run that someone has to look at.
     if (err instanceof InsufficientCreditsError) {
       note('out_of_credits_mid_run', { stage: 'charge', message: err.message });
-      return finish('SKIPPED', zero, { error: err.message });
+      return finish('SKIPPED', zero, { error: AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN });
     }
     const message = err instanceof Error ? err.message : String(err);
     note('exception', { message });

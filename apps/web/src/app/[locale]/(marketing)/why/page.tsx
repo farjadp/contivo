@@ -142,7 +142,10 @@ export default function WhyPage() {
         <h2 className="font-display text-[clamp(1.7rem,3vw,2.3rem)] font-bold leading-[1.1]">{t('behindTitle')}</h2>
         <div className="max-w-[62ch] text-[16px] leading-[1.75] text-moss-muted">
           <p>{t('behindBody')}</p>
-          <p className="mt-4">
+          <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2">
+            <Link href="/team" className="font-semibold text-moss underline decoration-2 underline-offset-[6px] hover:decoration-saffron">
+              {t('teamLink')}
+            </Link>
             <Link href="/about" className="font-semibold text-moss underline decoration-2 underline-offset-[6px] hover:decoration-saffron">
               {t('aboutLink')}
             </Link>

@@ -63,6 +63,7 @@ function factoryWith(adapter: SocialAdapter) {
     map.FACEBOOK as any,
     map.INSTAGRAM as any,
     map.TIKTOK as any,
+    map.TELEGRAM as any,
   );
 }
 

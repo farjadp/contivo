@@ -35,8 +35,10 @@ describe('canStartConnectFlow', () => {
     expect(canStartConnectFlow('LINKEDIN')).toBe(true);
     expect(canStartConnectFlow('x')).toBe(true);
     expect(canStartConnectFlow('INSTAGRAM')).toBe(false);
-    // No connect flow exists for these yet; they must not offer Reconnect.
-    expect(canStartConnectFlow('TELEGRAM')).toBe(false);
+    // Telegram reconnects through its connect panel, not OAuth.
+    expect(canStartConnectFlow('TELEGRAM')).toBe(true);
+    expect(canStartConnectFlow('telegram')).toBe(true);
+    // No connect flow exists for this yet; it must not offer Reconnect.
     expect(canStartConnectFlow('THREADS')).toBe(false);
   });
 });
@@ -185,8 +187,15 @@ describe('jobFixAction (Connections queue / history rows)', () => {
   });
 
   it('a platform with no connect flow → open Connected accounts instead', () => {
-    expect(jobFixAction(failed('[CONNECTION_REVOKED] bot removed', { platform: 'TELEGRAM', connectionStatus: 'REVOKED' }))).toEqual({
+    expect(jobFixAction(failed('[CONNECTION_REVOKED] x', { platform: 'THREADS', connectionStatus: 'REVOKED' }))).toEqual({
       kind: 'openAccounts',
+    });
+  });
+
+  it('a Telegram channel the bot was removed from → Reconnect that connection', () => {
+    expect(jobFixAction(failed('[CONNECTION_REVOKED] bot removed', { platform: 'TELEGRAM', connectionStatus: 'REVOKED' }))).toEqual({
+      kind: 'reconnect',
+      connectionId: expect.any(String),
     });
   });
 

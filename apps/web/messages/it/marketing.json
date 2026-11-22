@@ -231,7 +231,7 @@
   },
   "footer": {
     "blurb": "Legge il tuo sito e ne ricava una memoria del brand e una mappa della concorrenza, poi scrive, revisiona e pubblica con i tempi che decidi tu.",
-    "provenance": "Costruito e usato prima di tutto sui siti del suo fondatore. Da allora 23 utenti dell'accesso anticipato lo hanno pagato; nessuno è citato qui senza il suo consenso.",
+    "provenance": "Costruito e usato prima di tutto sui propri siti. Da allora 23 utenti dell'accesso anticipato lo hanno pagato; nessuno è citato qui senza il suo consenso.",
     "productTitle": "Il prodotto",
     "intelligence": "Intelligence",
     "qualityGate": "Il controllo qualità",
@@ -256,6 +256,9 @@
     "features": "Funzionalità",
     "compare": "Confronto",
     "product": "Come funziona",
-    "why": "Perché Contivo"
+    "why": "Perché Contivo",
+    "team": "Team",
+    "roadmap": "Roadmap",
+    "disclaimer": "Avvertenze"
   }
 }

@@ -17,6 +17,7 @@ import { FacebookAdapter } from './facebook.adapter';
 import { InstagramAdapter } from './instagram.adapter';
 import { LinkedInAdapter } from './linkedin.adapter';
 import { SocialAdapter } from './social-adapter.interface';
+import { TelegramAdapter } from './telegram.adapter';
 import { TikTokAdapter } from './tiktok.adapter';
 import { XAdapter } from './x.adapter';
 
@@ -31,6 +32,18 @@ export class UnsupportedPlatformError extends Error {
   }
 }
 
+/**
+ * The adapter exists but this deployment lacks its platform credential (e.g.
+ * TELEGRAM_BOT_TOKEN unset). Permanent (NO_PUBLISHER): a retry cannot fix it.
+ */
+export class PlatformNotConfiguredError extends UnsupportedPlatformError {
+  constructor(platform: string) {
+    super(platform);
+    this.message = `${platform} publishing is not set up on this deployment.`;
+    this.name = 'PlatformNotConfiguredError';
+  }
+}
+
 @Injectable()
 export class AdapterFactory {
   /** Map of platform → adapter instance, injected via NestJS DI. */
@@ -42,14 +55,17 @@ export class AdapterFactory {
     private readonly facebook:  FacebookAdapter,
     private readonly instagram: InstagramAdapter,
     private readonly tiktok:    TikTokAdapter,
+    private readonly telegram:  TelegramAdapter,
   ) {
-    this.adapters = new Map<SocialPlatform, SocialAdapter>([
+    const entries: Array<[SocialPlatform, SocialAdapter | undefined]> = [
       ['LINKEDIN',  this.linkedin],
       ['X',         this.x],
       ['FACEBOOK',  this.facebook],
       ['INSTAGRAM', this.instagram],
       ['TIKTOK',    this.tiktok],
-    ]);
+      ['TELEGRAM',  this.telegram],
+    ];
+    this.adapters = new Map(entries.filter((e): e is [SocialPlatform, SocialAdapter] => !!e[1]));
   }
 
   /** Whether an adapter exists for this platform. */
@@ -60,11 +76,15 @@ export class AdapterFactory {
   /**
    * Returns the adapter for the given platform.
    * Throws UnsupportedPlatformError for a known platform without an adapter,
-   * and a plain Error for a value that is not a platform at all.
+   * PlatformNotConfiguredError when its env credential is missing, and a
+   * plain Error for a value that is not a platform at all.
    */
   getAdapter(platform: string): SocialAdapter {
     const adapter = this.adapters.get(platform as SocialPlatform);
-    if (adapter) return adapter;
+    if (adapter) {
+      if (adapter.isConfigured && !adapter.isConfigured()) throw new PlatformNotConfiguredError(platform);
+      return adapter;
+    }
     if ((PLATFORM_KEYS as readonly string[]).includes(platform)) {
       throw new UnsupportedPlatformError(platform);
     }

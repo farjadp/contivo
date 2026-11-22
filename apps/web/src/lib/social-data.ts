@@ -14,6 +14,7 @@
 
 import { prisma } from '@/lib/db';
 import { latestJobByContentItem, type LatestPublishJob } from '@/lib/publish-outcome';
+import { pickConnectionMeta } from '@/lib/telegram-connect';
 
 export type WorkspaceOption = { id: string; name: string };
 
@@ -52,6 +53,8 @@ export async function getSocialConnections(workspaceId: string) {
       isDefault: true,
       lastSyncAt: true,
       createdAt: true,
+      // Read here, but only pickConnectionMeta's fields reach the browser.
+      metaJson: true,
     },
   });
 
@@ -64,6 +67,7 @@ export async function getSocialConnections(workspaceId: string) {
     isDefault: c.isDefault,
     lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
     createdAt: c.createdAt.toISOString(),
+    meta: pickConnectionMeta(c.metaJson),
   }));
 }
 

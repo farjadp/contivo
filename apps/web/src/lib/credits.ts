@@ -12,31 +12,13 @@
  */
 
 import { prisma } from '@/lib/db';
+// Costs live in a module with no database import so client code can read them.
+import { AI_OPERATION_COST, type AiOperation } from '@/lib/credit-costs';
 
 /** Credits given to a new account so it can try the product once. */
 export const WELCOME_CREDIT_GRANT = 100;
 
-/**
- * What each unattended AI operation costs.
- *
- * Only Instant Content ever spent credits. Autopilot — which runs on a cron
- * with nobody watching and makes roughly five model calls per post, twice that
- * when the quality gate rejects a draft — spent nothing, so the balance was
- * decorative and there was no ceiling on what a workspace could cost.
- *
- * Two operations rather than five, because the run cannot usefully stop
- * halfway through drafting one post: ideation is charged once per channel, and
- * everything that turns one idea into a reviewed draft (draft, humanize pass,
- * image, quality gate) is charged as a single attempt. A rejected draft is
- * charged too — the model calls happened either way, and not charging for them
- * would leave the exact hole this closes.
- */
-export const AI_OPERATION_COST = {
-  AUTOPILOT_IDEATION: 2,
-  AUTOPILOT_DRAFT_ATTEMPT: 7,
-} as const;
-
-export type AiOperation = keyof typeof AI_OPERATION_COST;
+export { AI_OPERATION_COST, AUTOPILOT_RUN_COST, type AiOperation } from '@/lib/credit-costs';
 
 /** Cost per Instant Content generation, by channel. Mirrors the API's table. */
 export const INSTANT_CONTENT_COST: Record<string, number> = {

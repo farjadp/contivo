@@ -18,6 +18,7 @@ import { loadStorylineContext, storylinePromptBlock } from '@/lib/narrative/cont
 import {
   generateContentIdeasWithGemini,
   generateContentDraftWithGemini,
+  type ContentIdea,
   type IdeationRequestOptions,
 } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -38,6 +39,7 @@ import {
 import { humanizeDraft } from '@/lib/humanize';
 import { generateImageForContentItem } from '@/lib/content-image';
 import { adjustWordCountForLanguage, asContentLanguage } from '@/lib/content-language';
+import { POST_BODY_MAX } from '@/lib/content-slug';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,17 +80,23 @@ export function buildPipelineDraftContent(idea: any): string {
 /**
  * Whole-word format keywords → channel, checked in order. Matching words, not
  * substrings: the old `format.includes('x')` sent "explainer", "text post" and
- * anything else with an x to X. Only channels with content today; telegram and
- * threads are chosen explicitly, never guessed from a format label.
+ * anything else with an x to X. Threads is chosen explicitly, never guessed
+ * from a format label. `telegram` is matched only as the whole word: the
+ * Autopilot runner forces a slot's channel by passing it as the format.
  */
-const FORMAT_CHANNEL_RULES: ReadonlyArray<readonly [ReadonlySet<string>, 'twitter' | 'blog' | 'email' | 'instagram']> = [
+const FORMAT_CHANNEL_RULES: ReadonlyArray<
+  readonly [ReadonlySet<string>, 'twitter' | 'blog' | 'email' | 'instagram' | 'telegram']
+> = [
+  [new Set(['telegram']), 'telegram'],
   [new Set(['x', 'twitter', 'tweet', 'tweets']), 'twitter'],
   [new Set(['blog', 'article', 'articles']), 'blog'],
   [new Set(['email', 'newsletter']), 'email'],
   [new Set(['instagram', 'insta', 'ig']), 'instagram'],
 ];
 
-export function resolveChannelFromFormat(formatValue: unknown): 'linkedin' | 'twitter' | 'blog' | 'email' | 'instagram' {
+export function resolveChannelFromFormat(
+  formatValue: unknown,
+): 'linkedin' | 'twitter' | 'blog' | 'email' | 'instagram' | 'telegram' {
   const words = String(formatValue ?? '')
     .toLowerCase()
     .split(/[^a-z0-9]+/)
@@ -97,6 +105,45 @@ export function resolveChannelFromFormat(formatValue: unknown): 'linkedin' | 'tw
     if (words.some((word) => keywords.has(word))) return channel;
   }
   return 'linkedin';
+}
+
+/**
+ * Every stored channel an idea can be saved for. telegram and threads are only
+ * ever chosen explicitly (the runner passes them); the format fallback never
+ * guesses them.
+ */
+export type IdeaChannel = ReturnType<typeof resolveChannelFromFormat> | 'telegram' | 'threads';
+
+/**
+ * Platform values the user can pick (CONTENT_PLATFORM_OPTIONS) and channel
+ * names, mapped to the stored channel. landing_page, ad and strategy_note have
+ * no channel of their own and fall through to the format label.
+ */
+const PLATFORM_TO_CHANNEL: Readonly<Record<string, IdeaChannel>> = {
+  linkedin: 'linkedin',
+  x: 'twitter',
+  twitter: 'twitter',
+  blog: 'blog',
+  email: 'email',
+  instagram: 'instagram',
+  telegram: 'telegram',
+  threads: 'threads',
+};
+
+export function channelForPlatform(value: unknown): IdeaChannel | null {
+  const key = String(value ?? '').trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PLATFORM_TO_CHANNEL, key) ? PLATFORM_TO_CHANNEL[key] : null;
+}
+
+/**
+ * The channel an idea is saved and drafted for. The platform the user chose
+ * wins: ideation stamps it on every idea as `channel`. The model's free-text
+ * `format` ("LinkedIn text post with an example…") is only a fallback for ideas
+ * that carry no channel, e.g. ones saved before this field existed.
+ */
+export function resolveIdeaChannel(idea: unknown): IdeaChannel {
+  const source = (idea ?? {}) as { channel?: unknown; platform?: unknown; format?: unknown };
+  return channelForPlatform(source.channel) ?? channelForPlatform(source.platform) ?? resolveChannelFromFormat(source.format);
 }
 
 function extractLegacyFrameworkContext(rawContent: string): {
@@ -341,8 +388,15 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
       },
     });
 
+    // Stamp the chosen platform on each idea so preview and save never have to
+    // guess the channel back from the model's format text.
+    const requestedChannel = channelForPlatform(options?.platform);
+    const ideas: Array<ContentIdea & { channel?: IdeaChannel }> = requestedChannel
+      ? ideation.ideas.map((idea) => ({ ...idea, channel: requestedChannel }))
+      : ideation.ideas;
+
     return {
-      ideas: ideation.ideas,
+      ideas,
       framework: ideation.framework,
       qualityScores: ideation.quality_scores,
       fallbackUsed: ideation.fallback_used,
@@ -358,7 +412,9 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
 // Pipeline
 // ---------------------------------------------------------------------------
 
-export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
+export type SavedPreview = { body?: unknown };
+
+export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: SavedPreview) {
   const { userId, workspaceId } = actor;
 
   try {
@@ -374,7 +430,16 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
     });
     if (!workspace) return { error: 'Workspace not found' };
 
-    const channel = resolveChannelFromFormat(idea?.format);
+    const channel = resolveIdeaChannel(idea);
+
+    /*
+      A preview the user already generated is the post: keep it instead of the
+      outline, or they wait for and pay for a second, different draft. It is
+      AI text nobody has approved yet, so it lands as GENERATED, not READY.
+    */
+    const previewBody = typeof preview?.body === 'string' ? preview.body.trim() : '';
+    if (previewBody.length > POST_BODY_MAX) return { error: 'Preview is too long to save.' };
+    const fromPreview = previewBody.length > 0;
 
     const item = await prisma.contentItem.create({
       data: {
@@ -383,8 +448,8 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
         type: 'POST', // Default job type
         channel,
         topic: idea.topic || 'Untitled Idea',
-        content: buildPipelineDraftContent(idea),
-        status: 'DRAFT',
+        content: fromPreview ? previewBody : buildPipelineDraftContent(idea),
+        status: fromPreview ? 'GENERATED' : 'DRAFT',
         // Set when an agent produced this, so each agent keeps its own quota.
         agentId: idea?.agent_id ? String(idea.agent_id) : null,
         // Which argument this advances. Null for content made before the
@@ -401,6 +466,7 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any) {
         itemId: item.id,
         topic: item.topic,
         channel: item.channel,
+        fromPreview,
         frameworkId: idea?.framework_id || null,
         targetWordCount: Number.isFinite(Number(idea?.target_word_count ?? idea?.targetWordCount))
           ? Math.floor(Number(idea?.target_word_count ?? idea?.targetWordCount))
@@ -487,9 +553,9 @@ export async function generateDraftPreviewCore(
     const topic = String(idea?.topic || '').trim();
     if (!topic) return { error: 'Idea topic is required for preview generation.' };
 
-    const channel = resolveChannelFromFormat(idea?.format);
+    const channel = resolveIdeaChannel(idea);
     const wordCountLimits = await getContentWordCountLimits();
-    const wordCountPlatform = resolveWordCountPlatformKey(idea?.format || channel);
+    const wordCountPlatform = resolveWordCountPlatformKey(channel);
     const wordCountRange = wordCountLimits[wordCountPlatform];
     const targetWordCount = clampWordCount(
       manualSource?.targetWordCount ?? idea?.target_word_count ?? idea?.targetWordCount,

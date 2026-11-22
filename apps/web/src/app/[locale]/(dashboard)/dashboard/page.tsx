@@ -15,7 +15,7 @@ import { listWorkspaceActivityLogs } from '@/lib/activity-log';
 import { listWorkspaceArchiveStates } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { buildWorkspaceProgressReport } from '@/lib/workspace-progress';
-import { buildJourney, tabGate, type StepId, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { buildJourney, matrixFacts, tabGate, type StepId, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { buildLoop, STAGES, type StageId } from '@/lib/workspace-loop';
 import { LoopRail } from '../growth/[id]/_components/LoopRail';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
@@ -195,7 +195,7 @@ export default async function DashboardPage() {
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: accepted,
     totalCompetitors: countCompetitors(workspace.competitors),
-    matrixCharts: Array.isArray(insights?.competitiveMatrices?.charts) ? insights.competitiveMatrices.charts.length : 0,
+    ...matrixFacts(insights),
     keywordCompetitors: Array.isArray(insights?.competitorKeywordsIntel?.competitors)
       ? insights.competitorKeywordsIntel.competitors.length
       : 0,
@@ -305,7 +305,8 @@ export default async function DashboardPage() {
 
   const autopilotOn = Boolean(autopilot?.enabled);
   const canPublish = connectionsCount > 0 || sitesCount > 0;
-  const ideationReady = Boolean(workspace.brandSummary) && facts.matrixCharts > 0 && facts.keywordCompetitors > 0;
+  // Same answer the ideation server gives (matricesGate), not a chart count.
+  const ideationReady = Boolean(workspace.brandSummary) && facts.matricesReady && facts.keywordCompetitors > 0;
   const creditsLeft = balance._sum.amount ?? 0;
   const activeStage = moves[0]?.stage ?? 'make';
 

@@ -1,0 +1,103 @@
+{
+  "roadmap": {
+    "meta": {
+      "title": "Contivo roadmap: what is being built, and what shipped",
+      "description": "What Contivo is building now, next and later, with no dates promised, and a dated list of what has already shipped."
+    },
+    "eyebrow": "Roadmap",
+    "headline": "What comes next, in order. <accent>Not</accent> by date.",
+    "intro": "The order is a plan; a date would be a promise we could break. When something ships it moves to the list below, with the day it went in.",
+    "horizons": {
+      "now": {
+        "title": "Now",
+        "body": "Being built."
+      },
+      "next": {
+        "title": "Next",
+        "body": "Designed, and the next to be built."
+      },
+      "later": {
+        "title": "Later",
+        "body": "Planned, not started."
+      }
+    },
+    "items": {
+      "channels": {
+        "title": "X, Telegram, WordPress and Threads",
+        "body": "The publishing core they share shipped on 22 November. Each channel is switched on only after a real post has gone out through it."
+      },
+      "billing": {
+        "title": "Paid plans",
+        "body": "Founder, Growth and Agency, as priced on the pricing page. Until billing starts, new accounts are free."
+      },
+      "monitoring": {
+        "title": "Weekly competitor watch",
+        "body": "A weekly re-read of every confirmed competitor, and a list of what changed on their site, prices or positioning."
+      },
+      "imageQuality": {
+        "title": "Choose image quality",
+        "body": "Fast, standard or HD per image, so a throwaway and a hero image do not cost the same."
+      },
+      "imageTemplate": {
+        "title": "Your brand on images",
+        "body": "Headline and logo drawn over the image in your colours and a real font, so the text is right, including Persian."
+      },
+      "video": {
+        "title": "Video scripts and template videos",
+        "body": "Scripts you can shoot, and short videos made without a camera."
+      },
+      "agency": {
+        "title": "White-label reports and client links",
+        "body": "The strategy report under an agency's own brand, and a link a client can open without an account."
+      },
+      "networks": {
+        "title": "Instagram, Facebook and TikTok",
+        "body": "Each one needs its platform's app review first, so the timing is partly theirs."
+      },
+      "languages": {
+        "title": "More content languages",
+        "body": "Writing in languages beyond English and Persian."
+      }
+    },
+    "note": "Order can change when customers tell us something matters more. Anything we drop is removed from this page, not left to go stale.",
+    "shippedTitle": "Recently shipped",
+    "shippedIntro": "Changes a customer would notice, with the day each one went into the product.",
+    "shipped": {
+      "ownPost": {
+        "title": "Write your own post, and edit a published one",
+        "body": "Add a post in your own words to the pipeline, and correct a live article in place."
+      },
+      "failover": {
+        "title": "Another AI provider takes over",
+        "body": "If one provider is down, the next one picks up the work, and the switch is logged."
+      },
+      "security": {
+        "title": "Security fixes to publishing and site connections",
+        "body": "Publishing is tied to your own workspace, and a site's refresh address cannot be pointed at internal systems."
+      },
+      "tokens": {
+        "title": "Connected accounts encrypted",
+        "body": "Tokens for connected social accounts are encrypted at rest."
+      },
+      "italian": {
+        "title": "Italian",
+        "body": "This site in Italian."
+      },
+      "discovery": {
+        "title": "Competitor discovery and charts on evidence",
+        "body": "Competitors are found with the evidence they were found on, and every chart score shows its reasoning."
+      },
+      "report": {
+        "title": "A new strategy report",
+        "body": "Our template, with the model writing only the prose and never placing chart points."
+      },
+      "persian": {
+        "title": "Persian",
+        "body": "The whole product, and the writing itself, in Persian."
+      }
+    },
+    "closeHeadline": "Something missing that you need?",
+    "closeCta": "Tell us",
+    "closeFeatures": "What works today"
+  }
+}
