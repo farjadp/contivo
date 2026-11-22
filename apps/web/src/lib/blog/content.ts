@@ -6,7 +6,8 @@
  * in, and its FAQ.
  *
  * Deliberately small. It covers what our generator writes (headings,
- * paragraphs, lists, quotes, code, emphasis, links) and nothing else, and it
+ * paragraphs, lists, quotes, code, GitHub-style tables, emphasis, links) and
+ * nothing else, and it
  * never produces raw HTML: the body is model-written, and a renderer that
  * passes HTML through would let a prompt inject script into contivo.app.
  */
@@ -26,7 +27,10 @@ export type Block =
   | { kind: 'list'; ordered: boolean; items: string[] }
   | { kind: 'quote'; text: string }
   | { kind: 'code'; text: string }
+  | { kind: 'table'; header: string[]; align: TableAlign[]; rows: string[][] }
   | { kind: 'rule' };
+
+export type TableAlign = 'left' | 'center' | 'right' | null;
 
 export type FaqEntry = { question: string; answer: string };
 
@@ -54,6 +58,50 @@ const HEADING = /^(#{1,6})\s+(.+?)\s*#*\s*$/;
 const BULLET = /^\s*[-*+]\s+(.*)$/;
 const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
 const RULE = /^\s*([-*_])(\s*\1){2,}\s*$/;
+const DELIMITER_CELL = /^:?-{3,}:?$/;
+
+/**
+ * Splits a table row into cells. Outer pipes are optional; `\|` is a literal
+ * pipe inside a cell, not a column break.
+ */
+function splitRow(line: string): string[] {
+  let row = line.trim();
+  if (row.startsWith('|')) row = row.slice(1);
+  if (row.endsWith('|') && !row.endsWith('\\|')) row = row.slice(0, -1);
+  return row.split(/(?<!\\)\|/).map((cell) => cell.trim().replace(/\\\|/g, '|'));
+}
+
+/** The column alignments a delimiter row declares, or null if it is not one. */
+function parseDelimiterRow(line: string): TableAlign[] | null {
+  if (!line.includes('|')) return null;
+  const cells = splitRow(line);
+  if (!cells.every((cell) => DELIMITER_CELL.test(cell))) return null;
+  return cells.map((cell) => {
+    const left = cell.startsWith(':');
+    const right = cell.endsWith(':');
+    if (left && right) return 'center';
+    if (right) return 'right';
+    if (left) return 'left';
+    return null;
+  });
+}
+
+/**
+ * A table starts at a row with a pipe followed by a delimiter row with the
+ * same number of columns. Without that second line a "|" in a sentence is
+ * just text.
+ */
+function tableAlignAt(lines: string[], i: number): TableAlign[] | null {
+  const line = lines[i] ?? '';
+  if (!line.includes('|')) return null;
+  const align = parseDelimiterRow(lines[i + 1] ?? '');
+  if (!align || align.length !== splitRow(line).length) return null;
+  return align;
+}
+
+function fitRow(cells: string[], width: number): string[] {
+  return Array.from({ length: width }, (_, k) => cells[k] ?? '');
+}
 
 /**
  * Splits markdown into blocks. `title` is the post title: a leading `# Title`
@@ -113,6 +161,19 @@ export function parseMarkdown(markdown: string, title = ''): Block[] {
       continue;
     }
 
+    const align = tableAlignAt(lines, i);
+    if (align) {
+      const header = splitRow(line);
+      const rows: string[][] = [];
+      i += 2;
+      while (i < lines.length && (lines[i] ?? '').trim() && (lines[i] ?? '').includes('|')) {
+        rows.push(fitRow(splitRow(lines[i] ?? ''), header.length));
+        i++;
+      }
+      blocks.push({ kind: 'table', header, align, rows });
+      continue;
+    }
+
     const ordered = NUMBERED.test(line);
     if (ordered || BULLET.test(line)) {
       const pattern = ordered ? NUMBERED : BULLET;
@@ -135,7 +196,12 @@ export function parseMarkdown(markdown: string, title = ''): Block[] {
     }
 
     const body: string[] = [];
-    while (i < lines.length && (lines[i] ?? '').trim() && !isBlockStart(lines[i] ?? '')) {
+    while (
+      i < lines.length &&
+      (lines[i] ?? '').trim() &&
+      !isBlockStart(lines[i] ?? '') &&
+      !(body.length && tableAlignAt(lines, i))
+    ) {
       body.push((lines[i] ?? '').trim());
       i++;
     }

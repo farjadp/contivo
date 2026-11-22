@@ -7,7 +7,7 @@
 
 import { Fragment } from 'react';
 
-import { parseInline, type Block, type Inline } from '@/lib/blog/content';
+import { parseInline, type Block, type Inline, type TableAlign } from '@/lib/blog/content';
 
 function InlineNodes({ nodes }: { nodes: Inline[] }) {
   return (
@@ -54,6 +54,15 @@ function InlineNodes({ nodes }: { nodes: Inline[] }) {
 }
 
 const Text = ({ text }: { text: string }) => <InlineNodes nodes={parseInline(text)} />;
+
+// Logical alignment, so a column the author set "left" sits at the start of the
+// line in Persian too.
+const ALIGN_CLASS: Record<NonNullable<TableAlign>, string> = {
+  left: 'text-start',
+  center: 'text-center',
+  right: 'text-end',
+};
+const alignClass = (align: TableAlign | undefined) => (align ? ALIGN_CLASS[align] : 'text-start');
 
 export function ArticleBody({ blocks, locale }: { blocks: Block[]; locale: string }) {
   // `decimal` prints Latin digits even on an RTL page; Persian lists count in Persian.
@@ -113,6 +122,39 @@ export function ArticleBody({ blocks, locale }: { blocks: Block[]; locale: strin
               <pre key={i} dir="ltr" className="mt-8 overflow-x-auto rounded-xl border border-rule bg-chalk-raised p-5 font-plexmono text-[14px] leading-relaxed text-moss">
                 <code>{block.text}</code>
               </pre>
+            );
+          case 'table':
+            return (
+              // The scroll lives on the wrapper, so a wide table scrolls inside
+              // the article instead of pushing the page sideways on a phone.
+              <div key={i} className="mt-8 overflow-x-auto rounded-xl border border-rule">
+                <table className="w-full border-collapse text-[16px] leading-relaxed">
+                  <thead className="bg-chalk-raised">
+                    <tr>
+                      {block.header.map((cell, j) => (
+                        <th
+                          key={j}
+                          scope="col"
+                          className={`border-b border-rule px-4 py-3 align-bottom font-semibold text-moss ${alignClass(block.align[j])}`}
+                        >
+                          <Text text={cell} />
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {block.rows.map((row, r) => (
+                      <tr key={r} className="border-t border-rule first:border-t-0">
+                        {row.map((cell, j) => (
+                          <td key={j} className={`px-4 py-3 align-top ${alignClass(block.align[j])}`}>
+                            <Text text={cell} />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             );
           case 'rule':
             return <hr key={i} className="my-12 border-rule" />;
