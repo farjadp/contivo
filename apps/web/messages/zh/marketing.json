@@ -240,9 +240,7 @@
       "hero": {
         "eyebrow": "内容营销，替你做好",
         "headline": "你的 LinkedIn 和博客，每周都<accent>有新内容</accent>。",
-        "body": "把网站交给 Contivo。它会了解你卖什么、和谁竞争，然后为你的 LinkedIn 写帖子、为你自己的网站写文章，并在你选定的日子发布。每一篇发出前都会经过检查。",
-        "shotAlt": "一个真实 Contivo 工作区的内容管道：已发布到 LinkedIn 的帖子，以及一篇等待排期的草稿。",
-        "shotCaption": "真实工作区，截自应用：帖子已发布到 LinkedIn，一篇草稿已排期。"
+        "body": "把网站交给 Contivo。它会了解你卖什么、和谁竞争，然后为你的 LinkedIn 写帖子、为你自己的网站写文章，并在你选定的日子发布。每一篇发出前都会经过检查。"
       },
       "week": {
         "title": "一周是什么样子",
@@ -313,6 +311,36 @@
           "q": "开始需要准备什么？",
           "a": "一个网站。要在 LinkedIn 上发帖，需要你的 LinkedIn 账户；要在你的网站上发布，需要开发者做一次简短设置。"
         }
+      },
+      "live": {
+        "aria": "示意：Contivo 读取一个网站，了解这家企业卖什么、面向谁、用什么语气说话、和谁竞争，然后在 LinkedIn 和企业自己的网站上排好这一周的五篇帖子。",
+        "reading": "读取中",
+        "read": "已读取",
+        "sells": "你卖什么",
+        "audience": "卖给谁",
+        "tone": "你的语气",
+        "competitors": "竞争对手",
+        "week": "接下来 7 天",
+        "site": "你的网站",
+        "summary": "{count, plural, other {# 篇帖子已规划、检查并排期}}",
+        "caption": "这是示意动画，演示粘贴网址之后会发生什么。在上方输入你的网址，它会重新播放。你真实的一周内容，会根据你真实的网站生成。"
+      },
+      "gate": {
+        "title": "一篇草稿，过一遍质量关卡",
+        "illustration": "示意",
+        "illustrationEnglish": "示意，草稿为英文",
+        "draftLabel": "初稿",
+        "rewriteLabel": "改写后",
+        "tellNote": "读起来像机器写的：开头被重写",
+        "statNote": "一个谁也说不出出处的数据：否决",
+        "held": "已拦下，未发布",
+        "scores": {
+          "brand": "品牌契合度",
+          "safety": "事实可靠性",
+          "clarity": "清晰度"
+        },
+        "score": "{score}/10",
+        "passed": "已通过，排期发布到 LinkedIn：{when}"
       }
     }
   },

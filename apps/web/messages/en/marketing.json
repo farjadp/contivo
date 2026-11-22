@@ -240,9 +240,7 @@
       "hero": {
         "eyebrow": "Content marketing, done for you",
         "headline": "Your LinkedIn and your blog, <accent>kept busy</accent> every week.",
-        "body": "Give Contivo your website. It learns what you sell and who you compete with, then writes posts for your LinkedIn and articles for your own site, and publishes them on the days you choose. Each one is checked before it goes out.",
-        "shotAlt": "The pipeline of a real Contivo workspace: posts published to LinkedIn and one draft waiting for its slot.",
-        "shotCaption": "A real workspace, captured from the app: posts published to LinkedIn, one draft scheduled."
+        "body": "Give Contivo your website. It learns what you sell and who you compete with, then writes posts for your LinkedIn and articles for your own site, and publishes them on the days you choose. Each one is checked before it goes out."
       },
       "week": {
         "title": "What a week looks like",
@@ -313,6 +311,36 @@
           "q": "What do I need to start?",
           "a": "A website. To post on LinkedIn, your LinkedIn account; to publish on your site, a developer for one short setup."
         }
+      },
+      "live": {
+        "aria": "Illustration: Contivo reads a website, learns what the business sells, who it is for, how it sounds and who it competes with, then plans five posts for the week on LinkedIn and the business's own site.",
+        "reading": "Reading",
+        "read": "Read",
+        "sells": "What you sell",
+        "audience": "Who it's for",
+        "tone": "How you sound",
+        "competitors": "Who you compete with",
+        "week": "Your next 7 days",
+        "site": "Your site",
+        "summary": "{count, plural, one {# post} other {# posts}} planned, checked and scheduled",
+        "caption": "An illustration of what happens after you paste your address. Type yours above and it replays. Your real week is built from your real site."
+      },
+      "gate": {
+        "title": "One draft, through the gate",
+        "illustration": "Illustration",
+        "illustrationEnglish": "Illustration, draft in English",
+        "draftLabel": "First draft",
+        "rewriteLabel": "After the rewrite",
+        "tellNote": "Reads as machine-written: the opener is rewritten",
+        "statNote": "A statistic nobody can source: vetoed",
+        "held": "Held, not published",
+        "scores": {
+          "brand": "Brand fit",
+          "safety": "Factual safety",
+          "clarity": "Clarity"
+        },
+        "score": "{score}/10",
+        "passed": "Passed, scheduled for LinkedIn, {when}"
       }
     }
   },
