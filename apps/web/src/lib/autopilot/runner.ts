@@ -39,6 +39,7 @@ import {
 import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
 import { AUTOPILOT_RUN_ERROR } from './run-errors';
 import { evaluateDraft } from './quality-gate';
+import { toStoredVerdict } from '@/lib/quality-verdict';
 import { pickPublishSlots } from './schedule';
 import { pickStorylineForWorkspace } from '@/lib/narrative/context';
 import { asContentLanguage } from '@/lib/content-language';
@@ -488,6 +489,8 @@ async function runPolicyInAiContext(
                 status: 'DRAFT',
                 scheduledAtUtc: null,
                 failedReason: `Autopilot quality gate: ${verdict.reasons[0] ?? verdict.rejectedBy}`,
+                // Same field the manual paths write (B8), so every path reads one place.
+                qualityVerdict: toStoredVerdict(verdict, 'autopilot'),
               },
             });
             itemsRejected += 1;
@@ -507,13 +510,14 @@ async function runPolicyInAiContext(
           recentBodies.push(body);
           usedTopics.push(String(idea.topic));
           filled = true;
+          const storedVerdict = toStoredVerdict(verdict, 'autopilot');
 
           if (requireReview) {
             // The user asked to see every draft first: take it out of the
             // publish queue, keep the slot as the proposed time.
             await prisma.contentItem.update({
               where: { id: itemId },
-              data: { status: HELD_FOR_REVIEW_STATUS },
+              data: { status: HELD_FOR_REVIEW_STATUS, qualityVerdict: storedVerdict },
             });
             itemsHeld += 1;
             note('held_for_review', {
@@ -528,6 +532,11 @@ async function runPolicyInAiContext(
             continue;
           }
 
+          // The verdict only; generateDraftForItem already made it SCHEDULED.
+          await prisma.contentItem.update({
+            where: { id: itemId },
+            data: { qualityVerdict: storedVerdict },
+          });
           itemsScheduled += 1;
           note('scheduled', {
             channel,

@@ -109,7 +109,11 @@ describe('runner: requireReview', () => {
     expect(result.status).toBe('SUCCEEDED');
     expect(result.itemsScheduled).toBe(1);
     // generateDraftForItem made it SCHEDULED; nothing moves it afterwards.
-    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    // The only write is the stored verdict (B8), never a status.
+    expect(prismaMock.contentItem.update).toHaveBeenCalledTimes(1);
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('status');
+    expect(data.qualityVerdict).toMatchObject({ approved: true, source: 'autopilot' });
     const scheduled = runLog().find((e) => e.step === 'scheduled');
     expect(scheduled).toMatchObject({ itemId: 'item-1', judge: 'anthropic', judgeModel: 'claude-opus-5-5' });
     expect(runLog().some((e) => e.step === 'held_for_review')).toBe(false);
@@ -124,7 +128,7 @@ describe('runner: requireReview', () => {
     expect(prismaMock.contentItem.update).toHaveBeenCalledTimes(1);
     expect(prismaMock.contentItem.update).toHaveBeenCalledWith({
       where: { id: 'item-1' },
-      data: { status: 'GENERATED' },
+      data: { status: 'GENERATED', qualityVerdict: expect.objectContaining({ approved: true, source: 'autopilot' }) },
     });
     expect(result.itemsScheduled).toBe(0);
     // A held draft fills its slot: not a failed run, no 3-hour retry that

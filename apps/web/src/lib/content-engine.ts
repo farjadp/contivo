@@ -41,6 +41,8 @@ import { generateImageForContentItem } from '@/lib/content-image';
 import { adjustWordCountForLanguage, asContentLanguage } from '@/lib/content-language';
 import { POST_BODY_MAX } from '@/lib/content-slug';
 import { textForChannel } from '@/lib/social-text';
+import { notCheckedVerdict, runManualGate, type StoredVerdict } from '@/lib/quality-verdict';
+import { signVerdictToken, verifyVerdictToken } from '@/lib/quality-verdict-token';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -413,7 +415,11 @@ export async function ideateForWorkspace(actor: Actor, options?: IdeationRequest
 // Pipeline
 // ---------------------------------------------------------------------------
 
-export type SavedPreview = { body?: unknown };
+/**
+ * A preview the user generated in Ideation. `verdictToken` is the signed
+ * quality verdict the preview action returned for exactly this text (B8).
+ */
+export type SavedPreview = { body?: unknown; verdictToken?: unknown };
 
 export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: SavedPreview) {
   const { userId, workspaceId } = actor;
@@ -438,10 +444,28 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: 
       outline, or they wait for and pay for a second, different draft. It is
       AI text nobody has approved yet, so it lands as GENERATED, not READY.
     */
+    /*
+      The preview's verdict comes back as a signed token (B8): valid only for
+      this workspace, channel and exact text, and for 30 minutes. A token that
+      verifies means this is the text the server produced and judged, already
+      converted for the channel, so it is stored as is. Anything else is
+      stored as "not checked" — never re-judged silently, never a pass.
+    */
+    const rawPreview = typeof preview?.body === 'string' ? preview.body.trim() : '';
+    const tokenVerdict = rawPreview
+      ? verifyVerdictToken(preview?.verdictToken, { text: rawPreview, workspaceId, channel })
+      : null;
     // LinkedIn and X show markdown as typed (B15): store what will be published.
-    const previewBody = typeof preview?.body === 'string' ? textForChannel(channel, preview.body).trim() : '';
+    const previewBody = tokenVerdict
+      ? rawPreview
+      : rawPreview
+        ? textForChannel(channel, rawPreview).trim()
+        : '';
     if (previewBody.length > POST_BODY_MAX) return { error: 'Preview is too long to save.' };
     const fromPreview = previewBody.length > 0;
+    const qualityVerdict: StoredVerdict | undefined = fromPreview
+      ? tokenVerdict ?? notCheckedVerdict('preview')
+      : undefined;
 
     const item = await prisma.contentItem.create({
       data: {
@@ -452,6 +476,8 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: 
         topic: idea.topic || 'Untitled Idea',
         content: fromPreview ? previewBody : buildPipelineDraftContent(idea),
         status: fromPreview ? 'GENERATED' : 'DRAFT',
+        // Undefined (column stays null) for an outline: there is no AI text to judge yet.
+        ...(qualityVerdict ? { qualityVerdict } : {}),
         // Set when an agent produced this, so each agent keeps its own quota.
         agentId: idea?.agent_id ? String(idea.agent_id) : null,
         // Which argument this advances. Null for content made before the
@@ -469,6 +495,9 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: 
         topic: item.topic,
         channel: item.channel,
         fromPreview,
+        qualityVerdict: qualityVerdict
+          ? { approved: qualityVerdict.approved, rejectedBy: qualityVerdict.rejectedBy }
+          : null,
         frameworkId: idea?.framework_id || null,
         targetWordCount: Number.isFinite(Number(idea?.target_word_count ?? idea?.targetWordCount))
           ? Math.floor(Number(idea?.target_word_count ?? idea?.targetWordCount))
@@ -593,6 +622,22 @@ export async function generateDraftPreviewCore(
     // Null = the provider chain failed. Nothing is saved; there is no template draft.
     if (!generatedBody) return { error: 'AI generation failed' };
 
+    // What the user sees is what will be stored and published (B15).
+    const previewText = textForChannel(channel, generatedBody);
+
+    // B8: one gate call per generated text. Its verdict travels to Add to
+    // Pipeline in a signed token, so saving costs no second call.
+    const verdict = await runManualGate({
+      actor: { userId, workspaceId },
+      workspace,
+      content: previewText.trim(),
+      topic,
+      channel,
+      storylineId: idea?.storyline_id ? String(idea.storyline_id) : null,
+      source: 'preview',
+    });
+    const verdictToken = signVerdictToken({ text: previewText, workspaceId, channel, verdict });
+
     await writeActivityLog({
       userId,
       workspaceId,
@@ -608,13 +653,15 @@ export async function generateDraftPreviewCore(
         wordCountPlatform,
         wordCountRange,
         targetWordCount,
+        qualityVerdict: { approved: verdict.approved, rejectedBy: verdict.rejectedBy },
       },
     });
 
     return {
       success: true,
-      // What the user sees is what will be stored and published (B15).
-      preview: textForChannel(channel, generatedBody),
+      preview: previewText,
+      verdict,
+      verdictToken,
       channel,
       topic,
       targetWordCount,
@@ -812,14 +859,37 @@ export async function generateDraftForItem(
         ? new Date(item.scheduledAtUtc)
         : autoScheduledAtUtc;
 
+    /*
+      B8: a draft generated by hand is judged before it is scheduled, with the
+      same context the autopilot runner gives the gate. Autopilot runs its own
+      gate and retry loop after this returns, so it is not judged twice here.
+      A failed draft is saved for the user to read but never left SCHEDULED,
+      or the cron would publish it.
+    */
+    const isAutopilot = options.source === 'autopilot';
+    const verdict = isAutopilot
+      ? null
+      : await runManualGate({
+          actor: { userId, workspaceId },
+          workspace,
+          content: finalBody.trim(),
+          topic: item.topic,
+          channel: item.channel,
+          storylineId: item.storylineId,
+          excludeItemId: item.id,
+          source: 'pipeline',
+        });
+    const blocked = verdict !== null && !verdict.approved;
+
     // Update the item
     const updated = await prisma.contentItem.update({
       where: { id: itemId },
       data: {
         content: finalBody,
-        status: 'SCHEDULED',
-        scheduledAtUtc: finalScheduledAtUtc,
+        status: blocked ? 'GENERATED' : 'SCHEDULED',
+        scheduledAtUtc: blocked ? null : finalScheduledAtUtc,
         scheduledTimezone: scheduleTimezone || 'America/Toronto',
+        ...(verdict ? { qualityVerdict: verdict } : {}),
       },
     });
 
@@ -850,6 +920,7 @@ export async function generateDraftForItem(
         status: updated.status,
         frameworkId,
         source: options.source || 'manual',
+        qualityVerdict: verdict ? { approved: verdict.approved, rejectedBy: verdict.rejectedBy } : null,
         manualSourceUsed: Boolean(normalizedManualSource.context),
         manualSourceFileCount: normalizedManualSource.fileCount,
         manualSourceCharCount: normalizedManualSource.sourceChars,
@@ -901,7 +972,7 @@ export async function generateDraftForItem(
       });
     }
 
-    return { success: true, item: updated, humanize: humanizeInfo, image: imageInfo };
+    return { success: true, item: updated, humanize: humanizeInfo, image: imageInfo, verdict };
   } catch (err) {
     console.error('Generation action error:', err);
     return { error: 'Failed to generate post.' };
