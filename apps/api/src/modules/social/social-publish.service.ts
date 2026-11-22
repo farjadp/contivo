@@ -12,8 +12,8 @@
  *     → [future] enqueue job via BullMQ
  *     → return job record immediately (non-blocking)
  *
- * For MVP: jobs are executed synchronously (no real queue yet).
- * The architecture is queue-ready — swap processJobNow() for a queue enqueue.
+ * Execution happens in the BullMQ worker (publish.processor.ts →
+ * publish-job-runner.ts → processJobAsync).
  *
  * Q: Why not execute in-request?
  * A: Social API calls can take 2–10 seconds. Doing this inside an HTTP request
@@ -25,18 +25,33 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 
-import { AdapterFactory } from './adapters/adapter.factory';
-import type { PublishPayload } from './adapters/social-adapter.interface';
+import { AdapterFactory, UnsupportedPlatformError } from './adapters/adapter.factory';
+import type { AdapterConnection, PublishPayload } from './adapters/social-adapter.interface';
 import { CreatePublishJobDto } from './dto/create-publish-job.dto';
+import { PermanentPublishError, TransientPublishError } from './publish-errors';
+import { buildPublishPayload } from './publish-payload';
 import { SocialConnectionsService } from './social-connections.service';
+import { TokenRefreshService } from './token-refresh.service';
 
-// Use local string type — avoids @contivo/types circular dep before package build
-type SocialPlatform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'INSTAGRAM';
+/** Where a BullMQ run is in its attempt budget. */
+export interface AttemptInfo {
+  /** Attempts already made before this one (BullMQ job.attemptsMade). */
+  attemptsMade: number;
+  /** job.opts.attempts. */
+  maxAttempts: number;
+}
+
+/** A direct call (no queue) gets exactly one attempt. */
+const SINGLE_ATTEMPT: AttemptInfo = { attemptsMade: 0, maxAttempts: 1 };
+
+export type PublishOutcome = 'PUBLISHED' | 'FAILED';
 
 @Injectable()
 export class SocialPublishService {
@@ -47,23 +62,34 @@ export class SocialPublishService {
     private readonly adapterFactory: AdapterFactory,
     private readonly connections: SocialConnectionsService,
     private readonly jobs: JobsService,
+    private readonly tokenRefresh: TokenRefreshService,
   ) {}
 
   // ─── Create publish job ────────────────────────────────────────────────────
 
   async createJob(dto: CreatePublishJobDto, userId: string) {
     await this.connections.validateWorkspaceAccess(dto.workspaceId, userId);
-    const platform = dto.platform as SocialPlatform;
+    const platform: SocialPlatform = dto.platform;
 
     // 1. Build payload for validation
     const payload: PublishPayload = {
       body:     dto.body,
       linkUrl:  dto.linkUrl,
       hashtags: dto.hashtags ?? [],
+      title:    dto.title,
+      slug:     dto.slug,
+      format:   dto.format,
     };
 
-    // 2. Run platform-specific validation rules BEFORE touching the DB
-    const adapter = this.adapterFactory.getAdapter(platform);
+    // 2. Run platform-specific validation rules BEFORE touching the DB.
+    // A platform without an adapter (TELEGRAM before its PR) throws
+    // UnsupportedPlatformError here: a clear 400, not a crash.
+    let adapter;
+    try {
+      adapter = this.adapterFactory.getAdapter(platform);
+    } catch (err) {
+      throw new BadRequestException((err as Error).message);
+    }
     const validation = adapter.validatePayload(payload);
     if (!validation.valid) {
       throw new BadRequestException({
@@ -82,10 +108,10 @@ export class SocialPublishService {
         workspaceId:       dto.workspaceId,
         contentItemId:     dto.contentItemId ?? null,
         socialConnectionId: dto.socialConnectionId,
-        platform:          platform as any,
+        platform,
         scheduledAtUtc:    dto.scheduledAtUtc ? new Date(dto.scheduledAtUtc) : null,
         timezone:          dto.timezone ?? 'UTC',
-        status:            initialStatus as any,
+        status:            initialStatus,
       },
     });
 
@@ -101,7 +127,6 @@ export class SocialPublishService {
     );
 
     // 6. Enqueue via BullMQ. If scheduled, the scheduler service handles it separately.
-    // Replace processJobAsync with genuine enqueuing
     if (!isScheduled) {
       await this.jobs.enqueuePublish({
         userId,
@@ -154,6 +179,16 @@ export class SocialPublishService {
 
   // ─── Retry ────────────────────────────────────────────────────────────────
 
+  /**
+   * Re-queues a FAILED job. The payload is rebuilt from the ContentItem with
+   * the same builder the scheduler uses, so a retry posts the real body.
+   *
+   * The BullMQ job id must be new: BullMQ's add() returns the existing job
+   * untouched when the id is already in Redis (addStandardJob-9.lua:90-91 →
+   * handleDuplicatedJob, bullmq 5.71.0), and the first attempt is still there
+   * (no removeOnComplete/removeOnFail). The id uses "-" not ":": a custom id
+   * with a single ":" throws "Custom Id cannot contain :" (job.js:1036-1038).
+   */
   async retry(id: string, workspaceId: string, userId: string) {
     await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const job = await this.prisma.socialPublishJob.findFirst({
@@ -172,27 +207,56 @@ export class SocialPublishService {
       );
     }
 
-    // Update to PUBLISH_QUEUED and increment retry count
-    await this.prisma.socialPublishJob.update({
-      where: { id },
-      data:  { status: 'PUBLISH_QUEUED' as any, retryCount: { increment: 1 } },
+    if (!job.contentItemId) {
+      throw new BadRequestException(
+        `Job ${id} has no content item, so there is no body to publish again. Create a new job.`,
+      );
+    }
+    const item = await this.prisma.contentItem.findUnique({
+      where: { id: job.contentItemId },
+      select: { id: true, topic: true, content: true, slug: true },
+    });
+    if (!item) {
+      throw new BadRequestException(`The content item for job ${id} no longer exists.`);
+    }
+
+    let payload: PublishPayload;
+    try {
+      payload = buildPublishPayload(item);
+    } catch (err) {
+      throw new BadRequestException((err as Error).message);
+    }
+
+    // Conditional update: a double click must not enqueue twice.
+    const retryCount = job.retryCount + 1;
+    const { count } = await this.prisma.socialPublishJob.updateMany({
+      where: { id, status: 'FAILED', retryCount: job.retryCount },
+      data:  { status: 'PUBLISH_QUEUED', retryCount, lastError: null },
+    });
+    if (count === 0) {
+      throw new ConflictException(`Job ${id} is already being retried.`);
+    }
+
+    // Put the item back where the success/failure write-back looks for it.
+    await this.prisma.contentItem.updateMany({
+      where: { id: item.id, status: 'FAILED' },
+      data:  { status: 'PUBLISHING', failedReason: null },
     });
 
-    await this.appendLog(id, 'RETRY_REQUESTED', 'SUCCESS', {
-      retryCount: job.retryCount + 1,
-    });
+    await this.appendLog(id, 'RETRY_REQUESTED', 'SUCCESS', { retryCount });
 
-    const payload: PublishPayload = {
-      body: job.lastError ? '' : '', // For now, re-use empty payload for retry. Phase 2: Attach content resolution.
-    };
-
-    await this.jobs.enqueuePublish({
-      userId,
-      workspaceId,
-      jobRecordId: job.id,
-      traceId: job.id,
-      metadata: payload,
-    });
+    await this.jobs.enqueuePublish(
+      {
+        userId,
+        workspaceId,
+        jobRecordId: job.id,
+        traceId: job.id,
+        retryCount,
+        metadata: payload,
+      },
+      0,
+      { jobId: `${job.id}-r${retryCount}` },
+    );
 
     return this.findJobOrThrow(id);
   }
@@ -213,7 +277,7 @@ export class SocialPublishService {
 
     await this.prisma.socialPublishJob.update({
       where: { id },
-      data:  { status: 'CANCELLED' as any },
+      data:  { status: 'CANCELLED' },
     });
 
     await this.appendLog(id, 'JOB_CANCELLED', 'SUCCESS');
@@ -223,188 +287,206 @@ export class SocialPublishService {
   // ─── Core publish executor ─────────────────────────────────────────────────
 
   /**
-   * Internal async executor.
-   * Called by the BullMQ processor worker in the background.
+   * Runs one publish attempt. Called by the BullMQ processor.
+   *
+   * - Success: job + ContentItem PUBLISHED, URL written back. Returns 'PUBLISHED'.
+   * - Transient failure with attempts left: job back to PUBLISH_QUEUED with
+   *   lastError, connection untouched, throws TransientPublishError so BullMQ
+   *   retries.
+   * - Permanent failure, or transient on the final attempt: job, ContentItem
+   *   and log marked FAILED. Returns 'FAILED' (does not throw).
    */
   public async processJobAsync(
     jobId: string,
     connectionId: string,
     platform: SocialPlatform,
     payload: PublishPayload,
-  ): Promise<void> {
+    attempt: AttemptInfo = SINGLE_ATTEMPT,
+  ): Promise<PublishOutcome> {
+    const attemptNo = attempt.attemptsMade + 1;
+    const isFinalAttempt = attemptNo >= attempt.maxAttempts;
+
     try {
-      // Mark as PUBLISHING
       await this.prisma.socialPublishJob.update({
         where: { id: jobId },
-        data:  { status: 'PUBLISHING' as any },
+        data:  { status: 'PUBLISHING' },
       });
 
       await this.appendLog(jobId, 'PUBLISH_ATTEMPT', 'SUCCESS', {
         platform,
+        attempt: attemptNo,
+        maxAttempts: attempt.maxAttempts,
         payloadLength: payload.body?.length ?? 0,
       });
 
-      // Decrypt tokens for adapter
-      const { accessToken, refreshToken } = await this.connections.getDecryptedTokens(connectionId);
-
-      const connection = await this.prisma.socialConnection.findUnique({
-        where: { id: connectionId },
-        select: { accountIdentifier: true, platform: true },
-      });
-
-      if (!connection || !accessToken) {
-        throw new Error('Social connection token unavailable. Reconnect the account.');
+      if (!payload?.body?.trim()) {
+        throw new PermanentPublishError('Nothing to publish: the job payload has no body.');
       }
 
-      // Artwork is loaded here rather than carried in the job payload: the
-      // payload travels through the queue as JSON, and image bytes do not
-      // belong in it. The row is the single copy both sides read.
-      const enrichedPayload: PublishPayload = { ...payload };
+      let adapter;
       try {
-        const job = await this.prisma.socialPublishJob.findUnique({
-          where: { id: jobId },
-          select: { contentItemId: true },
-        });
-        if (job?.contentItemId) {
-          const image = await (this.prisma as any).contentImage.findFirst({
-            where: { contentItemId: job.contentItemId },
-            orderBy: { createdAt: 'desc' },
-          });
-          if (image?.data) {
-            enrichedPayload.image = {
-              data: Buffer.from(image.data),
-              mimeType: image.mimeType || 'image/png',
-              altText: image.altText ?? undefined,
-            };
-          }
-        }
-      } catch (imageErr) {
-        // Never let artwork lookup stop a publish.
-        this.logger.warn(`Could not load artwork for job=${jobId}: ${(imageErr as Error).message}`);
+        adapter = this.adapterFactory.getAdapter(platform);
+      } catch (err) {
+        if (err instanceof UnsupportedPlatformError) throw new PermanentPublishError(err.message);
+        throw new PermanentPublishError((err as Error).message);
       }
 
-      const adapter = this.adapterFactory.getAdapter(platform);
-
-      // Validate live connection
-      const isAlive = await adapter.validateConnection({
-        id:                connectionId,
-        platform,
-        accountIdentifier: connection.accountIdentifier,
-        accessToken,
-        refreshToken:      refreshToken ?? undefined,
+      const row = await this.prisma.socialConnection.findUnique({
+        where: { id: connectionId },
+        select: { accountIdentifier: true, platform: true, status: true, metaJson: true },
       });
-
-      if (!isAlive) {
-        // Mark the connection itself, not just this job. Access tokens expire
-        // on a schedule — LinkedIn's after about sixty days — and until now the
-        // connection stayed CONNECTED while every publish failed, so the
-        // Connections page went on showing a healthy account and the first
-        // sign of trouble was a week with nothing posted.
-        await this.markConnectionExpired(connectionId, platform);
-        throw new Error(
-          `${platform} connection token is expired or invalid. Please reconnect the account.`,
+      if (!row) {
+        throw new PermanentPublishError('Social connection no longer exists. Reconnect the account.');
+      }
+      if (row.status !== 'CONNECTED') {
+        throw new PermanentPublishError(
+          `${platform} connection is ${row.status}. Reconnect the account in Connections.`,
         );
       }
 
-      // Publish
-      const result = await adapter.publish(
-        {
-          id:                connectionId,
-          platform,
-          accountIdentifier: connection.accountIdentifier,
-          accessToken,
-          refreshToken:      refreshToken ?? undefined,
-        },
-        enrichedPayload,
-      );
-
-      if (result.success) {
-        const publishedAt = new Date();
-        await this.prisma.socialPublishJob.update({
-          where: { id: jobId },
-          data:  {
-            status:        'PUBLISHED',
-            externalPostId:  result.externalPostId ?? null,
-            externalPostUrl: result.externalPostUrl ?? null,
-            publishedAtUtc:  publishedAt,
-            lastError:       null,
-          },
-        });
-
-        // Close the loop on the content item. The scheduler moves it to
-        // PUBLISHING before handing off; without this it stayed there forever
-        // even after a successful post, so nothing ever counted as published.
-        const publishedJob = await this.prisma.socialPublishJob.findUnique({
-          where: { id: jobId },
-          select: { contentItemId: true },
-        });
-        if (publishedJob?.contentItemId) {
-          await this.prisma.contentItem.updateMany({
-            where: { id: publishedJob.contentItemId, status: { in: ['PUBLISHING', 'SCHEDULED'] } },
-            data: { status: 'PUBLISHED', publishedAtUtc: publishedAt, failedReason: null },
-          });
-        }
-
-        await this.appendLog(jobId, 'PUBLISH_SUCCESS', 'SUCCESS', {
-          externalPostId:  result.externalPostId,
-          externalPostUrl: result.externalPostUrl,
-        });
-
-        this.logger.log(`Job ${jobId} published successfully on ${platform}`);
-      } else {
-        throw new Error(result.error ?? 'Unknown publish error');
+      // Token: only stored_token adapters need one (Telegram's bot token is env).
+      // Refreshes first when the access token is about to expire.
+      const tokens = await this.tokenRefresh.ensureFreshToken(connectionId, adapter);
+      if (adapter.credential === 'stored_token' && !tokens.accessToken) {
+        throw new PermanentPublishError('Social connection token unavailable. Reconnect the account.');
       }
+
+      const connection: AdapterConnection = {
+        id:                connectionId,
+        platform,
+        accountIdentifier: row.accountIdentifier,
+        accessToken:       tokens.accessToken,
+        refreshToken:      tokens.refreshToken,
+        meta:              (row.metaJson as Record<string, unknown> | null) ?? undefined,
+      };
+
+      const enrichedPayload = await this.withArtwork(jobId, payload);
+
+      const health = await adapter.validateConnection(connection);
+      if (!health.ok) {
+        if (health.reason === 'transient') {
+          throw new TransientPublishError(health.detail, health.retryAfterSec);
+        }
+        const status = health.reason === 'revoked' ? 'REVOKED' : 'EXPIRED';
+        await this.connections.markUnusable(connectionId, status, health.detail);
+        const hint = /reconnect/i.test(health.detail) ? '' : ' Reconnect the account in Connections.';
+        throw new PermanentPublishError(
+          `${platform} connection ${status.toLowerCase()}: ${health.detail}${hint}`,
+        );
+      }
+
+      const result = await adapter.publish(connection, enrichedPayload);
+
+      if (!result.success) {
+        const message = result.error ?? 'Unknown publish error';
+        if (result.retryable) throw new TransientPublishError(message, result.retryAfterSec);
+        throw new PermanentPublishError(message);
+      }
+
+      const publishedAt = new Date();
+      const published = await this.prisma.socialPublishJob.update({
+        where: { id: jobId },
+        data:  {
+          status:          'PUBLISHED',
+          externalPostId:  result.externalPostId ?? null,
+          externalPostUrl: result.externalPostUrl ?? null,
+          publishedAtUtc:  publishedAt,
+          lastError:       null,
+        },
+      });
+
+      // Close the loop on the content item. The scheduler moves it to
+      // PUBLISHING before handing off; without this it stayed there forever.
+      if (published.contentItemId) {
+        await this.prisma.contentItem.updateMany({
+          where: { id: published.contentItemId, status: { in: ['PUBLISHING', 'SCHEDULED'] } },
+          data: { status: 'PUBLISHED', publishedAtUtc: publishedAt, failedReason: null },
+        });
+      }
+
+      await this.appendLog(jobId, 'PUBLISH_SUCCESS', 'SUCCESS', {
+        externalPostId:  result.externalPostId,
+        externalPostUrl: result.externalPostUrl,
+      });
+
+      this.logger.log(`Job ${jobId} published successfully on ${platform}`);
+      return 'PUBLISHED';
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
+      const transient = err instanceof TransientPublishError;
 
-      await this.prisma.socialPublishJob.update({
-        where: { id: jobId },
-        data:  { status: 'FAILED' as any, lastError: message },
-      });
-
-      await this.appendLog(jobId, 'PUBLISH_FAILURE', 'FAILURE', undefined, message);
-
-      // Release the content item too, otherwise it sits in PUBLISHING and is
-      // invisible to both the scheduler and the user.
-      const failedJob = await this.prisma.socialPublishJob.findUnique({
-        where: { id: jobId },
-        select: { contentItemId: true },
-      });
-      if (failedJob?.contentItemId) {
-        await this.prisma.contentItem.updateMany({
-          where: { id: failedJob.contentItemId, status: 'PUBLISHING' },
-          data: { status: 'FAILED', failedReason: message },
+      if (transient && !isFinalAttempt) {
+        // Not the user's problem yet: keep the item PUBLISHING and the
+        // connection as it is, record why, and let BullMQ try again.
+        await this.prisma.socialPublishJob.update({
+          where: { id: jobId },
+          data:  { status: 'PUBLISH_QUEUED', lastError: message },
         });
+        await this.appendLog(jobId, 'PUBLISH_RETRY_SCHEDULED', 'FAILURE', {
+          attempt: attemptNo,
+          maxAttempts: attempt.maxAttempts,
+          retryAfterSec: (err as TransientPublishError).retryAfterSec,
+        }, message);
+        this.logger.warn(`Job ${jobId} attempt ${attemptNo}/${attempt.maxAttempts} failed (will retry): ${message}`);
+        throw err;
       }
-      this.logger.error(`Job ${jobId} failed: ${message}`);
+
+      await this.recordFailure(jobId, message);
+      this.logger.error(`Job ${jobId} failed${transient ? ' after the final attempt' : ''}: ${message}`);
+      return 'FAILED';
     }
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  /**
-   * Record that a connection can no longer publish.
-   *
-   * Only moves a CONNECTED row, so a connection already marked REVOKED or
-   * FAILED keeps the more specific reason. Never throws: failing to write the
-   * status must not turn into a second, more confusing publish failure.
-   */
-  private async markConnectionExpired(connectionId: string, platform: string): Promise<void> {
-    try {
-      const { count } = await this.prisma.socialConnection.updateMany({
-        where: { id: connectionId, status: 'CONNECTED' },
-        data:  { status: 'EXPIRED' },
+  /** Job FAILED + ContentItem FAILED + failure log. */
+  private async recordFailure(jobId: string, message: string) {
+    const failed = await this.prisma.socialPublishJob.update({
+      where: { id: jobId },
+      data:  { status: 'FAILED', lastError: message },
+    });
+
+    await this.appendLog(jobId, 'PUBLISH_FAILURE', 'FAILURE', undefined, message);
+
+    // Release the content item too, otherwise it sits in PUBLISHING and is
+    // invisible to both the scheduler and the user.
+    if (failed.contentItemId) {
+      await this.prisma.contentItem.updateMany({
+        where: { id: failed.contentItemId, status: 'PUBLISHING' },
+        data: { status: 'FAILED', failedReason: message },
       });
-      if (count > 0) {
-        this.logger.warn(
-          `Marked ${platform} connection ${connectionId} EXPIRED: its token no longer validates.`,
-        );
-      }
-    } catch (err) {
-      this.logger.error(
-        `Could not mark connection ${connectionId} expired: ${(err as Error).message}`,
-      );
     }
+  }
+
+  /**
+   * Artwork is loaded here rather than carried in the job payload: the
+   * payload travels through the queue as JSON, and image bytes do not belong
+   * in it. Never lets an artwork lookup stop a publish.
+   */
+  private async withArtwork(jobId: string, payload: PublishPayload): Promise<PublishPayload> {
+    const enriched: PublishPayload = { ...payload };
+    try {
+      const job = await this.prisma.socialPublishJob.findUnique({
+        where: { id: jobId },
+        select: { contentItemId: true },
+      });
+      if (job?.contentItemId) {
+        const image = await this.prisma.contentImage.findFirst({
+          where: { contentItemId: job.contentItemId },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (image?.data) {
+          enriched.image = {
+            data: Buffer.from(image.data),
+            mimeType: image.mimeType || 'image/png',
+            altText: image.altText ?? undefined,
+          };
+        }
+      }
+    } catch (imageErr) {
+      this.logger.warn(`Could not load artwork for job=${jobId}: ${(imageErr as Error).message}`);
+    }
+    return enriched;
   }
 
   private async findJobOrThrow(id: string) {
