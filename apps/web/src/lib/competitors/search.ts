@@ -140,6 +140,17 @@ async function runOneQuery(
       // competitors", so it must not pass for an empty result.
       return { error: `Search query for "${query}" returned no web search results (${result.provider})` };
     }
+    if (result.webSearch.citations.length === 0) {
+      // Citations are the only thing that may create a candidate, so a search
+      // that cites nothing contributes nothing. Counting it as success let a
+      // provider that searches but does not cite (Claude, live 22 Nov: 9
+      // sources, 0 citations) end every run EMPTY — "no competitors in your
+      // market" — when the cause was the provider. As an error, a run where
+      // every query does this ends FAILED (SEARCH_UNAVAILABLE, uncharged).
+      return {
+        error: `Search query for "${query}" returned no citations (${result.provider}, ${result.webSearch.sourceUrls.length} sources)`,
+      };
+    }
 
     // The query label is ours: the provider's own `webSearch.query` may be ''.
     return {

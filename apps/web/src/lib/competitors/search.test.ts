@@ -155,7 +155,7 @@ describe('harvestFromWebSearch error handling', () => {
 
   it('needs no OPENAI_API_KEY of its own: the layer skips unconfigured providers', async () => {
     vi.stubEnv('OPENAI_API_KEY', '');
-    runAiTaskMock.mockResolvedValue(searchSuccess('anthropic', { query: '', citations: [], sourceUrls: [] }));
+    runAiTaskMock.mockResolvedValue(searchSuccess('anthropic', { query: '', citations: [{ url: 'https://rival.example.com/', title: 'Rival' }], sourceUrls: [] }));
 
     await expect(
       harvestFromWebSearch(['some query'], { country: null, language: 'en' }, new Set()),
@@ -234,9 +234,24 @@ describe('harvestFromWebSearch error handling', () => {
     expect(errors).toEqual(['Search query for "q" returned no web search results (gemini)']);
   });
 
+  it('a search that cites nothing is an error, not an empty market', async () => {
+    // Live 22 Nov: Claude searched (9 sources) but wrote the companies'
+    // homepages itself and cited none. Citations are the only thing that may
+    // create a candidate, so this used to end the run EMPTY ("no competitors")
+    // when the real cause was the provider.
+    runAiTaskMock.mockResolvedValue(
+      searchSuccess('anthropic', { query: 'q', citations: [], sourceUrls: ['https://listicle.example.com/best-tools'] }),
+    );
+
+    const { candidates, errors } = await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
+
+    expect(candidates).toEqual([]);
+    expect(errors).toEqual(['Search query for "q" returned no citations (anthropic, 1 sources)']);
+  });
+
   it('a provider that reports no usage gives tokens null, not 0', async () => {
     runAiTaskMock.mockResolvedValue({
-      ...searchSuccess('anthropic', { query: '', citations: [], sourceUrls: [] }),
+      ...searchSuccess('anthropic', { query: '', citations: [{ url: 'https://rival.example.com/', title: 'Rival' }], sourceUrls: [] }),
       usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
     });
 
