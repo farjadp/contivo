@@ -62,10 +62,18 @@ export default function HomePage() {
 function Hero() {
   const t = useTranslations('home');
 
+  /*
+    Two columns only from xl (1280px), and proportional rather than a fixed
+    40rem for the ring: at 1024px the fixed ring column left the headline
+    193px wide, eight or nine lines tall in every language. Below xl the ring
+    sits under the text, as it already did on tablets. In two columns the
+    headline is sized off the viewport a little more gently, because its
+    column is about half the width it has when stacked.
+  */
   return (
-    <section className="mx-auto grid max-w-[90rem] gap-14 px-5 pb-20 pt-10 md:px-16 md:pt-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,40rem)] lg:gap-12">
+    <section className="mx-auto grid max-w-[90rem] gap-14 px-5 pb-20 pt-10 md:px-16 md:pt-14 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] xl:gap-12">
       <div className="flex flex-col gap-7">
-        <h1 className="font-display text-[clamp(2.6rem,6.4vw,5rem)] font-extrabold leading-[0.98] tracking-[-0.03em] motion-safe:animate-rise">
+        <h1 className="font-display text-[clamp(2.6rem,6.4vw,5rem)] font-extrabold leading-[0.98] tracking-[-0.03em] motion-safe:animate-rise xl:text-[clamp(2.6rem,4.4vw,4.5rem)]">
           {t.rich('actOne.headline', { accent })}
         </h1>
         <p className="max-w-[36rem] text-[clamp(1.05rem,1.4vw,1.2rem)] leading-[1.6] text-moss-muted motion-safe:animate-rise motion-safe:[animation-delay:120ms]">
@@ -80,7 +88,7 @@ function Hero() {
         <Evidence />
       </div>
 
-      <div className="motion-safe:animate-fade-in lg:pt-4">
+      <div className="mx-auto w-full max-w-[40rem] motion-safe:animate-fade-in xl:max-w-none xl:pt-4">
         <LoopRing />
       </div>
     </section>
@@ -167,7 +175,7 @@ function Chapter({
       aria-labelledby={`${id}-title`}
       className={`scroll-mt-20 border-t ${first ? 'border-moss' : 'border-rule'}`}
     >
-      <div className="mx-auto grid max-w-[90rem] gap-10 px-5 py-16 md:px-16 md:py-24 lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,38rem)] lg:gap-12">
+      <div className="mx-auto grid max-w-[90rem] grid-cols-[minmax(0,1fr)] gap-10 px-5 py-16 md:px-16 md:py-24 lg:grid-cols-[8rem_minmax(0,1fr)_minmax(0,38rem)] lg:gap-12">
         <Reveal>
           <span aria-hidden className="font-plexmono text-[clamp(2.5rem,4.4vw,4rem)] font-medium leading-none text-rule-strong">
             {format.number(num, { minimumIntegerDigits: 2 })}

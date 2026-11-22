@@ -128,10 +128,12 @@ export function SiteFooter() {
           ))}
         </nav>
 
-        {/* Small print */}
-        <div className="flex flex-col gap-5 border-t border-forest-line py-7 text-[13px] text-forest-muted md:flex-row md:items-center md:justify-between">
+        {/* Small print. Stacked below xl: with eight languages the switcher
+            alone is about 650px, and side by side from md it pushed the page
+            into a horizontal scroll at tablet widths. */}
+        <div className="flex flex-col gap-5 border-t border-forest-line py-7 text-[13px] text-forest-muted xl:flex-row xl:items-center xl:justify-between">
           <p className="max-w-[46rem] leading-relaxed">{t('provenance')}</p>
-          <div className="flex shrink-0 items-center gap-6">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 xl:shrink-0">
             <LocaleSwitcher variant="inline" className="[&_a]:!text-forest-muted [&_a:hover]:!text-chalk [&_a[aria-current]]:!text-chalk" />
             <span>
               {t('copyright', {
