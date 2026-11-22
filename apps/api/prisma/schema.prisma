@@ -31,6 +31,7 @@ model User {
   /// Allow-listed cohort tag (e.g. a mentee team). Null = not in a cohort.
   cohort                String?
   aiUsageLogs           AiUsageLog[]
+  bugReports            BugReport[]
   contentItems          ContentItem[]
   contentJobs           ContentJob[]
   creditLedger          CreditLedger[]
@@ -108,6 +109,7 @@ model Workspace {
   discoveryRuns        DiscoveryRun[]
   matrixRuns           MatrixRun[]
   matrixOverrides      MatrixOverride[]
+  bugReports           BugReport[]
   contentItems         ContentItem[]
   contentJobs          ContentJob[]
   keywordOpportunities KeywordOpportunity[]
@@ -750,6 +752,33 @@ model AiProviderEvent {
   @@index([createdAt])
   @@index([errorClass, createdAt])
   @@map("ai_provider_events")
+}
+
+/// A problem report sent from inside the app (spec 2026-11-22-bug-reports-design.md).
+/// userId/workspaceId are SET NULL on delete; message and context are personal,
+/// so app code clears them on user deletion and a 90-day purge removes old rows.
+model BugReport {
+  id            String     @id @default(cuid())
+  referenceCode String     @unique
+  userId        String?
+  workspaceId   String?
+  message       String?
+  locale        String?
+  route         String?
+  appVersion    String?
+  context       Json       @default("{}")
+  /// NEW | SEEN | FIXED | WONTFIX
+  status        String     @default("NEW")
+  fingerprint   String
+  createdAt     DateTime   @default(now())
+  resolvedAt    DateTime?
+  user          User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workspace     Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([fingerprint])
+  @@index([userId])
+  @@map("bug_reports")
 }
 
 model activity_logs {
