@@ -18,6 +18,9 @@ import {
 import { normalizeSlugInput, POST_TITLE_MAX } from '@/lib/content-slug';
 import { WritePostPanel, ownPostErrorField, ownPostErrorMessage } from './WritePostPanel';
 import { PublishOutcomeNotice } from './PublishOutcomeNotice';
+import { QualityVerdictNotice } from './QualityVerdictNotice';
+import { recheckContentQuality } from '@/app/actions/quality-gate';
+import { isBlockedVerdict } from '@/lib/quality-verdict-shared';
 import { resolvePublishOutcome, type LatestPublishJob } from '@/lib/publish-outcome';
 
 type SourceFileState = {
@@ -306,6 +309,9 @@ function PipelineItemCard({
   }, [currentItem.id, currentItem.scheduledAtUtc, defaultScheduleDelayHours]);
 
   const publishOutcome = resolvePublishOutcome(currentItem, latestPublishJob);
+  // B8: a gated AI draft that failed (or was edited since) cannot be approved
+  // or scheduled from here; the server refuses it too.
+  const qualityBlocked = isBlockedVerdict(currentItem.qualityVerdict);
 
   const isSlugLocked =
     Boolean(currentItem.publishedAtUtc) || ['PUBLISHED', 'PUBLISHING'].includes(currentItem.status);
@@ -488,6 +494,19 @@ function PipelineItemCard({
     }
   };
 
+  const handleCheckQualityAgain = async () => {
+    const res = await recheckContentQuality(currentItem.id);
+    if ('error' in res) throw new Error(res.error);
+    setCurrentItem((prev: any) => ({ ...prev, qualityVerdict: res.verdict }));
+  };
+
+  // "Publish anyway": lifts the block (audited on the server) and leaves the
+  // post READY, so it is scheduled the normal way.
+  const handlePublishAnyway = async () => {
+    const updated = await updateContentStatus(currentItem.id, 'READY', { override: true });
+    setCurrentItem(updated);
+  };
+
   const handleApprove = async () => {
     try {
       const updated = await updateContentStatus(currentItem.id, 'READY');
@@ -577,6 +596,14 @@ function PipelineItemCard({
          <PublishOutcomeNotice outcome={publishOutcome} workspaceId={workspace.id} />
        ) : null}
 
+       {['GENERATED', 'READY', 'SCHEDULED', 'DRAFT'].includes(currentItem.status) ? (
+         <QualityVerdictNotice
+           verdict={currentItem.qualityVerdict}
+           onCheckAgain={handleCheckQualityAgain}
+           onPublishAnyway={handlePublishAnyway}
+         />
+       ) : null}
+
        {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
           <div className="mb-4 rounded-xl border border-rule bg-chalk-sunk/70 p-3">
             <p className="text-[11px] font-bold uppercase tracking-widest text-moss-700 mb-1">{t('pipeline.previewLabel')}</p>
@@ -641,7 +668,7 @@ function PipelineItemCard({
                 <option value="America/Los_Angeles">{t('timezones.America/Los_Angeles')}</option>
                 <option value="Europe/London">{t('timezones.Europe/London')}</option>
               </select>
-              {currentItem.status !== 'DRAFT' ? (
+              {currentItem.status !== 'DRAFT' && !qualityBlocked ? (
                 <button
                   type="button"
                   onClick={handleQuickScheduleApply}
@@ -803,7 +830,7 @@ function PipelineItemCard({
                 >
                   {t('pipeline.actions.edit')}
                 </button>
-                {currentItem.status === 'GENERATED' ? (
+                {currentItem.status === 'GENERATED' && !qualityBlocked ? (
                   <button
                     onClick={handleApprove}
                     className="bg-moss flex items-center gap-1.5 text-chalk px-3 py-1.5 rounded-lg font-bold hover:bg-moss transition-colors"
@@ -814,7 +841,7 @@ function PipelineItemCard({
               </>
             ) : null}
 
-            {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
+            {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) && !qualityBlocked ? (
               <button
                 onClick={openScheduleModal}
                 className="bg-moss flex items-center gap-1 text-chalk px-3 py-1.5 rounded-lg font-bold hover:bg-moss-700 transition"

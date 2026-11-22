@@ -400,6 +400,51 @@
       "pillarsTitle": "Pilares de contenido principales",
       "pillarLabel": "Pilar {index, number}",
       "noPillars": "No hay pilares definidos."
+    },
+    "quality": {
+      "badge": {
+        "failed": "No pasó el control de calidad",
+        "notChecked": "Sin revisar",
+        "passed": "Pasó el control de calidad",
+        "overridden": "Se publica de todos modos"
+      },
+      "showReasons": "¿Por qué?",
+      "hideReasons": "Ocultar",
+      "checkAgain": "Revisar de nuevo",
+      "checking": "Revisando…",
+      "publishAnyway": "Publicar de todos modos…",
+      "heldNote": "Retenido: no se publicará hasta que pase el control o elijas Publicar de todos modos.",
+      "overriddenNote": "Elegiste publicarlo sin pasar el control.",
+      "error": "No se pudo hacer la revisión. Inténtalo de nuevo.",
+      "previewPassed": "Este borrador pasó el control de calidad.",
+      "previewFailed": "Este borrador no pasó el control de calidad. Aun así puedes añadirlo al Pipeline, pero no se publicará hasta que lo pase o elijas Publicar de todos modos.",
+      "reviewerNotes": "Notas del revisor",
+      "dialog": {
+        "title": "¿Publicar sin pasar el control de calidad?",
+        "body": "El control de calidad retuvo este borrador porque:",
+        "note": "Si continúas, podrás programarlo y publicarlo como cualquier otro post. Dejamos constancia de que elegiste publicarlo de todos modos.",
+        "confirm": "Publicar de todos modos",
+        "cancel": "Mantenerlo retenido",
+        "saving": "Guardando…"
+      },
+      "reasons": {
+        "empty": "El borrador está vacío.",
+        "platform_char_limit": "Es más largo de lo que permite esta plataforma.",
+        "word_count": "Es demasiado corto o demasiado largo para esta plataforma.",
+        "leakage": "Todavía tiene marcadores de plantilla o frases del asistente.",
+        "avoid_list": "Menciona una frase que nos pediste evitar.",
+        "duplicate": "Repite un post que publicaste o programaste hace poco.",
+        "unavailable": "El control de calidad no pudo ejecutarse, así que nadie ha revisado este texto.",
+        "judge_veto": "El revisor consideró arriesgado publicarlo: puede hacer afirmaciones que no puedes respaldar, dar consejos médicos, legales o financieros, o sonar escrito por una máquina.",
+        "not_checked": "El texto cambió después de la revisión, así que esta versión no se ha revisado.",
+        "brandFit": "No suena a tu marca (puntuación {score, number}/{max, number}).",
+        "factualSafety": "Hace afirmaciones que nadie puede verificar (puntuación {score, number}/{max, number}).",
+        "clarity": "No es lo bastante claro ni está terminado (puntuación {score, number}/{max, number}).",
+        "storylineFit": "No hace avanzar tu storyline (puntuación {score, number}/{max, number}).",
+        "evidenceDiscipline": "Se apoya en pruebas que no nos has dado (puntuación {score, number}/{max, number}).",
+        "low_score": "Puntuó por debajo del mínimo en las comprobaciones del revisor.",
+        "other": "No pasó uno de los controles de calidad."
+      }
     }
   }
 }
