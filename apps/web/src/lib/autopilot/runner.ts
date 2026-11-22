@@ -416,10 +416,11 @@ async function runPolicyInAiContext(
             break;
           }
 
-          // Force the channel: idea.format drives channel resolution in the engine.
+          // Force the channel: an explicit channel wins over anything ideation stamped.
           const saved = await saveIdeaToPipelineCore(actor, {
             ...idea,
             agent_id: policy.id,
+            channel,
             format: channel,
             auto_insert_to_calendar: false,
             framework_id: idea.framework_id ?? ('framework' in ideation ? ideation.framework?.framework_id : undefined),

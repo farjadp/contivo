@@ -104,7 +104,7 @@ export function resolveWordCountPlatformKey(value: unknown): WordCountPlatform {
 
   if (
     normalized.includes('twitter') ||
-    normalized.includes('x') ||
+    /\bx\b/.test(normalized) || // whole word: "text", "example" are not X
     normalized.includes('thread') ||
     normalized.includes('twitter_thread')
   ) {

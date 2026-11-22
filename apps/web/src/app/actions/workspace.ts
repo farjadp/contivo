@@ -7,6 +7,7 @@ import {
   ideateForWorkspace,
   saveIdeaToPipelineCore,
   type ManualSourcePayload,
+  type SavedPreview,
 } from '@/lib/content-engine';
 import type { IdeationRequestOptions } from '@/lib/gemini';
 import { actionError } from '@/lib/action-errors';
@@ -21,10 +22,10 @@ export async function generateIdeas(workspaceId: string, options?: IdeationReque
   return ideateForWorkspace({ userId: session.userId as string, workspaceId }, options);
 }
 
-export async function saveIdeaToPipeline(workspaceId: string, idea: any) {
+export async function saveIdeaToPipeline(workspaceId: string, idea: any, preview?: SavedPreview) {
   const session = await getSession();
   if (!session) return { error: await actionError('notAuthenticated') };
-  return saveIdeaToPipelineCore({ userId: session.userId as string, workspaceId }, idea);
+  return saveIdeaToPipelineCore({ userId: session.userId as string, workspaceId }, idea, preview);
 }
 
 export async function generateDraftPreviewFromIdea(
