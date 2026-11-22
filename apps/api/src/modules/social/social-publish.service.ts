@@ -55,6 +55,28 @@ export class SocialPublishService {
     await this.connections.validateWorkspaceAccess(dto.workspaceId, userId);
     const platform = dto.platform as SocialPlatform;
 
+    // 0. Every id in the body must belong to the workspace just authorised.
+    //    Authorising the workspace alone let a signed-in user publish through
+    //    another customer's connection by naming its id. 404, not 403: do not
+    //    confirm that someone else's id exists.
+    const connection = await this.prisma.socialConnection.findFirst({
+      where: { id: dto.socialConnectionId, workspaceId: dto.workspaceId },
+      select: { id: true, platform: true },
+    });
+    if (!connection) {
+      throw new NotFoundException(`Social connection ${dto.socialConnectionId} not found.`);
+    }
+    if (connection.platform !== platform) {
+      throw new BadRequestException('The connection is for a different platform than this post.');
+    }
+    if (dto.contentItemId) {
+      const item = await this.prisma.contentItem.findFirst({
+        where: { id: dto.contentItemId, workspaceId: dto.workspaceId },
+        select: { id: true },
+      });
+      if (!item) throw new NotFoundException(`Content item ${dto.contentItemId} not found.`);
+    }
+
     // 1. Build payload for validation
     const payload: PublishPayload = {
       body:     dto.body,
@@ -233,6 +255,24 @@ export class SocialPublishService {
     payload: PublishPayload,
   ): Promise<void> {
     try {
+      // The connection must live in the job's own workspace. createJob now
+      // enforces this, but rows written before that fix (or by any future
+      // path that forgets) must not reach a platform with someone else's token.
+      const owner = await this.prisma.socialPublishJob.findUnique({
+        where: { id: jobId },
+        select: { workspaceId: true },
+      });
+      const scoped = owner
+        ? await this.prisma.socialConnection.findFirst({
+            where: { id: connectionId, workspaceId: owner.workspaceId },
+            select: { id: true },
+          })
+        : null;
+      if (!scoped) {
+        this.logger.error(`Job ${jobId} refused: connection ${connectionId} is not in the job's workspace.`);
+        throw new Error('Social connection not found in this workspace. Reconnect the account.');
+      }
+
       // Mark as PUBLISHING
       await this.prisma.socialPublishJob.update({
         where: { id: jobId },
