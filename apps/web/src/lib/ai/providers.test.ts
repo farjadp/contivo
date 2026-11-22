@@ -6,11 +6,14 @@ import { AiProviderError } from './errors';
 import { extractJsonObject, normaliseAndValidate, parseJsonText, validateJsonSchema } from './output';
 import {
   buildAnthropicParams,
+  CLAUDE_COMPETITOR_SEARCH_SYSTEM,
+  COMPETITOR_SEARCH_MAX_USES,
   createAnthropicAdapter,
   defaultAnthropicClient,
   parseAnthropicContent,
   type AnthropicClientLike,
 } from './providers/anthropic';
+import { buildSearchPrompt } from '../competitors/search';
 import { geminiAdapter, parseGeminiGrounding, toGeminiSchema } from './providers/gemini';
 import { openAiAdapter } from './providers/openai';
 import type { AiRequest } from './types';
@@ -277,6 +280,45 @@ describe('buildAnthropicParams (claude-api skill rules)', () => {
     ]);
     expect(params.output_config.format).toBeUndefined();
   });
+
+  it('competitor search: Claude-only system instruction, direct search (no dynamic filtering), max_uses default', () => {
+    const request: AiRequest = { prompt: buildSearchPrompt('store builder'), output: { kind: 'text' }, webSearch: { country: 'CA' }, timeoutMs: 150_000 };
+    const params = buildAnthropicParams(request, 'claude-sonnet-5-5', 'competitor_web_search') as unknown as Record<string, any>;
+    expect(params.system).toBe(CLAUDE_COMPETITOR_SEARCH_SYSTEM);
+    expect(params.system).toMatch(/cited/);
+    expect(params.system).toMatch(/Never add a company, or a website address, from memory/);
+    expect(params.tools).toEqual([
+      {
+        type: 'web_search_20260209',
+        name: 'web_search',
+        allowed_callers: ['direct'],
+        max_uses: COMPETITOR_SEARCH_MAX_USES,
+        user_location: { type: 'approximate', country: 'CA' },
+      },
+    ]);
+    // the user prompt is the shared one; only the system side is Claude-specific
+    expect(params.messages).toEqual([{ role: 'user', content: buildSearchPrompt('store builder') }]);
+  });
+
+  it('competitor search keeps an explicit maxUses and a caller system prompt (appended, not replaced)', () => {
+    const params = buildAnthropicParams({ ...searchRequest, system: 'caller' }, 'claude-sonnet-5-5', 'competitor_web_search') as unknown as Record<string, any>;
+    expect(params.tools[0].max_uses).toBe(3);
+    expect(params.system).toBe(`caller\n\n${CLAUDE_COMPETITOR_SEARCH_SYSTEM}`);
+  });
+
+  it('other tasks, and competitor search with JSON output, are unchanged', () => {
+    const other = buildAnthropicParams(searchRequest, 'claude-sonnet-5-5', 'competitor_judge') as unknown as Record<string, any>;
+    expect(other.system).toBeUndefined();
+    expect(other.tools[0].allowed_callers).toBeUndefined();
+    const noTask = buildAnthropicParams(searchRequest, 'claude-sonnet-5-5') as unknown as Record<string, any>;
+    expect(noTask.system).toBeUndefined();
+    const json = buildAnthropicParams(
+      { ...searchRequest, output: { kind: 'json_schema', name: 'x', schema: SCHEMA } },
+      'claude-sonnet-5-5',
+      'competitor_web_search',
+    ) as unknown as Record<string, any>;
+    expect(json.system).toBeUndefined();
+  });
 });
 
 describe('anthropic adapter', () => {
@@ -294,6 +336,17 @@ describe('anthropic adapter', () => {
     });
     expect(result.text).toBe('Sepidar offers cloud accounting. Hamkaran too.');
     expect(result.usage).toEqual({ promptTokens: 1200, completionTokens: 300, totalTokens: 1500, webSearchCalls: 1 });
+  });
+
+  it('competitor search sends the Claude instruction, and a zero-citation answer (live 22 Nov shape) reaches search.ts with empty citations, never sources as citations', async () => {
+    const { client, create } = fakeClient(body('anthropic-web-search-no-citations.json'));
+    const adapter = createAnthropicAdapter(() => client);
+    const result = await adapter.call({ task: 'competitor_web_search', request: searchRequest, model: 'claude-sonnet-5-5', apiKey: 'k' });
+    const sent = create.mock.calls[0][0] as unknown as Record<string, any>;
+    expect(sent.system).toBe(CLAUDE_COMPETITOR_SEARCH_SYSTEM);
+    expect(sent.tools[0].allowed_callers).toEqual(['direct']);
+    expect(result.webSearch?.citations).toEqual([]);
+    expect(result.webSearch?.sourceUrls).toHaveLength(9);
   });
 
   it('web_search_tool_result error object (HTTP 200) with no results → classified, too_many_requests = rate_limit', async () => {
