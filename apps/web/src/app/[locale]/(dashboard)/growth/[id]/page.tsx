@@ -95,6 +95,13 @@ const MODEL_RATES: Record<string, ModelRate> = {
   'gpt-4.1-nano': { inputPer1M: 0.1, outputPer1M: 0.4 },
   'gpt-4o': { inputPer1M: 2.5, outputPer1M: 10 },
   'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6 },
+  // Matrices run on GPT-6.2 Astra from 22 Nov (lib/ai/models.ts); without this
+  // row their cost fell back to gpt-4.1 rates, 4-5x too low. Official prices,
+  // checked 2026-11-22; lib/ai-usage.ts PRICES is the source of truth.
+  'gpt-6.2-astra': { inputPer1M: 8, outputPer1M: 40 },
+  'gpt-6.2-sol': { inputPer1M: 2, outputPer1M: 10 },
+  'claude-opus-5-5': { inputPer1M: 4, outputPer1M: 20 },
+  'claude-sonnet-5-5': { inputPer1M: 2, outputPer1M: 10 },
 };
 
 function normalizeNumber(value: unknown): number {

@@ -10,6 +10,7 @@
  */
 import { Prisma } from '@prisma/client';
 
+import { DEFAULT_OPENAI_JUDGE_MODEL } from '@/lib/ai/models';
 import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -310,8 +311,10 @@ async function runMatrixPipelineInAiContext(runId: string): Promise<void> {
           axesUsed: axes.map((axis) => ({ key: axis.key, kind: axis.kind, x: axis.x, y: axis.y })),
           crossChart: crossChart as unknown as Prisma.InputJsonValue,
           tokensUsed,
-          // The same default the model calls use (openai.ts); spec §6.7.
-          model: process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1',
+          // The configured OpenAI primary for matrix tasks (lib/ai/models.ts),
+          // not necessarily the model that answered: after a failover the
+          // answering provider/model per call is in ai_usage_logs.
+          model: process.env.OPENAI_MODEL_JUDGE?.trim() || DEFAULT_OPENAI_JUDGE_MODEL,
           finishedAt: new Date(),
         },
       });
