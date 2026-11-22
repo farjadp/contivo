@@ -42,6 +42,10 @@ function optionLabel(
   return t.has(`${group}.${id}`) ? t(`${group}.${id}`) : fallback;
 }
 
+function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
+  return t.has(`channels.${channel}`) ? t(`channels.${channel}`) : channel.replace(/_/g, ' ');
+}
+
 function wordCountPlatformLabel(t: ReturnType<typeof useTranslations>, platform: string) {
   return t.has(`wordCountPlatforms.${platform}`)
     ? t(`wordCountPlatforms.${platform}`)
@@ -608,7 +612,7 @@ function IdeaCard({
 
       if (result && 'success' in result && result.success) {
         setPreviewText(String(result.preview || ''));
-        setPreviewChannel(String(result.channel || idea?.format || ''));
+        setPreviewChannel(String(result.channel || idea?.channel || ''));
         setIsPreviewOpen(true);
       }
     } catch {
@@ -621,7 +625,8 @@ function IdeaCard({
   const handleSaveToPipeline = async () => {
     setIsSaving(true);
     try {
-      const res = await saveIdeaToPipeline(workspaceId, idea);
+      // A preview already generated is the post: save it, not the outline.
+      const res = await saveIdeaToPipeline(workspaceId, idea, previewText ? { body: previewText } : undefined);
       if (res && 'success' in res && res.success) {
         setSaved(true);
         router.refresh();
@@ -685,7 +690,7 @@ function IdeaCard({
         >
           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : 
            saved ? <><CheckCircle2 className="w-4 h-4" /> {t('ideation.addedToPipeline')}</> : 
-           <><FileText className="w-4 h-4" /> {t('ideation.addToPipeline')}</>}
+           <><FileText className="w-4 h-4" /> {previewText ? t('ideation.addPreviewToPipeline') : t('ideation.addToPipeline')}</>}
         </button>
       </div>
 
@@ -707,7 +712,7 @@ function IdeaCard({
             </div>
             <div className="max-h-[65vh] overflow-y-auto px-5 py-4">
               <div className="mb-3 inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-[11px] font-bold uppercase tracking-widest text-moss-muted">
-                {String(previewChannel || idea.format || t('ideation.channelFallback'))}
+                <bdi>{previewChannel ? channelLabel(t, previewChannel) : t('ideation.channelFallback')}</bdi>
               </div>
               <p className="whitespace-pre-wrap text-sm leading-7 text-moss">
                 {previewText || t('ideation.noPreview')}

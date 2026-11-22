@@ -246,6 +246,7 @@
       "generatePreview": "Generate Preview",
       "generatingPreview": "Generating Preview...",
       "addToPipeline": "Add to Pipeline",
+      "addPreviewToPipeline": "Add this draft to Pipeline",
       "addedToPipeline": "Added to Pipeline",
       "contentPreview": "Content Preview",
       "closePreview": "Close preview",
