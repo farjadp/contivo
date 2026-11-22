@@ -1,0 +1,122 @@
+{
+  "product": {
+    "meta": {
+      "title": "How Contivo works, start to finish",
+      "description": "Every step from sign-up to posts publishing on their own: your website, your competitors, a narrative, LinkedIn and your own site, and Autopilot. What you do, what Contivo does, and what to know."
+    },
+    "eyebrow": "How it works",
+    "headline": "From one address to a week that <accent>publishes itself</accent>.",
+    "intro": "Seven steps, in the order the product walks you through them. Each one says what you do and what Contivo does, so you know what you are signing up for before you sign up.",
+    "stepsTitle": "The steps",
+    "itDoes": "Contivo",
+    "steps": {
+      "signUp": {
+        "title": "Sign up",
+        "you": "Name, email and a password. No card, and nothing is published anywhere until you connect a channel yourself.",
+        "it": "Opens your account in early access, free, and offers two ways in: build a workspace, or try a single post straight away."
+      },
+      "website": {
+        "title": "Give it your website",
+        "you": "Type your business name and your site's address.",
+        "it": "Reads your pages and writes back a brand memory: what you do, what you promise, who it is for and how it sounds. You correct anything it got wrong. It also makes a first guess at your competitors."
+      },
+      "competitors": {
+        "title": "Confirm your competitors",
+        "you": "Accept, reject or add competitors. Everything after this is built from the ones you keep.",
+        "it": "Builds positioning charts that place you among them, then reads what each one sells and which searches they appear for. Ideas stay locked until the charts and that research exist."
+      },
+      "narrative": {
+        "title": "Agree the story",
+        "you": "Read the storylines it proposes and edit them: what each one claims, who it is for, and what it must never say.",
+        "it": "Drafts three or four storylines from the research. Every idea after this is tied to one of them."
+      },
+      "connect": {
+        "title": "Connect where it publishes",
+        "you": "Sign in to LinkedIn once, or create a key for your website and have a developer connect it.",
+        "it": "Posts to your personal LinkedIn profile, and makes your published articles available to your site through a read-only API."
+      },
+      "autopilot": {
+        "title": "Switch on Autopilot",
+        "you": "Pick a starting recipe, the days and hours it may publish, your time zone, and how many posts a week, from one to fourteen. Decide whether you approve each post first.",
+        "it": "With approval off, every draft still has to pass the quality gate before it is scheduled. With approval on, drafts wait for you."
+      },
+      "running": {
+        "title": "Let it run",
+        "you": "Look in when you want. Every run is in the log, including what was rejected and why.",
+        "it": "Keeps the next seven days planned, checks again every day, retries when something fails, and spreads posts inside your window. A strategy report on everything it has learned about your market is there when you need one."
+      }
+    },
+    "recipesTitle": "Where most people start",
+    "recipesIntro": "Autopilot comes with five starting points. Each is only a default: change the days, hours and number of posts as you like. One workspace can run up to eight at once.",
+    "perWeek": "{count, plural, one {# post a week} other {# posts a week}}",
+    "recipes": {
+      "linkedinVoice": {
+        "name": "LinkedIn voice",
+        "body": "First-person posts from your brand memory and the gaps your competitors leave open.",
+        "when": "LinkedIn · Monday to Friday, 9:00 to 18:00"
+      },
+      "blogWriter": {
+        "name": "Blog writer",
+        "body": "Articles of 600 to 2,200 words aimed at the gaps in your competitive research, published to your own site.",
+        "when": "Your website · Tuesday, 8:00 to 12:00"
+      },
+      "thoughtLeader": {
+        "name": "Thought leader",
+        "body": "One or two substantial posts a week that take a position, for when you would rather be quoted than seen daily.",
+        "when": "LinkedIn · Tuesday and Thursday, 7:00 to 10:00"
+      },
+      "productOffers": {
+        "name": "Product & offers",
+        "body": "Posts about what you sell, framed against what your competitors offer.",
+        "when": "LinkedIn · Monday and Wednesday, 10:00 to 16:00"
+      },
+      "custom": {
+        "name": "Custom",
+        "body": "The same engine with no opinions: your cadence, channels, window and steering.",
+        "when": "LinkedIn or your website · your choice"
+      }
+    },
+    "needTitle": "What you need",
+    "need": {
+      "website": {
+        "title": "A website",
+        "body": "Contivo starts from what your own site says about you."
+      },
+      "linkedin": {
+        "title": "A LinkedIn account, to post there",
+        "body": "Posts go out on your personal profile. Company pages are not supported yet."
+      },
+      "developer": {
+        "title": "A developer, once, to post to your site",
+        "body": "Your site fetches its articles from Contivo's API, on any stack. Someone has to add that to your site one time. The developer docs show how."
+      }
+    },
+    "knowTitle": "Good to know",
+    "know": {
+      "confirm": {
+        "title": "Competitors need your yes",
+        "body": "Its first guesses are only suggestions. Nothing is analysed until you accept them."
+      },
+      "review": {
+        "title": "Approval is off unless you turn it on",
+        "body": "By default, posts that pass the quality gate publish on their own. Turn on approval if you want to see each one first."
+      },
+      "reconnect": {
+        "title": "LinkedIn asks again every 60 days",
+        "body": "LinkedIn's sign-in lasts about two months. When it runs out, you connect again."
+      },
+      "estimates": {
+        "title": "Positioning scores are estimates",
+        "body": "The model reads public evidence and shows its reasoning, so you can disagree."
+      },
+      "languages": {
+        "title": "English or Persian",
+        "body": "Content is written in one of those two languages, chosen per brand."
+      }
+    },
+    "featuresLink": "See every feature, including what is coming",
+    "closeHeadline": "Start with step one. It takes a name and an address.",
+    "closeCta": "Start free in early access",
+    "closeWhy": "Why Contivo"
+  }
+}
