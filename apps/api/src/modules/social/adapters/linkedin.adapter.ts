@@ -16,14 +16,22 @@
  *       this adapter. Never log or expose the accessToken.
  */
 
-import { SocialPlatform } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
 import { validateLinkedIn } from '../validators/platform-validator';
 
 import {
+  failedPublishFromError,
+  failedPublishResult,
+  healthFromFetchError,
+  healthFromStatus,
+} from './http-health';
+import {
   SocialAdapter,
   AdapterConnection,
+  ConnectionHealth,
+  CredentialKind,
   PublishImage,
   PublishPayload,
   PublishResult,
@@ -34,21 +42,24 @@ import {
 @Injectable()
 export class LinkedInAdapter implements SocialAdapter {
   readonly platform: SocialPlatform = 'LINKEDIN';
+  // No refresh token: our scope (w_member_social) gets a 60-day token only.
+  readonly credential: CredentialKind = 'stored_token';
   private readonly logger = new Logger(LinkedInAdapter.name);
 
   private readonly API_BASE = 'https://api.linkedin.com/v2';
 
   // ─── Interface implementation ──────────────────────────────────────────────
 
-  async validateConnection(connection: AdapterConnection): Promise<boolean> {
+  async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       const res = await fetch(`${this.API_BASE}/userinfo`, {
         headers: { Authorization: `Bearer ${connection.accessToken}` },
       });
-      return res.ok;
+      return healthFromStatus(res.status, 'LinkedIn', res.headers.get('retry-after'));
     } catch (err) {
-      this.logger.warn(`LinkedIn connection validation failed: ${this.normalizeError(err)}`);
-      return false;
+      const health = healthFromFetchError(err, 'LinkedIn');
+      this.logger.warn(`LinkedIn connection check failed (transient): ${!health.ok ? health.detail : ''}`);
+      return health;
     }
   }
 
@@ -86,10 +97,11 @@ export class LinkedInAdapter implements SocialAdapter {
 
       if (!res.ok) {
         const errBody = await res.text();
-        return {
-          success: false,
-          error: this.normalizeError({ status: res.status, body: errBody }),
-        };
+        return failedPublishResult(
+          res.status,
+          this.normalizeError({ status: res.status, body: errBody }),
+          res.headers.get('retry-after'),
+        );
       }
 
       const data = (await res.json()) as { id?: string };
@@ -102,7 +114,7 @@ export class LinkedInAdapter implements SocialAdapter {
 
       return { success: true, externalPostId: postId, externalPostUrl };
     } catch (err) {
-      return { success: false, error: this.normalizeError(err) };
+      return failedPublishFromError(err, 'LinkedIn');
     }
   }
 

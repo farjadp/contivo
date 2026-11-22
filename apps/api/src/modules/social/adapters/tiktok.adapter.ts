@@ -17,35 +17,39 @@
  *   Caption: 2 200 chars (hashtags count toward this limit)
  */
 
-import { SocialPlatform } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
+import { healthFromFetchError, healthFromStatus } from './http-health';
 import {
   SocialAdapter,
   AdapterConnection,
   PublishPayload,
   PublishResult,
   ValidationResult,
+  ConnectionHealth,
+  CredentialKind,
 } from './social-adapter.interface';
 
 @Injectable()
 export class TikTokAdapter implements SocialAdapter {
   readonly platform: SocialPlatform = 'TIKTOK';
+  readonly credential: CredentialKind = 'stored_token';
   private readonly logger = new Logger(TikTokAdapter.name);
 
   // ─── Interface implementation ─────────────────────────────────────────────
 
-  async validateConnection(connection: AdapterConnection): Promise<boolean> {
+  async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       // TikTok user info endpoint
       const res = await fetch(
         'https://open.tiktokapis.com/v2/user/info/?fields=open_id,display_name',
         { headers: { Authorization: `Bearer ${connection.accessToken}` } },
       );
-      return res.ok;
+      return healthFromStatus(res.status, 'TikTok', res.headers.get('retry-after'));
     } catch (err) {
-      this.logger.warn(`TikTok connection validation failed: ${this.normalizeError(err)}`);
-      return false;
+      this.logger.warn(`TikTok connection check failed (transient): ${this.normalizeError(err)}`);
+      return healthFromFetchError(err, 'TikTok');
     }
   }
 
@@ -69,7 +73,7 @@ export class TikTokAdapter implements SocialAdapter {
     const caption    = `${payload.body}${hashtagStr ? '\n\n' + hashtagStr : ''}`.slice(0, 2200);
 
     try {
-      const publishId = await this.initPhotoPost(connection.accessToken, caption);
+      const publishId = await this.initPhotoPost(connection.accessToken ?? '', caption);
       return {
         success:         true,
         externalPostId:  publishId,

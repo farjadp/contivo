@@ -7,17 +7,44 @@
  * Flow: SocialPublishService → AdapterFactory.getAdapter(platform) → adapter.publish()
  */
 
-import { SocialPlatform } from '@contivo/types';
+import type { SocialPlatform } from '@prisma/client';
 
 // ─── Shared payload types ─────────────────────────────────────────────────────
+
+/**
+ * Where an adapter's credential lives.
+ * - `stored_token`: per-connection OAuth token in the encrypted columns.
+ * - `platform_env`: one Contivo-owned credential in env (e.g. the Telegram bot);
+ *   the connection row holds no secret and the service must not demand one.
+ */
+export type CredentialKind = 'stored_token' | 'platform_env';
+
+/**
+ * Result of a live token check.
+ * - `expired`: the token no longer works; the user must reconnect (EXPIRED).
+ * - `revoked`: the user or platform withdrew access (REVOKED).
+ * - `transient`: network / 5xx / rate limit. Says nothing about the token, so
+ *   the connection status must NOT change; the job is retried.
+ */
+export type ConnectionHealth =
+  | { ok: true }
+  | { ok: false; reason: 'expired' | 'revoked' | 'transient'; detail: string; retryAfterSec?: number };
+
+/** Result of a refresh-token grant. Same failure vocabulary as ConnectionHealth. */
+export type RefreshResult =
+  | { ok: true; accessToken: string; refreshToken?: string; expiresAt?: Date }
+  | { ok: false; reason: 'expired' | 'revoked' | 'transient'; detail: string };
 
 /** Sanitised connection data passed to adapters — no raw token fields. */
 export interface AdapterConnection {
   id: string;
   platform: SocialPlatform;
   accountIdentifier: string; // handle / page-id / URN
-  accessToken: string;       // decrypted at service layer before passing here
+  /** Decrypted at the service layer. Absent for `platform_env` adapters. */
+  accessToken?: string;
   refreshToken?: string;
+  /** Non-secret per-connection settings (SocialConnection.metaJson). */
+  meta?: Record<string, unknown>;
 }
 
 /** An image to publish alongside the post. */
@@ -36,6 +63,12 @@ export interface PublishPayload {
   pageId?: string;
   /** Optional artwork; adapters that cannot post media ignore it. */
   image?: PublishImage;
+  /** ContentItem.topic — used as a title by channels that have one. */
+  title?: string;
+  /** ContentItem.slug, when assigned. */
+  slug?: string;
+  /** How `body` is written. Content is authored as markdown. */
+  format?: 'markdown';
 }
 
 /** Normalised result returned by every adapter after a post attempt. */
@@ -44,6 +77,14 @@ export interface PublishResult {
   externalPostId?: string;
   externalPostUrl?: string;
   error?: string;
+  /**
+   * True only when the platform certainly did NOT create the post (rate limit,
+   * request never left — DNS/connect failure). Ambiguous failures (5xx,
+   * timeout after send) are false: a blind retry could post twice.
+   */
+  retryable?: boolean;
+  /** Platform-provided wait before retrying (Retry-After / retry_after). */
+  retryAfterSec?: number;
 }
 
 /** Validation result returned before attempting publish. */
@@ -58,11 +99,20 @@ export interface SocialAdapter {
   /** Which platform this adapter handles. */
   readonly platform: SocialPlatform;
 
+  /** Where the credential comes from; decides whether a stored token is required. */
+  readonly credential: CredentialKind;
+
   /**
-   * Validates that the connection token is still active.
-   * Should NOT throw — returns false on expired/invalid tokens.
+   * Checks the connection is usable. Never throws: network errors are
+   * `transient`, never `expired`.
    */
-  validateConnection(connection: AdapterConnection): Promise<boolean>;
+  validateConnection(connection: AdapterConnection): Promise<ConnectionHealth>;
+
+  /**
+   * Optional refresh-token grant. Called by TokenRefreshService shortly before
+   * expiry, under a per-connection lock. Never throws.
+   */
+  refreshToken?(connection: AdapterConnection): Promise<RefreshResult>;
 
   /**
    * Validates the publish payload against platform-specific rules
