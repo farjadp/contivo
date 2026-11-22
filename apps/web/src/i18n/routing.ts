@@ -84,7 +84,6 @@ export const routing = defineRouting({
     '/growth': '/growth',
     '/growth/new': '/growth/new',
     '/growth/analyzing': '/growth/analyzing',
-    '/growth/review': '/growth/review',
     '/growth/[id]': '/growth/[id]',
     '/admin': '/admin',
     '/admin/content/[contentId]': '/admin/content/[contentId]',

@@ -9,7 +9,7 @@ import {
 } from '@/lib/content-language';
 import { prisma } from '@/lib/db';
 import { runAiTask } from '@/lib/ai';
-import { buildJourney, type WorkspaceFacts } from '@/lib/workspace-journey';
+import { buildJourney, matrixFacts, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { actionError } from '@/lib/action-errors';
 import { countCompetitors } from '@/lib/competitor-counts';
 
@@ -72,9 +72,7 @@ export async function explainNextStep(workspaceId: string): Promise<GuideAnswer 
     hasBrandSummary: Boolean(workspace.brandSummary),
     acceptedCompetitors: workspace.competitors.filter((c) => c.userDecision === 'ACCEPTED').length,
     totalCompetitors: countCompetitors(workspace.competitors),
-    matrixCharts: Array.isArray(insights?.competitiveMatrices?.charts)
-      ? insights.competitiveMatrices.charts.length
-      : 0,
+    ...matrixFacts(insights),
     keywordCompetitors: Array.isArray(insights?.competitorKeywordsIntel?.competitors)
       ? insights.competitorKeywordsIntel.competitors.length
       : 0,
