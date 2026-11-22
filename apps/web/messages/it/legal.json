@@ -36,7 +36,7 @@
       "summary": [
         "Raccogliamo solo ciò che serve al funzionamento del prodotto: il tuo account, il tuo workspace e gli account che colleghi. Nulla a fini pubblicitari.",
         "Non vendiamo mai i tuoi dati, non ti mostriamo pubblicità e non impostiamo cookie di tracciamento o di analisi.",
-        "I tuoi testi vengono inviati a fornitori di AI (OpenAI e Google) per essere analizzati e scritti. È così che funziona il prodotto, e lo diciamo chiaramente.",
+        "I tuoi testi vengono inviati a fornitori di AI (OpenAI, Anthropic e Google) per essere analizzati e scritti. È così che funziona il prodotto, e lo diciamo chiaramente.",
         "Scrivi a {email} e cancelleremo il tuo account e il tuo workspace entro 30 giorni."
       ],
       "sections": [
@@ -80,10 +80,10 @@
           "blocks": [
             "Contivo funziona sull'infrastruttura di altre aziende. Ognuna riceve solo ciò che serve per la propria parte del lavoro:",
             [
-              "OpenAI e Google (Gemini): i contenuti del tuo sito, la memoria del brand e le tue istruzioni, per analizzare, pianificare e scrivere. L'uso che fanno dei dati ricevuti tramite API è regolato dai loro termini per le API.",
+              "OpenAI, Anthropic (Claude) e Google (Gemini): i contenuti del tuo sito, la memoria del brand e le tue istruzioni, per analizzare, pianificare e scrivere. Se uno di loro non è disponibile, la stessa richiesta può passare a un altro. L'uso che fanno dei dati ricevuti tramite API è regolato dai loro termini per le API.",
               "DataForSEO: keyword e nomi di dominio, per ottenere volumi di ricerca e pagine dei risultati. Nessuna informazione personale.",
               "LinkedIn e X: i post che pubblichi, e solo dopo che hai collegato l'account.",
-              "Vercel, Railway e Neon: hosting e database, dove viene conservato tutto quanto sopra.",
+              "Railway e Neon: hosting e database, dove viene conservato tutto quanto sopra.",
               "Sentry: segnalazioni di errore.",
               "Stripe: pagamenti, quando la fatturazione sarà attiva."
             ],
@@ -155,7 +155,7 @@
       "summary": [
         "Ciò che porti e ciò che Contivo scrive per te appartengono entrambi a te.",
         "L'AI può sbagliare. Il controllo qualità intercetta molti errori, ma sei tu il responsabile di ciò che esce a tuo nome, compreso ciò che pubblica l'Autopilot.",
-        "Contivo è in accesso anticipato e per ora è gratuito. Quando partirà la fatturazione, potrai disdire in qualsiasi momento.",
+        "Contivo è in accesso anticipato. I nuovi account sono gratuiti per ora, e alcuni utenti dell'accesso anticipato hanno pagato per un periodo determinato. Quando la fatturazione partirà nell'app, potrai disdire quando vuoi.",
         "Entro 14 giorni da qualsiasi pagamento, basta chiederlo e ti rimborsiamo per intero. Senza domande."
       ],
       "sections": [
@@ -172,7 +172,8 @@
           "title": "Accesso anticipato",
           "blocks": [
             "Contivo è in accesso anticipato. Le funzionalità cambieranno, alcune verranno aggiunte e altre rimosse, e ci saranno interruzioni del servizio. Per ora non garantiamo alcun livello di disponibilità.",
-            "Finché la fatturazione non è attiva, l'uso di Contivo è gratuito. Prima di iniziare ad addebitare qualcosa ti comunicheremo i costi, e nulla ti verrà addebitato senza il tuo consenso."
+            "I nuovi account sono gratuiti finché la fatturazione nell'app non è attiva. Prima di iniziare ad addebitare nell'app, ti diremo quanto costa, e nulla viene addebitato senza il tuo consenso.",
+            "Alcuni utenti dell'accesso anticipato hanno pagato una tantum 49 dollari statunitensi per tre mesi di accesso anticipato, concordati direttamente con noi e non tramite l'app."
           ]
         },
         {

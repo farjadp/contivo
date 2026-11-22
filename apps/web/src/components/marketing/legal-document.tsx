@@ -27,8 +27,8 @@ export type LegalDoc = 'privacy' | 'terms' | 'disclaimer';
 
 /** When each document last changed in substance. Shown, and used by the sitemap. */
 export const LEGAL_UPDATED: Record<LegalDoc, Date> = {
-  privacy: new Date('2026-09-27T00:00:00Z'),
-  terms: new Date('2026-09-27T00:00:00Z'),
+  privacy: new Date('2026-11-22T00:00:00Z'),
+  terms: new Date('2026-11-22T00:00:00Z'),
   disclaimer: new Date('2026-11-22T00:00:00Z'),
 };
 
