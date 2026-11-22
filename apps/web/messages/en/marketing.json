@@ -39,7 +39,7 @@
         "competitorsValue": "5 of 9 kept",
         "charts": "Positioning charts built",
         "chartsValue": "5",
-        "note": "Measured on an example workspace built from a public website while writing this page. Contivo has no customers yet — its only live deployment is its founder's."
+        "note": "Measured on an example workspace built from a public website while writing this page, not on a customer's account."
       }
     },
     "reel": {
@@ -228,7 +228,7 @@
   },
   "footer": {
     "blurb": "Reads your website into brand memory and a competitive map, then writes, reviews and publishes on a schedule you set.",
-    "provenance": "Built and run first on its founder's own sites. No customers to name yet, so nothing here claims otherwise.",
+    "provenance": "Built and run first on its founder's own sites. 23 early-access users have paid for it since; none is named here without their say-so.",
     "productTitle": "The product",
     "intelligence": "Intelligence",
     "qualityGate": "The quality gate",

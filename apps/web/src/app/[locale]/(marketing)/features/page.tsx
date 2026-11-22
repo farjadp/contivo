@@ -6,9 +6,9 @@
  * order a customer meets the product in.
  *
  * Every entry comes from `lib/features.ts`, and anything not built is marked
- * "soon" rather than listed as included. Which plan each feature is on is
- * deliberately absent: billing is not live, and the pricing page says
- * everything is free during early access. The two pages must not disagree.
+ * "soon" rather than listed as included. Features that are not on every plan
+ * name the lowest plan that has them, from the same catalogue the pricing
+ * page reads, so the two pages cannot disagree.
  */
 
 import type { Metadata } from 'next';
@@ -62,11 +62,16 @@ function FeatureCard({ entry }: { entry: FeatureEntry }) {
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-[18px] font-bold leading-snug">{t(`items.${entry.id}.name`)}</h3>
         {soon && (
-          <span className="shrink-0 rounded-full border border-rule-strong px-2 py-0.5 font-plexmono text-[10.5px] uppercase tracking-[0.1em] text-moss-muted">
+          <span className="shrink-0 rounded-full border border-rule-strong px-2 py-0.5 font-plexmono text-[10.5px] uppercase tracking-[0.1em] text-moss-muted rtl:tracking-normal">
             {t('soon')}
           </span>
         )}
       </div>
+      {entry.plan ? (
+        <p className="mt-1.5 font-plexmono text-[11.5px] uppercase tracking-[0.1em] text-saffron-ink rtl:tracking-normal">
+          {t(`planTag.${entry.plan}`)}
+        </p>
+      ) : null}
       <p className="mt-2.5 text-[15px] leading-[1.65] text-moss-muted">{t(`items.${entry.id}.body`)}</p>
       <p className="mt-auto border-t border-rule pt-3.5 text-[14px] leading-[1.6]">
         <span className="font-semibold">{t('youGet')} </span>

@@ -5,7 +5,7 @@
       "description": "Tutto quello che fa Contivo, fase per fase: memoria del brand, mappa della concorrenza, una narrazione, bozze che superano un controllo qualità e pubblicazione sui tuoi canali."
     },
     "headline": "Tutto quello che ottieni, e <accent>a cosa ti serve</accent>.",
-    "intro": "{count, number} cose che fa Contivo, nell'ordine in cui le incontri. Per ognuna trovi cosa fa e cosa ti resta in mano. Ciò che non è ancora pronto è indicato chiaramente.",
+    "intro": "{count, number} cose che fa Contivo, nell'ordine in cui le incontri. Per ognuna trovi cosa fa e cosa ti resta in mano. Ciò che non è ancora pronto è indicato chiaramente, e le poche funzioni riservate a un piano più grande dicono quale.",
     "jumpLabel": "Vai a una fase",
     "soon": "In arrivo",
     "youGet": "Ottieni:",
@@ -165,10 +165,15 @@
         "body": "Collega un account una volta e Contivo pubblica per conto tuo, nei giorni e negli orari che consenti. Pubblica sul tuo profilo LinkedIn personale, non su una pagina aziendale.",
         "get": "Pubblicazione programmata sul tuo profilo LinkedIn, con ogni tentativo registrato."
       },
+      "socialNext": {
+        "name": "X, Telegram, WordPress e Threads",
+        "body": "In costruzione adesso. Ognuno si accende qui solo dopo che un post vero è uscito attraverso di lui; fino ad allora resta da questa parte della linea.",
+        "get": "La stessa programmazione e lo stesso controllo qualità, su altri quattro canali."
+      },
       "socialMore": {
-        "name": "X, Instagram, Facebook e TikTok",
-        "body": "I social su cui Contivo non può ancora pubblicare. X richiede ancora lavoro da parte nostra, e gli altri tre richiedono la revisione dell'app da parte della piattaforma prima che chiunque oltre a noi possa collegare un account, per questo sono elencati qui e non promessi più sopra.",
-        "get": "La stessa programmazione e lo stesso controllo qualità, su altri quattro social."
+        "name": "Instagram, Facebook e TikTok",
+        "body": "Ognuno richiede la revisione dell'app da parte della piattaforma prima che qualcuno oltre a noi possa collegare un account. Quella revisione non è ancora superata, quindi sono elencati qui e non promessi sopra.",
+        "get": "La stessa programmazione e lo stesso controllo qualità, quando ogni piattaforma lo approva."
       },
       "autopilot": {
         "name": "Autopilot",
@@ -216,6 +221,10 @@
       "live": "già attive",
       "soon": "indicate come non ancora pronte",
       "stages": "fasi, le stesse dell'app"
+    },
+    "planTag": {
+      "growth": "Growth e Agency",
+      "agency": "Piano Agency"
     }
   }
 }

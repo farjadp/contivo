@@ -5,7 +5,7 @@
       "description": "Everything Contivo does, stage by stage: brand memory, a competitive map, a narrative, drafts that pass a quality gate, and publishing on your own channels."
     },
     "headline": "Everything you get, and <accent>what it is for</accent>.",
-    "intro": "{count, number} things Contivo does, in the order you meet them. Each one says what it does and what you end up holding. Anything not built yet is marked as such.",
+    "intro": "{count, number} things Contivo does, in the order you meet them. Each one says what it does and what you end up holding. Anything not built yet is marked as such, and the few that belong to a bigger plan say which.",
     "jumpLabel": "Jump to a stage",
     "soon": "Soon",
     "youGet": "You get:",
@@ -165,10 +165,15 @@
         "body": "Connect an account once and Contivo posts on your behalf, inside the days and hours you allow. It posts to your own LinkedIn profile, not to a company page.",
         "get": "Scheduled publishing to your LinkedIn profile, with every attempt recorded."
       },
+      "socialNext": {
+        "name": "X, Telegram, WordPress and Threads",
+        "body": "Being built now. Each one is switched on here only after a real post has gone out through it, so until then it stays on this side of the line.",
+        "get": "The same scheduling and quality gate, on four more channels."
+      },
       "socialMore": {
-        "name": "X, Instagram, Facebook and TikTok",
-        "body": "The networks Contivo can not post to yet. X still needs work on our side, and the other three each need their platform's app review before anybody but us can connect an account, so they are listed here rather than promised above.",
-        "get": "The same scheduling and quality gate, on four more networks."
+        "name": "Instagram, Facebook and TikTok",
+        "body": "Each of these needs its platform's app review before anybody but us can connect an account. That review has not been passed, so they are listed here rather than promised above.",
+        "get": "The same scheduling and quality gate, once each platform approves it."
       },
       "autopilot": {
         "name": "Autopilot",
@@ -216,6 +221,10 @@
       "live": "working today",
       "soon": "marked as not built yet",
       "stages": "stages, same as the app"
+    },
+    "planTag": {
+      "growth": "Growth and Agency",
+      "agency": "Agency plan"
     }
   }
 }

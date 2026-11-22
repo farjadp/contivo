@@ -1,62 +1,75 @@
 {
   "pricing": {
     "meta": {
-      "title": "Prezzi — Contivo"
+      "title": "Prezzi — Contivo",
+      "description": "Founder 55 $, Growth 89 $ e Agency 233 $ al mese, oppure dieci mesi per un anno. Gratis durante l'accesso anticipato: la fatturazione non è ancora partita."
     },
     "headline": "Paghi in base a quanto lavora <accent>senza</accent> di te.",
-    "intro": "Workspace × post a settimana × canali. Nessun costo per utente: il punto è proprio che non serve nessuno davanti allo schermo.",
-    "earlyAccess": "Accesso anticipato: la fatturazione non è ancora attiva. È tutto gratis mentre lo mettiamo alla prova sui nostri siti.",
+    "intro": "Brand, post e immagini al mese. Nessun costo per utente: il punto è proprio che non serve nessuno davanti allo schermo.",
+    "earlyAccess": {
+      "lead": "Accesso anticipato: i nuovi account per ora non pagano nulla.",
+      "body": "La fatturazione per i nuovi iscritti non è ancora partita, quindi tutto ciò che è pronto è gratis finché lo mettiamo alla prova. Questi sono i prezzi da quando partirà, e il piano lo scegli allora. Oggi non chiediamo nessuna carta."
+    },
     "mostUseful": "Il più utile",
+    "perMonth": "/ mese",
+    "annual": "oppure <bdi>{amount}</bdi> all'anno, due mesi gratis",
+    "cta": "Inizia gratis in accesso anticipato",
+    "included": {
+      "brands": "{count, plural, one {# brand} other {# brand}}",
+      "posts": "{count, number} post al mese",
+      "images": "{count, number} immagini al mese",
+      "reports": "{count, plural, one {# report strategico} other {# report strategici}} al mese",
+      "loop": "Memoria del brand, mappa della concorrenza, narrazione e autopilot",
+      "channels": "Pubblica su LinkedIn e sul tuo sito",
+      "extraBrand": "Altri brand a <bdi>{amount}</bdi> l'uno al mese"
+    },
+    "soonTitle": "In arrivo in questo piano",
+    "soon": {
+      "monitoring": "Monitoraggio settimanale dei concorrenti",
+      "imageQuality": "Scegli la qualità di ogni immagine",
+      "videoScripts": "Script video",
+      "templateVideos": "Video da template",
+      "whiteLabel": "Report white-label",
+      "shareLinks": "Link di condivisione per i clienti"
+    },
     "plans": {
-      "solo": {
-        "name": "Solo",
-        "price": "$0",
-        "period": "durante l'accesso anticipato",
-        "tagline": "Un brand, in autopilot.",
-        "features": {
-          "workspaces": "1 workspace",
-          "memory": "Memoria del brand + mappa della concorrenza",
-          "narrative": "Una narrazione che ogni post deve portare avanti",
-          "autopilot": "Autopilot: fino a 3 post / settimana",
-          "channels": "LinkedIn + il tuo sito",
-          "gate": "Controllo qualità su ogni post"
-        },
-        "cta": "Inizia gratis"
-      },
       "founder": {
         "name": "Founder",
-        "price": "$49",
-        "period": "al mese, in arrivo",
-        "tagline": "Tutti i tuoi progetti, un solo autopilot.",
-        "features": {
-          "workspaces": "3 workspace",
-          "everything": "Tutto quello che c'è in Solo",
-          "autopilot": "Autopilot: fino a 14 post / settimana ciascuno",
-          "channels": "LinkedIn · siti web",
-          "report": "Report strategico in PDF, 5 / mese"
-        },
-        "cta": "Mettiti in lista"
+        "tagline": "Un brand, che pubblica con costanza."
+      },
+      "growth": {
+        "name": "Growth",
+        "tagline": "Un brand, a pieno ritmo."
       },
       "agency": {
         "name": "Agency",
-        "price": "$149",
-        "period": "al mese, in arrivo",
-        "tagline": "Gestisci il marketing dei clienti, senza starci dietro.",
-        "features": {
-          "workspaces": "10 workspace",
-          "everything": "Tutto quello che c'è in Founder",
-          "windows": "Fasce di pubblicazione e direzione per ogni cliente",
-          "keys": "Chiavi della Content API per ogni sito cliente",
-          "support": "Supporto prioritario"
-        },
-        "cta": "Parliamone"
+        "tagline": "Cinque brand di clienti, senza starci dietro."
+      }
+    },
+    "addOns": {
+      "title": "Extra",
+      "imagePack": {
+        "name": "{count, number} crediti immagine",
+        "body": "Un pacchetto una tantum per qualsiasi piano a pagamento. Si usa solo quando le immagini del mese sono finite."
+      },
+      "extraBrand": {
+        "name": "Brand aggiuntivo",
+        "body": "Solo Agency. Memoria, concorrenti, narrazione e canali propri, oltre ai tuoi cinque."
       }
     },
     "faqTitle": "Prima che tu lo chieda.",
     "faq": {
       "post": {
         "q": "Cosa conta come post?",
-        "a": "Un contenuto pubblicato su un canale. Un post LinkedIn e un articolo del blog nati dalla stessa idea contano come due."
+        "a": "Una bozza finale per un canale. Idee e anteprime non contano. Un post LinkedIn e un articolo del blog nati dalla stessa idea contano come due."
+      },
+      "image": {
+        "q": "Cos'è un credito immagine?",
+        "a": "Un'immagine generata per un post."
+      },
+      "runOut": {
+        "q": "Cosa succede se finisco la quota?",
+        "a": "Niente di ciò che hai creato viene cancellato o nascosto. I nuovi post o le nuove immagini si fermano fino al mese successivo, a un extra o a un piano più grande."
       },
       "approve": {
         "q": "Posso approvare prima che venga pubblicato?",
@@ -65,6 +78,14 @@
       "down": {
         "q": "E se l'AI non funziona?",
         "a": "Il post aspetta. Contivo non pubblica mai qualcosa che il controllo qualità non ha potuto verificare."
+      },
+      "cancel": {
+        "q": "Posso disdire?",
+        "a": "Sì, quando vuoi. Il piano resta attivo fino alla fine del periodo pagato. Un nuovo account oggi non ha niente da disdire, perché la fatturazione non è ancora partita."
+      },
+      "pay": {
+        "q": "Come pagherò?",
+        "a": "Con carta, quando partirà la fatturazione. Se nel tuo paese la carta non funziona, scrivici e troveremo un'altra strada."
       }
     },
     "closeHeadline": "Per ora non c'è niente da decidere. È <accent>gratis</accent> finché lo dimostriamo.",
