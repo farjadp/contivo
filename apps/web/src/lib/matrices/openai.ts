@@ -1,11 +1,14 @@
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
-import { readTokenUsage } from '@/lib/competitors/queries';
-import { sanitizeUpstreamText } from '@/lib/competitors/redact';
+import { runAiTask, type AiTask } from '@/lib/ai';
+import { tokensFromUsage } from '@/lib/competitors/queries';
+import { describeAiFailure } from '@/lib/competitors/run-errors';
 
 /**
- * `tokens` is set when the provider answered (HTTP 200) but the answer was
- * unusable, so the pipeline can still count the spend. `null` means unknown,
- * never zero.
+ * `tokens` is set when the provider answered but the answer was unusable, so
+ * the pipeline can still count the spend. `null` means unknown, never zero.
+ *
+ * When no provider could answer, the message starts with `AI_UNAVAILABLE:`
+ * (see `describeAiFailure`), which the matrix run stores as its error and
+ * `classifyRunError` maps to the aiUnavailable copy.
  */
 export class MatrixAiError extends Error {
   readonly tokens: number | null;
@@ -17,8 +20,16 @@ export class MatrixAiError extends Error {
   }
 }
 
-/** Wall-clock bound on one matrix call, so a hung call cannot outlive the reaper. */
+/** Wall-clock bound on one matrix call (per provider attempt), so a hung call cannot outlive the reaper. */
 export const MATRIX_REQUEST_TIMEOUT_MS = 90_000;
+
+/** Which failover-layer task each structured matrix call is. */
+export const MATRIX_TASK_BY_SCHEMA_NAME: Readonly<Record<string, AiTask>> = {
+  market_axis_candidates: 'matrix_propose_axes',
+  chart_scores: 'matrix_score_chart',
+  chart_summary: 'matrix_summarise',
+  cross_chart_summary: 'matrix_summarise',
+};
 
 export async function callStructured<T>(args: {
   name: string;
@@ -26,66 +37,37 @@ export async function callStructured<T>(args: {
   system: string;
   user: string;
 }): Promise<{ data: T; tokens: number | null }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new MatrixAiError('OPENAI_API_KEY is not set');
+  const task = MATRIX_TASK_BY_SCHEMA_NAME[args.name];
+  if (!task) {
+    throw new MatrixAiError(`Matrix AI call "${args.name}" has no AI task`);
   }
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
 
-  let res: Response;
+  let result: Awaited<ReturnType<typeof runAiTask>>;
   try {
-    res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      signal: AbortSignal.timeout(MATRIX_REQUEST_TIMEOUT_MS),
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        response_format: {
-          type: 'json_schema',
-          json_schema: { name: args.name, strict: true, schema: args.schema },
-        },
-        messages: [
-          { role: 'system', content: args.system },
-          { role: 'user', content: args.user },
-        ],
-      }),
+    // Usage is recorded by the layer under `task` and the provider that answered.
+    result = await runAiTask(task, {
+      system: args.system,
+      prompt: args.user,
+      output: { kind: 'json_schema', name: args.name, schema: args.schema },
+      temperature: 0.2,
+      timeoutMs: MATRIX_REQUEST_TIMEOUT_MS,
     });
   } catch (error) {
-    throw new MatrixAiError(
-      `Matrix AI request failed: ${sanitizeUpstreamText((error as Error).message) ?? 'network error'}`,
-    );
+    throw new MatrixAiError(`Matrix AI request threw: ${(error as Error).message}`);
   }
 
-  if (!res.ok) {
-    const reason = sanitizeUpstreamText(await res.text().catch(() => ''), 200);
-    throw new MatrixAiError(`Matrix AI call failed: ${res.status}${reason ? ` ${reason}` : ''}`);
+  if (!result.ok) {
+    throw new MatrixAiError(describeAiFailure(`Matrix AI call ${args.name} failed`, result));
   }
 
-  let body: unknown;
-  try {
-    body = await res.json();
-  } catch {
-    throw new MatrixAiError('Matrix AI returned an unreadable response');
-  }
-  const tokens = readTokenUsage(body);
-  void recordAiUsage({
-    provider: 'openai',
-    model: resolveResponseModel(body, model),
-    feature: `matrix_${args.name}`,
-    usage: parseOpenAiChatUsage(body),
-  });
+  const tokens = tokensFromUsage(result.usage);
+  if (result.json !== undefined) return { data: result.json as T, tokens };
 
-  const content = (body as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content;
-  if (!content || typeof content !== 'string') {
+  if (!result.text) {
     throw new MatrixAiError('Matrix AI returned no content', tokens);
   }
-
   try {
-    return { data: JSON.parse(content) as T, tokens };
+    return { data: JSON.parse(result.text) as T, tokens };
   } catch (error) {
     throw new MatrixAiError(`Matrix AI returned invalid JSON: ${(error as Error).message}`, tokens);
   }
