@@ -71,10 +71,14 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
 
   let scheduledAtUtc: Date | null = null;
   if (payload.publishDate && payload.publishTime) {
-    const localDateTimeString = `${payload.publishDate}T${payload.publishTime}:00`;
-    scheduledAtUtc = new Date(
-      new Date(localDateTimeString).toLocaleString('en-US', { timeZone: payload.timezone })
+    // The customer's wall-clock time in their own zone, as a UTC instant —
+    // same conversion as scheduleContentItem, independent of the server zone.
+    scheduledAtUtc = parseLocalDateTimeToUtc(
+      payload.publishDate,
+      payload.publishTime,
+      payload.timezone,
     );
+    if (!scheduledAtUtc) throw new Error('Could not read that publish date and time.');
   }
 
   const updatedContent = await prisma.contentItem.update({
