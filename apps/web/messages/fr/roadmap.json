@@ -1,0 +1,103 @@
+{
+  "roadmap": {
+    "meta": {
+      "title": "Feuille de route de Contivo : ce qui est en construction, et ce qui est sorti",
+      "description": "Ce que Contivo construit maintenant, ensuite et plus tard, sans date promise, et une liste datée de ce qui est déjà sorti."
+    },
+    "eyebrow": "Feuille de route",
+    "headline": "Ce qui vient ensuite, dans l’ordre. <accent>Pas</accent> par date.",
+    "intro": "L’ordre est un plan ; une date serait une promesse que nous pourrions ne pas tenir. Quand quelque chose sort, il passe dans la liste ci-dessous, avec le jour de sa mise en place.",
+    "horizons": {
+      "now": {
+        "title": "Maintenant",
+        "body": "En cours de construction."
+      },
+      "next": {
+        "title": "Ensuite",
+        "body": "Conçu, et le prochain à être construit."
+      },
+      "later": {
+        "title": "Plus tard",
+        "body": "Prévu, pas commencé."
+      }
+    },
+    "items": {
+      "channels": {
+        "title": "X, Telegram, WordPress et Threads",
+        "body": "Le socle de publication qu’ils partagent est sorti le 22 novembre. Chaque canal n’est activé qu’après qu’une vraie publication est passée par lui."
+      },
+      "billing": {
+        "title": "Formules payantes",
+        "body": "Founder, Growth et Agency, aux prix indiqués sur la page Tarifs. Tant que la facturation n’a pas commencé, les nouveaux comptes sont gratuits."
+      },
+      "monitoring": {
+        "title": "Veille hebdomadaire des concurrents",
+        "body": "Une relecture hebdomadaire de chaque concurrent confirmé, avec la liste de ce qui a changé sur son site, ses prix ou son positionnement."
+      },
+      "imageQuality": {
+        "title": "Choix de la qualité d’image",
+        "body": "Rapide, standard ou HD pour chaque image, pour qu’une image jetable et un visuel phare ne coûtent pas la même chose."
+      },
+      "imageTemplate": {
+        "title": "Votre marque sur les images",
+        "body": "Le titre et le logo dessinés par-dessus l’image dans vos couleurs et dans une vraie police, pour que le texte soit juste, y compris en persan."
+      },
+      "video": {
+        "title": "Scripts vidéo et vidéos à partir de modèles",
+        "body": "Des scripts que vous pouvez tourner, et de courtes vidéos produites sans caméra."
+      },
+      "agency": {
+        "title": "Rapports en marque blanche et liens clients",
+        "body": "Le rapport stratégique sous la marque propre d’une agence, et un lien qu’un client peut ouvrir sans compte."
+      },
+      "networks": {
+        "title": "Instagram, Facebook et TikTok",
+        "body": "Chacun doit d’abord passer l’examen d’application de sa plateforme : le calendrier dépend donc en partie d’elles."
+      },
+      "languages": {
+        "title": "Plus de langues de contenu",
+        "body": "La rédaction dans d’autres langues que l’anglais et le persan."
+      }
+    },
+    "note": "L’ordre peut changer quand des clients nous disent que quelque chose compte davantage. Tout ce que nous abandonnons est retiré de cette page, pas laissé à l’abandon.",
+    "shippedTitle": "Sorti récemment",
+    "shippedIntro": "Les changements qu’un client remarquerait, avec le jour où chacun est arrivé dans le produit.",
+    "shipped": {
+      "ownPost": {
+        "title": "Rédigez votre propre publication, et modifiez une publication en ligne",
+        "body": "Ajoutez au pipeline une publication écrite avec vos propres mots, et corrigez un article en ligne directement."
+      },
+      "failover": {
+        "title": "Un autre fournisseur d’IA prend le relais",
+        "body": "Si un fournisseur est en panne, le suivant reprend le travail, et le basculement est journalisé."
+      },
+      "security": {
+        "title": "Correctifs de sécurité sur la publication et les connexions de site",
+        "body": "La publication est liée à votre propre espace de travail, et l’adresse de rafraîchissement d’un site ne peut pas pointer vers des systèmes internes."
+      },
+      "tokens": {
+        "title": "Comptes connectés chiffrés",
+        "body": "Les jetons des comptes sociaux connectés sont chiffrés au repos."
+      },
+      "italian": {
+        "title": "Italien",
+        "body": "Ce site en italien."
+      },
+      "discovery": {
+        "title": "Recherche de concurrents et graphiques fondés sur des éléments",
+        "body": "Les concurrents sont trouvés avec les éléments sur lesquels ils ont été trouvés, et chaque note de graphique affiche son raisonnement."
+      },
+      "report": {
+        "title": "Un nouveau rapport stratégique",
+        "body": "Notre modèle, où l’IA ne rédige que le texte et ne place jamais les points des graphiques."
+      },
+      "persian": {
+        "title": "Persan",
+        "body": "Tout le produit, et la rédaction elle-même, en persan."
+      }
+    },
+    "closeHeadline": "Il vous manque quelque chose ?",
+    "closeCta": "Dites-le-nous",
+    "closeFeatures": "Ce qui fonctionne aujourd’hui"
+  }
+}

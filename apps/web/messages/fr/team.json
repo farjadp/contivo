@@ -1,0 +1,34 @@
+{
+  "team": {
+    "meta": {
+      "title": "L’équipe Contivo",
+      "description": "Les quatre fondateurs qui font passer Contivo de l’idée au produit."
+    },
+    "eyebrow": "Équipe",
+    "headline": "Quatre fondateurs, <accent>un</accent> problème tout simple.",
+    "intro": "Les quatre personnes qui font passer Contivo de l’idée au produit, pour les petites entreprises qui savent qu’elles devraient publier régulièrement et surveiller leur marché, mais où personne n’a le temps de le faire.",
+    "foundersTitle": "Fondateurs",
+    "linkedin": "{name} sur LinkedIn",
+    "founders": {
+      "mohajer": {
+        "name": "Hamidreza Salmanmohajer",
+        "role": "PDG, ventes et marketing"
+      },
+      "souzangar": {
+        "name": "Saeed Souzangar",
+        "role": "CTO, réseau et sécurité"
+      },
+      "kavian": {
+        "name": "Mohsen Kavian",
+        "role": "Directeur des opérations"
+      },
+      "khamouddoust": {
+        "name": "Bahareh Khamouddoust",
+        "role": "Responsable de projet et Scrum Master"
+      }
+    },
+    "closeHeadline": "Écrivez à ceux qui le construisent.",
+    "closeCta": "Nous contacter",
+    "closeAbout": "À propos de Contivo"
+  }
+}

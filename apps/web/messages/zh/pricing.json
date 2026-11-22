@@ -1,0 +1,245 @@
+{
+  "pricing": {
+    "meta": {
+      "title": "价格 — Contivo",
+      "description": "Founder 每月 $55，Growth 每月 $89，Agency 每月 $233；按年付只需 10 个月的价格。早期体验期间免费：尚未开始收费。"
+    },
+    "headline": "按<accent>不需要你</accent>也能跑多少来定价。",
+    "intro": "按每月的品牌数、帖子数和图片数计费。不按席位收费：这个产品的意义就在于没人需要坐在那个席位上。",
+    "earlyAccess": {
+      "lead": "早期体验：新账户目前不收费。",
+      "body": "新注册用户尚未开始计费，所以在我们验证产品期间，所有已上线的功能都免费。下面是开始收费后的价格，届时你再选套餐。今天不需要填写银行卡。"
+    },
+    "mostUseful": "最实用",
+    "perMonth": "/ 月",
+    "annual": "或按年付 <bdi>{amount}</bdi>，相当于免两个月",
+    "cta": "免费开始早期体验",
+    "included": {
+      "brands": "{count, plural, other {# 个品牌}}",
+      "posts": "每月 {count, number} 篇帖子",
+      "images": "每月 {count, number} 张图片",
+      "reports": "每月 {count, plural, other {# 份策略报告}}",
+      "loop": "品牌记忆、竞争地图、叙事和自动驾驶",
+      "channels": "发布到 LinkedIn 和你自己的网站",
+      "extraBrand": "额外品牌每个每月 <bdi>{amount}</bdi>"
+    },
+    "soonTitle": "该套餐即将加入",
+    "soon": {
+      "monitoring": "每周竞争对手监测",
+      "imageQuality": "为每张图片选择画质",
+      "videoScripts": "视频脚本",
+      "templateVideos": "模板视频",
+      "whiteLabel": "白标报告",
+      "shareLinks": "客户分享链接"
+    },
+    "plans": {
+      "founder": {
+        "name": "Founder",
+        "tagline": "一个品牌，稳定发布。"
+      },
+      "growth": {
+        "name": "Growth",
+        "tagline": "一个品牌，全量运转。"
+      },
+      "agency": {
+        "name": "Agency",
+        "tagline": "五个客户品牌，无需值守。"
+      }
+    },
+    "addOns": {
+      "title": "附加项",
+      "imagePack": {
+        "name": "{count, number} 个图片额度",
+        "body": "一次性额度包，适用于任何付费套餐。只有当月图片用完后才会扣用。"
+      },
+      "extraBrand": {
+        "name": "额外品牌",
+        "body": "仅限 Agency。在你的五个品牌之外，拥有独立的记忆、竞争对手、叙事和渠道。"
+      }
+    },
+    "faqTitle": "你可能想问的。",
+    "faq": {
+      "post": {
+        "q": "什么算一篇帖子？",
+        "a": "为一个渠道写好的一篇完整草稿。创意和预览不算。同一个创意写成一篇 LinkedIn 帖子和一篇博客文章，算两篇。"
+      },
+      "image": {
+        "q": "什么是图片额度？",
+        "a": "为一篇帖子生成的一张图片。"
+      },
+      "runOut": {
+        "q": "额度用完了会怎样？",
+        "a": "你已有的内容不会被删除或隐藏。新帖子或新图片会暂停，直到下个月、购买附加项或升级套餐。"
+      },
+      "approve": {
+        "q": "发布前我可以审批吗？",
+        "a": "可以。关闭自动驾驶，所有内容都会留在内容管道里等你审核。也可以保持开启，让质量关卡来当审核人。"
+      },
+      "down": {
+        "q": "如果 AI 服务宕机了呢？",
+        "a": "帖子会等着。Contivo 绝不发布关卡没能审核的内容。"
+      },
+      "cancel": {
+        "q": "可以取消吗？",
+        "a": "可以，随时都行。套餐会持续到你已付费周期的结束。新账户目前没有可取消的，因为还没开始计费。"
+      },
+      "pay": {
+        "q": "我要怎么付款？",
+        "a": "开始计费后用银行卡支付。如果你所在地区无法用卡，写信给我们，我们会想别的办法。"
+      }
+    },
+    "closeHeadline": "现在还不用做决定。验证期间它是<accent>免费</accent>的。",
+    "closeCta": "从你的网站开始",
+    "closeDocs": "阅读开发者文档"
+  },
+  "siteApi": {
+    "meta": {
+      "title": "Content API — 面向开发者的 Contivo",
+      "description": "用一次带认证的 GET，从任何技术栈读取你在 Contivo 发布的帖子。包含端点、参数、响应结构、错误、缓存和 revalidate webhook。"
+    },
+    "title": "Content API",
+    "lede": "你的网站通过一次带认证的 <code>GET</code> 从 Contivo 读取已发布的帖子。不会往你的代码库推送任何东西，没有插件，任何能发 HTTP 请求的技术栈都能用。",
+    "baseLabel": "Base URL",
+    "readOnly": "只读",
+    "contents": "目录",
+    "toc": {
+      "how-it-works": "工作原理",
+      "auth": "认证",
+      "list": "列出帖子",
+      "single": "获取单篇帖子",
+      "post-object": "帖子对象",
+      "errors": "错误",
+      "caching": "缓存与时效",
+      "revalidate": "Revalidate webhook",
+      "recipes": "示例",
+      "limits": "限制与保证"
+    },
+    "howItWorks": {
+      "p1": "Contivo 按你设定的排期撰写和发布。帖子上线时会被分配一个永久 slug 并标记为已发布——Contivo 的工作到此为止。你的网站在需要时自己来取帖子。",
+      "p2": "这个方向很重要：Contivo 永远没有你的代码库、部署流程或 CMS 的写入权限。如果你停用 Contivo，你的网站会继续展示它最后一次取到的内容。"
+    },
+    "auth": {
+      "p1": "每个请求都要以 bearer token 的形式携带站点密钥。在 <link>连接 → 网站</link> 下创建。密钥只在创建时显示一次，之后无法找回——如果丢了，请新建一个站点连接。",
+      "blockLabel": "每个请求",
+      "p2": "<strong>把密钥保存在服务端。</strong>它能读取这个工作区发布过的所有内容。这些端点确实会发送宽松的 CORS 头，所以浏览器<em>可以</em>调用它们——但这样做会把你的密钥发给每一位访客。请在 server component、route handler、构建阶段或你的后端里调用。"
+    },
+    "list": {
+      "p1": "返回密钥所属工作区的已发布帖子，最新的在前。",
+      "head": {
+        "name": "参数",
+        "type": "类型",
+        "meaning": "含义"
+      },
+      "limit": "返回多少篇帖子。超出范围的值会被截取到范围内，而不是被拒绝。",
+      "cursor": "上一次响应中的 nextCursor。请求第一页时省略。",
+      "channel": "返回哪个渠道。传 \"all\" 会把社交帖子也包括进来——网站上通常不需要这些。",
+      "responseLabel": "响应",
+      "p2": "没有更多页时，<code>nextCursor</code> 为 <code>null</code>。这是判断列表结束的唯一可靠信号——不要因为某一页数量少就停止。"
+    },
+    "single": {
+      "p1": "返回 <shape>post</shape>，对象结构与上面相同。页面路由请用 <code>slug</code>，不要用 <code>id</code>：slug 在发布时分配一次，之后永不改变，这样你的 URL 才能保持稳定。"
+    },
+    "postObject": {
+      "head": {
+        "name": "字段",
+        "type": "类型",
+        "notes": "说明"
+      },
+      "id": "稳定的内部标识符。适合作为 React key，不适合放进 URL。",
+      "slug": "URL 安全，在工作区内唯一，从发布那一刻起永久不变。",
+      "title": "帖子主题。",
+      "content": "完整正文，Markdown 格式。用你现有的工具渲染即可。",
+      "excerpt": "去掉 Markdown 后的前约 200 个字符。用于卡片、列表和 meta description。",
+      "channel": "通常是 \"blog\"。只有在你请求 channel=all 时才会出现其他值。",
+      "publishedAt": "ISO 8601 UTC。",
+      "updatedAt": "ISO 8601 UTC。可用于缓存键、站点地图和 lastmod。"
+    },
+    "errors": {
+      "head": {
+        "status": "状态码",
+        "body": "响应体 error",
+        "meaning": "含义"
+      },
+      "unauthorized": "密钥缺失、格式错误、不存在或已撤销——或者站点连接未激活。这四种情况故意返回相同的响应，这样没人能借这个端点推测出哪些密钥存在。",
+      "notFound": "仅限单篇帖子。该工作区里没有使用这个 slug 的已发布帖子。属于其他客户的 slug 同样返回 404，绝不返回 403。",
+      "p1": "空的 <code>posts</code> 数组<em>不是</em>错误。它表示密钥有效，只是该渠道还没有发布任何内容——自动驾驶要先发布点什么，这里才会有内容。"
+    },
+    "caching": {
+      "p1": "响应带有 <code>Cache-Control: no-store</code>，所以 API 从不要求 CDN 或浏览器缓存它们。缓存完全由你决定，这才是合理的分工：你的框架了解你的流量，也知道你能接受多旧的数据。",
+      "blockLabel": "Next.js — 每五分钟重新验证一次",
+      "p2": "五分钟是一个合理的默认值。如果需要即时更新，请把较长的 revalidate 间隔和下面的 webhook 搭配使用，而不是更频繁地轮询。"
+    },
+    "revalidate": {
+      "p1": "可选。在站点连接上设置一个 revalidate URL，Contivo 会在每次发布后立即调用它，让你的缓存马上清除，而不必等到下一个周期。",
+      "sendsLabel": "Contivo 发送的内容",
+      "routeLabel": "Next.js — app/api/revalidate/route.ts",
+      "p2": "调用在 8 秒后超时，状态会记录在站点连接上。失败只会被记入日志，绝不会阻塞发布——帖子已经上线，无论如何你的网站都会在下一次定时拉取时拿到它。"
+    },
+    "recipes": {
+      "curl": "在终端里检查你的密钥",
+      "paging": "逐页获取所有帖子",
+      "ssg": "静态站点生成",
+      "ssgLabel": "Next.js — generateStaticParams",
+      "python": "Python",
+      "php": "PHP / WordPress"
+    },
+    "limits": {
+      "head": {
+        "property": "属性",
+        "value": "值",
+        "notes": "说明"
+      },
+      "methods": "方法",
+      "methodsValue": "GET, OPTIONS",
+      "methodsNotes": "只读。无法通过这个 API 写入内容。",
+      "pageSize": "每页数量",
+      "pageSizeValue": "最多 100",
+      "pageSizeNotes": "更大的值会被截取，而不是被拒绝。",
+      "scope": "范围",
+      "scopeValue": "一个工作区",
+      "scopeNotes": "一个密钥只能读取创建它的那个工作区。",
+      "slugs": "Slug",
+      "slugsValue": "永久",
+      "slugsNotes": "发布时分配，永不重写。可以放心用在 URL 和站点地图中。",
+      "revoking": "撤销",
+      "revokingValue": "立即生效",
+      "revokingNotes": "删除或停用站点连接后，其密钥在下一次请求时就会返回 401。",
+      "p1": "目前没有公布的速率限制。即便如此也请缓存响应——每次页面访问都去拉取的网站本身就很脆弱，不只是对我们而言。"
+    },
+    "footerNote": "这里有错误或遗漏？本页由提供 API 的同一套代码生成，所以任何不一致都是值得报告的 bug。打印本页即可另存为 PDF。",
+    "guide": {
+      "toggleTitle": "如何使用你的站点密钥",
+      "toggleBody": "你的网站从 Contivo 读取帖子。不会往你的代码库推送任何东西，也没有需要安装的插件。",
+      "copy": "复制",
+      "copied": "已复制",
+      "step1Title": "1 · 把密钥存为环境变量",
+      "step1Body": "密钥只在创建时显示一次。把它以 <code>CONTIVO_SITE_KEY</code> 的名称放进托管服务商的环境变量里，绝不要放在客户端代码中——这个密钥能读取该工作区发布过的所有内容。丢了？新建一个站点连接即可；密钥无法找回。",
+      "step2Title": "2 · 检查是否可用",
+      "step2Label": "在终端中",
+      "step3Title": "3 · 在你的网站上列出帖子",
+      "step3Label": "Next.js App Router — server component",
+      "step3Body": "任何框架都可以：就是一次返回 JSON 的带认证 GET。请在服务端调用，确保密钥不会到达浏览器。",
+      "step4Title": "4 · 渲染单篇帖子",
+      "step4Label": "按 slug 获取单篇帖子",
+      "fieldsTitle": "返回的内容",
+      "fields": {
+        "id": "稳定的标识符。用作 React key，不要放进 URL。",
+        "slug": "URL 安全，发布时分配，之后永不改变。用它做路由。",
+        "title": "帖子主题。",
+        "content": "完整正文，Markdown 格式。",
+        "excerpt": "前约 200 个字符，已去掉 Markdown。用于卡片和 meta description。",
+        "channel": "始终是 \"blog\"，除非你请求了其他渠道。",
+        "publishedAt": "ISO 8601；未发布时为 null。",
+        "updatedAt": "ISO 8601。可用于缓存键和站点地图。"
+      },
+      "pagingTitle": "超过 100 篇帖子",
+      "pagingLabel": "游标分页",
+      "troubleTitle": "出问题时",
+      "trouble401": "<c>401</c>——密钥错误、已撤销，或站点连接未激活。请检查上面的状态。",
+      "trouble404": "单篇帖子返回 <c>404</c>——该 slug 尚未发布。slug 在发布时分配，而不是在写草稿时。",
+      "troubleEmpty": "<c>posts: []</c>——密钥没问题，只是 blog 渠道还没有发布内容。自动驾驶要先发布，这里才会有内容。",
+      "revalidateNote": "可选：在站点连接上设置一个 revalidate URL，Contivo 会在每次发布后通知它，让你的缓存立即刷新，而不必等到下一个周期。",
+      "fullReference": "完整 API 参考——所有参数、字段和错误"
+    }
+  }
+}

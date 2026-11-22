@@ -1,0 +1,122 @@
+{
+  "product": {
+    "meta": {
+      "title": "Comment fonctionne Contivo, du début à la fin",
+      "description": "Chaque étape, de l’inscription jusqu’aux publications qui partent toutes seules : votre site web, vos concurrents, un récit, LinkedIn et votre propre site, et le pilote automatique. Ce que vous faites, ce que fait Contivo, et ce qu’il faut savoir."
+    },
+    "eyebrow": "Comment ça marche",
+    "headline": "D’une adresse à une semaine qui <accent>se publie toute seule</accent>.",
+    "intro": "Sept étapes, dans l’ordre où le produit vous les fait suivre. Chacune dit ce que vous faites et ce que fait Contivo, pour que vous sachiez à quoi vous vous engagez avant de vous inscrire.",
+    "stepsTitle": "Les étapes",
+    "itDoes": "Contivo",
+    "steps": {
+      "signUp": {
+        "title": "Inscrivez-vous",
+        "you": "Nom, e-mail et mot de passe. Pas de carte, et rien n’est publié nulle part tant que vous n’avez pas connecté un canal vous-même.",
+        "it": "Ouvre votre compte en accès anticipé, gratuitement, et vous propose deux points d’entrée : construire un espace de travail, ou essayer une publication tout de suite."
+      },
+      "website": {
+        "title": "Donnez-lui votre site web",
+        "you": "Saisissez le nom de votre entreprise et l’adresse de votre site.",
+        "it": "Lit vos pages et vous restitue une mémoire de marque : ce que vous faites, ce que vous promettez, à qui vous vous adressez et quel ton vous employez. Vous corrigez ce qui est faux. Il fait aussi une première proposition de concurrents."
+      },
+      "competitors": {
+        "title": "Confirmez vos concurrents",
+        "you": "Acceptez, rejetez ou ajoutez des concurrents. Tout ce qui suit est construit à partir de ceux que vous gardez.",
+        "it": "Construit des graphiques de positionnement qui vous placent parmi eux, puis analyse ce que vend chacun et les recherches sur lesquelles il apparaît. Les idées restent verrouillées tant que les graphiques et cette recherche n’existent pas."
+      },
+      "narrative": {
+        "title": "Validez le récit",
+        "you": "Lisez les fils narratifs qu’il propose et modifiez-les : ce que chacun affirme, à qui il s’adresse et ce qu’il ne doit jamais dire.",
+        "it": "Rédige trois ou quatre fils narratifs à partir de la recherche. Chaque idée qui suit est rattachée à l’un d’eux."
+      },
+      "connect": {
+        "title": "Connectez vos lieux de publication",
+        "you": "Connectez-vous à LinkedIn une fois, ou créez une clé pour votre site web et demandez à un développeur de la brancher.",
+        "it": "Publie sur votre profil LinkedIn personnel, et met vos articles publiés à disposition de votre site via une API en lecture seule."
+      },
+      "autopilot": {
+        "title": "Activez le pilote automatique",
+        "you": "Choisissez une recette de départ, les jours et les heures où il peut publier, votre fuseau horaire et le nombre de publications par semaine, de une à quatorze. Décidez si vous validez chaque publication d’abord.",
+        "it": "Sans validation, chaque brouillon doit quand même passer le contrôle qualité avant d’être programmé. Avec validation, les brouillons vous attendent."
+      },
+      "running": {
+        "title": "Laissez-le tourner",
+        "you": "Jetez un œil quand vous le souhaitez. Chaque exécution figure dans le journal, y compris ce qui a été rejeté et pourquoi.",
+        "it": "Garde les sept jours suivants planifiés, revérifie chaque jour, réessaie quand quelque chose échoue et répartit les publications dans votre créneau. Un rapport stratégique sur tout ce qu’il a appris de votre marché est disponible quand vous en avez besoin."
+      }
+    },
+    "recipesTitle": "Par où la plupart des gens commencent",
+    "recipesIntro": "Le pilote automatique propose cinq points de départ. Chacun n’est qu’un réglage par défaut : modifiez les jours, les heures et le nombre de publications à votre guise. Un espace de travail peut en faire tourner jusqu’à huit à la fois.",
+    "perWeek": "{count, plural, one {# publication par semaine} other {# publications par semaine}}",
+    "recipes": {
+      "linkedinVoice": {
+        "name": "Voix LinkedIn",
+        "body": "Des publications à la première personne, à partir de votre mémoire de marque et des manques laissés par vos concurrents.",
+        "when": "LinkedIn · du lundi au vendredi, de 9 h à 18 h"
+      },
+      "blogWriter": {
+        "name": "Rédacteur de blog",
+        "body": "Des articles de 600 à 2 200 mots visant les manques révélés par votre recherche concurrentielle, publiés sur votre propre site.",
+        "when": "Votre site web · le mardi, de 8 h à 12 h"
+      },
+      "thoughtLeader": {
+        "name": "Leader d’opinion",
+        "body": "Une ou deux publications de fond par semaine qui prennent position, pour quand vous préférez être cité plutôt que vu tous les jours.",
+        "when": "LinkedIn · le mardi et le jeudi, de 7 h à 10 h"
+      },
+      "productOffers": {
+        "name": "Produits et offres",
+        "body": "Des publications sur ce que vous vendez, mises en perspective avec ce que proposent vos concurrents.",
+        "when": "LinkedIn · le lundi et le mercredi, de 10 h à 16 h"
+      },
+      "custom": {
+        "name": "Sur mesure",
+        "body": "Le même moteur, sans parti pris : votre rythme, vos canaux, votre créneau et vos consignes.",
+        "when": "LinkedIn ou votre site web · à votre choix"
+      }
+    },
+    "needTitle": "Ce qu’il vous faut",
+    "need": {
+      "website": {
+        "title": "Un site web",
+        "body": "Contivo part de ce que votre propre site dit de vous."
+      },
+      "linkedin": {
+        "title": "Un compte LinkedIn, pour y publier",
+        "body": "Les publications partent sur votre profil personnel. Les pages entreprise ne sont pas encore prises en charge."
+      },
+      "developer": {
+        "title": "Un développeur, une fois, pour publier sur votre site",
+        "body": "Votre site récupère ses articles via l’API de Contivo, quelle que soit sa technologie. Quelqu’un doit l’ajouter à votre site une seule fois. La documentation développeur explique comment."
+      }
+    },
+    "knowTitle": "Bon à savoir",
+    "know": {
+      "confirm": {
+        "title": "Les concurrents ont besoin de votre accord",
+        "body": "Ses premières propositions ne sont que des suggestions. Rien n’est analysé tant que vous ne les avez pas acceptées."
+      },
+      "review": {
+        "title": "La validation est désactivée, sauf si vous l’activez",
+        "body": "Par défaut, les publications qui passent le contrôle qualité partent toutes seules. Activez la validation si vous voulez voir chacune d’abord."
+      },
+      "reconnect": {
+        "title": "LinkedIn redemande la connexion tous les 60 jours",
+        "body": "La connexion LinkedIn dure environ deux mois. Quand elle expire, vous vous reconnectez."
+      },
+      "estimates": {
+        "title": "Les notes de positionnement sont des estimations",
+        "body": "Le modèle lit des éléments publics et montre son raisonnement, pour que vous puissiez le contester."
+      },
+      "languages": {
+        "title": "Anglais ou persan",
+        "body": "Le contenu est rédigé dans l’une de ces deux langues, choisie pour chaque marque."
+      }
+    },
+    "featuresLink": "Voir toutes les fonctionnalités, y compris celles à venir",
+    "closeHeadline": "Commencez par l’étape une. Il suffit d’un nom et d’une adresse.",
+    "closeCta": "Commencer gratuitement en accès anticipé",
+    "closeWhy": "Pourquoi Contivo"
+  }
+}

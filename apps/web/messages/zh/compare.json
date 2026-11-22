@@ -1,0 +1,234 @@
+{
+  "compare": {
+    "meta": {
+      "title": "Contivo 对比：AI 写作工具、排期工具、ChatGPT 和 AI 代理",
+      "description": "Contivo 与 AI 写作工具、社交媒体排期工具、SEO 平台、ChatGPT 类助手和 AI 代理有何不同，以及它目前还落后在哪里。事实均来自各厂商自己的页面。"
+    },
+    "eyebrow": "对比",
+    "headline": "Contivo 哪里不同，哪里<accent>不是</accent>。",
+    "intro": "与小企业做内容时原本会用的五类工具对比，按类别而不是按品牌。所有列出的示例都来自该厂商自己的页面，读取于 {date}。",
+    "uniqueTitle": "它能做、别人做不到的",
+    "unique": {
+      "lock": {
+        "title": "它先拒绝写",
+        "body": "在你的竞争地图和定位图就绪之前，创意一直锁定。我们对比过的工具里，没有一个列出过类似的功能。"
+      },
+      "scale": {
+        "title": "它能找到你真正的竞争对手",
+        "body": "与你规模相当的公司，而不是你所在品类里的知名大牌，每一家在展示给你之前都会确认真实存在。排期工具和 SEO 工具要么让你自己说出对手是谁，要么只显示谁在某个关键词上有排名。"
+      },
+      "storyline": {
+        "title": "每篇帖子都在推进一条故事线",
+        "body": "三到四个你的内容需要推进的主张，每个都附有一份绝不能声称的内容清单。"
+      },
+      "gate": {
+        "title": "它会否决编造的事实",
+        "body": "评审会拒绝编造的统计数据、研究和客户故事；如果没有模型能审核一篇帖子，它就不发布。我们找到的唯一类似检查，只在某个写作工具的 Enterprise 套餐里。"
+      },
+      "ownSite": {
+        "title": "它能发布到任何网站",
+        "body": "不管你的网站用什么搭建，都通过一个只读 API 读取帖子。开发者连接一次即可。"
+      },
+      "persian": {
+        "title": "它用波斯语写波斯语",
+        "body": "不是从英文草稿翻译过来的，并按波斯语字数范围检查。Jasper 的语言列表里没有波斯语。"
+      }
+    },
+    "tableTitle": "并排对比",
+    "capability": "能力",
+    "swipe": "左右滑动表格可查看所有列。",
+    "status": {
+      "yes": "是",
+      "partial": "部分",
+      "no": "否",
+      "unlisted": "未列出"
+    },
+    "columns": {
+      "contivo": {
+        "name": "Contivo",
+        "examples": "当前，早期体验中"
+      },
+      "writers": {
+        "name": "AI 写作工具",
+        "examples": "Jasper、Copy.ai、Writesonic、Anyword"
+      },
+      "schedulers": {
+        "name": "社交媒体排期工具",
+        "examples": "Buffer、Hootsuite、Later、Ocoya"
+      },
+      "seo": {
+        "name": "SEO 内容平台",
+        "examples": "Surfer、Semrush Content Toolkit"
+      },
+      "assistants": {
+        "name": "AI 助手，手动使用",
+        "examples": "ChatGPT、Claude、Gemini"
+      },
+      "agents": {
+        "name": "AI 代理",
+        "examples": "ChatGPT Work、Manus、Zapier、n8n"
+      }
+    },
+    "rows": {
+      "competitors": {
+        "label": "找出你的竞争对手并确认其真实存在",
+        "contivo": "规模相当，经过核实，再由你确认",
+        "writers": "未列出",
+        "schedulers": "由你指定；部分套餐提供对标",
+        "seo": "每个关键词上谁有排名",
+        "assistants": "你每次都得问，且未经核实",
+        "agents": "需要你自己搭建"
+      },
+      "lock": {
+        "label": "调研就绪前不会动笔",
+        "contivo": "调研就绪前创意保持锁定",
+        "writers": "否",
+        "schedulers": "否",
+        "seo": "否",
+        "assistants": "否",
+        "agents": "仅当你自己搭建"
+      },
+      "storyline": {
+        "label": "每篇帖子都必须遵循的策略",
+        "contivo": "带故事线的叙事",
+        "writers": "有策略工具，但不强制顺序",
+        "schedulers": "内容支柱，仅一款工具有",
+        "seo": "每篇文章一份大纲",
+        "assistants": "仅当你每次都写进提示词",
+        "agents": "需要你自己搭建"
+      },
+      "factGate": {
+        "label": "拦截编造的统计数据和故事",
+        "contivo": "评审可否决；没审核就不发布",
+        "writers": "一款工具有，仅限 Enterprise 套餐",
+        "schedulers": "未列出",
+        "seo": "查重，而不是事实核查",
+        "assistants": "否；一切都要你自己检查",
+        "agents": "审批针对操作，不针对说法"
+      },
+      "autopilot": {
+        "label": "自动让排期保持满额",
+        "contivo": "每周 1–14 篇，提前 7 天",
+        "writers": "未列出排期功能",
+        "schedulers": "这是它们的核心产品",
+        "seo": "否",
+        "assistants": "定时生成草稿；由你发布",
+        "agents": "定时任务"
+      },
+      "social": {
+        "label": "可发布的社交平台",
+        "contivo": "目前仅限 LinkedIn 个人主页",
+        "writers": "无",
+        "schedulers": "6 到 28 个平台",
+        "seo": "无",
+        "assistants": "无",
+        "agents": "通过连接器，例如 Buffer"
+      },
+      "ownSite": {
+        "label": "发布到你自己的网站",
+        "contivo": "任何技术栈，通过只读 API",
+        "writers": "WordPress，仅一款工具",
+        "schedulers": "WordPress、Webflow、Wix，仅一款工具",
+        "seo": "导出到 WordPress",
+        "assistants": "否；你得复制粘贴",
+        "agents": "需要你自己搭建"
+      },
+      "persian": {
+        "label": "能写波斯语",
+        "contivo": "是，原生写作",
+        "writers": "Jasper 不能；其他未经核实",
+        "schedulers": "未经核实",
+        "seo": "未经核实",
+        "assistants": "是",
+        "agents": "取决于模型"
+      },
+      "languages": {
+        "label": "语言",
+        "contivo": "两种：英语和波斯语",
+        "writers": "30 种或更多",
+        "schedulers": "18 种或更多，仅一款工具",
+        "seo": "很多",
+        "assistants": "很多",
+        "agents": "很多"
+      },
+      "analytics": {
+        "label": "显示帖子表现",
+        "contivo": "暂不支持",
+        "writers": "预测表现，仅一款工具",
+        "schedulers": "是",
+        "seo": "排名追踪",
+        "assistants": "否",
+        "agents": "需要你自己搭建"
+      },
+      "price": {
+        "label": "每月入门价格",
+        "contivo": "$55 到 $233；早期体验期间免费",
+        "writers": "$29 到 $79",
+        "schedulers": "每个渠道 $5，到 $99 及以上",
+        "seo": "$49 到 $60",
+        "assistants": "约 $20",
+        "agents": "约 $20 起，外加你的时间"
+      }
+    },
+    "tableNote": "读取自各厂商自己的价格页和产品页，日期为 {date}。“未列出”表示我们在这些页面上没有找到，而不是说它不存在。价格会变，请在决定前自行核实。",
+    "behindTitle": "它落后在哪里",
+    "behindIntro": "以下内容在今天都属实。其中一些正在改进，而且本网站的其他地方没有隐瞒其中任何一点。",
+    "behind": {
+      "channels": {
+        "title": "只有一个社交平台",
+        "body": "仅限 LinkedIn 个人主页。不支持公司主页、Instagram、Facebook 或 TikTok。X、Telegram、WordPress 和 Threads 正在开发中。"
+      },
+      "languages": {
+        "title": "只有两种语言",
+        "body": "内容用英语或波斯语撰写。写作工具提供 30 种或更多。"
+      },
+      "analytics": {
+        "title": "没有表现数据",
+        "body": "目前还不能显示帖子的表现，也不追踪排名。"
+      },
+      "monitoring": {
+        "title": "暂无竞争对手提醒",
+        "body": "每周竞争对手监测即将推出。一些排期工具已经在较高套餐中提供竞争对手对标。"
+      },
+      "estimates": {
+        "title": "定位评分是估算",
+        "body": "模型读取公开依据并展示推理过程。这些分数不是实测数据。"
+      },
+      "early": {
+        "title": "早期阶段",
+        "body": "2026 年 8 月上线，尚未开始计费，目前还没有可以公开名字的客户。"
+      },
+      "price": {
+        "title": "不是最便宜的",
+        "body": "它比 $20 的助手或每个渠道 $5 的排期工具贵。你买的是调研和拒绝，而不是写作。"
+      }
+    },
+    "elsewhereTitle": "以下情况，选别的工具……",
+    "elsewhere": {
+      "channels": {
+        "if": "你现在就需要 Instagram、TikTok 或 Facebook",
+        "then": "Buffer 或 Later 这样的社交媒体排期工具已经能发到这些平台。"
+      },
+      "languages": {
+        "if": "你用英语或波斯语以外的语言发布内容",
+        "then": "Jasper 或 Anyword 这样的 AI 写作工具支持 30 种或更多语言。"
+      },
+      "search": {
+        "if": "你需要实测的搜索数据和排名追踪",
+        "then": "Surfer 或 Semrush 这样的 SEO 平台正是为此而做的。"
+      },
+      "build": {
+        "if": "你喜欢自己搭建和运行流程",
+        "then": "Zapier、n8n 或 Manus 这样的代理工具组合可以完成这个循环的大部分，前提是你来设计并维持它运转。"
+      },
+      "time": {
+        "if": "你有时间自己调研、写作和发布",
+        "then": "每月约 $20 的 ChatGPT 或 Claude 能写出不错的草稿。它们做不到的是：保存调研结果、拒绝编造，或者替你发布。"
+      }
+    },
+    "sourcesTitle": "来源，读取于 {date}",
+    "closeHeadline": "如果调研对你很重要，就从这里开始。",
+    "closeCta": "免费开始早期体验",
+    "closeFeatures": "查看全部功能"
+  }
+}

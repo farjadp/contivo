@@ -1,0 +1,245 @@
+{
+  "pricing": {
+    "meta": {
+      "title": "Tarifs — Contivo",
+      "description": "Founder $55, Growth $89 et Agency $233 par mois, ou le prix de dix mois pour une année. Gratuit pendant l’accès anticipé : la facturation n’a pas commencé."
+    },
+    "headline": "Un prix fixé selon ce qui tourne <accent>sans</accent> vous.",
+    "intro": "Des marques, des publications et des images par mois. Pas de frais par siège : tout l’intérêt, c’est que personne n’ait à s’y asseoir.",
+    "earlyAccess": {
+      "lead": "Accès anticipé : les nouveaux comptes ne sont pas encore facturés.",
+      "body": "La facturation n’a pas commencé pour les nouvelles inscriptions : tout ce qui est construit est donc gratuit le temps que nous fassions nos preuves. Voici les prix qui s’appliqueront ensuite, et c’est à ce moment-là que vous choisirez une formule. Aucune carte n’est demandée aujourd’hui."
+    },
+    "mostUseful": "Le plus utile",
+    "perMonth": "/ mois",
+    "annual": "ou <bdi>{amount}</bdi> par an, deux mois offerts",
+    "cta": "Commencer gratuitement en accès anticipé",
+    "included": {
+      "brands": "{count, plural, one {# marque} other {# marques}}",
+      "posts": "{count, number} publications par mois",
+      "images": "{count, number} images par mois",
+      "reports": "{count, plural, one {# rapport stratégique} other {# rapports stratégiques}} par mois",
+      "loop": "Mémoire de marque, carte concurrentielle, récit et pilote automatique",
+      "channels": "Publie sur LinkedIn et sur votre propre site web",
+      "extraBrand": "Marques supplémentaires à <bdi>{amount}</bdi> chacune par mois"
+    },
+    "soonTitle": "Bientôt dans cette formule",
+    "soon": {
+      "monitoring": "Veille hebdomadaire des concurrents",
+      "imageQuality": "Choix de la qualité de chaque image",
+      "videoScripts": "Scripts vidéo",
+      "templateVideos": "Vidéos à partir de modèles",
+      "whiteLabel": "Rapports en marque blanche",
+      "shareLinks": "Liens de partage pour les clients"
+    },
+    "plans": {
+      "founder": {
+        "name": "Founder",
+        "tagline": "Une marque, qui publie régulièrement."
+      },
+      "growth": {
+        "name": "Growth",
+        "tagline": "Une marque, à plein régime."
+      },
+      "agency": {
+        "name": "Agency",
+        "tagline": "Cinq marques clientes, sans intervention."
+      }
+    },
+    "addOns": {
+      "title": "Options",
+      "imagePack": {
+        "name": "{count, number} crédits d’image",
+        "body": "Un pack ponctuel pour toute formule payante. Utilisé seulement une fois les images du mois épuisées."
+      },
+      "extraBrand": {
+        "name": "Marque supplémentaire",
+        "body": "Formule Agency uniquement. Sa propre mémoire, ses concurrents, son récit et ses canaux, en plus de vos cinq marques."
+      }
+    },
+    "faqTitle": "Avant que vous ne posiez la question.",
+    "faq": {
+      "post": {
+        "q": "Qu’est-ce qui compte comme une publication ?",
+        "a": "Un brouillon terminé pour un canal. Les idées et les aperçus ne comptent pas. Une publication LinkedIn et un article de blog tirés de la même idée en font deux."
+      },
+      "image": {
+        "q": "Qu’est-ce qu’un crédit d’image ?",
+        "a": "Une image générée pour une publication."
+      },
+      "runOut": {
+        "q": "Que se passe-t-il quand j’arrive au bout ?",
+        "a": "Rien de ce que vous avez produit n’est supprimé ni masqué. Les nouvelles publications ou images sont mises en pause jusqu’au mois suivant, à l’achat d’une option ou au passage à une formule supérieure."
+      },
+      "approve": {
+        "q": "Puis-je valider avant la publication ?",
+        "a": "Oui. Désactivez le pilote automatique et tout reste dans le pipeline pour que vous le relisiez. Ou laissez-le activé, et le contrôle qualité fait office de relecteur."
+      },
+      "down": {
+        "q": "Et si l’IA est en panne ?",
+        "a": "La publication attend. Contivo ne publie jamais ce que le contrôle n’a pas pu relire."
+      },
+      "cancel": {
+        "q": "Puis-je résilier ?",
+        "a": "Oui, à tout moment. La formule court jusqu’à la fin de la période payée. Un nouveau compte n’a rien à résilier aujourd’hui, puisque la facturation n’a pas commencé."
+      },
+      "pay": {
+        "q": "Comment vais-je payer ?",
+        "a": "Par carte, une fois la facturation lancée. Si les cartes ne fonctionnent pas là où vous êtes, écrivez-nous et nous trouverons une autre solution."
+      }
+    },
+    "closeHeadline": "Rien à décider pour l’instant. C’est <accent>gratuit</accent> le temps que nous fassions nos preuves.",
+    "closeCta": "Commencer avec votre site web",
+    "closeDocs": "Lire la documentation développeur"
+  },
+  "siteApi": {
+    "meta": {
+      "title": "Content API — Contivo pour les développeurs",
+      "description": "Lisez vos publications Contivo depuis n’importe quelle technologie avec un seul GET authentifié. Points de terminaison, paramètres, format de réponse, erreurs, mise en cache et webhook de revalidation."
+    },
+    "title": "Content API",
+    "lede": "Votre site lit ses publications depuis Contivo avec un seul <code>GET</code> authentifié. Rien n’est poussé dans votre code, il n’y a pas de plugin, et cela fonctionne avec toute technologie capable d’envoyer une requête HTTP.",
+    "baseLabel": "URL de base",
+    "readOnly": "lecture seule",
+    "contents": "Sommaire",
+    "toc": {
+      "how-it-works": "Fonctionnement",
+      "auth": "Authentification",
+      "list": "Lister les publications",
+      "single": "Obtenir une publication",
+      "post-object": "L’objet publication",
+      "errors": "Erreurs",
+      "caching": "Mise en cache et fraîcheur",
+      "revalidate": "Webhook de revalidation",
+      "recipes": "Exemples",
+      "limits": "Limites et garanties"
+    },
+    "howItWorks": {
+      "p1": "Contivo rédige et publie selon le calendrier que vous fixez. Quand une publication est mise en ligne, elle reçoit un slug permanent et est marquée comme publiée — et le rôle de Contivo s’arrête là. Votre site demande les publications quand il en a besoin.",
+      "p2": "Ce sens de circulation compte : Contivo n’a jamais d’accès en écriture à votre code, à votre chaîne de déploiement ou à votre CMS. Si vous désactivez Contivo, votre site continue de servir ce qu’il a récupéré en dernier."
+    },
+    "auth": {
+      "p1": "Chaque requête transporte une clé de site sous forme de jeton bearer. Créez-en une dans <link>Connexions → Sites web</link>. Elle n’est affichée qu’une fois, à la création, et ne peut pas être récupérée ensuite — si vous la perdez, créez une nouvelle connexion de site.",
+      "blockLabel": "Chaque requête",
+      "p2": "<strong>Gardez la clé côté serveur.</strong> Elle peut lire tout ce que cet espace de travail a jamais publié. Les points de terminaison envoient bien des en-têtes CORS permissifs, donc un navigateur <em>peut</em> les appeler — mais cela revient à envoyer votre clé à chaque visiteur. Faites l’appel dans un composant serveur, un gestionnaire de route, au moment du build ou depuis votre backend."
+    },
+    "list": {
+      "p1": "Renvoie les publications de l’espace de travail propriétaire de la clé, des plus récentes aux plus anciennes.",
+      "head": {
+        "name": "Paramètre",
+        "type": "Type",
+        "meaning": "Signification"
+      },
+      "limit": "Nombre de publications à renvoyer. Les valeurs hors plage sont ramenées dans les bornes, pas rejetées.",
+      "cursor": "Le nextCursor d’une réponse précédente. À omettre pour la première page.",
+      "channel": "Le canal à renvoyer. Passez \"all\" pour inclure aussi les publications sociales — en général, vous n’en voulez pas sur un site web.",
+      "responseLabel": "Réponse",
+      "p2": "<code>nextCursor</code> vaut <code>null</code> quand il n’y a plus de pages. C’est le seul signal fiable de fin de liste — ne vous arrêtez pas sur une page incomplète."
+    },
+    "single": {
+      "p1": "Renvoie <shape>post</shape> avec le même objet que ci-dessus. Construisez vos routes sur <code>slug</code>, jamais sur <code>id</code> : le slug est attribué une seule fois à la publication et ne change jamais, c’est ce qui garde vos URL stables."
+    },
+    "postObject": {
+      "head": {
+        "name": "Champ",
+        "type": "Type",
+        "notes": "Remarques"
+      },
+      "id": "Identifiant interne stable. Utile comme clé React, pas pour les URL.",
+      "slug": "Compatible URL, unique par espace de travail, permanent dès la publication.",
+      "title": "Le sujet de la publication.",
+      "content": "Le corps complet, en Markdown. Affichez-le avec l’outil que vous utilisez déjà.",
+      "excerpt": "Les ~200 premiers caractères, sans Markdown. Pour les cartes, les listes et les méta-descriptions.",
+      "channel": "Normalement \"blog\". D’autres valeurs seulement si vous avez demandé channel=all.",
+      "publishedAt": "ISO 8601 UTC.",
+      "updatedAt": "ISO 8601 UTC. Utile pour les clés de cache, les sitemaps et lastmod."
+    },
+    "errors": {
+      "head": {
+        "status": "Statut",
+        "body": "Erreur dans le corps",
+        "meaning": "Signification"
+      },
+      "unauthorized": "Clé absente, mal formée, inconnue ou révoquée — ou connexion de site inactive. Les quatre cas renvoient volontairement la même réponse, pour que personne ne puisse utiliser ce point de terminaison pour deviner quelles clés existent.",
+      "notFound": "Publication unique seulement. Aucune publication avec ce slug dans cet espace de travail. Un slug appartenant à un autre client renvoie aussi 404, jamais 403.",
+      "p1": "Un tableau <code>posts</code> vide n’est <em>pas</em> une erreur. Cela signifie que la clé est valide et que rien n’a encore été publié sur ce canal — le pilote automatique doit publier quelque chose avant que quoi que ce soit n’apparaisse ici."
+    },
+    "caching": {
+      "p1": "Les réponses sont envoyées avec <code>Cache-Control: no-store</code> : l’API ne demande donc jamais à un CDN ou à un navigateur de les conserver. La mise en cache est entièrement à votre main, et c’est le bon sens des choses : votre framework connaît votre trafic et votre tolérance aux données périmées.",
+      "blockLabel": "Next.js — revalidation toutes les cinq minutes",
+      "p2": "Une fenêtre de cinq minutes est une valeur par défaut raisonnable. Pour des mises à jour instantanées, associez une longue revalidation au webhook ci-dessous plutôt que d’interroger plus souvent."
+    },
+    "revalidate": {
+      "p1": "Facultatif. Définissez une URL de revalidation sur la connexion de site et Contivo l’appellera juste après chaque publication, pour que votre cache se vide immédiatement au lieu d’attendre le prochain intervalle.",
+      "sendsLabel": "Ce que Contivo envoie",
+      "routeLabel": "Next.js — app/api/revalidate/route.ts",
+      "p2": "L’appel expire au bout de 8 secondes et son statut est enregistré sur la connexion de site. Un échec est journalisé et ne bloque jamais la publication — l’article est déjà en ligne et votre site le récupérera de toute façon lors de son prochain appel programmé."
+    },
+    "recipes": {
+      "curl": "Vérifier votre clé depuis un terminal",
+      "paging": "Récupérer toutes les publications, une page à la fois",
+      "ssg": "Génération de site statique",
+      "ssgLabel": "Next.js — generateStaticParams",
+      "python": "Python",
+      "php": "PHP / WordPress"
+    },
+    "limits": {
+      "head": {
+        "property": "Propriété",
+        "value": "Valeur",
+        "notes": "Remarques"
+      },
+      "methods": "Méthodes",
+      "methodsValue": "GET, OPTIONS",
+      "methodsNotes": "Lecture seule. Il n’existe aucun moyen d’écrire du contenu via cette API.",
+      "pageSize": "Taille de page",
+      "pageSizeValue": "100 max.",
+      "pageSizeNotes": "Les valeurs plus grandes sont ramenées au maximum plutôt que rejetées.",
+      "scope": "Portée",
+      "scopeValue": "un espace de travail",
+      "scopeNotes": "Une clé ne peut lire que l’espace de travail dans lequel elle a été créée.",
+      "slugs": "Slugs",
+      "slugsValue": "permanents",
+      "slugsNotes": "Attribués à la publication, jamais réécrits. Sans risque dans les URL et les sitemaps.",
+      "revoking": "Révocation",
+      "revokingValue": "immédiate",
+      "revokingNotes": "Supprimer ou désactiver une connexion de site fait renvoyer 401 à sa clé dès la requête suivante.",
+      "p1": "Il n’y a pas de limite de débit publiée à ce jour. Mettez quand même vos réponses en cache — un site qui fait un appel à chaque page vue est fragile pour ses propres raisons, pas seulement les nôtres."
+    },
+    "footerNote": "Une erreur ou un oubli ici ? Cette page est générée à partir du même code que celui qui sert l’API, donc tout écart est un bug qui mérite d’être signalé. Imprimez cette page pour l’enregistrer en PDF.",
+    "guide": {
+      "toggleTitle": "Comment utiliser votre clé de site",
+      "toggleBody": "Votre site lit ses publications depuis Contivo. Rien n’est poussé dans votre code, et il n’y a aucun plugin à installer.",
+      "copy": "Copier",
+      "copied": "Copié",
+      "step1Title": "1 · Stockez la clé dans une variable d’environnement",
+      "step1Body": "Elle n’est affichée qu’une fois, à la création. Placez-la dans l’environnement de votre hébergeur sous le nom <code>CONTIVO_SITE_KEY</code>, et jamais dans du code côté client — la clé lit tout ce que cet espace de travail a publié. Vous l’avez perdue ? Créez une nouvelle connexion de site ; les clés ne peuvent pas être récupérées.",
+      "step2Title": "2 · Vérifiez qu’elle fonctionne",
+      "step2Label": "Depuis votre terminal",
+      "step3Title": "3 · Listez les publications sur votre site",
+      "step3Label": "Next.js App Router — composant serveur",
+      "step3Body": "N’importe quel framework convient : c’est un GET authentifié qui renvoie du JSON. Faites l’appel côté serveur pour que la clé n’atteigne jamais le navigateur.",
+      "step4Title": "4 · Affichez une publication",
+      "step4Label": "Publication unique par slug",
+      "fieldsTitle": "Ce que vous recevez",
+      "fields": {
+        "id": "Identifiant stable. À utiliser comme clé React, pas dans vos URL.",
+        "slug": "Compatible URL, attribué à la publication et jamais modifié ensuite. Construisez vos routes dessus.",
+        "title": "Le sujet de la publication.",
+        "content": "Le corps complet, en Markdown.",
+        "excerpt": "Les ~200 premiers caractères, déjà débarrassés du Markdown. Pour les cartes et les méta-descriptions.",
+        "channel": "Toujours \"blog\", sauf si vous en avez demandé d’autres.",
+        "publishedAt": "ISO 8601, ou null si non publié.",
+        "updatedAt": "ISO 8601. Utile pour les clés de cache et les sitemaps."
+      },
+      "pagingTitle": "Plus de 100 publications",
+      "pagingLabel": "Pagination par curseur",
+      "troubleTitle": "Quand quelque chose ne va pas",
+      "trouble401": "<c>401</c> — la clé est erronée ou révoquée, ou la connexion de site n’est pas active. Vérifiez le statut ci-dessus.",
+      "trouble404": "<c>404</c> sur une publication unique — ce slug n’est pas publié. Les slugs sont attribués au moment de la publication, pas à la rédaction du brouillon.",
+      "troubleEmpty": "<c>posts: []</c> — la clé est bonne, mais rien n’est encore publié sur le canal blog. Le pilote automatique doit publier avant que quoi que ce soit n’apparaisse ici.",
+      "revalidateNote": "Facultatif : définissez une URL de revalidation sur la connexion de site et Contivo l’appellera après chaque publication, pour que votre cache se rafraîchisse immédiatement au lieu d’attendre le prochain intervalle.",
+      "fullReference": "Référence complète de l’API — chaque paramètre, champ et erreur"
+    }
+  }
+}

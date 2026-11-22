@@ -10,7 +10,8 @@
     "pricing": "تعرفه‌ها",
     "signIn": "ورود",
     "startFree": "شروع رایگان",
-    "features": "امکانات"
+    "features": "امکانات",
+    "siteOnlyNotice": "این سایت ترجمه شده، اما Contivo محتوای شما را به انگلیسی یا فارسی می‌نویسد."
   },
   "localeSwitcher": {
     "label": "زبان",
@@ -18,7 +19,10 @@
     "fa": "فارسی",
     "it": "Italiano",
     "es": "Español",
-    "he": "עברית"
+    "he": "עברית",
+    "fr": "Français",
+    "ar": "العربية",
+    "zh": "中文"
   },
   "intake": {
     "label": "با تنها چیزی که لازم دارد شروع کنید",

@@ -1,0 +1,28 @@
+{
+  "shell": {
+    "nav": {
+      "overview": "Aujourd’hui",
+      "growth": "Espaces de travail",
+      "connections": "Connexions",
+      "instant": "Contenu instantané",
+      "settings": "Paramètres"
+    },
+    "signOut": "Se déconnecter",
+    "header": {
+      "signIn": "Se connecter",
+      "signUp": "S’inscrire"
+    },
+    "credits": {
+      "label": "{count, number} crédits"
+    },
+    "navLabel": "Principal",
+    "account": "Compte",
+    "notFound": {
+      "eyebrow": "Erreur {code, number}",
+      "title": "Cette page n’existe pas",
+      "body": "Le lien est peut-être ancien, ou l’article a été déplacé ou n’a jamais été publié.",
+      "home": "Retour à l’accueil",
+      "blog": "Lire le blog"
+    }
+  }
+}

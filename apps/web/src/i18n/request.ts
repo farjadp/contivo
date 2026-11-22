@@ -3,7 +3,7 @@ import { hasLocale } from 'next-intl';
 import { cookies } from 'next/headers';
 
 import { TIMEZONE_COOKIE } from '@/lib/timezone-cookie';
-import { routing } from './routing';
+import { isSiteOnly, routing, SITE_NAMESPACES } from './routing';
 
 /**
  * One file per area of the product rather than one file per language.
@@ -79,8 +79,14 @@ function resolveTimeZone(store: Awaited<ReturnType<typeof cookies>>, locale: str
 }
 
 async function loadMessages(locale: string) {
+  // A site-only locale carries only the site namespaces; the app's come from
+  // English (its app routes redirect to /en anyway, see proxy.ts).
+  const siteOnly = isSiteOnly(locale);
   const files = await Promise.all(
-    NAMESPACES.map(async (ns) => (await import(`../../messages/${locale}/${ns}.json`)).default),
+    NAMESPACES.map(async (ns) => {
+      const from = siteOnly && !SITE_NAMESPACES.has(ns) ? 'en' : locale;
+      return (await import(`../../messages/${from}/${ns}.json`)).default;
+    }),
   );
   return Object.assign({}, ...files);
 }

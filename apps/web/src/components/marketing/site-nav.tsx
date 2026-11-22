@@ -1,6 +1,7 @@
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 
 import { Link } from '@/i18n/navigation';
+import { isSiteOnly } from '@/i18n/routing';
 
 import { LocaleSwitcher } from './locale-switcher';
 
@@ -19,6 +20,7 @@ const LINKS = [
 
 export function SiteNav() {
   const t = useTranslations('nav');
+  const locale = useLocale();
 
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-chalk/[.92] backdrop-blur-sm">
@@ -64,6 +66,13 @@ export function SiteNav() {
           </Link>
         </div>
       </div>
+      {/* Site-only locales: the site is translated, the product's writing is not.
+          Said on every page, under the nav, so nobody signs up expecting it. */}
+      {isSiteOnly(locale) && (
+        <p className="border-t border-rule bg-saffron/15 px-6 py-2 text-center text-[13.5px] leading-snug text-moss md:px-12">
+          {t('siteOnlyNotice')}
+        </p>
+      )}
     </header>
   );
 }

@@ -1,0 +1,34 @@
+{
+  "team": {
+    "meta": {
+      "title": "Contivo 团队",
+      "description": "把 Contivo 从想法做成产品的四位创始人。"
+    },
+    "eyebrow": "团队",
+    "headline": "四位创始人，<accent>一个</accent>朴素的问题。",
+    "intro": "把 Contivo 从想法做成产品的四个人。它面向这样的小公司：知道自己应该稳定发布内容、盯住市场，却没有人有时间去做。",
+    "foundersTitle": "创始人",
+    "linkedin": "{name} 的 LinkedIn",
+    "founders": {
+      "mohajer": {
+        "name": "Hamidreza Salmanmohajer",
+        "role": "CEO，负责销售与市场"
+      },
+      "souzangar": {
+        "name": "Saeed Souzangar",
+        "role": "CTO，负责网络与安全"
+      },
+      "kavian": {
+        "name": "Mohsen Kavian",
+        "role": "COO"
+      },
+      "khamouddoust": {
+        "name": "Bahareh Khamouddoust",
+        "role": "项目经理兼 Scrum Master"
+      }
+    },
+    "closeHeadline": "写信给正在打造它的人。",
+    "closeCta": "联系我们",
+    "closeAbout": "关于 Contivo"
+  }
+}

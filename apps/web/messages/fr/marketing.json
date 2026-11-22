@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "title": "Contivo — Le marketing en pilote automatique",
+    "description": "Contivo transforme votre site web en mémoire de marque, en veille concurrentielle et en pilote automatique de publication : il rédige, relit et publie pour vous, au rythme que vous fixez."
+  },
+  "nav": {
+    "refusal": "Le refus",
+    "intelligence": "Veille",
+    "autopilot": "Pilote automatique",
+    "pricing": "Tarifs",
+    "signIn": "Se connecter",
+    "startFree": "Commencer gratuitement",
+    "features": "Fonctionnalités",
+    "siteOnlyNotice": "Ce site est traduit, mais Contivo rédige votre contenu en anglais ou en persan."
+  },
+  "localeSwitcher": {
+    "label": "Langue",
+    "en": "English",
+    "fa": "فارسی",
+    "it": "Italiano",
+    "fr": "Français",
+    "ar": "العربية",
+    "he": "עברית",
+    "zh": "中文",
+    "es": "Español"
+  },
+  "intake": {
+    "label": "Commencez par la seule chose dont il a besoin",
+    "placeholder": "votre-entreprise.com",
+    "submit": "Lire mon site",
+    "submitting": "Ouverture…",
+    "errorEmpty": "Saisissez l’adresse du site à lire.",
+    "errorInvalid": "Cela ne ressemble pas à une adresse de site web.",
+    "hint": "Vient ensuite une courte inscription. L’adresse vous suit."
+  },
+  "home": {
+    "actOne": {
+      "headline": "Donnez-lui votre site web. <accent>Gardez</accent> le reste de votre journée.",
+      "body": "Contivo lit votre site pour en tirer une mémoire de marque, cartographie vos vrais concurrents et repère les mots-clés qu’ils laissent libres. Ensuite seulement, il écrit — et ne garde que ce qui passe un contrôle qualité conçu pour le rejeter.",
+      "evidence": {
+        "readTime": "Temps de lecture d’un site",
+        "readTimeValue": "≈ 20 s",
+        "readCost": "Coût IA de cette lecture",
+        "readCostValue": "$0.03",
+        "competitors": "Concurrents cartographiés",
+        "competitorsValue": "5 gardés sur 9",
+        "charts": "Graphiques de positionnement",
+        "chartsValue": "5",
+        "note": "Mesuré sur un espace de travail d’exemple, construit à partir d’un site web public pendant la rédaction de cette page, et non sur le compte d’un client."
+      }
+    },
+    "reel": {
+      "headline": "Toute la boucle, en vingt-deux secondes.",
+      "body": "Comment une URL devient une mémoire de marque, une carte du marché, un refus, puis une semaine de publications parties toutes seules.",
+      "videoAlt": "Présentation animée de Contivo : une adresse de site web est lue et devient une mémoire de marque, les concurrents sont placés sur un graphique de positionnement, la génération d’idées reste verrouillée tant que la veille n’existe pas, un brouillon passe le contrôle qualité, et une semaine se remplit de publications programmées.",
+      "caption": "Une animation explicative, pas un enregistrement d’écran — les captures plus bas montrent le vrai produit. Sans son.",
+      "reducedNote": "En pause, car votre système demande moins d’animations.",
+      "play": "Lecture",
+      "pause": "Pause"
+    },
+    "intelligence": {
+      "headline": "La plupart des outils partent d’un prompt vide. <accent>C’est</accent> pour cela qu’ils sonnent creux.",
+      "brandTitle": "Votre marque, telle qu’on la lit",
+      "brandBody": "Collez une URL. Contivo en tire le résumé de l’activité, la proposition de valeur, le public auquel le site s’adresse vraiment et le ton employé — puis vous laisse tout corriger. Chaque brouillon part ensuite de là, et non de votre prompt.",
+      "brandAlt": "L’écran Mémoire de marque de Contivo, avec un résumé de l’activité, une proposition de valeur, un persona du public cible et des étiquettes de ton de marque.",
+      "marketTitle": "Le marché, avec vous dedans",
+      "marketBody": "Il trouve des concurrents de votre taille, vérifie qu’ils existent et vous laisse écarter ceux qui ne sont pas vraiment les vôtres. Ceux qui restent sont notés sur des graphiques de positionnement construits pour votre marché — et vous y êtes placé parmi eux, au lieu d’être décrit dans un paragraphe.",
+      "marketAlt": "Le graphique du paysage concurrentiel de Contivo, qui place la marque du client parmi les concurrents trouvés selon la taille du public et la sophistication du produit."
+    },
+    "actTwo": {
+      "headline": "Il n’écrira pas <accent>encore</accent>.",
+      "body": "La génération d’idées reste verrouillée tant que la veille sur laquelle elle repose n’existe pas. Impossible de le convaincre du contraire, pour vous comme pour le modèle. C’est précisément ce qui rend le résultat digne d’être lu.",
+      "chainAlt": "La chaîne de configuration de Contivo pour un vrai espace de travail : mémoire de marque, carte du marché, mots-clés des concurrents et canal de publication terminés ; l’étape suivante consiste à définir ce que défend la marque.",
+      "chainCaption": "La vraie chaîne, dans le vrai produit. Chaque étape ne se déverrouille qu’une fois la précédente exécutée.",
+      "checksTitle": "Des contrôles qui ne se discutent pas",
+      "checks": {
+        "limits": "Les limites de chaque plateforme et la fourchette de mots que vous fixez",
+        "scaffolding": "Restes d’échafaudage, textes de remplissage, « en tant qu’IA… »",
+        "blocklist": "Votre liste de sujets interdits, dans le corps du texte et pas seulement le titre",
+        "duplicates": "Les quasi-doublons de tout ce qui a déjà été publié"
+      },
+      "judgeTitle": "Un juge qui peut opposer son veto",
+      "judge": {
+        "scores": "Note sur dix l’adéquation à la marque, la sûreté factuelle et la clarté",
+        "strictest": "La sûreté factuelle a le seuil le plus strict des trois",
+        "vetoes": "Bloque les statistiques inventées, les études citées et les anecdotes de clients",
+        "held": "Les deux fournisseurs en panne ? La publication est retenue. Jamais publiée sans relecture."
+      }
+    },
+    "actThree": {
+      "headline": "Puis il écrit, et il <accent>publie</accent>.",
+      "body": "Vous fixez un rythme, des canaux et les heures pendant lesquelles il a le droit de publier. Il garde la semaine à venir pleine, répartit les publications sur votre créneau, évite de se répéter et relance la production quand la file se vide. Personne n’a rien à valider, sauf si vous le souhaitez.",
+      "cadence": "Rythme",
+      "cadenceValue": "1 à 14 publications par semaine, 7 jours d’avance en permanence",
+      "channels": "Canaux",
+      "channelsValue": "LinkedIn · votre propre site",
+      "window": "Créneau",
+      "windowValue": "Les jours et heures locales que vous choisissez",
+      "steering": "Pilotage",
+      "steeringValue": "Un objectif, des thèmes à privilégier, des sujets à ne jamais aborder",
+      "postAlt": "Le pipeline de Contivo pour un vrai espace de travail : des publications LinkedIn qu’il a rédigées, deux publiées et une en brouillon avec sa programmation, chacune avec son objectif de nombre de mots.",
+      "postCaption": "Le pipeline d’un vrai espace de travail, capturé pour cette page."
+    },
+    "channels": {
+      "headline": "Les réseaux sociaux via OAuth. Votre site via une seule clé.",
+      "body": "Connectez votre profil LinkedIn une fois, et Contivo y publie en votre nom. Pour votre propre site — quelle que soit sa technologie ou son hébergeur — vous recevez une clé d’API et votre site lit ses publications. Rien n’est jamais poussé dans votre code, et aucun plugin n’est installé. X n’est pas encore activé, et Instagram, Facebook et TikTok doivent chacun passer d’abord l’examen d’application de leur plateforme.",
+      "connect": "Connecter",
+      "connectBody": "Un passage OAuth pour LinkedIn, ou une clé pour votre site.",
+      "schedule": "Programmer",
+      "scheduleBody": "Contivo choisit des créneaux dans la plage que vous avez autorisée.",
+      "publish": "Publier",
+      "publishBody": "Un planificateur se déclenche chaque minute et publie ce qui est prévu.",
+      "record": "Consigner",
+      "recordBody": "Chaque exécution est journalisée, étape par étape, y compris ce qui a été rejeté."
+    },
+    "close": {
+      "headline": "Collez une URL et retournez <accent>travailler</accent>.",
+      "body": "Inscrivez-vous, donnez-lui votre adresse, et il lit votre site pour en tirer une mémoire de marque et une carte concurrentielle. Ensuite, la file se remplit toute seule, et la seule chose qu’il refuse de faire, c’est publier quelque chose qu’il ne peut pas assumer.",
+      "cta": "Créer votre espace de travail",
+      "pricing": "Voir les tarifs"
+    },
+    "loop": {
+      "title": "La boucle",
+      "sub": "chaque semaine, toute seule",
+      "position": "{n} sur 06",
+      "tabsLabel": "Étapes de la boucle",
+      "stages": {
+        "know": {
+          "name": "Connaître",
+          "short": "mémoire de marque",
+          "title": "Votre marque, telle qu’on la lit.",
+          "body": "Résumé de l’activité, proposition de valeur, public et ton, tirés de votre site — et tout reste modifiable par vous."
+        },
+        "watch": {
+          "name": "Surveiller",
+          "short": "carte du marché",
+          "title": "Le marché, avec vous dedans.",
+          "body": "Des concurrents de votre taille, dont l’existence est vérifiée, notés sur des graphiques de positionnement construits pour votre marché, avec vous placé parmi eux."
+        },
+        "think": {
+          "name": "Réfléchir",
+          "short": "verrouillé jusqu’à 01–02",
+          "title": "Il n’écrira pas encore.",
+          "body": "La génération d’idées reste verrouillée tant que la veille sur laquelle elle repose n’existe pas. Ni vous ni le modèle ne pouvez sauter cette étape."
+        },
+        "make": {
+          "name": "Produire",
+          "short": "brouillons qui passent le contrôle",
+          "title": "Puis il écrit.",
+          "body": "Seulement ce qui passe un contrôle qualité conçu pour le rejeter : d’abord des contrôles stricts, puis un juge qui peut opposer son veto."
+        },
+        "ship": {
+          "name": "Publier",
+          "short": "vos canaux",
+          "title": "Et il publie.",
+          "body": "1 à 14 publications par semaine, dans les jours et les heures que vous autorisez, sur LinkedIn ou votre propre site."
+        },
+        "learn": {
+          "name": "Apprendre",
+          "short": "chaque exécution journalisée",
+          "title": "Chaque exécution consignée.",
+          "body": "Chaque exécution est journalisée, étape par étape, y compris ce qui a été rejeté."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Ce que fait la première lecture · ≈ 20 s",
+      "read": "Lecture de vos pages",
+      "memory": "Rédaction de votre mémoire de marque",
+      "competitors": "Recherche de concurrents de votre taille",
+      "charts": "Notation sur les graphiques de positionnement"
+    },
+    "tryIt": {
+      "label": "Essayez",
+      "button": "Lui faire écrire une publication maintenant",
+      "attempts": "{count, plural, =0 {Pas encore appuyé} one {Appuyé une fois · toujours verrouillé} other {Appuyé # fois · toujours verrouillé}}",
+      "lines": {
+        "0": "Appuyez. C’est le bouton que tous les autres outils vous proposent en premier.",
+        "1": "Verrouillé. Les idées ont besoin des mots-clés des concurrents, et l’étape 03 n’a pas été exécutée.",
+        "2": "Toujours verrouillé. Redemander ne crée pas la veille sur laquelle tout repose.",
+        "3": "Le modèle reçoit la même réponse que vous. Aucun prompt n’ouvre cette porte.",
+        "4": "Terminez l’étape 03 — Mots-clés — et la génération d’idées se déverrouille d’elle-même."
+      },
+      "chain": {
+        "brand": "Mémoire de marque",
+        "market": "Carte du marché",
+        "keywords": "Mots-clés",
+        "ideas": "Idées",
+        "channel": "Canal",
+        "autopilot": "Pilote automatique",
+        "done": "terminé",
+        "next": "suivant",
+        "locked": "verrouillé"
+      }
+    },
+    "cadence": {
+      "label": "Essayez un rythme",
+      "value": "{count, plural, one {# publication par semaine} other {# publications par semaine}}",
+      "caption": "Réparties sur votre créneau, jamais deux fois la même idée d’affilée."
+    },
+    "log": {
+      "title": "Journal d’exécution · exemple",
+      "replay": "Rejouer",
+      "rows": {
+        "r1": {
+          "kind": "Plan",
+          "text": "La semaine compte 3 créneaux libres dans votre plage"
+        },
+        "r2": {
+          "kind": "Brouillon",
+          "text": "LinkedIn, à partir de l’un de vos fils narratifs"
+        },
+        "r3": {
+          "kind": "Rejeté",
+          "text": "Veto du juge : il citait une étude qui n’existe pas"
+        },
+        "r4": {
+          "kind": "Brouillon",
+          "text": "Réécrit sans l’affirmation"
+        },
+        "r5": {
+          "kind": "Validé",
+          "text": "Adéquation à la marque, sûreté factuelle et clarté au-dessus du seuil"
+        },
+        "r6": {
+          "kind": "Programmé",
+          "text": "Jeudi, dans votre créneau de publication"
+        }
+      }
+    },
+    "chapters": {
+      "thinkLabel": "Réfléchir — et refuser",
+      "makeShip": "Produire · Publier"
+    }
+  },
+  "footer": {
+    "blurb": "Lit votre site web pour en tirer une mémoire de marque et une carte concurrentielle, puis rédige, relit et publie au rythme que vous fixez.",
+    "provenance": "Construit et utilisé d’abord sur ses propres sites. Depuis, 23 utilisateurs en accès anticipé l’ont payé ; aucun n’est nommé ici sans son accord.",
+    "productTitle": "Le produit",
+    "intelligence": "Veille",
+    "qualityGate": "Le contrôle qualité",
+    "autopilot": "Pilote automatique",
+    "pricing": "Tarifs",
+    "publishesTitle": "Publie sur",
+    "ownSite": "Votre propre site web",
+    "accountTitle": "Compte",
+    "signIn": "Se connecter",
+    "createWorkspace": "Créer un espace de travail",
+    "copyright": "© {year} Contivo",
+    "companyTitle": "Entreprise",
+    "about": "À propos",
+    "blog": "Blog",
+    "contact": "Contact",
+    "privacy": "Confidentialité",
+    "terms": "Conditions",
+    "socialSoon": "X · Telegram · WordPress · Threads",
+    "soon": "Bientôt",
+    "writeTo": "Écrire à une personne",
+    "navLabel": "Site",
+    "features": "Fonctionnalités",
+    "compare": "Comparer",
+    "product": "Comment ça marche",
+    "why": "Pourquoi Contivo",
+    "team": "Équipe",
+    "roadmap": "Feuille de route",
+    "disclaimer": "Avertissement"
+  }
+}

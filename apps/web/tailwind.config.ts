@@ -94,8 +94,8 @@ const config: Config = {
         vazir: ['var(--font-vazir)', 'Segoe UI', 'Tahoma', 'sans-serif'],
         /* Signed-in UI. Plex has no Persian glyphs, so Persian text falls
            through to Vazirmatn per character instead of to the OS. */
-        plex: ['var(--font-plex)', 'var(--font-vazir)', 'system-ui', 'sans-serif'],
-        plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'ui-monospace', 'monospace'],
+        plex: ['var(--font-plex)', 'var(--font-vazir)', 'var(--font-cjk)', 'system-ui', 'sans-serif'],
+        plexmono: ['var(--font-plex-mono)', 'var(--font-vazir)', 'var(--font-cjk)', 'ui-monospace', 'monospace'],
       },
       keyframes: {
         /* Marketing site motion (Chalk & Saffron). Every one of these is

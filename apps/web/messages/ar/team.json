@@ -1,0 +1,34 @@
+{
+  "team": {
+    "meta": {
+      "title": "فريق Contivo",
+      "description": "المؤسسون الأربعة الذين ينقلون Contivo من فكرة إلى منتج."
+    },
+    "eyebrow": "الفريق",
+    "headline": "أربعة مؤسسين، ومشكلة <accent>واحدة</accent> واضحة.",
+    "intro": "الأشخاص الأربعة الذين ينقلون Contivo من فكرة إلى منتج، من أجل الشركات الصغيرة التي تعرف أن عليها النشر بانتظام ومتابعة سوقها، ولا يملك أحد فيها الوقت لذلك.",
+    "foundersTitle": "المؤسسون",
+    "linkedin": "{name} على LinkedIn",
+    "founders": {
+      "mohajer": {
+        "name": "Hamidreza Salmanmohajer",
+        "role": "الرئيس التنفيذي، المبيعات والتسويق"
+      },
+      "souzangar": {
+        "name": "Saeed Souzangar",
+        "role": "المدير التقني، الشبكات والأمن"
+      },
+      "kavian": {
+        "name": "Mohsen Kavian",
+        "role": "مدير العمليات"
+      },
+      "khamouddoust": {
+        "name": "Bahareh Khamouddoust",
+        "role": "مديرة المشاريع وScrum Master"
+      }
+    },
+    "closeHeadline": "اكتب إلى الأشخاص الذين يبنونه.",
+    "closeCta": "تواصل معنا",
+    "closeAbout": "عن Contivo"
+  }
+}

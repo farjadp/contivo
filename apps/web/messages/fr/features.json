@@ -1,0 +1,230 @@
+{
+  "features": {
+    "meta": {
+      "title": "Fonctionnalités — Contivo",
+      "description": "Tout ce que fait Contivo, étape par étape : mémoire de marque, carte concurrentielle, récit, brouillons qui passent un contrôle qualité, et publication sur vos propres canaux."
+    },
+    "headline": "Tout ce que vous obtenez, et <accent>à quoi ça sert</accent>.",
+    "intro": "{count, number} choses que fait Contivo, dans l’ordre où vous les rencontrez. Chacune dit ce qu’elle fait et ce que vous avez en main à la fin. Ce qui n’est pas encore construit est indiqué comme tel, et les quelques éléments réservés à une formule supérieure précisent laquelle.",
+    "jumpLabel": "Aller à une étape",
+    "soon": "Bientôt",
+    "youGet": "Vous obtenez :",
+    "stages": {
+      "know": {
+        "title": "Tout commence par votre site web.",
+        "body": "Une URL. Contivo la lit et construit la mémoire à partir de laquelle tout le reste est rédigé.",
+        "alt": "L’onglet Mémoire de marque de Contivo : résumé de l’activité, proposition de valeur, persona du public cible et étiquettes de ton de marque, tirés d’un site web."
+      },
+      "watch": {
+        "title": "Puis il cartographie le marché.",
+        "body": "Des concurrents de votre taille, dont l’existence est vérifiée, notés — et vous sur le même graphique qu’eux.",
+        "alt": "Un graphique du paysage concurrentiel dans Contivo, qui place une marque à côté des concurrents trouvés, selon la taille du public et la complexité du produit."
+      },
+      "think": {
+        "title": "Puis il refuse d’écrire.",
+        "body": "La génération d’idées reste verrouillée tant que la veille sur laquelle elle repose n’existe pas. Ce refus est la raison pour laquelle le résultat vaut la peine d’être lu.",
+        "alt": "La chaîne de configuration d’un vrai espace de travail dans Contivo : mémoire de marque, carte du marché, mots-clés des concurrents et canal de publication, tous terminés."
+      },
+      "make": {
+        "title": "Puis il écrit.",
+        "body": "Des brouillons avec votre propre voix, soumis à un contrôle conçu pour les rejeter.",
+        "alt": "Le pipeline de contenu d’un vrai espace de travail dans Contivo : des publications LinkedIn qu’il a rédigées, deux publiées et un brouillon avec son heure programmée."
+      },
+      "ship": {
+        "title": "Et il publie.",
+        "body": "Vos canaux, vos horaires, votre rythme — et rien ne part sans relecture."
+      },
+      "learn": {
+        "title": "Et il montre son travail.",
+        "body": "Chaque exécution, chaque refus et chaque chiffre sont consignés, pour que vous sachiez distinguer une bonne semaine d’une semaine chanceuse."
+      }
+    },
+    "items": {
+      "brandMemory": {
+        "name": "Mémoire de marque",
+        "body": "Collez votre adresse. Contivo lit le site et vous restitue ce que fait votre entreprise, ce qu’elle promet, à qui elle s’adresse et quel ton elle emploie — puis vous le confie pour correction.",
+        "get": "Une page modifiable : résumé de l’activité, proposition de valeur, persona du public et étiquettes de ton."
+      },
+      "brandAssets": {
+        "name": "Éléments de marque",
+        "body": "Le même passage recueille les couleurs, logos et formules que votre site utilise déjà. Chacun attend votre oui ou votre non au lieu d’être utilisé à votre insu.",
+        "get": "Un ensemble validé de couleurs, de logos, de messages et de notes sur la voix — plus tout ce que vous importez vous-même."
+      },
+      "language": {
+        "name": "Persan ou anglais",
+        "body": "Chaque marque écrit dans sa propre langue. Le persan est rédigé en persan, pas traduit d’un brouillon anglais, et le contrôle qualité le juge selon des fourchettes de mots propres au persan.",
+        "get": "Un réglage par marque que suivent chaque publication, chaque rapport et chaque titre d’image."
+      },
+      "brands": {
+        "name": "Des marques séparées",
+        "body": "Chaque marque garde sa propre mémoire, ses concurrents, son récit, son calendrier et ses canaux. Rien ne passe de l’une à l’autre.",
+        "get": "Des espaces de travail que vous pouvez gérer côte à côte."
+      },
+      "discovery": {
+        "name": "Recherche de concurrents",
+        "body": "Contivo cherche des entreprises de votre taille plutôt que les grands noms de votre secteur, et vérifie que chacune existe vraiment avant de vous la montrer.",
+        "get": "Une liste de vrais concurrents, chacun avec les éléments sur lesquels il a été trouvé."
+      },
+      "validation": {
+        "name": "C’est vous qui décidez qui compte",
+        "body": "Acceptez, rejetez ou ajoutez un concurrent à la main. Celui que vous ajoutez vous-même est lu à partir de son propre site, et arrive donc avec les mêmes éléments que les autres.",
+        "get": "Un ensemble de concurrents confirmé — la base de toutes les étapes suivantes."
+      },
+      "matrices": {
+        "name": "Matrices de positionnement",
+        "body": "Deux graphiques fixes, plus un à trois choisis pour votre marché. Vous et chaque concurrent confirmé êtes notés de un à dix sur deux axes par graphique, avec le raisonnement et les éléments derrière chaque note.",
+        "get": "Des graphiques qui montrent où vous vous situez vraiment, et quels coins sont inoccupés."
+      },
+      "keywords": {
+        "name": "Mots-clés des concurrents",
+        "body": "Ce sur quoi vos concurrents se positionnent, regroupé en grappes et classé selon ce que cherche vraiment l’internaute — et ce qu’ils ont laissé libre.",
+        "get": "Des grappes de mots-clés, l’intention derrière chacune et une liste de manques sur lesquels il vaut la peine d’écrire."
+      },
+      "offerings": {
+        "name": "Produits et services, côte à côte",
+        "body": "Ce que vend chaque concurrent, à côté de ce que vous vendez.",
+        "get": "Une comparaison de votre offre avec la leur, et ce qui manque des deux côtés."
+      },
+      "monitoring": {
+        "name": "Veille hebdomadaire des concurrents",
+        "body": "Une relecture hebdomadaire de chaque concurrent confirmé, qui vous prévient quand son site, ses prix ou son positionnement changent.",
+        "get": "Une liste hebdomadaire des changements, par concurrent."
+      },
+      "lock": {
+        "name": "Le verrou",
+        "body": "La génération d’idées ne démarre pas tant que la mémoire de marque, les matrices et les mots-clés des concurrents n’existent pas tous. Ni vous ni le modèle ne pouvez le faire céder.",
+        "get": "Un refus — et la raison pour laquelle les idées valent la peine d’être lues une fois qu’il est levé."
+      },
+      "narrative": {
+        "name": "Récit",
+        "body": "Trois ou quatre affirmations durables que votre contenu doit faire avancer, rédigées à partir de la veille déjà calculée par Contivo, puis corrigées par vous.",
+        "get": "Des fils narratifs, chacun avec son affirmation, son public, le manque concurrentiel qu’il exploite, les éléments qu’il peut utiliser et une liste de ce qu’il ne doit jamais affirmer."
+      },
+      "ideation": {
+        "name": "Génération d’idées",
+        "body": "Des idées issues d’un manque de mots-clés ou d’une position sur une matrice, chacune rattachée à un fil narratif et à un cadre de rédaction choisi selon l’objectif et la plateforme.",
+        "get": "Un lot d’idées, chacune avec le fil narratif qu’elle fait avancer et la raison de son choix."
+      },
+      "drafts": {
+        "name": "Brouillons",
+        "body": "Des publications complètes rédigées dans votre ton, selon un cadre adapté au canal, dans une fourchette de mots que vous fixez par plateforme.",
+        "get": "Un brouillon terminé pour chaque idée envoyée, programmé et prêt à être relu."
+      },
+      "sources": {
+        "name": "Votre propre matière",
+        "body": "Ajoutez des notes, ou joignez un PDF, une transcription ou un cahier des charges, et la publication est rédigée à partir de ce que vous avez fourni, et non des suppositions du modèle.",
+        "get": "Des brouillons fondés sur votre matière, avec la source enregistrée sur la publication."
+      },
+      "humanize": {
+        "name": "Les tics de machine, supprimés",
+        "body": "Un second passage sur chaque brouillon retire les tournures qui trahissent un texte écrit par une IA.",
+        "get": "Des textes qui ne commencent pas par « Dans le monde en constante évolution d’aujourd’hui »."
+      },
+      "gate": {
+        "name": "Le contrôle qualité",
+        "body": "D’abord des contrôles stricts : la limite propre à la plateforme, la fourchette de mots que vous avez fixée, les restes d’échafaudage du modèle et les sujets que vous avez interdits. Ensuite, un juge note sur dix l’adéquation à la marque, la sûreté factuelle et la clarté — et peut opposer son veto.",
+        "get": "Uniquement les publications qui ont passé le contrôle. Une publication rejetée retourne en brouillon avec la raison indiquée, et si aucun modèle ne peut la relire, rien n’est publié du tout."
+      },
+      "images": {
+        "name": "Images",
+        "body": "Une image dont la direction artistique part de la publication elle-même plutôt que d’une banque d’images, avec les clichés exclus dès le brief.",
+        "get": "Une image par publication, avec un texte alternatif rédigé pour les lecteurs d’écran."
+      },
+      "imageTemplate": {
+        "name": "Modèle de marque sur les images",
+        "body": "Le titre et le logo sont dessinés par-dessus l’image dans la couleur de votre marque et dans une vraie police, pour que le texte soit correct — y compris le persan, que les modèles d’images massacrent systématiquement.",
+        "get": "Des images qui semblent venir d’une seule et même marque, avec un titre que vous pouvez réécrire gratuitement."
+      },
+      "imageQuality": {
+        "name": "Choisissez la qualité de vos images",
+        "body": "Choisissez rapide, standard ou HD pour chaque image et dépensez votre quota en conséquence, au lieu de payer le même prix pour une image jetable et pour un visuel phare.",
+        "get": "La maîtrise de ce que chaque image vous coûte sur votre quota mensuel."
+      },
+      "instant": {
+        "name": "Contenu instantané",
+        "body": "Une publication, tout de suite, sans configurer de marque au préalable. Le moyen rapide de voir à quoi ressemble la rédaction.",
+        "get": "Un brouillon pour LinkedIn, X, Instagram, un e-mail ou un blog, en quelques secondes."
+      },
+      "pipeline": {
+        "name": "Pipeline",
+        "body": "Chaque idée et chaque brouillon au même endroit, avec son état, son canal et son objectif de nombre de mots.",
+        "get": "Un tableau depuis lequel vous pouvez modifier, reprogrammer ou publier directement."
+      },
+      "calendar": {
+        "name": "Calendrier",
+        "body": "Ce qui part, et quand.",
+        "get": "Des vues en liste et par semaine de tout ce qui est programmé."
+      },
+      "website": {
+        "name": "Votre propre site web",
+        "body": "Une clé, n’importe quelle technologie, n’importe quel hébergeur. Votre site demande ses publications à Contivo — Contivo ne touche jamais à votre code, à votre déploiement ni à votre CMS.",
+        "get": "Une API de contenu en lecture seule, plus un webhook qui vide votre cache dès qu’une publication est en ligne."
+      },
+      "social": {
+        "name": "LinkedIn",
+        "body": "Connectez un compte une fois et Contivo publie en votre nom, dans les jours et les heures que vous autorisez. Il publie sur votre profil LinkedIn personnel, pas sur une page entreprise.",
+        "get": "Une publication programmée sur votre profil LinkedIn, avec chaque tentative consignée."
+      },
+      "socialNext": {
+        "name": "X, Telegram, WordPress et Threads",
+        "body": "En cours de construction. Chacun ne sera activé ici qu’après qu’une vraie publication sera passée par lui ; d’ici là, il reste de ce côté-ci de la ligne.",
+        "get": "La même programmation et le même contrôle qualité, sur quatre canaux de plus."
+      },
+      "socialMore": {
+        "name": "Instagram, Facebook et TikTok",
+        "body": "Chacun doit passer l’examen d’application de sa plateforme avant que quiconque d’autre que nous puisse y connecter un compte. Cet examen n’a pas été passé : ils sont donc listés ici plutôt que promis plus haut.",
+        "get": "La même programmation et le même contrôle qualité, une fois que chaque plateforme l’aura approuvé."
+      },
+      "autopilot": {
+        "name": "Pilote automatique",
+        "body": "Fixez un rythme et il garde seul les sept jours suivants remplis : il trouve des idées, rédige, contrôle et programme sans qu’on le lui demande.",
+        "get": "1 à 14 publications par semaine dans votre créneau, guidées par un objectif, des sujets à privilégier et des sujets à ne jamais aborder."
+      },
+      "video": {
+        "name": "Scripts vidéo et vidéos à partir de modèles",
+        "body": "Une accroche, un script, une liste de plans et une légende construits à partir des manques laissés par vos concurrents — et un carrousel transformé en Reel avec du texte animé.",
+        "get": "Des scripts que vous pouvez tourner, et de courtes vidéos produites sans caméra."
+      },
+      "runLog": {
+        "name": "Chaque exécution consignée",
+        "body": "Chaque exécution du pilote automatique est journalisée étape par étape, y compris ce qu’il a refusé et la note sur laquelle il a refusé.",
+        "get": "Un historique complet des exécutions par agent, pour qu’une semaine calme ait une explication."
+      },
+      "report": {
+        "name": "Rapport stratégique",
+        "body": "Tout ce que Contivo a compris de votre marché, mis en forme dans un document que vous pouvez transmettre à quelqu’un d’autre.",
+        "get": "Un PDF : synthèse, profil de marque, paysage concurrentiel, matrices de positionnement, analyse des mots-clés, produits et services, et recommandations."
+      },
+      "whiteLabel": {
+        "name": "Rapports en marque blanche",
+        "body": "Le même rapport stratégique, aux couleurs de votre agence au lieu des nôtres.",
+        "get": "Un rapport que vous pouvez envoyer à un client sous votre propre nom."
+      },
+      "shareLinks": {
+        "name": "Liens de partage pour les clients",
+        "body": "Un lien qu’un client peut ouvrir pour voir le rapport de son propre espace de travail, sans compte.",
+        "get": "Un lien par client, révocable."
+      }
+    },
+    "notes": {
+      "estimated": "Les notes sont la lecture que fait le modèle d’éléments publics, pas des données mesurées. Chacune affiche son raisonnement pour que vous puissiez la contester.",
+      "reportTime": "Se construit en moins d’une minute. Il faut d’abord avoir rempli votre mémoire de marque, au moins trois graphiques de positionnement, les mots-clés et vos offres.",
+      "discoveryChecked": "« Vérifié » signifie que le domaine existe et répond — que l’entreprise est réelle, pas qu’elle est en concurrence avec vous. Ce jugement vous appartient."
+    },
+    "close": {
+      "headline": "Gratuit pendant l’<accent>accès anticipé</accent>.",
+      "cta": "Commencer gratuitement",
+      "pricing": "Voir les tarifs"
+    },
+    "eyebrow": "Fonctionnalités",
+    "stats": {
+      "live": "fonctionnent aujourd’hui",
+      "soon": "indiquées comme pas encore construites",
+      "stages": "étapes, comme dans l’application"
+    },
+    "planTag": {
+      "growth": "Growth et Agency",
+      "agency": "Formule Agency"
+    }
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "shell": {
+    "nav": {
+      "overview": "今天",
+      "growth": "工作区",
+      "connections": "连接",
+      "instant": "即时内容",
+      "settings": "设置"
+    },
+    "signOut": "退出登录",
+    "header": {
+      "signIn": "登录",
+      "signUp": "注册"
+    },
+    "credits": {
+      "label": "{count, number} 点额度"
+    },
+    "navLabel": "主导航",
+    "account": "账户",
+    "notFound": {
+      "eyebrow": "错误 {code, number}",
+      "title": "这个页面不存在",
+      "body": "链接可能已过期，或者文章已被移走或从未发布。",
+      "home": "返回首页",
+      "blog": "阅读博客"
+    }
+  }
+}

@@ -25,20 +25,37 @@ import { locales, type Locale } from '@/i18n/routing';
  * One flag per language, chosen by Farjad. Persian carries the Lion and Sun,
  * not the flag of the Islamic Republic. Files live in /public/flags.
  */
-const FLAG_SRC: Record<Locale, string> = {
+const FLAG_SRC: Partial<Record<Locale, string>> = {
   en: '/flags/en.svg',
   fa: '/flags/fa.png',
   it: '/flags/it.svg',
   es: '/flags/es.svg',
   he: '/flags/he.svg',
+  fr: '/flags/fr.svg',
 };
 
+/*
+  Arabic and Chinese have no flag yet: each is spoken in more than one country,
+  so which flag (if any) is Farjad's call. Until he makes it they show a
+  neutral badge with the language code.
+*/
 function Flag({ locale }: { locale: Locale }) {
+  const src = FLAG_SRC[locale];
+  if (!src) {
+    return (
+      <span
+        aria-hidden
+        className="inline-flex h-[14px] w-5 shrink-0 items-center justify-center rounded-[3px] bg-moss/10 font-plexmono text-[8.5px] font-semibold uppercase text-moss ring-1 ring-black/10"
+      >
+        {locale}
+      </span>
+    );
+  }
   return (
     // A decoration next to the language's own name, so it carries no alt text.
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={FLAG_SRC[locale]}
+      src={src}
       alt=""
       aria-hidden
       width={20}

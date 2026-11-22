@@ -1,0 +1,139 @@
+{
+  "company": {
+    "contact": {
+      "meta": {
+        "title": "联系 — Contivo",
+        "description": "写信给打造 Contivo 的人。问题咨询、bug 报告、隐私请求和代理机构合作。"
+      },
+      "eyebrow": "联系",
+      "headline": "写信给<accent>真人</accent>。",
+      "intro": "没有工单队列，也没有聊天机器人。发到这里的邮件由打造 Contivo 的人亲自阅读，回复也由他们亲自写。",
+      "addressLabel": "邮箱地址",
+      "copy": "复制",
+      "copied": "地址已复制",
+      "selected": "已选中。按 Ctrl+C（Mac 上按 ⌘C）复制。",
+      "write": "写邮件",
+      "facts": {
+        "who": {
+          "label": "谁来读",
+          "value": "创始人之一，而不是客服团队"
+        },
+        "where": {
+          "label": "所在地",
+          "value": "加拿大安大略省，北美东部时间。"
+        },
+        "how": {
+          "label": "语言",
+          "value": "英语或波斯语，你用哪种方便都行"
+        }
+      },
+      "topicsTitle": "省掉一轮来回",
+      "topicsIntro": "选择你要写的主题。你的邮件应用会打开一封草稿，主题已填好，并附上几个问题，让你第一次就能得到有用的答复。草稿是英文的，因为读信的人使用英语或波斯语。",
+      "draftHint": "主题：",
+      "topics": {
+        "question": {
+          "title": "开始前的问题",
+          "summary": "Contivo 是否适合你的业务、你的语言或你的渠道。",
+          "subject": "Contivo: a question before I start",
+          "body": "Hi,\n\nMy website: \nWhat I would like Contivo to do: \nMy question: \n\nThanks"
+        },
+        "broken": {
+          "title": "有东西不正常",
+          "summary": "运行失败、帖子没发出去、页面报错。",
+          "subject": "Contivo: something is not working",
+          "body": "Hi,\n\nWhat I did: \nWhat I expected: \nWhat happened instead: \nThe page address (URL) where it happened: \nRoughly when: \n\nA screenshot helps a lot, if you have one."
+        },
+        "privacy": {
+          "title": "你的数据",
+          "summary": "获取我们持有数据的副本、更正数据，或删除你的账户。",
+          "subject": "Contivo: privacy request",
+          "body": "Hi,\n\nThe email address on my account: \nWhat I am asking for (a copy / a correction / deletion): \n\nThanks"
+        },
+        "agency": {
+          "title": "代理机构与合作",
+          "summary": "为多个客户运行 Contivo，或基于它开发产品。",
+          "subject": "Contivo: agency or partnership",
+          "body": "Hi,\n\nWho we are: \nHow many brands or clients: \nWhat we have in mind: \n\nThanks"
+        }
+      },
+      "before": "很多答案已经写好了：你的数据如何处理，请看<privacy>隐私页面</privacy>；费用是多少，请看<pricing>价格</pricing>。"
+    },
+    "about": {
+      "meta": {
+        "title": "关于 — Contivo",
+        "description": "谁在打造 Contivo、它遵循的规则，以及它今天的真实状况。"
+      },
+      "eyebrow": "关于",
+      "headline": "先在<accent>自己</accent>的网站上跑起来。",
+      "intro": "Contivo 由四位创始人打造，由位于加拿大安大略省的 {entity} 运营。它要解决一个朴素的问题：小公司知道自己应该稳定发布内容、盯住市场，却没有人有时间把这件事做好。",
+      "principlesTitle": "它遵循的规则",
+      "principlesIntro": "下面每一条都是产品里已经做出的决定，而不是对未来的承诺。日期是它上线的时间。",
+      "principles": [
+        {
+          "title": "宁可拒绝，也不编造",
+          "body": "2026 年 8 月，写作模块写出了一个从未发生过的客户案例，而 AI 审核给了它 9 分（满分 10 分）。从那以后，编造案例、数字或引语的草稿都过不了质量关卡。",
+          "date": "2026-08-18"
+        },
+        {
+          "title": "没测量过的数字一律不显示",
+          "body": "搜索数据服务商未连接时，Contivo 现在完全不显示搜索量，而不是显示一个它编出来、看似合理的数字。",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "只卖能用的功能",
+          "body": "这个网站曾经列出过 Contivo 还不能发帖的平台。发现这一点的当天，它们就从页面上撤下了。",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "波斯语是写出来的，不是翻译出来的",
+          "body": "波斯语工作区从一开始拿到的就是用波斯语写的文章，而不是套了一层波斯语菜单的英文文章。",
+          "date": "2026-09-23"
+        }
+      ],
+      "since": "自 {date} 起已在产品中",
+      "timelineTitle": "一路走来",
+      "timeline": [
+        {
+          "date": "2026-03-12",
+          "title": "第一次提交",
+          "body": "一个工作区、与 LinkedIn 和 X 的连接，以及一个调度器。"
+        },
+        {
+          "date": "2026-04-26",
+          "title": "策略报告",
+          "body": "Contivo 开始读取网站及其竞争对手，并把发现写成报告。"
+        },
+        {
+          "date": "2026-08-16",
+          "title": "自动驾驶与质量关卡",
+          "body": "它按排期发布，每篇草稿发出前都必须通过审核。"
+        },
+        {
+          "date": "2026-08-16",
+          "title": "你自己的网站",
+          "body": "除了社交平台，Contivo 还能把文章直接发布到你的网站。"
+        },
+        {
+          "date": "2026-09-23",
+          "title": "波斯语",
+          "body": "整个产品以及写作本身，都支持波斯语。"
+        },
+        {
+          "date": "2026-09-27",
+          "title": "早期体验",
+          "body": "也就是现在：开放试用，并有了第一批付费用户。"
+        }
+      ],
+      "standsTitle": "目前的状况",
+      "stands": [
+        "早期体验阶段。新账户尚未开始计费，所以注册是免费的。",
+        "已有 23 位早期体验用户付费使用，三个月 $49。在他们同意之前，这里不会公开任何人的名字。",
+        "有时会出故障。出故障时，你可以直接写信给负责修复的人。"
+      ],
+      "ctaTitle": "看看它是否适合你的网站。",
+      "ctaStart": "免费开始",
+      "ctaContact": "或者写信给我们",
+      "teamLink": "认识四位创始人"
+    }
+  }
+}

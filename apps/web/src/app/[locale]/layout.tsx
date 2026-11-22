@@ -87,11 +87,7 @@ export async function generateMetadata({
     */
     alternates: {
       languages: {
-        en: '/en',
-        fa: '/fa',
-        it: '/it',
-        es: '/es',
-        he: '/he',
+        ...Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])),
         'x-default': `/${routing.defaultLocale}`,
       },
     },

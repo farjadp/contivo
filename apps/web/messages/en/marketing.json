@@ -10,7 +10,8 @@
     "pricing": "Pricing",
     "signIn": "Sign in",
     "startFree": "Start free",
-    "features": "Features"
+    "features": "Features",
+    "siteOnlyNotice": "This site is translated, but Contivo writes your content in English or Persian."
   },
   "localeSwitcher": {
     "label": "Language",
@@ -18,7 +19,10 @@
     "fa": "فارسی",
     "it": "Italiano",
     "es": "Español",
-    "he": "עברית"
+    "he": "עברית",
+    "fr": "Français",
+    "ar": "العربية",
+    "zh": "中文"
   },
   "intake": {
     "label": "Start with the only thing it needs",
