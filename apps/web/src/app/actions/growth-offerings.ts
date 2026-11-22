@@ -1,5 +1,6 @@
 'use server';
 
+import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -555,6 +556,12 @@ async function callOpenAiJson(
     }
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'openai',
+      model: resolveResponseModel(data, model),
+      feature: 'growth_offerings',
+      usage: parseOpenAiChatUsage(data),
+    });
     const usage = {
       model,
       prompt_tokens: toNonNegativeInt(data?.usage?.prompt_tokens),

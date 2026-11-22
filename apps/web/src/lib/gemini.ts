@@ -1,3 +1,4 @@
+import { parseGeminiUsage, parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import {
   getGeminiCooldownSeconds,
   getGeminiModel,
@@ -91,7 +92,7 @@ function urlToDomainRoot(url: string): string {
   }
 }
 
-async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCallResult> {
+async function callGemini(prompt: string, expectJson: boolean, feature: string): Promise<GeminiCallResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return { ok: false, status: 0, text: null };
@@ -158,6 +159,12 @@ async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCa
     geminiCooldownReason = null;
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'gemini',
+      model: resolveResponseModel(data, model),
+      feature,
+      usage: parseGeminiUsage(data),
+    });
     const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!resultText || typeof resultText !== 'string') {
       return { ok: false, status: res.status, text: null };
@@ -173,7 +180,8 @@ async function callGemini(prompt: string, expectJson: boolean): Promise<GeminiCa
 async function callOpenAi(
   prompt: string,
   expectJson: boolean,
-  systemPrompt?: string,
+  systemPrompt: string | undefined,
+  feature: string,
 ): Promise<OpenAiCallResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
@@ -214,6 +222,12 @@ async function callOpenAi(
     }
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'openai',
+      model: resolveResponseModel(data, model),
+      feature,
+      usage: parseOpenAiChatUsage(data),
+    });
     const resultText = data?.choices?.[0]?.message?.content;
     if (!resultText || typeof resultText !== 'string') {
       return { ok: false, status: res.status, text: null };
@@ -871,7 +885,7 @@ Please return a JSON object with EXACTLY these keys:
 - "persona": An object with "title" (e.g., "Growth Leader") and "description" (1 sentence about the persona).
 `;
 
-  const gemini = await callGemini(prompt, true);
+  const gemini = await callGemini(prompt, true, 'website_analysis');
   if (gemini.ok && gemini.text) {
     const parsed = safeJsonParse<BrandExtraction>(gemini.text);
     if (parsed) return normalizeBrandExtraction(parsed, url, htmlText);
@@ -881,6 +895,7 @@ Please return a JSON object with EXACTLY these keys:
     prompt,
     true,
     'You are an expert Brand Strategist. Return only valid JSON for the requested schema.',
+    'website_analysis',
   );
   if (openAi.ok && openAi.text) {
     const parsed = safeJsonParse<BrandExtraction>(openAi.text);
@@ -1186,7 +1201,7 @@ async function generateIdeasWithFramework(
     language: context.language,
   });
 
-  const gemini = await callGemini(prompt, true);
+  const gemini = await callGemini(prompt, true, 'content_ideas');
   if (gemini.ok && gemini.text) {
     const parsed = safeJsonParse<{ ideas?: unknown; quality_scores?: Partial<FrameworkQualityScores> }>(gemini.text);
     if (parsed?.ideas) {
@@ -1207,6 +1222,7 @@ async function generateIdeasWithFramework(
     prompt,
     true,
     'You are Contivo Framework Engine. Return only valid JSON using the exact schema.',
+    'content_ideas',
   );
   if (openAi.ok && openAi.text) {
     const parsed = safeJsonParse<{ ideas?: unknown; quality_scores?: Partial<FrameworkQualityScores> }>(openAi.text);
@@ -1494,7 +1510,7 @@ ${
 }
 `;
 
-  const gemini = await callGemini(prompt, false);
+  const gemini = await callGemini(prompt, false, 'content_draft');
   if (gemini.ok && gemini.text) {
     return gemini.text;
   }
@@ -1503,6 +1519,7 @@ ${
     prompt,
     false,
     'You are an expert copywriter. Output only the final content with no preface.',
+    'content_draft',
   );
   if (openAi.ok && openAi.text) {
     return openAi.text;
@@ -1570,7 +1587,7 @@ or stock phrases, those win: they are written for that language, and these
 four are written for English.
 `;
 
-  const gemini = await callGemini(prompt, false);
+  const gemini = await callGemini(prompt, false, 'instant_draft');
   if (gemini.ok && gemini.text?.trim()) {
     return { content: gemini.text.trim(), provider: 'gemini' };
   }
@@ -1579,6 +1596,7 @@ four are written for English.
     prompt,
     false,
     'You are an expert copywriter. Output only the final content, with no preface.',
+    'instant_draft',
   );
   if (openAi.ok && openAi.text?.trim()) {
     return { content: openAi.text.trim(), provider: 'openai' };
@@ -1633,7 +1651,7 @@ Required Schema: An array of objects, where each object has these keys:
 - "audienceGuess": A description of their target audience.
 `;
 
-  const gemini = await callGemini(prompt, true);
+  const gemini = await callGemini(prompt, true, 'competitor_discovery_legacy');
   if (gemini.ok && gemini.text) {
     const parsed = competitorList(gemini.text);
     if (parsed) return parsed;
@@ -1645,6 +1663,7 @@ Required Schema: An array of objects, where each object has these keys:
     prompt,
     true,
     'You are an expert market analyst. Return only a JSON object of the form {"competitors": [...]}, where the array holds the real competitors in the schema described.',
+    'competitor_discovery_legacy',
   );
   if (openAi.ok && openAi.text) {
     const parsed = competitorList(openAi.text);
@@ -1686,7 +1705,7 @@ Required Schema:
 - "messagingDifferentiation": A sharp, 1-2 sentence recommendation for differentiation (e.g. "Competitors emphasize automation. Your messaging should emphasize strategic thinking.").
 `;
 
-  const gemini = await callGemini(prompt, true);
+  const gemini = await callGemini(prompt, true, 'positioning_insights');
   if (gemini.ok && gemini.text) {
     const parsed = safeJsonParse<PositioningInsights>(gemini.text);
     if (parsed) return parsed;
@@ -1696,6 +1715,7 @@ Required Schema:
     prompt,
     true,
     'You are an expert brand strategist. Return only valid JSON with the required keys.',
+    'positioning_insights',
   );
   if (openAi.ok && openAi.text) {
     const parsed = safeJsonParse<PositioningInsights>(openAi.text);
@@ -1759,13 +1779,14 @@ Based on this analysis, generate a structured SERP Insight Report with these exa
 
 Keep your analysis specific, actionable, and grounded in what you actually see in the SERP data.`;
 
-  const gemini = await callGemini(prompt, false);
+  const gemini = await callGemini(prompt, false, 'serp_analysis');
   if (gemini.ok && gemini.text) return gemini.text;
 
   const openAi = await callOpenAi(
     prompt,
     false,
     'You are an SEO content strategist. Be specific, data-driven, and actionable.',
+    'serp_analysis',
   );
   if (openAi.ok && openAi.text) return openAi.text;
 
@@ -1786,13 +1807,13 @@ export async function requestJsonFromAi<T>(
   prompt: string,
   systemPrompt?: string,
 ): Promise<{ data: T; provider: 'gemini' | 'openai' } | null> {
-  const gemini = await callGemini(prompt, true);
+  const gemini = await callGemini(prompt, true, 'request_json');
   if (gemini.ok && gemini.text) {
     const parsed = safeJsonParse<T>(gemini.text);
     if (parsed) return { data: parsed, provider: 'gemini' };
   }
 
-  const openAi = await callOpenAi(prompt, true, systemPrompt);
+  const openAi = await callOpenAi(prompt, true, systemPrompt, 'request_json');
   if (openAi.ok && openAi.text) {
     const parsed = safeJsonParse<T>(openAi.text);
     if (parsed) return { data: parsed, provider: 'openai' };

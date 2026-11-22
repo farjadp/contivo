@@ -1,4 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+
+// Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
+const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
+vi.mock('@/lib/ai-usage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
+  recordAiUsage: recordAiUsageMock,
+}));
 import { harvestFromSerp, harvestFromWebSearch, mergeQueryResults, type QueryHarvestResult } from './search';
 
 describe('mergeQueryResults', () => {

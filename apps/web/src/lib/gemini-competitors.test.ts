@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
+const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
+vi.mock('@/lib/ai-usage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
+  recordAiUsage: recordAiUsageMock,
+}));
+
 vi.mock('@/lib/app-settings', () => ({
   getGeminiCooldownSeconds: async () => 60,
   getGeminiModel: async () => 'gemini-test',

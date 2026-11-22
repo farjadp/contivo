@@ -5,6 +5,8 @@ import type { IncomingMessage } from 'node:http';
 import { request as nodeHttpsRequest } from 'node:https';
 import type { LookupFunction } from 'node:net';
 
+import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+
 import { isBlockedAddress, isHostnameSafeToFetch } from './network-guard';
 import { sanitizeUpstreamText } from './redact';
 import { explainRejectionReason, readTokenUsage, sanitizePromptField } from './queries';
@@ -984,6 +986,12 @@ async function runOneBatch(
     }
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'openai',
+      model: resolveResponseModel(data, model),
+      feature: 'competitor_judge',
+      usage: parseOpenAiChatUsage(data),
+    });
     const content = data?.choices?.[0]?.message?.content;
     if (!content || typeof content !== 'string') {
       return { error: 'Judge batch returned no content' };

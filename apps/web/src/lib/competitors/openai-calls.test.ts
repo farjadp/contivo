@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+// Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
+const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
+vi.mock('@/lib/ai-usage', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
+  recordAiUsage: recordAiUsageMock,
+}));
+
 import {
   JUDGE_KEY_FEATURE_MAX_CHARS,
   JUDGE_MAX_KEY_FEATURES,
@@ -67,6 +74,30 @@ describe('OpenAI calls carry a timeout signal', () => {
     expect(fetchMock).toHaveBeenCalled();
     const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
     expect(init.signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it('harvestFromWebSearch records its usage under competitor_web_search', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        jsonResponse({
+          model: 'gpt-5-mini-2025-08-07',
+          output: [{ type: 'web_search_call' }],
+          usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
+        }),
+      ),
+    );
+    recordAiUsageMock.mockClear();
+
+    const result = await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
+
+    expect(result.tokens).toBe(15);
+    expect(recordAiUsageMock).toHaveBeenCalledWith({
+      provider: 'openai',
+      model: 'gpt-5-mini-2025-08-07',
+      feature: 'competitor_web_search',
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15, webSearchCalls: 1 },
+    });
   });
 
   it('harvestFromWebSearch', async () => {
