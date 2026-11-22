@@ -1,11 +1,11 @@
-# Social sign-in: Google, GitHub, Facebook — design
+# Social sign-in: Google and GitHub (Facebook later) — design
 
 Date: 2026-11-22 · Owner: contivo-cto · Branch: `myca/social-login-397702` · Status: **approved by Farjad 22 Nov: build Google first, then GitHub; Facebook dropped from v1**
 Provider setup list for Farjad: `2026-11-22-social-login-provider-setup.md` (same folder).
 
 ## 1. Goal
 
-A customer can create an account and sign in with Google, GitHub or Facebook, next to email + password.
+A customer can create an account and sign in with Google or GitHub (Facebook: future, not v1), next to email + password.
 Every path ends by minting the existing `auth-token` cookie (`createSessionCookie`), so guards, `mintApiToken()`
 and the Nest API stay unchanged. The whole feature lives in `apps/web`, plus one additive migration.
 
@@ -46,10 +46,10 @@ Fallback if Arctic is a problem: option A, same module boundaries.
 
 Routes (route handlers, no locale prefix, so each provider has exactly one redirect URI):
 
-- `GET /api/auth/oauth/[provider]/start?intent=signin|signup&locale=…&cohort=…&site=…`
+- `GET /api/auth/oauth/[provider]/start?locale=…&cohort=…&site=…` (sign-in/sign-up), and `POST` to the same path for `intent=link` (Settings, signed in only)
 - `GET /api/auth/oauth/[provider]/callback`
 
-`[provider]` ∈ `google | github | facebook`; anything else is 404. A provider with no credentials in env is 404 on both routes
+`[provider]` ∈ `google | github`; anything else (including `facebook`) is 404 by construction. A provider with no credentials in env is 404 on both routes
 and its button is not rendered.
 
 **start**
@@ -57,27 +57,24 @@ and its button is not rendered.
 2. Validate inputs: locale against `routing.locales`; cohort with the same allowlist function as today (extracted from
    `actions/auth.ts` into `lib/signup-cohort.ts`, behaviour unchanged); site with `normalizeIntakeSite`. Invalid values are dropped, never an error.
 3. Generate `state` (32 random bytes), PKCE `code_verifier`, and for Google a `nonce`.
-4. Seal `{ provider, state, verifier, nonce, locale, cohort, site, intent, jti, exp: now+10min }` into an HttpOnly,
-   `SameSite=Lax`, `Secure`, `Path=/api/auth/oauth` cookie `oauth_tx`, signed (HS256 via `jose`) with a key derived by HKDF
-   from `JWT_SECRET` with its own `info` string (so it cannot be confused with a session token; **no new secret**).
+4. Seal `{ provider, state, verifier, nonce, locale, cohort, site, intent, linkUserId?, jti, exp: now+10min }` into an **encrypted** JWT (`EncryptJWT`, `typ`/`aud` set) stored in the HttpOnly, `SameSite=Lax`, `Secure` cookie **`__Host-oauth_tx`** (`Path=/`, no `Domain`; the plain name `oauth_tx` only when `NODE_ENV !== 'production'`). The key is derived by HKDF from `JWT_SECRET` with its own `info` string (cannot be confused with a session token; **no new secret**).
 5. 302 to the provider with `state`, `code_challenge` (S256), `nonce`, minimal scopes (§6).
 
 **callback**
 1. Read and verify `oauth_tx` (signature, `exp`, provider matches the path). Always delete the cookie, success or not.
 2. `state` query param must equal the cookie's `state` (constant-time). Missing/mismatch → `invalid_state` error.
-3. **Single use:** `consumeRateLimit('oauth:tx:'+jti, 1, 15min)` must be allowed. A second use of the same transaction
-   is refused. (Reuses the existing DB limiter; no new table.) The provider's authorization code is also single-use at the provider.
+3. **Single use (fail closed):** `INSERT INTO oauth_tx_used (jti, expiresAt) … ON CONFLICT DO NOTHING`, with `expiresAt` = tx exp + 5 min; if no row was inserted, or on any database error, the callback is refused. Expired rows are pruned opportunistically. The provider's authorization code is also single-use at the provider.
 4. Provider `error=access_denied` → `cancelled`. Any other provider error → `provider_error`. Provider error text is never shown or reflected.
 5. Exchange code with `code_verifier`. Google: verify the `id_token` with `jose` + Google JWKS (`iss`, `aud` = our client id, `exp`, `nonce`),
    require `email_verified === true`. GitHub: `GET /user` (numeric `id` = account id) and `GET /user/emails` (primary AND verified entry; the
-   `email` field of `/user` is never used). Facebook: `GET /me?fields=id,name,email`.
+   `email` field of `/user` is never used).
 6. Discard the access token immediately; nothing is stored or logged (§7).
 7. Resolve the account with the rules in §5, create the session cookie, redirect.
 
 **After success:** `createSessionCookie` (role read from the DB row, never from the provider), `ensureWelcomeCredits`,
 set `contivo_intake_site` (same name, same attributes as `rememberIntakeSite`) if `site` is valid, redirect to
 `/{locale}/dashboard` or `/{locale}/admin` exactly like password sign-in. The cohort is written once, on creation only (§5).
-Sign-up from OAuth shares the **same per-IP register bucket** (5/h) as the password path; sign-in shares the per-IP login bucket.
+Account creation from OAuth is charged to the **same per-IP register bucket** (5/h) as the password path, **only when an account is actually created**; sign-in shares the per-IP login bucket.
 Suspended users are refused with the same message as password sign-in.
 
 ## 5. Account resolution and the collision rule
@@ -90,10 +87,10 @@ Inputs: `(provider, providerAccountId, email, emailVerified, name)` from §4 ste
 Lookup by email is **case-insensitive** and, if it matches more than one row (the column is case-sensitive unique), is treated as a collision.
 
 1. **Known identity** (`oauth_accounts` has `(provider, providerAccountId)`) → sign that user in. Email changes at the provider are ignored. This is the only path that does not need an email.
-2. **Unknown identity, no verified email** → refuse (`no_verified_email`), create nothing. Plain message: we need an email the provider has confirmed; for GitHub, add and verify one; for Facebook, allow email access or use another method.
+2. **Unknown identity, no verified email** → refuse (`no_verified_email`), create nothing. Plain message: we need an email the provider has confirmed; for GitHub, add and verify one.
 3. **Unknown identity, verified email, no user with that email** → create the user (`passwordHash = null`, `role USER`, `plan FREE`, `name` from provider, **no avatar stored**, cohort from `oauth_tx` if still allow-listed), link the identity, log `USER_SIGNED_UP`.
 4. **Unknown identity, verified email, a user with that email exists** → **always refuse, never sign in, never merge** (`email_in_use`), whether that user has a password or not. Message: "An account with this email already exists. If it is yours, sign in the way you did before, then connect Google in Settings. If you did not create it, contact us." Logged as `OAUTH_LOGIN_REFUSED` (provider + reason, no email). (Security review H1: a once-verified identity email is not proof of ownership today, because mailboxes and domains get recycled, so the old "auto-link when both are verified" rule is deleted.)
-5. **Linking happens only in Settings, while signed in, with re-authentication** (security review H2/M2): *Settings → Sign-in methods → Connect Google* requires the account's password (password accounts) or a fresh login with an already-linked provider (OAuth-only accounts) within the last 10 minutes. The link flow is started by a POST, the `intent=link` and the session `userId` are sealed inside the `oauth_tx` cookie, and the callback binds the identity to that user only, refusing if the identity already belongs to another user. There is **no pending-link cookie** and no linking at password sign-in (that variant let a squatter's password pull a victim's provider identity into the squatter's account).
+5. **Linking happens only in Settings, while signed in, with re-authentication** (security review H2/M2): *Settings → Sign-in methods → Connect Google* requires **fresh authentication**: the session carries a new claim `authAt` (epoch seconds), set only by `createSessionCookie` when the person has just signed in by password or provider; link and unlink require `now - authAt <= 600`, otherwise the person is sent to sign in again first (sessions without `authAt`, i.e. all existing ones, count as stale). For a password account the password is re-entered in the action and rate limited **per user id** (5 per 15 min), not only per IP. At the link callback the live session `userId` must equal the `linkUserId` sealed in the tx, and starting a link with no session is refused. Accepted residual: a stolen session cookie within 10 minutes of the owner's own sign-in can still link. Unlink also requires fresh `authAt`, re-checks suspension, and keeps the lockout rule. The link flow is started by a POST, the `intent=link` and the session `userId` are sealed inside the `oauth_tx` cookie, and the callback binds the identity to that user only, refusing if the identity already belongs to another user. There is **no pending-link cookie** and no linking at password sign-in (that variant let a squatter's password pull a victim's provider identity into the squatter's account).
 
 **Known residual risk (cannot be closed without email verification):** an attacker who pre-registers `victim@…` with a password makes rule 4a block the real owner from using Google. It does not give the attacker the owner's data, but it squats the address. Mitigation now: support path (admin can detach the squatter after identity check). Real fix: email verification when Resend is built. This is why rule 4a blocks instead of merging.
 
@@ -116,7 +113,7 @@ the email is usable to *create* an account when free (rule 3), stored as `emailV
 | Env | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET` | `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET` |
 | Callback | `https://www.contivo.app/api/auth/oauth/google/callback` | `…/github/callback` | `…/facebook/callback` |
 
-Each provider is active only when **both** its env vars are set (`lib/oauth/providers.ts` → `enabledProviders()`); server components render the buttons from that list. No credentials = no button and 404 routes. The callback origin is `NEXT_PUBLIC_APP_URL`/request origin allow-listed to `www.contivo.app` and localhost (to be confirmed against how other absolute URLs are built in the app during build).
+Each provider is active only when **both** its env vars are set (`lib/oauth/providers.ts` → `enabledProviders()`); server components render the buttons from that list. No credentials = no button and 404 routes. `redirect_uri` and every redirect use the validated constant `NEXT_PUBLIC_APP_URL` (localhost only when `NODE_ENV !== 'production'`), never the request origin.
 If GitHub rejects PKCE parameters on OAuth Apps, we keep state + secret exchange for GitHub only (documented in code); this is checked against the real test app.
 
 ## 7. Tokens and privacy
@@ -131,7 +128,7 @@ If GitHub rejects PKCE parameters on OAuth Apps, we keep state + secret exchange
 Migration `20261123090000_oauth_accounts`. Nothing existing is altered or dropped.
 
 ```prisma
-enum OAuthProvider { GOOGLE GITHUB FACEBOOK }
+enum OAuthProvider { GOOGLE GITHUB }
 
 model OAuthAccount {
   id                String        @id @default(cuid())
@@ -150,6 +147,13 @@ model OAuthAccount {
   @@map("oauth_accounts")
 }
 // User gets: oauthAccounts OAuthAccount[]
+
+model OAuthTxUsed {            // single-use ledger for oauth_tx (fail-closed)
+  jti       String   @id
+  expiresAt DateTime
+  @@index([expiresAt])
+  @@map("oauth_tx_used")
+}
 ```
 
 `apps/api/prisma/schema.prisma` is shared, so the BOARD row claims it for this addition only. Production order is schema first
@@ -167,9 +171,9 @@ All in `activity_log` (existing `writeActivityLog`), same shape as the password 
 
 ## 10. UI and copy
 
-- Sign-in and sign-up pages: a "Continue with Google / GitHub / Facebook" stack above a divider ("or use email"), only for enabled providers. Both pages create an account if none exists (we cannot tell sign-in from sign-up at a provider), so both show a fine-print line linking Terms and Privacy. Sign-up passes `cohort` and `site` to `start`; sign-in passes neither.
+- Sign-in and sign-up pages: a "Continue with Google / GitHub" stack above a divider ("or use email"), only for enabled providers. Both pages create an account if none exists (we cannot tell sign-in from sign-up at a provider), so both show a fine-print line linking Terms and Privacy. Sign-up passes `cohort` and `site` to `start`; sign-in passes neither.
 - Buttons follow brand rules: official Google "G" on white/neutral with the exact label pattern "Continue with Google"; GitHub mark with "Continue with GitHub"; Facebook "f" logo in Meta blue with "Continue with Facebook". Logos are inline SVG from each provider's brand kit (no hotlinking); do not recolour; icon size/padding per each guideline. Labels are translated (provider names stay Latin); RTL mirrors the order of icon and text.
-- Errors: `/{locale}/sign-in?error=<code>`; codes `cancelled`, `invalid_state`, `provider_error`, `no_verified_email`, `email_in_use_password`, `email_in_use_contact`, `suspended`, `rate_limited`. Rendered from `auth.json` keys, never from provider text. Persian written natively (persian-writing); each of en/fa/it/es/he written natively, not translated word by word.
+- Errors: `/{locale}/sign-in?error=<code>`; codes `cancelled`, `invalid_state`, `provider_error`, `no_verified_email`, `email_in_use`, `suspended`, `rate_limited`. Rendered from `auth.json` keys, never from provider text. Persian written natively (persian-writing); each of en/fa/it/es/he written natively, not translated word by word.
 - Settings gets a "Sign-in methods" card: connected providers, connect, unlink (with the lockout rule).
 - Namespaces touched: `messages/{en,fa,it,es,he}/auth.json` and `settings.json` (app locales). The marketing/legal pages also exist in fr/ar/zh.
 
@@ -177,13 +181,13 @@ All in `activity_log` (existing `writeActivityLog`), same shape as the password 
 
 ## 11. Security gate, tests, debt
 
-Security review (contivo-security-engineer) before merge, specifically: state/PKCE/nonce handling, cookie flags and `Path`, open redirect (`locale` and `site` are never used as redirect targets; the redirect is built from our own allow-listed locale), id_token claim checks, constant-time compares, the 4a/4b/4c rules, enumeration, logging hygiene, the Arctic dependency.
+Security review (contivo-security-engineer) before merge, specifically: state/PKCE/nonce handling, cookie flags and `Path`, open redirect (`locale` and `site` are never used as redirect targets; the redirect is built from our own allow-listed locale), id_token claim checks, constant-time compares, rules 1–5 of §5, enumeration, logging hygiene, the Arctic dependency.
 
-Tests (Vitest, providers mocked at the HTTP boundary): state tampering (flipped bit, wrong provider, missing cookie, expired); replay of the same callback (second use refused); PKCE verifier mismatch; Google nonce mismatch, `email_verified=false`, wrong `aud`; GitHub: no primary-verified email, email only in `/user` ignored; Facebook: no email; collision matrix 3 / 4a / 4b / 4c / known identity / duplicate-case emails; pending-link completes only with the right password and only once; unlink lockout; suspended; cohort allowed and not allowed round trip; `site` round trip and garbage dropped; locale preserved incl. fa; the role is never taken from provider data; registration bucket shared; a provider without env is 404 with no button. Then QA drives each provider on production with Farjad's real logins.
+Tests (Vitest, providers mocked at the HTTP boundary): state tampering (flipped bit, wrong provider, missing cookie, expired); replay of the same callback (second use refused); PKCE verifier mismatch; Google nonce mismatch, `email_verified=false`, wrong `aud`; GitHub: no primary-verified email, email only in `/user` ignored rules 1–4 of §5 (known identity, no verified email, create, any existing email refused incl. case-variant duplicates); link requires fresh `authAt`; sealed `linkUserId` must equal the live session user; an identity already owned by another user is refused; unlink lockout; suspended; cohort allowed and not allowed round trip; `site` round trip and garbage dropped; locale preserved incl. fa; the role is never taken from provider data; registration bucket shared; a provider without env is 404 with no button. Then QA drives each provider on production with Farjad's real logins.
 
-Debt register: (1) no email verification → residual squat case (§5), real fix is Resend; (2) no set-password for OAuth-only users; (3) Facebook email unverified, so Facebook users cannot be auto-linked; (4) no account-deletion self-service yet (Meta needs instructions only).
+Debt register: (1) no email verification → residual squat case (§5), real fix is Resend; (2) no set-password for OAuth-only users; (3) the "admin detaches a squatter" support path is a manual database action by Farjad (no admin tool); (4) no account-deletion self-service yet (Meta needs instructions only).
 
-## 12. Decisions needed from Farjad
+## 12. Decisions needed from Farjad (1–3 resolved by §15; 4–5 defaulted in §15)
 
 1. **Go for option B (Arctic + jose)** and the order Google → GitHub → Facebook.
 2. **Collision rule §5**: existing password account is never merged by email; the owner links from Settings or by signing in with the password. OK?
