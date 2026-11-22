@@ -302,10 +302,10 @@ describe('callback: transaction integrity', () => {
 
   it('always deletes the tx cookie, on refusal and on success', async () => {
     const bad = await callback(cbReq({ cookie: 'junk', state: 'x' }));
-    expect(setCookies(bad).some((c) => /^oauth_tx=;/.test(c) && /Max-Age=0/i.test(c))).toBe(true);
+    expect(setCookies(bad).some((c) => /^oauth_tx=;/.test(c) && /Expires=Thu, 01 Jan 1970/i.test(c))).toBe(true);
     const { cookie, state } = await begin();
     const ok = await callback(cbReq({ cookie, state, code: 'c' }));
-    expect(setCookies(ok).some((c) => /^oauth_tx=;/.test(c) && /Max-Age=0/i.test(c))).toBe(true);
+    expect(setCookies(ok).some((c) => /^oauth_tx=;/.test(c) && /Expires=Thu, 01 Jan 1970/i.test(c))).toBe(true);
   });
 
   it('sends no-store and no-referrer', async () => {

@@ -49,9 +49,13 @@ async function identityFromCode(provider: OAuthProviderId, tx: OAuthTx, code: st
   }
 }
 
-/** Always clears the transaction cookie, whatever the outcome. */
+/**
+ * Always clears the transaction cookie, whatever the outcome. `expires` as well
+ * as `maxAge`: when Next merges this response with cookies set through
+ * cookies() (the session), Max-Age=0 is dropped but Expires survives.
+ */
 function clearTx(response: NextResponse): NextResponse {
-  response.cookies.set(txCookieName(), '', { ...txCookieOptions(), maxAge: 0 });
+  response.cookies.set(txCookieName(), '', { ...txCookieOptions(), maxAge: 0, expires: new Date(0) });
   return response;
 }
 
