@@ -68,3 +68,43 @@ export type ActionFailure = { error: string; ref?: string };
 
 export type ReportStatus = 'NEW' | 'SEEN' | 'FIXED' | 'WONTFIX';
 export const REPORT_STATUSES: readonly ReportStatus[] = ['NEW', 'SEEN', 'FIXED', 'WONTFIX'];
+
+/* ---- Admin read model (produced by lib/bug-report/admin-queries.ts, rendered by (admin)/admin/reports) ---- */
+
+export type TimelineItem = {
+  t: number; // epoch ms
+  source: 'client' | 'activity' | 'run' | 'ai_provider' | 'publish';
+  label: string; // action / event name / "matrix run FAILED". Never free text from users or upstreams.
+  code?: string; // CauseCode or run error code
+  refId?: string; // id of the run / publish log / provider event, for linking
+};
+
+export type ReportGroupRow = {
+  fingerprint: string;
+  count: number;
+  distinctUsers: number;
+  lastSeen: string; // ISO
+  status: ReportStatus; // NEW if any report in the group is NEW, else the most recent
+  topCause: CauseCode | null;
+  sampleRef: string;
+  sampleMessage: string | null;
+};
+
+export type ReportDetail = {
+  id: string;
+  referenceCode: string;
+  status: ReportStatus;
+  createdAt: string;
+  resolvedAt: string | null;
+  message: string | null; // plain text, rendered as text only
+  locale: string | null;
+  route: string | null;
+  appVersion: string | null;
+  user: { id: string; email: string | null } | null;
+  workspace: { id: string; name: string | null } | null;
+  causeCode: CauseCode | null;
+  sentryEventId: string | null;
+  viewedIds: ViewedIds;
+  timeline: TimelineItem[]; // merged, oldest first
+  groupSiblings: { referenceCode: string; createdAt: string; status: ReportStatus }[];
+};
