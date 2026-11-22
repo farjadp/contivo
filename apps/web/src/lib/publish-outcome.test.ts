@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canStartConnectFlow,
   failureAction,
+  jobFixAction,
   latestJobByContentItem,
   needsReconnect,
   resolvePublishOutcome,
@@ -158,5 +159,50 @@ describe('latestJobByContentItem', () => {
     expect(map.get('item-1')?.id).toBe('b');
     expect(map.get('item-2')?.id).toBe('d');
     expect(map.size).toBe(2);
+  });
+});
+
+describe('jobFixAction (Connections queue / history rows)', () => {
+  const failed = (lastError: string, over: Record<string, unknown> = {}) => ({
+    platform: 'LINKEDIN',
+    status: 'FAILED',
+    lastError,
+    connectionStatus: 'EXPIRED' as string | null,
+    socialConnectionId: 'c1',
+    ...over,
+  });
+
+  it('expired / revoked with a connect flow → reconnect that connection', () => {
+    expect(jobFixAction(failed('[CONNECTION_EXPIRED] token 401'))).toEqual({ kind: 'reconnect', connectionId: 'c1' });
+    expect(jobFixAction(failed('[CONNECTION_REVOKED] 403', { connectionStatus: 'REVOKED' }))).toEqual({
+      kind: 'reconnect',
+      connectionId: 'c1',
+    });
+  });
+
+  it('the account was reconnected since: no action, Retry is the fix', () => {
+    expect(jobFixAction(failed('[CONNECTION_EXPIRED] x', { connectionStatus: 'CONNECTED' }))).toBeNull();
+  });
+
+  it('a platform with no connect flow → open Connected accounts instead', () => {
+    expect(jobFixAction(failed('[CONNECTION_REVOKED] bot removed', { platform: 'TELEGRAM', connectionStatus: 'REVOKED' }))).toEqual({
+      kind: 'openAccounts',
+    });
+  });
+
+  it('no connection (code, or the row is gone) → connect an account', () => {
+    expect(jobFixAction(failed('[NO_CONNECTION] gone', { connectionStatus: null, socialConnectionId: null }))).toEqual({ kind: 'connect' });
+    expect(jobFixAction(failed('[CONNECTION_EXPIRED] x', { connectionStatus: null }))).toEqual({ kind: 'connect' });
+  });
+
+  it('nothing on Connections fixes content or platform errors, and only FAILED rows get an action', () => {
+    expect(jobFixAction(failed('[INVALID_CONTENT] too long'))).toBeNull();
+    expect(jobFixAction(failed('[RATE_LIMITED] 429'))).toBeNull();
+    expect(jobFixAction(failed('[CONNECTION_EXPIRED] x', { status: 'PUBLISH_QUEUED' }))).toBeNull();
+  });
+
+  it('a legacy row with no code falls back on the connection status', () => {
+    expect(jobFixAction(failed('LinkedIn said no', { connectionStatus: 'EXPIRED' }))).toEqual({ kind: 'reconnect', connectionId: 'c1' });
+    expect(jobFixAction(failed('LinkedIn said no', { connectionStatus: 'CONNECTED' }))).toBeNull();
   });
 });

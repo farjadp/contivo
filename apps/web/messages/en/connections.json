@@ -121,8 +121,11 @@
       },
       "errors": {
         "retry": "Could not retry this post.",
-        "cancel": "Could not cancel this post."
-      }
+        "cancel": "Could not cancel this post.",
+        "reconnect": "Could not start the reconnect."
+      },
+      "reconnect": "Reconnect account",
+      "connect": "Connect an account"
     },
     "history": {
       "title": "Publish History",
@@ -139,7 +142,11 @@
         "failed": "Failed"
       },
       "reconnect": "Reconnect account",
-      "failureReason": "Reason:"
+      "failureReason": "Reason:",
+      "connect": "Connect an account",
+      "errors": {
+        "reconnect": "Could not start the reconnect."
+      }
     },
     "sites": {
       "noWorkspaceTitle": "No workspace yet",

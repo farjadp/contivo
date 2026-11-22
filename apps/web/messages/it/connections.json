@@ -121,8 +121,11 @@
       },
       "errors": {
         "retry": "Non è stato possibile riprovare questo post.",
-        "cancel": "Non è stato possibile annullare questo post."
-      }
+        "cancel": "Non è stato possibile annullare questo post.",
+        "reconnect": "Non è stato possibile avviare il ricollegamento."
+      },
+      "reconnect": "Ricollega account",
+      "connect": "Collega un account"
     },
     "history": {
       "title": "Cronologia pubblicazioni",
@@ -139,7 +142,11 @@
         "failed": "Non riuscito"
       },
       "reconnect": "Ricollega account",
-      "failureReason": "Motivo:"
+      "failureReason": "Motivo:",
+      "connect": "Collega un account",
+      "errors": {
+        "reconnect": "Non è stato possibile avviare il ricollegamento."
+      }
     },
     "sites": {
       "noWorkspaceTitle": "Ancora nessun workspace",

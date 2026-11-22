@@ -2,19 +2,25 @@
  * PublishHistorySection.tsx
  *
  * Shows the history of published and cancelled social posts for the workspace.
- * Read-only — no actions except viewing external post links.
+ * Read-only apart from viewing external post links and, on a job that failed
+ * because of its account, Reconnect / Connect.
  *
  * Data is passed as props from the parent server component.
  */
 
 'use client';
 
+import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
-import { ExternalLink, CheckCircle, XCircle, X, RefreshCw } from 'lucide-react';
-import { parseFailure } from '@contivo/types';
+import { ExternalLink, CheckCircle, XCircle, X } from 'lucide-react';
 
+import { useRouter } from '@/i18n/navigation';
+import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
 import { FailureReason } from '@/components/publishing/FailureReason';
-import { failureAction, safePostUrl } from '@/lib/publish-outcome';
+import { JobFixButton } from '@/components/publishing/JobFixButton';
+import { jobFixAction, safePostUrl } from '@/lib/publish-outcome';
+import type { SocialActionDetail } from '@/lib/social-action-error';
+import { startReconnect } from '@/lib/start-reconnect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -28,13 +34,17 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  socialConnectionId: string | null;
   connectionStatus: string | null;
 }
 
 interface PublishHistorySectionProps {
   jobs: PublishJob[];
-  /** Opens the Connected Accounts tab, where Reconnect lives. */
-  onReconnect: () => void;
+  workspaceId: string;
+  /** Opens the Connected accounts tab (a reconnect that cannot start from the row). */
+  onOpenAccounts: () => void;
+  /** Opens the Connect modal (no account behind the job). */
+  onConnectNew: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -45,9 +55,24 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySectionProps) {
+export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishHistorySectionProps) {
   const t = useTranslations('connections.history');
   const format = useFormatter();
+  const router = useRouter();
+  const [pending, setPending] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, SocialActionDetail>>({});
+
+  /** Leaves the spinner on when it navigates to the provider sign-in. */
+  const handleReconnect = async (jobId: string, connectionId: string) => {
+    setPending(jobId);
+    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    const detail = await startReconnect(connectionId, workspaceId);
+    if (detail) {
+      setErrors((prev) => ({ ...prev, [jobId]: detail }));
+      setPending(null);
+      router.refresh();
+    }
+  };
 
   // Show only terminal-state jobs
   const historyJobs = jobs
@@ -76,10 +101,8 @@ export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySecti
             const isCancelled = job.status === 'CANCELLED';
             const isFailed = !isPublished && !isCancelled;
             const postUrl = isPublished ? safePostUrl(job.externalPostUrl) : null;
-            const failure = isFailed ? parseFailure(job.lastError) : null;
-            const reconnect =
-              failure != null &&
-              failureAction(failure.code, failure.detail, job.connectionStatus)?.action === 'reconnect';
+            const fix = jobFixAction(job);
+            const error = errors[job.id];
 
             return (
               <div
@@ -160,15 +183,15 @@ export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySecti
                     </a>
                   )}
 
-                  {reconnect && (
-                    <button
-                      type="button"
-                      onClick={onReconnect}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
-                      {t('reconnect')}
-                    </button>
+                  {fix && (
+                    <JobFixButton
+                      fix={fix}
+                      pending={pending === job.id}
+                      labels={{ reconnect: t('reconnect'), connect: t('connect') }}
+                      onReconnect={(connectionId) => void handleReconnect(job.id, connectionId)}
+                      onOpenAccounts={onOpenAccounts}
+                      onConnectNew={onConnectNew}
+                    />
                   )}
                 </div>
               </div>
@@ -177,6 +200,7 @@ export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySecti
               {isFailed && (
                 <FailureReason reason={job.lastError} label={t('failureReason')} className="mt-3 text-red-700" />
               )}
+              {error && <ActionErrorAlert className="mt-3" headline={t('errors.reconnect')} detail={error} />}
               </div>
             );
           })}

@@ -82,6 +82,8 @@ export async function getPublishJobs(workspaceId: string, limit = 100) {
       retryCount: true,
       createdAt: true,
       publishedAtUtc: true,
+      // Which account a failed row's Reconnect restarts.
+      socialConnectionId: true,
       // Status only: whether the account behind a failed job needs a reconnect.
       connection: { select: { status: true } },
     },
@@ -97,6 +99,7 @@ export async function getPublishJobs(workspaceId: string, limit = 100) {
     retryCount: j.retryCount,
     createdAt: j.createdAt.toISOString(),
     publishedAtUtc: j.publishedAtUtc?.toISOString() ?? null,
+    socialConnectionId: j.socialConnectionId,
     connectionStatus: j.connection ? String(j.connection.status) : null,
   }));
 }

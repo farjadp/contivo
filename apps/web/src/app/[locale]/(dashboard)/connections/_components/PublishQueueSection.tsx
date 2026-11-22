@@ -2,7 +2,8 @@
  * PublishQueueSection.tsx
  *
  * Shows scheduled and pending publish jobs for the workspace.
- * Allows retrying failed jobs and cancelling queued ones.
+ * Allows retrying failed jobs and cancelling queued ones. A job that failed
+ * because of its account gets Reconnect / Connect beside Retry.
  *
  * Data is passed as props from the parent server component.
  */
@@ -13,10 +14,13 @@ import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { RotateCcw, X, Clock, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
-import { retryPublishJob, cancelPublishJob, type SocialActionErrorCode } from '@/app/actions/social';
+import { retryPublishJob, cancelPublishJob, type SocialActionResult } from '@/app/actions/social';
 import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
 import { FailureReason } from '@/components/publishing/FailureReason';
+import { JobFixButton } from '@/components/publishing/JobFixButton';
+import { jobFixAction } from '@/lib/publish-outcome';
 import { socialActionDetail, type SocialActionDetail } from '@/lib/social-action-error';
+import { startReconnect } from '@/lib/start-reconnect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -30,13 +34,19 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  socialConnectionId: string | null;
+  connectionStatus: string | null;
 }
 
-type JobAction = 'retry' | 'cancel';
+type JobAction = 'retry' | 'cancel' | 'reconnect';
 
 interface PublishQueueSectionProps {
   jobs: PublishJob[];
   workspaceId: string;
+  /** Opens the Connected accounts tab (a reconnect that cannot start from the row). */
+  onOpenAccounts: () => void;
+  /** Opens the Connect modal (no account behind the job). */
+  onConnectNew: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -59,7 +69,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionProps) {
+export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishQueueSectionProps) {
   const t = useTranslations('connections.queue');
   const format = useFormatter();
   const router = useRouter();
@@ -75,7 +85,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
   const run = async (
     action: JobAction,
     id: string,
-    call: () => Promise<{ error?: string; code?: SocialActionErrorCode } | undefined>,
+    call: () => Promise<Pick<SocialActionResult<unknown>, 'error' | 'code' | 'reason'> | undefined>,
   ) => {
     setLoading(`${action}-${id}`);
     setErrors(({ [id]: _cleared, ...rest }) => rest);
@@ -99,6 +109,18 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
 
   const handleRetry = (id: string) => {
     void run('retry', id, () => retryPublishJob(id, workspaceId));
+  };
+
+  /** Leaves the spinner on when it navigates to the provider sign-in. */
+  const handleReconnect = async (jobId: string, connectionId: string) => {
+    setLoading(`reconnect-${jobId}`);
+    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    const detail = await startReconnect(connectionId, workspaceId);
+    if (detail) {
+      setErrors((prev) => ({ ...prev, [jobId]: { action: 'reconnect', detail } }));
+      setLoading(null);
+      router.refresh();
+    }
   };
 
   const handleCancel = (id: string) => {
@@ -139,6 +161,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                 const StatusIcon = config.Icon;
                 const isJobLoading = loading?.endsWith(job.id) ?? false;
                 const error = errors[job.id];
+                const fix = jobFixAction(job);
 
                 return (
                   <tr key={job.id} aria-busy={isJobLoading} className="hover:bg-chalk/50 transition-colors">
@@ -169,7 +192,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                       ) : '—'}
                     </td>
                     <td className="py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {job.status === 'FAILED' && (
                           <button
                             type="button"
@@ -184,6 +207,17 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                             )}
                             {t('retry')}
                           </button>
+                        )}
+                        {fix && (
+                          <JobFixButton
+                            fix={fix}
+                            pending={loading === `reconnect-${job.id}`}
+                            disabled={isJobLoading}
+                            labels={{ reconnect: t('reconnect'), connect: t('connect') }}
+                            onReconnect={(connectionId) => void handleReconnect(job.id, connectionId)}
+                            onOpenAccounts={onOpenAccounts}
+                            onConnectNew={onConnectNew}
+                          />
                         )}
                         {!['PUBLISHING', 'PUBLISHED'].includes(job.status) && (
                           <button

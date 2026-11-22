@@ -45,6 +45,7 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  socialConnectionId: string | null;
   connectionStatus: string | null;
 }
 
@@ -113,10 +114,20 @@ export function SocialChannelsTab({
         )}
         {activeTab === 'rules' && <PublishRulesSection />}
         {activeTab === 'queue' && (
-          <PublishQueueSection jobs={jobs} workspaceId={workspaceId} />
+          <PublishQueueSection
+            jobs={jobs}
+            workspaceId={workspaceId}
+            onOpenAccounts={() => setActiveTab('accounts')}
+            onConnectNew={() => setShowConnectModal(true)}
+          />
         )}
         {activeTab === 'history' && (
-          <PublishHistorySection jobs={jobs} onReconnect={() => setActiveTab('accounts')} />
+          <PublishHistorySection
+            jobs={jobs}
+            workspaceId={workspaceId}
+            onOpenAccounts={() => setActiveTab('accounts')}
+            onConnectNew={() => setShowConnectModal(true)}
+          />
         )}
       </div>
 

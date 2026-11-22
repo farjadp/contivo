@@ -76,6 +76,35 @@ export function failureAction(
   }
 }
 
+/**
+ * What a failed row on the Connections page (Publish Queue / History) offers:
+ * - reconnect: start the provider sign-in for this job's connection;
+ * - openAccounts: a reconnect is needed but cannot start from the row (the
+ *   platform has no connect flow yet) → the Connected accounts tab;
+ * - connect: no account behind the job → connect one.
+ */
+export type JobFix = { kind: 'reconnect'; connectionId: string } | { kind: 'openAccounts' } | { kind: 'connect' };
+
+export function jobFixAction(job: {
+  platform: string;
+  status: string;
+  lastError: string | null;
+  connectionStatus: string | null;
+  socialConnectionId: string | null;
+}): JobFix | null {
+  if (job.status !== 'FAILED') return null;
+  const { code, detail } = parseFailure(job.lastError);
+  const action = failureAction(code, detail, job.connectionStatus);
+  if (!action || action.tab !== 'social') return null;
+  if (action.action === 'connect') return { kind: 'connect' };
+  // The account was reconnected after this failure: Retry is the fix now.
+  if (job.connectionStatus === 'CONNECTED') return null;
+  if (job.connectionStatus == null || !job.socialConnectionId) return { kind: 'connect' };
+  return canStartConnectFlow(job.platform)
+    ? { kind: 'reconnect', connectionId: job.socialConnectionId }
+    : { kind: 'openAccounts' };
+}
+
 /** The latest social publish job for one content item, as read from Prisma. */
 export type LatestPublishJob = {
   platform: string;
