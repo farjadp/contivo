@@ -10,6 +10,7 @@
  */
 import { Prisma } from '@prisma/client';
 
+import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import { isStaleRun } from '@/lib/competitors/pipeline';
@@ -118,12 +119,19 @@ class TokenTally {
 }
 
 export async function runMatrixPipeline(runId: string): Promise<void> {
+  // Runs detached from the request, so model calls are attributed to the
+  // run's owner through this context, filled in once the run is loaded.
+  return runWithAiContext({}, () => runMatrixPipelineInAiContext(runId));
+}
+
+async function runMatrixPipelineInAiContext(runId: string): Promise<void> {
   const tokens = new TokenTally();
   let run: Awaited<ReturnType<typeof loadRun>> | null = null;
 
   try {
     run = await loadRun(runId);
     if (!run) return;
+    setAiContext({ userId: run.userId, workspaceId: run.workspaceId });
 
     // Scoped to PENDING: a run the action already marked FAILED, or the
     // reaper timed out, or a second dispatch already claimed, is left alone.

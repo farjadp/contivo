@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 
+import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 
@@ -190,6 +191,12 @@ async function updateWhileRunning(runId: string, data: Prisma.DiscoveryRunUpdate
 // ---------------------------------------------------------------------------
 
 export async function runDiscoveryPipeline(runId: string): Promise<void> {
+  // Runs detached from the request, so model calls are attributed to the
+  // run's owner through this context, filled in once the run is loaded.
+  return runWithAiContext({}, () => runDiscoveryPipelineInAiContext(runId));
+}
+
+async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
   const tokens = new TokenAccumulator();
   const sourceStats: SourceStats = {};
   const runErrors: string[] = [];
@@ -199,6 +206,7 @@ export async function runDiscoveryPipeline(runId: string): Promise<void> {
   try {
     run = await loadRun(runId);
     if (!run) return; // no such run — nothing this call can do or report
+    setAiContext({ userId: run.userId, workspaceId: run.workspaceId });
 
     // Scoped to `status: 'PENDING'` rather than a bare `where: { id }`:
     // `startCompetitorDiscovery` can mark this same row FAILED (e.g. when
