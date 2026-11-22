@@ -178,3 +178,39 @@ describe('runner: requireReview', () => {
     });
   });
 });
+
+describe('runner: LinkedIn sign-in past its expiry', () => {
+  const NOW = new Date('2026-11-22T12:00:00.000Z');
+
+  it('skips the channel with the stable code, writes no status, and the run says why', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    prismaMock.socialConnection.findMany.mockResolvedValue([
+      { platform: 'LINKEDIN', status: 'CONNECTED', tokenExpiresAt: new Date('2026-10-17T03:51:00Z') },
+    ]);
+
+    const result = await runPolicy('agent-1', { now: NOW });
+
+    expect(result.status).toBe('SKIPPED');
+    expect(result.reason).toBe('LINKEDIN_RECONNECT_REQUIRED');
+    expect(runLog().find((e) => e.step === 'channel_skipped')).toMatchObject({
+      channel: 'linkedin',
+      code: 'LINKEDIN_RECONNECT_REQUIRED',
+    });
+    expect(engine.ideateForWorkspace).not.toHaveBeenCalled();
+    // The API's 401 path owns status changes; the runner only reads.
+    expect(prismaMock.socialConnection).not.toHaveProperty('update');
+  });
+
+  it('a token that is still valid publishes as before', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    evaluateDraftMock.mockResolvedValue(APPROVED);
+    prismaMock.socialConnection.findMany.mockResolvedValue([
+      { platform: 'LINKEDIN', status: 'CONNECTED', tokenExpiresAt: new Date('2026-11-25T00:00:00Z') },
+    ]);
+
+    const result = await runPolicy('agent-1', { now: NOW });
+
+    expect(result.status).toBe('SUCCEEDED');
+    expect(runLog().some((e) => e.step === 'channel_skipped')).toBe(false);
+  });
+});

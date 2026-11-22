@@ -41,6 +41,7 @@ import { evaluateDraft } from './quality-gate';
 import { pickPublishSlots } from './schedule';
 import { pickStorylineForWorkspace } from '@/lib/narrative/context';
 import { asContentLanguage } from '@/lib/content-language';
+import { LINKEDIN_RECONNECT_REQUIRED, isTokenExpired } from '@/lib/connection-health';
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -246,12 +247,15 @@ async function runPolicyInAiContext(
     note('credits', { balance: startingBalance });
 
     // 2. Publishable channels
-    const channels = await resolvePublishableChannels(policy.workspaceId, policy.channels, note);
+    const channels = await resolvePublishableChannels(policy.workspaceId, policy.channels, note, now);
     if (channels.length === 0) {
       note('no_publishable_channels');
+      // A stable code (localised in AutopilotTab) when the reason is a LinkedIn sign-in that ran out.
+      const reconnect = log.some((e) => e.code === LINKEDIN_RECONNECT_REQUIRED);
       return finish('SKIPPED', zero, {
-        error:
-          'No channel is publishable: social channels need a connected default account, and blog needs an active site connection.',
+        error: reconnect
+          ? LINKEDIN_RECONNECT_REQUIRED
+          : 'No channel is publishable: social channels need a connected default account, and blog needs an active site connection.',
       });
     }
 
@@ -598,15 +602,23 @@ async function resolvePublishableChannels(
   workspaceId: string,
   requested: ContentChannel[],
   note: (step: string, extra?: Record<string, unknown>) => void,
+  now: Date,
 ): Promise<ContentChannel[]> {
   const wanted = requested.length > 0 ? requested : (['linkedin'] as ContentChannel[]);
   const [connections, siteCount] = await Promise.all([
     prisma.socialConnection.findMany({
       where: { workspaceId, status: 'CONNECTED', isDefault: true },
-      select: { platform: true },
+      select: { platform: true, status: true, tokenExpiresAt: true },
     }),
     prisma.siteConnection.count({ where: { workspaceId, status: 'ACTIVE' } }),
   ]);
+  // A LinkedIn sign-in past its expiry would only 401 at publish time: read-only
+  // here, the API's 401 path still owns the status change.
+  const expired = new Set(
+    connections
+      .filter((c) => isTokenExpired({ platform: String(c.platform), status: String(c.status), tokenExpiresAt: c.tokenExpiresAt }, now))
+      .map((c) => String(c.platform)),
+  );
   const connected = new Set(connections.map((c) => String(c.platform)));
 
   const ok: ContentChannel[] = [];
@@ -628,6 +640,10 @@ async function resolvePublishableChannels(
     }
     if (!connected.has(platform)) {
       note('channel_skipped', { channel, reason: `no connected default ${platform} account` });
+      continue;
+    }
+    if (expired.has(platform)) {
+      note('channel_skipped', { channel, code: LINKEDIN_RECONNECT_REQUIRED });
       continue;
     }
     ok.push(channel);
