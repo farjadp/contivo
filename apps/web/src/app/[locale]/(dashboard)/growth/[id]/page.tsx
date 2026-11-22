@@ -55,6 +55,7 @@ import { WorkspaceCreditBalance, WorkspaceCreditBanner } from './_components/Wor
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { LoopRail } from './_components/LoopRail';
+import { LinkedInExpiryBanner } from './_components/LinkedInExpiryBanner';
 import { buildJourney, matrixFacts, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
 import { buildLoop, stageForTab, STAGES, type StageId } from '@/lib/workspace-loop';
 import { activeSetupWarnings, isSetupWarningCode } from '@/lib/workspace-setup-warnings';
@@ -503,6 +504,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           </div>
         </div>
       )}
+
+      <LinkedInExpiryBanner workspaceId={workspace.id} />
 
       {/* ── HEADER ─────────────────────────────────────────────── */}
       <div className="border border-rule bg-chalk-raised">

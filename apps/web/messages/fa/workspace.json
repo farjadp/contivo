@@ -82,5 +82,12 @@
     "dismiss": "بستن",
     "writtenForBrand": "برای همین برند نوشته شده",
     "guideLabel": "راهنما"
+  },
+  "connectionHealth": {
+    "expiredTitle": "باید دوباره به <bdi>LinkedIn</bdi> وصل شوید",
+    "expiredBody": "ورود به حساب <bdi>{account}</bdi> منقضی شده است و تا دوباره وصل نکنید، پستی در <bdi>LinkedIn</bdi> منتشر نمی‌شود. هر ورود به <bdi>LinkedIn</bdi> {period, number} روز اعتبار دارد.",
+    "expiringTitle": "ورود شما به <bdi>LinkedIn</bdi> تا {days, plural, other {# روز}} دیگر منقضی می‌شود",
+    "expiringBody": "همین حالا حساب <bdi>{account}</bdi> را دوباره وصل کنید تا پست‌های زمان‌بندی‌شده بی‌وقفه منتشر شوند. هر ورود به <bdi>LinkedIn</bdi> {period, number} روز اعتبار دارد.",
+    "cta": "اتصال دوباره"
   }
 }

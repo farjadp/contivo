@@ -206,6 +206,10 @@
         "RUNNING": "in corso",
         "QUEUED": "in coda",
         "SKIPPED": "saltata"
+      },
+      "runCodes": {
+        "LINKEDIN_RECONNECT_REQUIRED": "<bdi>LinkedIn</bdi> va ricollegato. L'accesso è scaduto, quindi questa esecuzione ha saltato <bdi>LinkedIn</bdi>.",
+        "reconnectCta": "Ricollega"
       }
     },
     "ideation": {

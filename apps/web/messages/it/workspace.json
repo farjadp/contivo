@@ -82,5 +82,12 @@
     "dismiss": "Chiudi",
     "writtenForBrand": "scritto per questo brand",
     "guideLabel": "guida"
+  },
+  "connectionHealth": {
+    "expiredTitle": "<bdi>LinkedIn</bdi> va ricollegato",
+    "expiredBody": "L'accesso per <bdi>{account}</bdi> è scaduto: le pubblicazioni su <bdi>LinkedIn</bdi> non riusciranno finché non lo ricolleghi. Un accesso a <bdi>LinkedIn</bdi> dura {period, number} giorni.",
+    "expiringTitle": "L'accesso a <bdi>LinkedIn</bdi> scade tra {days, plural, one {# giorno} other {# giorni}}",
+    "expiringBody": "Ricollega <bdi>{account}</bdi> ora perché i post programmati continuino a uscire. Un accesso a <bdi>LinkedIn</bdi> dura {period, number} giorni.",
+    "cta": "Ricollega"
   }
 }

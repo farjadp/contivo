@@ -13,6 +13,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { effectiveConnectionStatus } from '@/lib/connection-health';
 import { latestJobByContentItem, type LatestPublishJob } from '@/lib/publish-outcome';
 import { pickConnectionMeta } from '@/lib/telegram-connect';
 
@@ -39,7 +40,12 @@ export async function resolveWorkspaceScope(userId: string, requestedId?: string
   };
 }
 
-export async function getSocialConnections(workspaceId: string) {
+/**
+ * `status` is what the row says; `effectiveStatus` / `daysLeft` add what
+ * tokenExpiresAt says (a LinkedIn sign-in past or near its 60-day end), so
+ * the page can warn before the first publish 401s.
+ */
+export async function getSocialConnections(workspaceId: string, now: Date = new Date()) {
   const rows = await prisma.socialConnection.findMany({
     where: { workspaceId },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
@@ -53,22 +59,53 @@ export async function getSocialConnections(workspaceId: string) {
       isDefault: true,
       lastSyncAt: true,
       createdAt: true,
+      tokenExpiresAt: true,
       // Read here, but only pickConnectionMeta's fields reach the browser.
       metaJson: true,
     },
   });
 
-  return rows.map((c) => ({
-    id: c.id,
-    platform: String(c.platform),
-    accountName: c.accountName,
-    accountIdentifier: c.accountIdentifier,
-    status: String(c.status),
-    isDefault: c.isDefault,
-    lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
-    createdAt: c.createdAt.toISOString(),
-    meta: pickConnectionMeta(c.metaJson),
-  }));
+  return rows.map((c) => {
+    const health = effectiveConnectionStatus(
+      { platform: String(c.platform), status: String(c.status), tokenExpiresAt: c.tokenExpiresAt },
+      now,
+    );
+    return {
+      id: c.id,
+      platform: String(c.platform),
+      accountName: c.accountName,
+      accountIdentifier: c.accountIdentifier,
+      status: String(c.status),
+      isDefault: c.isDefault,
+      lastSyncAt: c.lastSyncAt?.toISOString() ?? null,
+      createdAt: c.createdAt.toISOString(),
+      effectiveStatus: health.status,
+      daysLeft: health.daysLeft,
+      meta: pickConnectionMeta(c.metaJson),
+    };
+  });
+}
+
+/**
+ * The workspace's default LinkedIn connection (the one Autopilot and the
+ * scheduler publish through: `isDefault`, see autopilot/runner.ts) when its
+ * sign-in has run out or will within EXPIRY_WARNING_DAYS; otherwise null.
+ */
+export async function getDefaultLinkedInExpiry(workspaceId: string, now: Date = new Date()) {
+  const row = await prisma.socialConnection.findFirst({
+    where: { workspaceId, platform: 'LINKEDIN', isDefault: true },
+    select: { accountName: true, status: true, tokenExpiresAt: true },
+  });
+  if (!row) return null;
+  const health = effectiveConnectionStatus(
+    { platform: 'LINKEDIN', status: String(row.status), tokenExpiresAt: row.tokenExpiresAt },
+    now,
+  );
+  if (health.status === 'EXPIRED') return { kind: 'expired' as const, accountName: row.accountName };
+  if (health.status === 'EXPIRING_SOON') {
+    return { kind: 'expiringSoon' as const, accountName: row.accountName, daysLeft: health.daysLeft ?? 1 };
+  }
+  return null;
 }
 
 export async function getPublishJobs(workspaceId: string, limit = 100) {

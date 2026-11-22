@@ -82,5 +82,12 @@
     "dismiss": "Dismiss",
     "writtenForBrand": "written for this brand",
     "guideLabel": "guide"
+  },
+  "connectionHealth": {
+    "expiredTitle": "<bdi>LinkedIn</bdi> needs reconnecting",
+    "expiredBody": "The sign-in for <bdi>{account}</bdi> has expired, so posts to <bdi>LinkedIn</bdi> will fail until you reconnect. A <bdi>LinkedIn</bdi> sign-in lasts {period, number} days.",
+    "expiringTitle": "Your <bdi>LinkedIn</bdi> sign-in ends in {days, plural, one {# day} other {# days}}",
+    "expiringBody": "Reconnect <bdi>{account}</bdi> now so scheduled posts keep publishing. A <bdi>LinkedIn</bdi> sign-in lasts {period, number} days.",
+    "cta": "Reconnect"
   }
 }
