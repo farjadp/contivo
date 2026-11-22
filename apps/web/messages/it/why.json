@@ -1,0 +1,99 @@
+{
+  "why": {
+    "meta": {
+      "title": "Perché Contivo, per una piccola azienda senza team contenuti",
+      "description": "Perché una piccola azienda dovrebbe usare Contivo invece di un'agenzia, un freelance, ChatGPT o uno scheduler social, e per chi non è ancora adatto."
+    },
+    "eyebrow": "Perché Contivo",
+    "headline": "Sai che dovresti pubblicare. Nessuno ha le <accent>ore</accent>.",
+    "intro": "Quasi ogni piccola azienda sa che contenuti costanti e un occhio sul mercato aiuterebbero. La parte difficile non è scrivere: è la ricerca prima, la verifica dopo, e rifare tutto ogni settimana.",
+    "usualTitle": "I modi soliti di farlo, e cosa ognuno lascia a te",
+    "leftWithYou": "Resta sulla tua scrivania:",
+    "usual": {
+      "agency": {
+        "title": "Affidarsi a un'agenzia",
+        "good": "Professionisti del settore, con un canone mensile all'altezza.",
+        "left": "Spiegare loro il tuo mercato, approvare ogni contenuto, e il canone anche quando il lavoro rallenta."
+      },
+      "freelancer": {
+        "title": "Un copywriter freelance",
+        "good": "Buona scrittura, pagata a pezzo.",
+        "left": "La ricerca, il brief, il piano della settimana dopo e la pubblicazione."
+      },
+      "assistant": {
+        "title": "ChatGPT o Claude, a mano",
+        "good": "Bozze veloci per circa venti dollari al mese.",
+        "left": "Trovare i concorrenti, tenere il contesto, verificare ogni fatto e copiare tutto su LinkedIn e sul sito."
+      },
+      "scheduler": {
+        "title": "Uno scheduler social",
+        "good": "I post escono puntuali, su molte reti.",
+        "left": "Decidere cosa dire e scriverlo. Pubblica quello che gli dai."
+      }
+    },
+    "compareLink": "Vedi il confronto completo, compresi i punti in cui Contivo è indietro",
+    "insteadTitle": "Cosa fa Contivo al loro posto",
+    "instead": {
+      "research": {
+        "title": "La ricerca prima di scrivere una parola",
+        "body": "Legge il tuo sito, trova i concorrenti della tua dimensione e mostra dove ti trovi. Le idee restano bloccate finché tutto questo non c'è."
+      },
+      "refuse": {
+        "title": "Si rifiuta di inventare",
+        "body": "Un giudice blocca statistiche, studi e storie di clienti inventati. Se nessun modello può revisionare un post, il post non esce."
+      },
+      "runs": {
+        "title": "Continua a lavorare senza di te",
+        "body": "Imposta un ritmo e una fascia di pubblicazione: terrà pieni i prossimi sette giorni su LinkedIn e sul tuo sito. Puoi rivedere tutto tu, o lasciarlo al controllo qualità."
+      },
+      "persian": {
+        "title": "Il persiano, scritto in persiano",
+        "body": "Un brand persiano riceve contenuti scritti in persiano fin dall'inizio, non testi inglesi con una traduzione sopra."
+      }
+    },
+    "forTitle": "Fa per te se",
+    "for": {
+      "noTeam": {
+        "title": "Hai un sito e nessun team contenuti",
+        "body": "Per partire basta un indirizzo."
+      },
+      "founder": {
+        "title": "Vuoi una presenza costante su LinkedIn",
+        "body": "I post escono sul tuo profilo personale, nelle ore che scegli tu."
+      },
+      "persian": {
+        "title": "Vendi a chi parla persiano",
+        "body": "Contenuti in persiano che non sembrano una traduzione."
+      },
+      "agency": {
+        "title": "Gestisci contenuti per più clienti",
+        "body": "Il piano Agency contiene cinque brand, ognuno con memoria, concorrenti e canali propri."
+      }
+    },
+    "notForTitle": "Non fa ancora per te se",
+    "notFor": {
+      "channels": {
+        "title": "Ti servono Instagram, TikTok o Facebook",
+        "body": "Oggi pubblica sui profili personali LinkedIn e sul tuo sito."
+      },
+      "languages": {
+        "title": "Pubblichi in un'altra lingua",
+        "body": "I contenuti sono scritti in inglese o in persiano."
+      },
+      "everyWord": {
+        "title": "Vuoi scrivere ogni parola da solo",
+        "body": "Puoi modificare tutto, ma è fatto per lavorare al posto tuo, non per essere un editor di testo."
+      },
+      "analytics": {
+        "title": "Ti servono le analisi dei risultati",
+        "body": "Non mostra ancora come è andato un post."
+      }
+    },
+    "behindTitle": "Chi c'è dietro",
+    "behindBody": "Contivo è costruito in Ontario, Canada, ed è stato usato prima sui siti del suo fondatore. Da allora ventitré utenti dell'accesso anticipato lo hanno pagato. Gran parte delle regole che segue, dal rifiuto di inventare al non mostrare numeri non misurati, nasce da un errore commesso una volta e poi reso impossibile da ripetere.",
+    "aboutLink": "Leggi le regole, e come ci siamo arrivati",
+    "closeHeadline": "Dagli il tuo sito e guarda cosa trova.",
+    "closeCta": "Inizia gratis in accesso anticipato",
+    "closeProduct": "Come funziona, dall'inizio alla fine"
+  }
+}

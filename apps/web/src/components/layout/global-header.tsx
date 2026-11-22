@@ -22,6 +22,8 @@ export function GlobalHeader() {
     '/docs',
     '/features',
     '/compare',
+    '/why',
+    '/product',
     '/privacy',
     '/terms',
     '/contact',
