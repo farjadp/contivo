@@ -44,6 +44,12 @@ export class WebCronService {
     await this.call('publish-due', '/api/content/publish-due?limit=20');
   }
 
+  /** Daily at 03:30 UTC: delete bug reports older than 90 days (retention). */
+  @Cron('30 3 * * *')
+  async purgeBugReports() {
+    await this.call('bug-report-purge', '/api/bug-reports/purge');
+  }
+
   private async call(job: string, path: string): Promise<void> {
     const base = this.webAppUrl;
     const secret = process.env.CRON_SECRET;
