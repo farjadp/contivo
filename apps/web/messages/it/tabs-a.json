@@ -342,6 +342,18 @@
         "save": "Salva post",
         "saving": "Salvataggio…",
         "close": "Chiudi"
+      },
+      "outcome": {
+        "published": "Pubblicato",
+        "publishedOn": "Pubblicato su <bdi>{platform}</bdi>",
+        "viewPost": "Vedi post",
+        "noLink": "La piattaforma non ha restituito un link al post.",
+        "failed": "Non pubblicato",
+        "failedOn": "Non pubblicato su <bdi>{platform}</bdi>",
+        "reasonLabel": "Motivo:",
+        "noReason": "Nessun motivo registrato.",
+        "reconnect": "Ricollega in Connessioni",
+        "connect": "Apri Connessioni"
       }
     },
     "calendar": {

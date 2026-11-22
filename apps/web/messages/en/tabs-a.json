@@ -342,6 +342,18 @@
         "save": "Save post",
         "saving": "Saving…",
         "close": "Close"
+      },
+      "outcome": {
+        "published": "Published",
+        "publishedOn": "Published on <bdi>{platform}</bdi>",
+        "viewPost": "View post",
+        "noLink": "The platform did not return a link to the post.",
+        "failed": "Not published",
+        "failedOn": "Not published on <bdi>{platform}</bdi>",
+        "reasonLabel": "Reason:",
+        "noReason": "No reason was recorded.",
+        "reconnect": "Reconnect in Connections",
+        "connect": "Open Connections"
       }
     },
     "calendar": {
