@@ -1,6 +1,6 @@
 # AI provider failover — OpenAI → Claude → Gemini
 
-Status: **draft, waiting for Farjad's go** · Owner: contivo-head-of-data · Branch: `myca/ai-failover-aba0e1`
+Status: **approved by Farjad 22 Nov** (decisions at the end) · Owner: contivo-head-of-data · Branch: `myca/ai-failover-aba0e1`
 
 ## Why
 
@@ -252,11 +252,13 @@ Not touched: social publish code (`apps/api/src/modules/social/**`, channels bra
 `ANTHROPIC_API_KEY` (new, required for the Claude hop), `ANTHROPIC_MODEL` (optional), existing
 `OPENAI_API_KEY`, `GEMINI_API_KEY`, optional `AI_CHAIN_<TASK>`, `AI_PROVIDER_DISABLED`.
 
-## Decisions for Farjad
+## Decisions (Farjad, 22 Nov)
 
-1. Claude model for failover: **Opus 5.5** (best quality, ~2× OpenAI cost on the exception path) or
-   **Sonnet 5.5** (≈ OpenAI cost). Recommendation: Opus 5.5 for judge/matrices, Sonnet 5.5 is fine
-   everywhere else — but it is your call.
-2. Content chain stays Gemini-first (cheapest, as today), or OpenAI-first like the rest.
-3. Until the judge calibration set exists: Claude/Gemini-judged autopilot drafts wait for your review
-   (recommended) or auto-publish.
+1. Claude models: **`claude-opus-5-5` for the competitor judge, matrices and the autopilot quality gate;
+   `claude-sonnet-5-5` for everything else.** Env: `ANTHROPIC_MODEL_JUDGE`, `ANTHROPIC_MODEL`.
+2. Content chain stays **Gemini → OpenAI → Claude**.
+3. Review before publishing is the **user's choice**: a per-agent toggle "Review drafts before they
+   publish" on `AutopilotPolicy` (`requireReview Boolean @default(false)`, additive, same migration).
+   Off = today's behaviour (approved drafts publish on schedule, whichever provider judged).
+   On = every gate-approved draft waits in the pipeline for the user. This replaces the
+   `needsReview` rule in §Judge consistency point 3; the judge provider/model is still stored and shown.
