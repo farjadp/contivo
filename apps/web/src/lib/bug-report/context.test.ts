@@ -96,6 +96,7 @@ describe('buildServerContext', () => {
       { action: 'ACTION_FAILED', created_at: new Date(), detail: { ref: 'CTV-7F3K', code: 'PROVIDER_RATE_LIMITED', action: 'startMatrixRun', email: 'a@b.co', draft: 'private' } },
     ]);
     const r = await buildServerContext({ userId: USER, workspaceId: WS, ref: 'CTV-7F3K', client: client() });
+    expect(r.context.ref).toBe('CTV-7F3K');
     expect(r.causeCode).toBe('PROVIDER_RATE_LIMITED');
     expect(r.failedAction).toBe('startMatrixRun');
     expect(r.sentryEventId).toBe('a'.repeat(32));
@@ -110,7 +111,8 @@ describe('buildServerContext', () => {
   });
 
   it('ignores a malformed ref and reads no ACTION_FAILED row', async () => {
-    await buildServerContext({ userId: USER, ref: 'not-a-ref', client: client() });
+    const r = await buildServerContext({ userId: USER, ref: 'not-a-ref', client: client() });
+    expect(r.context.ref).toBeNull();
     expect(prismaMock.activity_logs.findFirst).not.toHaveBeenCalled();
   });
 
@@ -148,5 +150,13 @@ describe('buildServerContext', () => {
     expect(JSON.stringify(tiny).length).toBeLessThanOrEqual(3000);
     // oldest dropped: breadcrumbs lose from the front, activity from the back
     if (tiny.client.breadcrumbs.length < 20) expect(tiny.client.breadcrumbs[0].t).toBeGreaterThan(0);
+  });
+});
+
+describe('buildServerContext ref ownership', () => {
+  it('drops a well-formed ref with no ACTION_FAILED row of the caller', async () => {
+    const r = await buildServerContext({ userId: USER, ref: 'CTV-7F3K', client: client() });
+    expect(r.context.ref).toBeNull();
+    expect(r.causeCode).toBeNull();
   });
 });

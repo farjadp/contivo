@@ -132,6 +132,8 @@
       "UNREACHABLE": "The platform could not be reached, even after retries.",
       "PLATFORM_ERROR": "The platform rejected the post."
     },
-    "creditRequestFailed": "Your request could not be sent. Please try again."
+    "creditRequestFailed": "Your request could not be sent. Please try again.",
+    "bugReportRateLimited": "You have sent several reports in the last hour. Please try again a little later.",
+    "bugReportFailed": "We could not save your report. Please try again."
   }
 }

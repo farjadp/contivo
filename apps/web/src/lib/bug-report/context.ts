@@ -58,6 +58,7 @@ export type ServerContext = {
   appVersion: string | null;
   userId: string;
   workspaceId: string | null;
+  /** The caller's own ACTION_FAILED ref this report is about; null when none was given or it did not verify. */
   ref: string | null;
   viewedIds: ViewedIds;
   causeCode: CauseCode | null;
@@ -346,7 +347,7 @@ export async function buildServerContext(input: BuildServerContextInput): Promis
     appVersion: shortVersion(process.env.RAILWAY_GIT_COMMIT_SHA),
     userId,
     workspaceId,
-    ref,
+    ref: actionFailed ? ref : null,
     viewedIds,
     causeCode,
     failedAction,

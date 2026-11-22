@@ -132,6 +132,8 @@
       "UNREACHABLE": "La piattaforma non era raggiungibile, nemmeno dopo i tentativi.",
       "PLATFORM_ERROR": "La piattaforma ha rifiutato il post."
     },
-    "creditRequestFailed": "Non è stato possibile inviare la richiesta. Riprova."
+    "creditRequestFailed": "Non è stato possibile inviare la richiesta. Riprova.",
+    "bugReportRateLimited": "Hai inviato diverse segnalazioni nell'ultima ora. Riprova tra un po'.",
+    "bugReportFailed": "Non siamo riusciti a salvare la segnalazione. Riprova."
   }
 }
