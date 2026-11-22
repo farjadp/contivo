@@ -258,7 +258,7 @@
     "pipeline": {
       "empty": {
         "title": "La tua pipeline è vuota",
-        "body": "Non hai ancora generato contenuti per questo brand. Vai alla Ideation Station per iniziare.",
+        "body": "Non c'è ancora niente. Genera idee nella Ideation Station oppure scrivi tu un post.",
         "cta": "Vai all'ideazione"
       },
       "wordsTarget": "Obiettivo: {count, number} parole",
@@ -296,7 +296,12 @@
         "dateOptional": "Data (facoltativa)",
         "timeOptional": "Ora (facoltativa)",
         "blankNote": "Lascia vuote data e ora per salvarlo semplicemente come \"Pronto\", oppure compilale per segnare in automatico il post come \"Programmato\".",
-        "save": "Salva modifiche"
+        "save": "Salva modifiche",
+        "titleLabel": "Titolo",
+        "slugLabel": "Slug dell'URL",
+        "slugFrozen": "Non cambia dopo la pubblicazione, così l'indirizzo del post resta lo stesso.",
+        "slugAuto": "Generato dal titolo al momento della pubblicazione.",
+        "saveFailed": "Le modifiche non sono state salvate. Riprova."
       },
       "scheduleModal": {
         "title": "Programma contenuto",
@@ -304,7 +309,35 @@
       },
       "errors": {
         "maxFiles": "Puoi allegare fino a {count, number} file.",
-        "readFailed": "Impossibile leggere \"{name}\". Usa file PDF/TXT/MD/CSV/JSON oppure incolla il testo a mano."
+        "readFailed": "Impossibile leggere \"{name}\". Usa file PDF/TXT/MD/CSV/JSON oppure incolla il testo a mano.",
+        "own": {
+          "title_required": "Aggiungi un titolo.",
+          "title_too_long": "Il titolo può avere al massimo {max, number} caratteri.",
+          "body_required": "Scrivi il post prima di salvare.",
+          "body_too_long": "Il post supera i {max, number} caratteri.",
+          "slug_invalid": "Usa solo lettere latine minuscole, cifre e trattini singoli.",
+          "slug_taken": "Un altro post di questo workspace usa già questo slug.",
+          "slug_frozen": "Questo post è pubblicato, quindi lo slug non può più cambiare.",
+          "not_found": "Questo post non esiste più. Aggiorna la pagina.",
+          "invalid_channel": "Scegli Blog o LinkedIn.",
+          "unknown": "Qualcosa è andato storto. Riprova."
+        }
+      },
+      "write": {
+        "open": "Scrivi un post",
+        "title": "Scrivi il tuo post",
+        "intro": "Il tuo testo, salvato come Pronto. Programmalo come qualsiasi altro post. Niente AI e nessun credito.",
+        "channelLabel": "Pubblica su",
+        "titleLabel": "Titolo",
+        "titlePlaceholder": "Il titolo che vedono i lettori",
+        "slugLabel": "Slug dell'URL (facoltativo)",
+        "slugHint": "Lettere latine minuscole, cifre e trattini. Lascialo vuoto per generarlo dal titolo.",
+        "slugHintNonLatin": "Un titolo non in caratteri latini diventa post-xxxx. Imposta tu uno slug per un indirizzo leggibile.",
+        "bodyLabel": "Post (Markdown)",
+        "bodyPlaceholder": "Scrivi in Markdown: ## per i titoli, - per gli elenchi, **grassetto**.",
+        "save": "Salva post",
+        "saving": "Salvataggio…",
+        "close": "Chiudi"
       }
     },
     "calendar": {
