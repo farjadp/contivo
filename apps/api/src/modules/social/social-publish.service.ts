@@ -432,9 +432,15 @@ export class SocialPublishService {
 
       // Close the loop on the content item. The scheduler moves it to
       // PUBLISHING before handing off; without this it stayed there forever.
+      // READY is included for a Cancel that landed while adapter.publish was
+      // in flight: cancel() already gave the item back as READY, but the post
+      // is live, so PUBLISHED is the truth. (Refusing cancel while the job is
+      // PUBLISHING was the alternative; it would also block cancelling a job
+      // stuck in PUBLISHING after a worker died, and remove the pre-send
+      // cancel window the last-point check above gives.)
       if (published.contentItemId) {
         await this.prisma.contentItem.updateMany({
-          where: { id: published.contentItemId, status: { in: ['PUBLISHING', 'SCHEDULED'] } },
+          where: { id: published.contentItemId, status: { in: ['PUBLISHING', 'SCHEDULED', 'READY'] } },
           data: { status: 'PUBLISHED', publishedAtUtc: publishedAt, failedReason: null },
         });
       }

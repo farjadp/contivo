@@ -90,6 +90,22 @@ describe('P2-1 cancel is final', () => {
     assert.equal(prisma.socialPublishJob.rows[0].status, 'CANCELLED');
   });
 
+  it('P3-A: cancel lands while the post is already going out → the live post wins: job AND item PUBLISHED', async () => {
+    const { prisma, svc } = mk(async (_c, p) => {
+      // The user's Cancel runs while adapter.publish is in flight.
+      await svc.cancel('j1', 'wV', 'victim');
+      assert.equal(p.socialPublishJob.rows[0].status, 'CANCELLED');
+      assert.equal(p.contentItem.rows[0].status, 'READY');
+      return { success: true, externalPostId: 'urn:li:share:1', externalPostUrl: 'https://linkedin.com/feed/update/1' };
+    });
+    prisma.contentItem.rows[0].status = 'PUBLISHING';
+    prisma.socialPublishJob.rows.push({ id: 'j1', workspaceId: 'wV', socialConnectionId: 'cV', platform: 'LINKEDIN', status: 'PUBLISH_QUEUED', retryCount: 0, contentItemId: 'ciV' });
+    const out = await svc.processJobAsync('j1', 'cV', 'LINKEDIN', { body: 'b' });
+    assert.equal(out, 'PUBLISHED');
+    assert.equal(prisma.socialPublishJob.rows[0].status, 'PUBLISHED');
+    assert.equal(prisma.contentItem.rows[0].status, 'PUBLISHED', 'item must not stay READY while the post is live');
+  });
+
   it('a job cancelled before the attempt reaches publish is never sent', async () => {
     const { prisma, svc, used } = mk();
     prisma.socialPublishJob.rows.push({ id: 'j1', workspaceId: 'wV', socialConnectionId: 'cV', platform: 'LINKEDIN', status: 'CANCELLED', retryCount: 0 });
