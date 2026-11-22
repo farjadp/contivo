@@ -69,7 +69,7 @@ describe('TelegramBotClient', () => {
   });
 
   it('400 chat not found / not enough rights → revoked', async () => {
-    for (const d of ['Bad Request: chat not found', 'Bad Request: not enough rights to send text messages to the chat', 'Bad Request: need administrator rights in the channel chat']) {
+    for (const d of ['Bad Request: chat not found', 'Bad Request: not enough rights to send text messages to the chat', 'Bad Request: need administrator rights in the channel chat', 'Bad Request: member list is inaccessible']) {
       tg.queue('sendMessage', fail(400, d));
       const res = await new TelegramBotClient().sendMessage({ chat_id: '1', text: 'x' });
       assert.ok(!res.ok && res.kind === 'revoked', d);

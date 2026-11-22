@@ -185,7 +185,7 @@ export interface SetWebhookParams {
 
 /** 400 descriptions that mean the bot lost the chat or its rights. Not documented; matched loosely. */
 const REVOKED_400 =
-  /chat not found|not enough rights|need administrator rights|have no rights|CHAT_WRITE_FORBIDDEN|CHAT_ADMIN_REQUIRED|bot is not a member|bot was kicked|bot was blocked|group chat was deactivated|PEER_ID_INVALID|CHANNEL_PRIVATE/i;
+  /chat not found|not enough rights|need administrator rights|have no rights|CHAT_WRITE_FORBIDDEN|CHAT_ADMIN_REQUIRED|bot is not a member|bot was kicked|bot was blocked|group chat was deactivated|PEER_ID_INVALID|CHANNEL_PRIVATE|member list is inaccessible/i;
 
 interface ApiErrorBody {
   ok?: boolean;
