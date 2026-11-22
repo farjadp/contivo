@@ -24,7 +24,8 @@
     "submit": "Leggi il mio sito",
     "submitting": "Apertura…",
     "errorEmpty": "Scrivi l'indirizzo del sito da leggere.",
-    "errorInvalid": "Questo non sembra l'indirizzo di un sito."
+    "errorInvalid": "Questo non sembra l'indirizzo di un sito.",
+    "hint": "Poi c'è una breve registrazione. L'indirizzo viene con te."
   },
   "home": {
     "actOne": {
@@ -108,7 +109,7 @@
     },
     "close": {
       "headline": "Incolla un URL e torna al tuo <accent>lavoro</accent>.",
-      "body": "In meno di un minuto hai una memoria del brand e una mappa della concorrenza. Da lì la coda si riempie da sola, e l'unica cosa che non farà mai è pubblicare qualcosa che non può sostenere.",
+      "body": "Registrati, dagli l'indirizzo del tuo sito e lo legge, ricavandone una memoria del brand e una mappa della concorrenza. Da lì la coda si riempie da sola, e l'unica cosa che non farà mai è pubblicare qualcosa che non può sostenere.",
       "cta": "Crea il tuo workspace",
       "pricing": "Vedi i prezzi"
     },
@@ -157,7 +158,7 @@
       }
     },
     "steps": {
-      "heading": "Cosa succede quando premi Leggi · ≈ 20 sec",
+      "heading": "Cosa fa la prima lettura · ≈ 20 sec",
       "read": "Lettura delle tue pagine",
       "memory": "Scrittura della memoria del brand",
       "competitors": "Ricerca dei concorrenti della tua dimensione",
@@ -246,7 +247,7 @@
     "contact": "Contatti",
     "privacy": "Privacy",
     "terms": "Termini",
-    "socialSoon": "X · Instagram · TikTok · Facebook",
+    "socialSoon": "X · Telegram · WordPress · Threads",
     "soon": "In arrivo",
     "writeTo": "Scrivi a una persona vera",
     "navLabel": "Sito",
