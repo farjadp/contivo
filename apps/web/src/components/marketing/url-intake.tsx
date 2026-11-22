@@ -85,6 +85,9 @@ export function UrlIntake() {
           onChange={(e) => {
             setValue(e.target.value);
             if (error) setError(null);
+            /* The hero's live week listens for this and replays the week for
+               the address being typed (hero-live.tsx). Nothing leaves the page. */
+            window.dispatchEvent(new CustomEvent('contivo:site', { detail: e.target.value }));
           }}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? 'site-error' : undefined}

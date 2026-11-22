@@ -240,9 +240,7 @@
       "hero": {
         "eyebrow": "Content marketing, fatto per te",
         "headline": "Il tuo LinkedIn e il tuo blog, <accent>sempre attivi</accent>, ogni settimana.",
-        "body": "Dai a Contivo il tuo sito. Capisce cosa vendi e chi sono i tuoi concorrenti, poi scrive post per il tuo LinkedIn e articoli per il tuo sito, e li pubblica nei giorni che scegli tu. Ognuno viene controllato prima di uscire.",
-        "shotAlt": "La pipeline di un workspace reale in Contivo: post pubblicati su LinkedIn e una bozza in attesa del suo turno.",
-        "shotCaption": "Un workspace reale, catturato dall'app: post pubblicati su LinkedIn, una bozza programmata."
+        "body": "Dai a Contivo il tuo sito. Capisce cosa vendi e chi sono i tuoi concorrenti, poi scrive post per il tuo LinkedIn e articoli per il tuo sito, e li pubblica nei giorni che scegli tu. Ognuno viene controllato prima di uscire."
       },
       "week": {
         "title": "Com'è una settimana",
@@ -313,6 +311,36 @@
           "q": "Cosa mi serve per iniziare?",
           "a": "Un sito web. Per pubblicare su LinkedIn, il tuo account LinkedIn; per pubblicare sul tuo sito, uno sviluppatore per una breve configurazione."
         }
+      },
+      "live": {
+        "aria": "Illustrazione: Contivo legge un sito, capisce cosa vende l'azienda, a chi si rivolge, con che tono parla e chi sono i suoi concorrenti, poi pianifica cinque post per la settimana su LinkedIn e sul sito dell'azienda.",
+        "reading": "In lettura",
+        "read": "Letto",
+        "sells": "Cosa vendi",
+        "audience": "Per chi è",
+        "tone": "Come parli",
+        "competitors": "I tuoi concorrenti",
+        "week": "I tuoi prossimi 7 giorni",
+        "site": "Il tuo sito",
+        "summary": "{count, plural, one {# post pianificato, controllato e programmato} other {# post pianificati, controllati e programmati}}",
+        "caption": "Questo è un esempio illustrativo di ciò che succede dopo che incolli l'indirizzo del tuo sito. Scrivi il tuo qui sopra e riparte. La tua settimana reale nasce dal tuo sito reale."
+      },
+      "gate": {
+        "title": "Una bozza alla prova del controllo qualità",
+        "illustration": "Esempio illustrativo",
+        "illustrationEnglish": "Esempio illustrativo, bozza in inglese",
+        "draftLabel": "Prima bozza",
+        "rewriteLabel": "Dopo la riscrittura",
+        "tellNote": "Sembra scritto da una macchina: l'attacco viene riscritto",
+        "statNote": "Un dato che nessuno sa da dove venga: scartato",
+        "held": "Trattenuta, non pubblicata",
+        "scores": {
+          "brand": "Coerenza col brand",
+          "safety": "Affidabilità dei fatti",
+          "clarity": "Chiarezza"
+        },
+        "score": "{score} su 10",
+        "passed": "Approvata, programmata su LinkedIn, {when}"
       }
     }
   },

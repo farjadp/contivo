@@ -240,9 +240,7 @@
       "hero": {
         "eyebrow": "Votre marketing de contenu, pris en charge",
         "headline": "Votre LinkedIn et votre blog, <accent>toujours alimentés</accent>, semaine après semaine.",
-        "body": "Donnez votre site à Contivo. Il apprend ce que vous vendez et qui sont vos concurrents, puis rédige des publications pour votre LinkedIn et des articles pour votre propre site, et les publie les jours que vous choisissez. Chacune est vérifiée avant de partir.",
-        "shotAlt": "Le pipeline d’un vrai espace de travail Contivo : des publications parties sur LinkedIn et un brouillon qui attend son créneau.",
-        "shotCaption": "Un vrai espace de travail, capturé dans l’application : des publications parties sur LinkedIn, un brouillon programmé."
+        "body": "Donnez votre site à Contivo. Il apprend ce que vous vendez et qui sont vos concurrents, puis rédige des publications pour votre LinkedIn et des articles pour votre propre site, et les publie les jours que vous choisissez. Chacune est vérifiée avant de partir."
       },
       "week": {
         "title": "À quoi ressemble une semaine",
@@ -313,6 +311,36 @@
           "q": "De quoi ai-je besoin pour commencer ?",
           "a": "D’un site web. Pour publier sur LinkedIn, de votre compte LinkedIn ; pour publier sur votre site, d’un développeur, le temps d’une courte mise en place."
         }
+      },
+      "live": {
+        "aria": "Illustration : Contivo lit un site, comprend ce que vend l’entreprise, à qui elle s’adresse, sur quel ton elle parle et qui sont ses concurrents, puis planifie cinq publications pour la semaine sur LinkedIn et sur le site de l’entreprise.",
+        "reading": "Lecture",
+        "read": "Lu",
+        "sells": "Ce que vous vendez",
+        "audience": "Pour qui",
+        "tone": "Votre ton",
+        "competitors": "Vos concurrents",
+        "week": "Vos 7 prochains jours",
+        "site": "Votre site",
+        "summary": "{count, plural, one {# publication planifiée, vérifiée et programmée} other {# publications planifiées, vérifiées et programmées}}",
+        "caption": "Une illustration de ce qui se passe une fois votre adresse collée. Tapez la vôtre ci-dessus et l’animation repart. Votre vraie semaine est construite à partir de votre vrai site."
+      },
+      "gate": {
+        "title": "Un brouillon face au contrôle qualité",
+        "illustration": "Illustration",
+        "illustrationEnglish": "Illustration, brouillon en anglais",
+        "draftLabel": "Premier brouillon",
+        "rewriteLabel": "Après réécriture",
+        "tellNote": "On sent le texte de machine : l’accroche est réécrite",
+        "statNote": "Une statistique que personne ne peut sourcer : refusée",
+        "held": "Retenu, non publié",
+        "scores": {
+          "brand": "Cohérence de marque",
+          "safety": "Exactitude des faits",
+          "clarity": "Clarté"
+        },
+        "score": "{score} sur 10",
+        "passed": "Validé, programmé sur LinkedIn, {when}"
       }
     }
   },

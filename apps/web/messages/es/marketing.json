@@ -240,9 +240,7 @@
       "hero": {
         "eyebrow": "Marketing de contenidos, hecho para ti",
         "headline": "Tu LinkedIn y tu blog, <accent>siempre activos</accent>, cada semana.",
-        "body": "Dale a Contivo tu web. Aprende qué vendes y con quién compites. Después escribe publicaciones para tu LinkedIn y artículos para tu propia web, y los publica los días que tú elijas. Cada uno se revisa antes de salir.",
-        "shotAlt": "El pipeline de un workspace real de Contivo: publicaciones ya en LinkedIn y un borrador esperando su turno.",
-        "shotCaption": "Un workspace real, capturado desde la app: publicaciones en LinkedIn y un borrador programado."
+        "body": "Dale a Contivo tu web. Aprende qué vendes y con quién compites. Después escribe publicaciones para tu LinkedIn y artículos para tu propia web, y los publica los días que tú elijas. Cada uno se revisa antes de salir."
       },
       "week": {
         "title": "Así es una semana",
@@ -313,6 +311,36 @@
           "q": "¿Qué necesito para empezar?",
           "a": "Una web. Para publicar en LinkedIn, tu cuenta de LinkedIn; para publicar en tu web, un desarrollador para una configuración breve."
         }
+      },
+      "live": {
+        "aria": "Ilustración: Contivo lee una web, aprende qué vende el negocio, a quién se dirige, cómo habla y con quién compite, y después planifica cinco publicaciones para la semana en LinkedIn y en la web del propio negocio.",
+        "reading": "Leyendo",
+        "read": "Leído",
+        "sells": "Qué vendes",
+        "audience": "Para quién es",
+        "tone": "Cómo hablas",
+        "competitors": "Con quién compites",
+        "week": "Tus próximos 7 días",
+        "site": "Tu web",
+        "summary": "{count, plural, one {# publicación planificada, revisada y programada} other {# publicaciones planificadas, revisadas y programadas}}",
+        "caption": "Un ejemplo ilustrativo de lo que pasa cuando pegas tu dirección. Escribe la tuya arriba y vuelve a empezar. Tu semana real se construye a partir de tu web real."
+      },
+      "gate": {
+        "title": "Un borrador ante el control de calidad",
+        "illustration": "Ejemplo ilustrativo",
+        "illustrationEnglish": "Ejemplo ilustrativo, borrador en inglés",
+        "draftLabel": "Primer borrador",
+        "rewriteLabel": "Tras la reescritura",
+        "tellNote": "Suena a texto de máquina: se reescribe el arranque",
+        "statNote": "Una cifra que nadie puede respaldar con una fuente: vetada",
+        "held": "Retenido, sin publicar",
+        "scores": {
+          "brand": "Encaje con la marca",
+          "safety": "Rigor en los datos",
+          "clarity": "Claridad"
+        },
+        "score": "{score} de 10",
+        "passed": "Aprobado, programado en LinkedIn, {when}"
       }
     }
   },

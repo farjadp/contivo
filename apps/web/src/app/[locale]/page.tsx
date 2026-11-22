@@ -22,6 +22,7 @@ import { ProductReel } from '@/components/marketing/product-reel';
 import { SiteNav } from '@/components/marketing/site-nav';
 import { UrlIntake } from '@/components/marketing/url-intake';
 import { CadenceWeek, Reveal } from '@/components/marketing/home-interactions';
+import { GateDemo, LiveWeek } from '@/components/marketing/hero-live';
 import { PLAN_OFFERS, usd } from '@/lib/plan-catalogue';
 
 /**
@@ -79,7 +80,11 @@ function Hero() {
           <UrlIntake />
         </div>
       </div>
-      <Shot src="/marketing/generated-post.webp" alt={t('shotAlt')} w={1400} h={1114} caption={t('shotCaption')} priority />
+      {/* The visitor's own address goes in, a week comes out: the result,
+          moving. The real capture is in step 3 below. */}
+      <div className="motion-safe:animate-fade-in">
+        <LiveWeek />
+      </div>
     </section>
   );
 }
@@ -137,9 +142,8 @@ function Steps() {
         {STEPS.map((s, i) => (
           <li key={s.id}>
             <Reveal delay={i * 100} className="flex h-full flex-col gap-3 md:gap-4">
-              {/* Below md the third picture is the hero's capture a second
-                  time, so phones skip it; the others crop shorter there. */}
-              <div className={`overflow-hidden rounded-2xl border border-rule bg-chalk-raised ${s.id === 's3' ? 'max-md:hidden' : ''}`}>
+              {/* Phones crop the captures shorter. */}
+              <div className="overflow-hidden rounded-2xl border border-rule bg-chalk-raised">
                 <Image src={s.src} alt={t(`${s.id}.alt`)} width={s.w} height={s.h} className="aspect-[16/10] h-auto w-full object-cover object-top md:aspect-[4/3]" sizes="(min-width: 768px) 30vw, 92vw" />
               </div>
               <p className="font-plexmono text-[13px] text-saffron-ink">
@@ -168,7 +172,12 @@ function NotLikeAi() {
           </h2>
           <p className="text-[clamp(1.05rem,1.5vw,1.2rem)] leading-[1.6] text-forest-muted">{t('v2.notAi.body')}</p>
         </Reveal>
-        <div className="grid gap-8 md:grid-cols-2 md:gap-12">
+        <Reveal>
+          <GateDemo />
+        </Reveal>
+        {/* The full lists from md up; on a phone the demo makes the point and
+            /why carries the lists. */}
+        <div className="grid gap-8 max-md:hidden md:grid-cols-2 md:gap-12">
           <Reveal>
             <RefusalList
               title={t('actTwo.checksTitle')}
@@ -200,9 +209,8 @@ function RefusalList({ title, items }: { title: string; items: string[] }) {
     <div className="flex flex-col gap-4">
       <h3 className="font-display text-[clamp(1.3rem,2vw,1.65rem)] font-bold">{title}</h3>
       <ul className="border-b border-forest-line">
-        {/* Phones get the first two of each list; /why carries all of them. */}
-        {items.map((item, i) => (
-          <li key={item} className={`border-t border-forest-line py-3 text-[16px] leading-relaxed ${i > 1 ? 'max-md:hidden' : ''}`}>
+        {items.map((item) => (
+          <li key={item} className="border-t border-forest-line py-3 text-[16px] leading-relaxed">
             {item}
           </li>
         ))}
@@ -336,33 +344,6 @@ function Faq() {
         ))}
       </div>
     </section>
-  );
-}
-
-/* ─── Shared ─────────────────────────────────────────────────────────────── */
-
-function Shot({
-  src,
-  alt,
-  w,
-  h,
-  caption,
-  priority,
-}: {
-  src: string;
-  alt: string;
-  w: number;
-  h: number;
-  caption?: string;
-  priority?: boolean;
-}) {
-  return (
-    <figure className="flex flex-col gap-3">
-      <div className="overflow-hidden rounded-2xl border border-rule bg-chalk-raised">
-        <Image src={src} alt={alt} width={w} height={h} priority={priority} className="h-auto w-full" sizes="(min-width: 1280px) 40rem, 92vw" />
-      </div>
-      {caption && <figcaption className="text-[13px] text-moss-muted">{caption}</figcaption>}
-    </figure>
   );
 }
 
