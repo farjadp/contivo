@@ -11,9 +11,9 @@ import { prisma } from '@/lib/db';
 import { ensureActivityLogTables } from '@/lib/activity-log';
 import { AUTOPILOT_RUN_COST } from '@/lib/credit-costs';
 
+export { CREDIT_REQUEST_WINDOW_HOURS } from '@/lib/credit-costs';
+
 export const CREDITS_REQUESTED_ACTION = 'CREDITS_REQUESTED';
-/** One request per user per this many hours; later clicks see "already requested". */
-export const CREDIT_REQUEST_WINDOW_HOURS = 24;
 /** A request older than this no longer counts as pending on the admin list. */
 export const PENDING_REQUEST_DAYS = 7;
 

@@ -35,3 +35,11 @@ export type AiOperation = keyof typeof AI_OPERATION_COST;
  */
 export const AUTOPILOT_RUN_COST =
   AI_OPERATION_COST.AUTOPILOT_IDEATION + AI_OPERATION_COST.AUTOPILOT_DRAFT_ATTEMPT;
+
+/** True when the balance cannot pay for one Autopilot post. */
+export function isLowBalance(balance: number): boolean {
+  return balance < AUTOPILOT_RUN_COST;
+}
+
+/** One "request more credits" per user per this many hours; later clicks see "already requested". */
+export const CREDIT_REQUEST_WINDOW_HOURS = 24;
