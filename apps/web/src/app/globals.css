@@ -191,6 +191,63 @@
   }
 }
 
+/* ── Arabic and Chinese surfaces (site-only locales) ─────────────────────────
+   The same rules Persian needs, for the same reasons: a font that has the
+   script, for display as well as body; no tracking (it breaks Arabic joining
+   and crowds Chinese); no faux italics; Latin fragments isolated.
+   Direction comes from `dir`, set from routing.ts. */
+@layer base {
+  [lang='ar'] {
+    --font-display: var(--font-vazir);
+  }
+  [lang='zh'] {
+    --font-display: var(--font-cjk);
+  }
+
+  [lang='ar'] body,
+  [lang='ar'] h1,
+  [lang='ar'] h2,
+  [lang='ar'] h3,
+  [lang='ar'] h4,
+  [lang='ar'] h5,
+  [lang='ar'] h6 {
+    font-family: var(--font-vazir), 'Segoe UI', Tahoma, sans-serif;
+  }
+  [lang='zh'] body,
+  [lang='zh'] h1,
+  [lang='zh'] h2,
+  [lang='zh'] h3,
+  [lang='zh'] h4,
+  [lang='zh'] h5,
+  [lang='zh'] h6 {
+    font-family: var(--font-cjk), 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  }
+
+  [lang='ar'] body,
+  [lang='zh'] body {
+    font-size: 17px;
+    line-height: 1.8;
+  }
+  [lang='ar'] :is(h1, h2, h3, h4, h5, h6),
+  [lang='zh'] :is(h1, h2, h3, h4, h5, h6) {
+    line-height: 1.4;
+  }
+
+  [lang='ar'] *,
+  [lang='zh'] * {
+    letter-spacing: 0 !important;
+  }
+
+  [lang='ar'] :is(i, em),
+  [lang='zh'] :is(i, em) {
+    font-style: normal;
+  }
+
+  [lang='ar'] :is(bdi, code, kbd, samp) {
+    unicode-bidi: isolate;
+  }
+}
+
 /*
   Directional glyphs — arrows, chevrons, back buttons — point the wrong way once
   the layout mirrors, and they are mirrored at the call site with Tailwind's

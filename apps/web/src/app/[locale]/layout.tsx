@@ -9,6 +9,7 @@ import {
   IBM_Plex_Sans_Hebrew,
   Inter,
   JetBrains_Mono,
+  Noto_Sans_SC,
   Vazirmatn,
 } from 'next/font/google';
 
@@ -56,6 +57,20 @@ const plexHebrew = IBM_Plex_Sans_Hebrew({
   preload: false,
 });
 
+/*
+  Chinese (site-only locale). Plex and Bricolage have no CJK glyphs, so without
+  this the pages fall back to whatever the OS has. Arabic is carried by
+  Vazirmatn, which covers the Arabic script. Not preloaded: every other locale
+  would pay for files it never uses, and Noto Sans SC is split by
+  unicode-range so a page fetches only the glyphs it shows.
+*/
+const cjk = Noto_Sans_SC({
+  weight: ['400', '500', '700'],
+  variable: '--font-cjk',
+  display: 'swap',
+  preload: false,
+});
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -87,11 +102,7 @@ export async function generateMetadata({
     */
     alternates: {
       languages: {
-        en: '/en',
-        fa: '/fa',
-        it: '/it',
-        es: '/es',
-        he: '/he',
+        ...Object.fromEntries(routing.locales.map((l) => [l, `/${l}`])),
         'x-default': `/${routing.defaultLocale}`,
       },
     },
@@ -139,7 +150,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir}>
       <body
-        className={`${inter.variable} ${display.variable} ${mono.variable} ${vazir.variable} ${plexHebrew.variable} ${plex.variable} ${plexMono.variable} font-sans bg-chalk text-moss antialiased`}
+        className={`${inter.variable} ${display.variable} ${mono.variable} ${vazir.variable} ${plexHebrew.variable} ${cjk.variable} ${plex.variable} ${plexMono.variable} font-sans bg-chalk text-moss antialiased`}
       >
         <div hidden dangerouslySetInnerHTML={{ __html: `<!--${DIRECTION_CONTRACT}-->` }} />
         <NextIntlClientProvider messages={messages}>

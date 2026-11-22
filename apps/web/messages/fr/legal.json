@@ -1,0 +1,354 @@
+{
+  "legal": {
+    "common": {
+      "eyebrow": "Mentions légales",
+      "updated": "Dernière mise à jour : {date}",
+      "shortVersion": "En bref",
+      "contents": "Sommaire",
+      "related": "À lire aussi",
+      "links": {
+        "privacy": {
+          "title": "Confidentialité",
+          "body": "Ce que nous collectons, qui le traite, et comment le faire supprimer."
+        },
+        "terms": {
+          "title": "Conditions d’utilisation",
+          "body": "Ce que vous acceptez, ce que nous promettons, et la règle de remboursement."
+        },
+        "contact": {
+          "title": "Contact",
+          "body": "Une question à laquelle la page n’a pas répondu est lue par une personne."
+        },
+        "disclaimer": {
+          "title": "Avertissement",
+          "body": "Ce que le site et le produit ne promettent pas."
+        }
+      }
+    },
+    "privacy": {
+      "meta": {
+        "title": "Confidentialité — Contivo",
+        "description": "Ce que Contivo collecte, quels fournisseurs le traitent, les trois cookies qu’il dépose, et comment faire supprimer vos données."
+      },
+      "eyebrow": "Confidentialité",
+      "headline": "Ce que nous conservons, et <accent>pourquoi</accent>.",
+      "intro": "Contivo lit votre site web, rédige en votre nom et, si vous l’y autorisez, publie sur vos comptes. Cela suppose un accès réel à des données réelles. Cette page indique exactement lesquelles, et ce que nous n’en faisons jamais. Contivo est exploité par {entity}, dont le siège est en Ontario, au Canada.",
+      "summary": [
+        "Nous collectons ce dont le produit a besoin pour fonctionner : votre compte, votre espace de travail et les comptes que vous connectez. Rien à des fins publicitaires.",
+        "Nous ne vendons jamais vos données, ne vous montrons jamais de publicité et ne déposons aucun cookie de suivi ou de mesure d’audience.",
+        "Vos textes sont envoyés à des fournisseurs d’IA (OpenAI et Google) pour être analysés et rédigés. C’est ainsi que le produit fonctionne, et nous le disons clairement.",
+        "Écrivez à {email} et nous supprimons votre compte et votre espace de travail dans un délai de 30 jours."
+      ],
+      "sections": [
+        {
+          "id": "who",
+          "title": "Qui est responsable",
+          "blocks": [
+            "Contivo est exploité par {entity}, dont le siège est en Ontario, au Canada. Nous sommes responsables des renseignements personnels décrits ici au titre de la Loi sur la protection des renseignements personnels et les documents électroniques (LPRPDE) du Canada.",
+            "Les questions et demandes relatives à la confidentialité sont à adresser à {email}. Cette boîte est lue par une personne, pas par un robot."
+          ]
+        },
+        {
+          "id": "collect",
+          "title": "Ce que nous collectons",
+          "blocks": [
+            "Uniquement ce qu’exige le fonctionnement du produit :",
+            [
+              "Compte : votre adresse e-mail, votre nom si vous l’indiquez, et votre mot de passe. Le mot de passe n’est conservé que sous forme de hachage à sens unique ; nous ne pouvons pas le lire.",
+              "Espace de travail : l’adresse du site web que vous nous indiquez, ce que nous lisons sur les pages publiques de ce site, et ce que Contivo construit à partir de là : mémoire de marque, concurrents, mots-clés, stratégie, brouillons et contenus publiés.",
+              "Comptes connectés : lorsque vous connectez LinkedIn ou X, un jeton d’accès qui permet à Contivo de publier en votre nom. Il est conservé chiffré.",
+              "Votre propre site : si vous le connectez via la Site API, la clé qui permet à Contivo d’y publier.",
+              "Journaux d’utilisation : quelles actions d’IA ont été exécutées et quand, ainsi qu’un journal de l’activité de l’espace de travail, pour pouvoir vous montrer ce qui s’est passé et maîtriser les coûts.",
+              "Rapports d’erreur : lorsque quelque chose ne fonctionne pas, un rapport technique de la panne. Il est configuré pour ne pas inclure vos renseignements personnels."
+            ],
+            "La facturation n’est pas encore en place. Lorsqu’elle le sera, les paiements passeront par Stripe, et votre numéro de carte sera transmis à Stripe, jamais à nous."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "Comment nous les utilisons",
+          "blocks": [
+            "Pour exécuter ce que vous avez demandé : analyser votre site et votre marché, rédiger des brouillons, les contrôler, et publier ce que vous validez ou ce que le pilote automatique est réglé pour envoyer.",
+            "Pour assurer le fonctionnement et la sécurité du service : corriger les erreurs, empêcher les abus, appliquer les limites d’utilisation.",
+            "Pour vous écrire au sujet de votre compte : avis de sécurité, modifications des présentes conditions, facturation lorsqu’elle existera. Aucun e-mail marketing, sauf si vous le demandez.",
+            "Nous ne vendons pas vos données, ne les louons pas, ne les utilisons pas à des fins publicitaires et n’entraînons pas nos propres modèles avec elles."
+          ]
+        },
+        {
+          "id": "providers",
+          "title": "Qui d’autre les traite",
+          "blocks": [
+            "Contivo fonctionne sur l’infrastructure d’autres entreprises. Chacune ne reçoit que ce dont sa partie du travail a besoin :",
+            [
+              "OpenAI et Google (Gemini) : le contenu de votre site, votre mémoire de marque et vos instructions, pour analyser, planifier et rédiger. Ce qu’ils font des données transmises par API est régi par leurs conditions d’utilisation de l’API.",
+              "DataForSEO : des mots-clés et des noms de domaine, pour obtenir les volumes de recherche et les pages de résultats. Aucun renseignement personnel.",
+              "LinkedIn et X : les publications que vous publiez, et uniquement une fois le compte connecté.",
+              "Vercel, Railway et Neon : l’hébergement et la base de données, où tout ce qui précède est stocké.",
+              "Sentry : les rapports d’erreur.",
+              "Stripe : les paiements, une fois la facturation en place."
+            ],
+            "Certains de ces fournisseurs stockent ou traitent des données hors du Canada, notamment aux États-Unis. Les données qui y sont conservées peuvent être accessibles aux autorités de ce pays en vertu de ses lois."
+          ]
+        },
+        {
+          "id": "cookies",
+          "title": "Cookies",
+          "blocks": [
+            "Contivo dépose trois cookies, tous nécessaires au fonctionnement du site :",
+            [
+              "auth-token : vous garde connecté. Il dure sept jours et ne peut pas être lu par les scripts de la page.",
+              "NEXT_LOCALE : mémorise la langue que vous avez choisie.",
+              "tz : votre fuseau horaire, pour que les publications programmées partent à l’heure voulue."
+            ],
+            "Aucun cookie publicitaire, aucun cookie de mesure d’audience, aucun traceur tiers. C’est pourquoi il n’y a pas de bandeau de cookies."
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "Combien de temps nous les conservons",
+          "blocks": [
+            "Aussi longtemps que votre compte existe. Demandez-nous de le supprimer et nous supprimons votre compte, vos espaces de travail, vos contenus et les jetons de vos comptes connectés dans un délai de 30 jours.",
+            "Deux exceptions. Les données de paiement que la loi nous oblige à conserver sont gardées aussi longtemps que la loi l’exige. Et les publications déjà en ligne sur LinkedIn, X ou votre propre site y restent : nous pouvons les retirer de Contivo, mais leur suppression sur ces plateformes se fait sur ces plateformes."
+          ]
+        },
+        {
+          "id": "rights",
+          "title": "Vos droits",
+          "blocks": [
+            "Vous pouvez demander à consulter les renseignements personnels que nous détenons sur vous, à les faire corriger, à en recevoir une copie ou à les faire supprimer. Écrivez à {email}. Nous répondons dans un délai de 30 jours.",
+            "Vous pouvez déconnecter LinkedIn ou X à tout moment depuis la page Connexions. Contivo cesse immédiatement de publier et supprime le jeton.",
+            "Si la façon dont nous traitons une plainte ne vous satisfait pas, vous pouvez vous adresser au Commissariat à la protection de la vie privée du Canada."
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Sécurité",
+          "blocks": [
+            "Les mots de passe sont hachés, les jetons des comptes connectés sont chiffrés, et tout transite en HTTPS. L’accès aux données de production est limité aux personnes qui exploitent le service.",
+            "Aucun système n’est parfaitement sûr. Si une atteinte expose vos renseignements à un risque réel, nous vous en informons, ainsi que le Commissaire à la protection de la vie privée, comme la loi l’exige."
+          ]
+        },
+        {
+          "id": "children",
+          "title": "Enfants",
+          "blocks": [
+            "Contivo est un outil destiné aux entreprises et ne s’adresse pas aux personnes de moins de 16 ans. Nous ne collectons pas sciemment de renseignements auprès d’enfants."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Modifications de cette page",
+          "blocks": [
+            "Lorsque cette page change, la date en haut de page change aussi. Si une modification touche ce que nous collectons ou qui le reçoit, nous écrivons aux titulaires de compte avant son entrée en vigueur."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "meta": {
+        "title": "Conditions d’utilisation — Contivo",
+        "description": "L’accord entre vous et Contivo : accès anticipé, votre contenu, les textes produits par l’IA, les comptes connectés, le paiement et le remboursement sous 14 jours."
+      },
+      "eyebrow": "Conditions",
+      "headline": "Les règles, en mots <accent>simples</accent>.",
+      "intro": "Les présentes conditions constituent l’accord entre vous et {entity}, qui exploite Contivo. En créant un compte, vous les acceptez. Elles sont écrites pour être lues : lisez-les.",
+      "summary": [
+        "Ce que vous apportez et ce que Contivo rédige pour vous vous appartiennent, l’un comme l’autre.",
+        "L’IA peut se tromper. Le contrôle qualité intercepte beaucoup d’erreurs, mais vous êtes responsable de ce qui est publié sous votre nom, y compris ce que publie le pilote automatique.",
+        "Contivo est en accès anticipé et gratuit pour l’instant. Lorsque la facturation commencera, vous pourrez résilier à tout moment.",
+        "Dans les 14 jours suivant un paiement, il vous suffit de le demander pour être remboursé intégralement. Sans questions."
+      ],
+      "sections": [
+        {
+          "id": "agreement",
+          "title": "L’accord",
+          "blocks": [
+            "Les présentes conditions constituent un accord entre vous et {entity}, dont le siège est en Ontario, au Canada. Si vous utilisez Contivo pour le compte d’une entreprise, vous les acceptez au nom de celle-ci et confirmez y être autorisé.",
+            "La page Confidentialité fait partie du présent accord. Elle explique ce que nous faisons de vos données."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Accès anticipé",
+          "blocks": [
+            "Contivo est en accès anticipé. Les fonctionnalités vont évoluer, certaines seront ajoutées et d’autres retirées, et il y aura des interruptions de service. Pour l’instant, nous ne prenons aucun engagement de disponibilité.",
+            "Tant que la facturation n’est pas en place, l’utilisation de Contivo est gratuite. Avant de commencer à facturer, nous vous indiquerons ce que cela coûte, et rien ne sera facturé sans votre accord."
+          ]
+        },
+        {
+          "id": "account",
+          "title": "Votre compte",
+          "blocks": [
+            "Vous devez avoir au moins 16 ans, fournir une adresse e-mail réelle et garder votre mot de passe pour vous. Tout ce qui se passe sur votre compte relève de votre responsabilité : si vous pensez que quelqu’un d’autre y a accès, prévenez-nous immédiatement."
+          ]
+        },
+        {
+          "id": "content",
+          "title": "Votre contenu",
+          "blocks": [
+            "Tout ce que vous apportez reste à vous : votre site, vos textes, votre marque. Ce que Contivo rédige pour vous vous appartient également, et vous pouvez l’utiliser comme bon vous semble.",
+            "Pour faire fonctionner le service, vous nous autorisez à stocker et à traiter ce contenu et à l’envoyer aux fournisseurs nommés sur la page Confidentialité. Cette autorisation couvre le fonctionnement de Contivo pour votre compte et prend fin lorsque votre contenu est supprimé.",
+            "Vous confirmez détenir les droits sur ce que vous apportez, ainsi que le droit de publier sur chaque compte que vous connectez."
+          ]
+        },
+        {
+          "id": "ai-output",
+          "title": "Ce que l’IA rédige",
+          "blocks": [
+            "Contivo rédige à l’aide de modèles d’IA, et ceux-ci font des erreurs : un fait inexact, un chiffre inventé, une affirmation que votre entreprise ne peut pas étayer. Le contrôle qualité est là pour les intercepter, et il en intercepte beaucoup. Il ne les intercepte pas toutes.",
+            "Vous êtes responsable de ce qui est publié sous votre nom. Si vous activez le pilote automatique, vous demandez à Contivo de publier sans vous consulter à chaque fois, et la responsabilité de ces publications vous incombe également. Si une publication compte, lisez-la d’abord."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "Ce que vous ne pouvez pas faire",
+          "blocks": [
+            [
+              "Publier du spam, ou tout contenu illégal, trompeur ou portant atteinte aux droits d’autrui.",
+              "Vous faire passer pour quelqu’un d’autre, ou connecter un compte sur lequel vous n’avez aucun droit.",
+              "Utiliser Contivo pour surcharger ou attaquer un autre site web.",
+              "Contourner les limites d’utilisation, ou sonder et compromettre la sécurité du service.",
+              "Revendre Contivo à des tiers sans accord avec nous."
+            ],
+            "Si vous le faites, nous pouvons suspendre ou fermer votre compte. Lorsque c’est possible, nous vous avertissons d’abord."
+          ]
+        },
+        {
+          "id": "networks",
+          "title": "Réseaux connectés",
+          "blocks": [
+            "Lorsque vous connectez LinkedIn, X ou votre propre site, les règles propres à cette plateforme s’appliquent également. Ces plateformes peuvent modifier leurs API, restreindre l’accès ou déconnecter un compte, et dans ce cas la publication via Contivo peut s’interrompre. Cela échappe à notre contrôle, et nous n’en sommes pas responsables."
+          ]
+        },
+        {
+          "id": "payment",
+          "title": "Paiement et remboursements",
+          "blocks": [
+            "Lorsque la facturation sera en place, les prix applicables seront ceux affichés sur la page Tarifs au moment de votre abonnement. Les abonnements se renouvellent à chaque période jusqu’à leur résiliation. La résiliation empêche le renouvellement suivant, et votre formule reste active jusqu’à la fin de la période payée.",
+            "Dans les 14 jours suivant tout paiement, écrivez à {email} et nous remboursons ce paiement intégralement. Nous ne vous demanderons pas pourquoi.",
+            "Si nous modifions un prix, nous vous en informons au moins 30 jours avant qu’il ne s’applique à vous. Les taxes sont ajoutées lorsque la loi l’exige."
+          ]
+        },
+        {
+          "id": "ending",
+          "title": "Fin de l’accord",
+          "blocks": [
+            "Vous pouvez cesser d’utiliser Contivo et demander la suppression de votre compte à tout moment. Si vous souhaitez d’abord une copie de votre contenu, demandez-la et nous vous l’envoyons.",
+            "Nous pouvons fermer les comptes qui enfreignent les présentes conditions. Si nous devions un jour arrêter Contivo, nous vous préviendrions au moins 30 jours à l’avance pour que vous puissiez emporter votre contenu."
+          ]
+        },
+        {
+          "id": "liability",
+          "title": "Responsabilité",
+          "blocks": [
+            "Contivo est fourni en l’état. Dans toute la mesure permise par la loi, nous ne garantissons pas qu’il fonctionnera sans interruption ni erreur, ni qu’il produira un résultat commercial particulier.",
+            "Dans toute la mesure permise par la loi, notre responsabilité totale envers vous est limitée au plus élevé des deux montants suivants : ce que vous nous avez payé au cours des 12 mois précédant la réclamation, ou 100 dollars canadiens. Nous ne sommes pas responsables des pertes indirectes, telles que la perte de bénéfices ou de données. Rien dans les présentes ne limite les droits que la loi ne nous permet pas de limiter."
+          ]
+        },
+        {
+          "id": "law",
+          "title": "Droit applicable",
+          "blocks": [
+            "Les présentes conditions sont régies par les lois de l’Ontario et les lois fédérales du Canada qui s’y appliquent. Les litiges relèvent des tribunaux de l’Ontario."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Modifications",
+          "blocks": [
+            "Si nous modifions les présentes conditions, la date en haut de page change. Pour une modification importante, nous vous écrivons au moins 14 jours avant son entrée en vigueur. Si vous continuez à utiliser Contivo après cette date, vous acceptez les nouvelles conditions. Si vous ne les acceptez pas, vous pouvez fermer votre compte.",
+            "Les questions sur les présentes conditions sont à adresser à {email}."
+          ]
+        }
+      ]
+    },
+    "disclaimer": {
+      "meta": {
+        "title": "Avertissement — Contivo",
+        "description": "Ce que Contivo et ce site ne promettent pas : aucun conseil professionnel, une IA qui peut se tromper, des estimations qui restent des estimations, aucun résultat garanti, et des noms d’autres entreprises utilisés uniquement pour comparer."
+      },
+      "eyebrow": "Avertissement",
+      "headline": "Ce que nous ne promettons <accent>pas</accent>.",
+      "intro": "Cette page précise les limites de ce que promettent Contivo et ce site web. Elle complète les Conditions d’utilisation, qui constituent l’accord entre vous et {entity}. En cas de divergence entre les deux, les Conditions s’appliquent.",
+      "summary": [
+        "Rien sur ce site ne constitue un conseil juridique, financier ou professionnel d’une autre nature.",
+        "Contivo rédige à l’aide de l’IA. Elle peut se tromper, et ce qui est publié sous votre nom relève de votre responsabilité.",
+        "Les résultats sur les concurrents et les notes de positionnement sont des estimations tirées d’informations publiques, pas des données mesurées.",
+        "Aucun résultat en matière de positionnement, de trafic, de prospects ou de ventes n’est garanti.",
+        "Les noms d’autres entreprises n’apparaissent que pour comparer, avec des faits relevés sur leurs propres pages à la date indiquée."
+      ],
+      "sections": [
+        {
+          "id": "advice",
+          "title": "Pas de conseil professionnel",
+          "blocks": [
+            "Les articles, guides et comparaisons publiés sur ce site et sur le blog de Contivo sont des informations générales sur le marketing de contenu. Ils ne constituent pas un conseil juridique, fiscal, financier, en investissement ou professionnel d’une autre nature. Pour une décision qui dépend de votre situation personnelle, consultez un professionnel qualifié.",
+            "Ce que Contivo rédige pour votre entreprise est du contenu marketing. S’il aborde des sujets juridiques, financiers, de santé ou d’autres sujets réglementés, faites-le vérifier par une personne qualifiée avant sa publication."
+          ]
+        },
+        {
+          "id": "ai",
+          "title": "Textes produits par l’IA",
+          "blocks": [
+            "Contivo rédige à l’aide de modèles d’IA fournis par des tiers. Les modèles font des erreurs : un fait inexact, un détail dépassé, une affirmation que votre entreprise ne peut pas étayer. Le contrôle qualité est conçu pour rejeter les statistiques, études et histoires de clients inventées, mais il n’intercepte pas toutes les erreurs. Les textes produits par l’IA peuvent aussi ressembler de près à des textes existants : vérifiez donc que ce que vous publiez ne copie pas le travail de quelqu’un d’autre.",
+            "Par défaut, le pilote automatique publie sans vous demander : les publications qui passent le contrôle qualité partent avant que vous ne les ayez lues. Activez la validation si vous voulez voir chacune d’abord. Les Conditions d’utilisation en disent plus dans la section « Ce que l’IA rédige »."
+          ]
+        },
+        {
+          "id": "estimates",
+          "title": "Les estimations sont des estimations",
+          "blocks": [
+            "La recherche de concurrents, les graphiques de positionnement, les résultats sur les mots-clés et le rapport stratégique sont construits à partir d’informations publiques et de la lecture qu’en fait le modèle. Un concurrent marqué « vérifié » est une entreprise dont le site web répond, pas un rival confirmé. Une note de graphique est une estimation du modèle, affichée avec son raisonnement, pas une mesure.",
+            "Les volumes de recherche proviennent d’un fournisseur de données connecté. Lorsqu’aucun n’est disponible, Contivo n’affiche aucun chiffre plutôt qu’une estimation."
+          ]
+        },
+        {
+          "id": "results",
+          "title": "Aucun résultat garanti",
+          "blocks": [
+            "Contivo vous aide à publier régulièrement et de façon conforme à votre stratégie. Il ne garantit aucun positionnement, trafic, nombre d’abonnés, prospect, vente ou autre résultat commercial, et rien sur ce site ne doit être interprété comme une telle promesse."
+          ]
+        },
+        {
+          "id": "comparisons",
+          "title": "Comparaisons et noms d’autres entreprises",
+          "blocks": [
+            "La page de comparaison nomme d’autres produits pour décrire des catégories d’outils. Ces faits ont été relevés sur les pages publiques de chaque entreprise à la date qui y est indiquée. Ils ont pu changer depuis, et ces entreprises n’ont ni relu ni approuvé la comparaison. Consultez leurs sites avant de décider. La façon dont nous décrivons la place de Contivo, et ses lacunes, relève de notre propre point de vue, et non d’une affirmation factuelle sur ces produits.",
+            "Les noms de produits et les marques appartiennent à leurs propriétaires. Ils ne sont utilisés ici que pour identifier les produits comparés, et leur utilisation ne laisse entendre aucune affiliation avec Contivo ni aucune approbation de sa part."
+          ]
+        },
+        {
+          "id": "third-party",
+          "title": "Autres plateformes et liens",
+          "blocks": [
+            "Contivo publie via les plateformes d’autres entreprises, comme LinkedIn. Leurs règles, leur disponibilité et leur accès peuvent changer, et une publication peut échouer ou être retirée pour des raisons indépendantes de notre volonté.",
+            "Les liens vers d’autres sites web sont fournis pour votre commodité. Nous ne contrôlons pas ces sites et ne sommes pas responsables de leur contenu.",
+            "Contivo n’est affilié ni à LinkedIn ni à aucune autre plateforme sur laquelle il publie, et n’est approuvé par aucune d’elles."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Accès anticipé",
+          "blocks": [
+            "Contivo est en accès anticipé. Les fonctionnalités, formules et prix décrits sur ce site peuvent changer, et tout ce qui est marqué « bientôt » n’est pas encore disponible. Le site décrit ce qui fonctionne à la date de sa dernière mise à jour."
+          ]
+        },
+        {
+          "id": "accuracy",
+          "title": "Exactitude de ce site",
+          "blocks": [
+            "Nous nous efforçons de garder ce site exact et à jour, mais il peut contenir des erreurs ou être dépassé.",
+            "Si une traduction de cette page diffère de la version anglaise, c’est la version anglaise qui s’applique."
+          ]
+        },
+        {
+          "id": "questions",
+          "title": "Questions",
+          "blocks": [
+            "Si quelque chose n’est pas clair ici, ou si vous pensez qu’une information sur ce site est erronée, écrivez à {email}."
+          ]
+        }
+      ]
+    }
+  }
+}

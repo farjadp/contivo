@@ -1,0 +1,139 @@
+{
+  "company": {
+    "contact": {
+      "meta": {
+        "title": "Contact — Contivo",
+        "description": "Écrivez à la personne qui construit Contivo. Questions, bugs, demandes liées à vos données et demandes d’agences."
+      },
+      "eyebrow": "Contact",
+      "headline": "Écrivez à une <accent>personne</accent>.",
+      "intro": "Pas de file de tickets, pas de chatbot. Les messages envoyés ici sont lus par la personne qui construit Contivo, et c’est elle aussi qui répond.",
+      "addressLabel": "L’adresse",
+      "copy": "Copier",
+      "copied": "Adresse copiée",
+      "selected": "Sélectionnée. Appuyez sur Ctrl+C (⌘C sur Mac) pour copier.",
+      "write": "Écrire un e-mail",
+      "facts": {
+        "who": {
+          "label": "Qui le lit",
+          "value": "L’un des fondateurs, pas une équipe de support"
+        },
+        "where": {
+          "label": "Où",
+          "value": "Ontario, Canada. Heure de l’Est."
+        },
+        "how": {
+          "label": "Langue",
+          "value": "Anglais ou persan, comme vous préférez"
+        }
+      },
+      "topicsTitle": "Économisez un aller-retour",
+      "topicsIntro": "Choisissez le sujet de votre message. Votre messagerie ouvre un brouillon avec l’objet déjà rempli et quelques questions qui vous permettent d’obtenir une réponse utile du premier coup.",
+      "draftHint": "Objet :",
+      "topics": {
+        "question": {
+          "title": "Une question avant de commencer",
+          "summary": "Savoir si Contivo convient à votre entreprise, à votre langue ou à vos canaux.",
+          "subject": "Contivo : une question avant de commencer",
+          "body": "Bonjour,\n\nMon site web : \nCe que j’aimerais que Contivo fasse : \nMa question : \n\nMerci"
+        },
+        "broken": {
+          "title": "Quelque chose ne fonctionne pas",
+          "summary": "Une exécution qui a échoué, une publication jamais partie, une page qui affiche une erreur.",
+          "subject": "Contivo : quelque chose ne fonctionne pas",
+          "body": "Bonjour,\n\nCe que j’ai fait : \nCe à quoi je m’attendais : \nCe qui s’est passé à la place : \nL’adresse (URL) de la page où c’est arrivé : \nÀ peu près quand : \n\nUne capture d’écran aide beaucoup, si vous en avez une."
+        },
+        "privacy": {
+          "title": "Vos données",
+          "summary": "Une copie de ce que nous détenons, une correction ou la suppression de votre compte.",
+          "subject": "Contivo : demande relative à mes données",
+          "body": "Bonjour,\n\nL’adresse e-mail de mon compte : \nCe que je demande (une copie / une correction / une suppression) : \n\nMerci"
+        },
+        "agency": {
+          "title": "Agences et partenariats",
+          "summary": "Utiliser Contivo pour plusieurs clients, ou construire quelque chose avec.",
+          "subject": "Contivo : agence ou partenariat",
+          "body": "Bonjour,\n\nQui nous sommes : \nCombien de marques ou de clients : \nCe que nous avons en tête : \n\nMerci"
+        }
+      },
+      "before": "Beaucoup de réponses sont déjà écrites : ce que deviennent vos données figure sur la <privacy>page Confidentialité</privacy>, et ce que cela coûte sur la page <pricing>Tarifs</pricing>."
+    },
+    "about": {
+      "meta": {
+        "title": "À propos — Contivo",
+        "description": "Qui construit Contivo, les règles sur lesquelles il repose, et où il en est vraiment aujourd’hui."
+      },
+      "eyebrow": "À propos",
+      "headline": "Utilisé d’abord sur ses <accent>propres</accent> sites.",
+      "intro": "Contivo est construit par quatre fondateurs et exploité par {entity}, en Ontario, au Canada. Il répond à un problème tout simple : une petite entreprise sait qu’elle devrait publier régulièrement et surveiller son marché, et personne n’a le temps de bien le faire.",
+      "principlesTitle": "Les règles sur lesquelles il repose",
+      "principlesIntro": "Chacune est une décision déjà intégrée au produit, pas une promesse. La date indique quand elle a été mise en place.",
+      "principles": [
+        {
+          "title": "Refuser plutôt qu’inventer",
+          "body": "En août 2026, le rédacteur a produit une étude de cas client qui n’avait jamais eu lieu, et le relecteur IA lui a donné neuf sur dix. Depuis, un brouillon qui invente un cas, un chiffre ou une citation ne passe pas le contrôle qualité.",
+          "date": "2026-08-18"
+        },
+        {
+          "title": "N’afficher aucun chiffre non mesuré",
+          "body": "Quand le fournisseur de données de recherche n’est pas connecté, Contivo n’affiche plus aucun volume de recherche, au lieu d’un chiffre plausible inventé.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Ne vendre que ce qui fonctionne",
+          "body": "Ce site listait autrefois des réseaux sur lesquels Contivo ne peut pas encore publier. Ils ont été retirés de la page le jour où on l’a remarqué.",
+          "date": "2026-09-27"
+        },
+        {
+          "title": "Le persan est rédigé, pas traduit",
+          "body": "Un espace de travail en persan reçoit des articles rédigés en persan dès le départ, et non des articles anglais entourés d’un menu en persan.",
+          "date": "2026-09-23"
+        }
+      ],
+      "since": "Dans le produit depuis le {date}",
+      "timelineTitle": "Comment on en est arrivé là",
+      "timeline": [
+        {
+          "date": "2026-03-12",
+          "title": "Premier commit",
+          "body": "Un espace de travail, une connexion à LinkedIn et X, et un planificateur."
+        },
+        {
+          "date": "2026-04-26",
+          "title": "Le rapport stratégique",
+          "body": "Contivo commence à lire un site et ses concurrents, et à rédiger ce qu’il y trouve."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Le pilote automatique et le contrôle qualité",
+          "body": "Il publie selon un calendrier, et chaque brouillon doit passer une relecture avant de partir."
+        },
+        {
+          "date": "2026-08-16",
+          "title": "Votre propre site web",
+          "body": "En plus des réseaux sociaux, Contivo peut publier des articles directement sur votre site."
+        },
+        {
+          "date": "2026-09-23",
+          "title": "Le persan",
+          "body": "Tout le produit, et la rédaction elle-même, en persan."
+        },
+        {
+          "date": "2026-09-27",
+          "title": "Accès anticipé",
+          "body": "Là où il en est aujourd’hui : ouvert à l’essai, avec ses premiers utilisateurs payants."
+        }
+      ],
+      "standsTitle": "Où il en est",
+      "stands": [
+        "Accès anticipé. La facturation des nouveaux comptes n’a pas commencé : l’inscription est donc gratuite.",
+        "23 utilisateurs en accès anticipé l’ont payé, $49 pour trois mois. Aucun n’est nommé ici tant qu’il ne nous y a pas autorisés.",
+        "Il arrive que des choses cassent. Dans ce cas, vous pouvez écrire à la personne qui les répare."
+      ],
+      "ctaTitle": "Voyez s’il convient à votre site.",
+      "ctaStart": "Commencer gratuitement",
+      "ctaContact": "Ou écrivez-nous",
+      "teamLink": "Rencontrer les quatre fondateurs"
+    }
+  }
+}

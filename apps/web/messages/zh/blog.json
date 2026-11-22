@@ -1,0 +1,31 @@
+{
+  "blog": {
+    "meta": {
+      "title": "博客：内容营销、SEO 与 AI 搜索",
+      "description": "小企业如何在 Google 上被找到、在 AI 回答中被引用。由打造 Contivo 的团队撰写。",
+      "feedTitle": "Contivo 博客"
+    },
+    "eyebrow": "博客",
+    "title": "在 Google 和 AI 回答中被找到",
+    "intro": "写给没有内容团队的企业的内容营销、SEO 和 AI 搜索实用笔记，作者是打造 Contivo 的团队。",
+    "empty": {
+      "title": "还没有文章",
+      "body": "第一批文章正在撰写中。在此之前，你可以先看看 Contivo 是如何工作的。",
+      "cta": "看看工作原理"
+    },
+    "readMore": "阅读全文",
+    "minutes": "阅读约 {count, number} 分钟",
+    "published": "发布于 {date}",
+    "updated": "更新于 {date}",
+    "by": "作者：{author}",
+    "back": "全部文章",
+    "crumbs": {
+      "home": "首页",
+      "blog": "博客"
+    },
+    "rss": "RSS 订阅",
+    "ctaTitle": "想为你的业务做出这样的内容？",
+    "ctaBody": "Contivo 研究你的竞争对手，基于你自己的品牌制定计划，并撰写内容。",
+    "ctaStart": "免费开始"
+  }
+}

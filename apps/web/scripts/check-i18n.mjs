@@ -26,7 +26,20 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const LOCALES = ['en', 'fa', 'it', 'es', 'he'];
+/**
+ * Locales and the site-only rules, read from src/i18n/routing.ts so this
+ * script cannot drift from what the app actually serves. A site-only locale
+ * (fr, ar, zh) ships only the site namespaces; the app's come from English.
+ */
+function routingList(name) {
+  const src = readFileSync(join(root, 'src/i18n/routing.ts'), 'utf8');
+  const block = src.match(new RegExp(`${name}[^=]*=\\s*(?:new Set(?:<[^>]+>)?\\()?\\[([\\s\\S]*?)\\]`));
+  if (!block) throw new Error(`Could not find ${name} in src/i18n/routing.ts`);
+  return [...block[1].matchAll(/'([^']+)'/g)].map((m) => m[1]);
+}
+const LOCALES = routingList('export const locales');
+const SITE_ONLY = new Set(routingList('SITE_ONLY_LOCALES'));
+const SITE_NAMESPACES = new Set(routingList('SITE_NAMESPACES'));
 
 /** The namespace list, read from the source of truth rather than duplicated. */
 function namespaces() {
@@ -59,8 +72,10 @@ const problems = [];
 
 for (const ns of namespaces()) {
   const loaded = {};
+  // Site-only locales only carry the site namespaces.
+  const nsLocales = LOCALES.filter((l) => !SITE_ONLY.has(l) || SITE_NAMESPACES.has(ns));
 
-  for (const locale of LOCALES) {
+  for (const locale of nsLocales) {
     const file = join(root, 'messages', locale, `${ns}.json`);
     const rel = `messages/${locale}/${ns}.json`;
 
@@ -80,10 +95,10 @@ for (const ns of namespaces()) {
     }
   }
 
-  if (Object.keys(loaded).length !== LOCALES.length) continue;
+  if (Object.keys(loaded).length !== nsLocales.length) continue;
 
   // English is the reference; every other locale is compared against it.
-  const [a, ...others] = LOCALES;
+  const [a, ...others] = nsLocales;
   for (const b of others) {
     for (const key of loaded[a].keys()) {
       if (!loaded[b].has(key)) problems.push(`${ns}: '${key}' is in ${a} but missing from ${b}`);
@@ -113,4 +128,7 @@ if (problems.length) {
   process.exit(1);
 }
 
-console.log(`i18n check passed: ${namespaces().length} namespaces, ${LOCALES.join(' / ')} in sync.`);
+console.log(
+  `i18n check passed: ${namespaces().length} namespaces, ${LOCALES.filter((l) => !SITE_ONLY.has(l)).join(' / ')} in sync; ` +
+    `site-only ${[...SITE_ONLY].join(' / ')} on ${SITE_NAMESPACES.size} site namespaces.`,
+);

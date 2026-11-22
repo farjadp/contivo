@@ -1,0 +1,100 @@
+{
+  "why": {
+    "meta": {
+      "title": "Pourquoi Contivo, pour une petite entreprise sans équipe de contenu",
+      "description": "Pourquoi une petite entreprise utiliserait Contivo plutôt qu’une agence, un rédacteur indépendant, ChatGPT ou un outil de programmation sociale, et pour qui il n’est pas encore fait."
+    },
+    "eyebrow": "Pourquoi Contivo",
+    "headline": "Vous savez que vous devriez publier. Personne n’a le <accent>temps</accent>.",
+    "intro": "La plupart des petites entreprises savent qu’un contenu régulier et un œil sur le marché les aideraient. Le plus dur, ce n’est pas la rédaction. C’est la recherche avant, la vérification après, et tout recommencer chaque semaine.",
+    "usualTitle": "Les solutions habituelles, et ce que chacune vous laisse sur les bras",
+    "leftWithYou": "Reste sur votre bureau :",
+    "usual": {
+      "agency": {
+        "title": "Engager une agence",
+        "good": "Des gens dont c’est le métier, avec un forfait mensuel à la hauteur.",
+        "left": "Leur apprendre votre marché, valider chaque contenu, et payer le forfait même quand le travail ralentit."
+      },
+      "freelancer": {
+        "title": "Un rédacteur indépendant",
+        "good": "Une bonne plume, payée à la pièce.",
+        "left": "La recherche, le brief, le plan de la semaine suivante et la publication."
+      },
+      "assistant": {
+        "title": "ChatGPT ou Claude, à la main",
+        "good": "Des brouillons rapides pour une vingtaine de dollars par mois.",
+        "left": "Trouver les concurrents, garder le contexte, vérifier chaque fait, et tout recopier sur LinkedIn et sur votre site."
+      },
+      "scheduler": {
+        "title": "Un outil de programmation sociale",
+        "good": "Les publications partent à l’heure, sur de nombreux réseaux.",
+        "left": "Décider quoi dire et l’écrire. Il publie ce que vous lui donnez."
+      }
+    },
+    "compareLink": "Voir la comparaison complète, y compris là où Contivo est en retard",
+    "insteadTitle": "Ce que Contivo fait à la place",
+    "instead": {
+      "research": {
+        "title": "La recherche avant le premier mot",
+        "body": "Il lit votre site, trouve les concurrents de votre taille et situe votre position. Les idées restent verrouillées tant que ce travail n’existe pas."
+      },
+      "refuse": {
+        "title": "Il refuse d’inventer",
+        "body": "Un juge bloque les statistiques, études et histoires de clients inventées. Si aucun modèle ne peut relire une publication, elle ne part pas."
+      },
+      "runs": {
+        "title": "Il continue de tourner sans vous",
+        "body": "Fixez un rythme et un créneau de publication, et il garde les sept jours suivants remplis sur LinkedIn et sur votre propre site. Relisez tout vous-même, ou laissez le contrôle qualité s’en charger."
+      },
+      "persian": {
+        "title": "Le persan, rédigé en persan",
+        "body": "Une marque persanophone reçoit du contenu rédigé en persan dès le départ, et non de l’anglais recouvert d’une traduction."
+      }
+    },
+    "forTitle": "Il est fait pour vous si",
+    "for": {
+      "noTeam": {
+        "title": "Vous avez un site web et pas d’équipe de contenu",
+        "body": "Une seule adresse lui suffit pour commencer."
+      },
+      "founder": {
+        "title": "Vous voulez une présence régulière sur LinkedIn",
+        "body": "Les publications partent sur votre profil personnel, dans les heures que vous choisissez."
+      },
+      "persian": {
+        "title": "Vous vendez à des persanophones",
+        "body": "Du contenu en persan qui ne sonne pas comme une traduction."
+      },
+      "agency": {
+        "title": "Vous gérez le contenu de plusieurs clients",
+        "body": "La formule Agency accueille cinq marques, chacune avec sa propre mémoire, ses concurrents et ses canaux."
+      }
+    },
+    "notForTitle": "Il n’est pas encore fait pour vous si",
+    "notFor": {
+      "channels": {
+        "title": "Vous avez besoin d’Instagram, de TikTok ou de Facebook",
+        "body": "Aujourd’hui, il publie sur les profils LinkedIn personnels et sur votre propre site web."
+      },
+      "languages": {
+        "title": "Vous publiez dans une autre langue",
+        "body": "Le contenu est rédigé en anglais ou en persan."
+      },
+      "everyWord": {
+        "title": "Vous voulez écrire chaque mot vous-même",
+        "body": "Vous pouvez tout modifier, mais il est conçu pour faire le travail, pas pour servir de traitement de texte."
+      },
+      "analytics": {
+        "title": "Vous avez besoin de statistiques de performance",
+        "body": "Il ne montre pas encore les performances d’une publication."
+      }
+    },
+    "behindTitle": "Qui est derrière",
+    "behindBody": "Contivo est construit par quatre fondateurs et a d’abord tourné sur ses propres sites. Depuis, vingt-trois utilisateurs en accès anticipé l’ont payé. La plupart des règles qu’il suit, du refus d’inventer à l’interdiction d’afficher un chiffre non mesuré, viennent d’une erreur qu’il a commise une fois, avant d’être conçu pour ne jamais la répéter.",
+    "aboutLink": "Lire les règles, et comment il en est arrivé là",
+    "closeHeadline": "Donnez-lui votre site web et voyez ce qu’il trouve.",
+    "closeCta": "Commencer gratuitement en accès anticipé",
+    "closeProduct": "Comment ça marche, du début à la fin",
+    "teamLink": "Rencontrer les quatre fondateurs"
+  }
+}

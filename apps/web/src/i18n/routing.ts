@@ -13,14 +13,61 @@ import { defineRouting } from 'next-intl/routing';
  * cut of the face the marketing site already uses. All three write in English:
  * the content language (see lib/content-language.ts) is a Prisma enum with EN
  * and FA only, so they are UI languages for now.
+ *
+ * `fr`, `ar` and `zh` are SITE-ONLY locales (22 Nov 2026): the public site and
+ * sign-up/sign-in are translated, the signed-in app is not, and proxy.ts sends
+ * their app routes to the English app. Every page in them says content is
+ * written in English or Persian.
  */
-export const locales = ['en', 'fa', 'it', 'es', 'he'] as const;
+export const locales = ['en', 'fa', 'it', 'es', 'he', 'fr', 'ar', 'zh'] as const;
 export type Locale = (typeof locales)[number];
+
+/** Locales whose signed-in app is not translated. See proxy.ts and request.ts. */
+export const SITE_ONLY_LOCALES: ReadonlySet<Locale> = new Set<Locale>(['fr', 'ar', 'zh']);
+
+export function isSiteOnly(locale: string): boolean {
+  return SITE_ONLY_LOCALES.has(locale as Locale);
+}
+
+/**
+ * Message namespaces the public site, sign-up and sign-in read. A site-only
+ * locale ships these; every other namespace is loaded from English.
+ */
+export const SITE_NAMESPACES: ReadonlySet<string> = new Set([
+  'marketing',
+  'pricing',
+  'legal',
+  'company',
+  'features',
+  'compare',
+  'why',
+  'product',
+  'roadmap',
+  'team',
+  'blog',
+  'auth',
+  'shell',
+  'errors',
+]);
+
+/**
+ * First path segment of every signed-in route. A site-only locale on one of
+ * these is redirected to the English app.
+ */
+export const APP_SEGMENTS: ReadonlySet<string> = new Set([
+  'dashboard',
+  'onboarding',
+  'growth',
+  'connections',
+  'instant',
+  'settings',
+  'admin',
+]);
 
 export const defaultLocale: Locale = 'en';
 
 /** Right-to-left locales. Drives `dir`, the font stack and logical-CSS mirroring. */
-const RTL_LOCALES = new Set<Locale>(['fa', 'he']);
+const RTL_LOCALES = new Set<Locale>(['fa', 'he', 'ar']);
 
 export function isRtl(locale: string): boolean {
   return RTL_LOCALES.has(locale as Locale);

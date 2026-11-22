@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "title": "Contivo — 让营销自动运转",
+    "description": "Contivo 把你的网站变成品牌记忆、竞争情报和一套自动发布流程：按你设定的节奏，替你写作、审核、发布。"
+  },
+  "nav": {
+    "refusal": "拒绝机制",
+    "intelligence": "情报",
+    "autopilot": "自动驾驶",
+    "pricing": "价格",
+    "signIn": "登录",
+    "startFree": "免费开始",
+    "features": "功能",
+    "siteOnlyNotice": "本网站已翻译成中文，但 Contivo 只用英语或波斯语为你撰写内容。"
+  },
+  "localeSwitcher": {
+    "label": "语言",
+    "en": "English",
+    "fa": "فارسی",
+    "it": "Italiano",
+    "fr": "Français",
+    "ar": "العربية",
+    "he": "עברית",
+    "zh": "中文",
+    "es": "Español"
+  },
+  "intake": {
+    "label": "从它唯一需要的东西开始",
+    "placeholder": "your-company.com",
+    "submit": "读取我的网站",
+    "submitting": "正在打开…",
+    "errorEmpty": "请输入你想让它读取的网站地址。",
+    "errorInvalid": "这看起来不像一个网站地址。",
+    "hint": "下一步是简短的注册，地址会一起带过去。"
+  },
+  "home": {
+    "actOne": {
+      "headline": "把网站交给它，<accent>剩下</accent>的时间留给你自己。",
+      "body": "Contivo 先读取你的网站，整理成品牌记忆，再找出你真正的竞争对手，算出他们没有覆盖的关键词。做完这些它才开始写，而且只发布能通过质量关卡的内容——这道关卡的设计初衷就是把稿子挡下来。",
+      "evidence": {
+        "readTime": "读取一个网站的时间",
+        "readTimeValue": "≈ 20 秒",
+        "readCost": "这次读取的 AI 成本",
+        "readCostValue": "$0.03",
+        "competitors": "识别出的竞争对手",
+        "competitorsValue": "9 个中保留 5 个",
+        "charts": "生成的定位图",
+        "chartsValue": "5",
+        "note": "数据来自撰写本页时用一个公开网站搭建的示例工作区，并非客户账户。"
+      }
+    },
+    "reel": {
+      "headline": "完整流程，22 秒看完。",
+      "body": "一个网址如何变成品牌记忆、市场地图、一次拒绝，以及一周自动发布的帖子。",
+      "videoAlt": "Contivo 动画演示：一个网站地址被读取成品牌记忆，竞争对手被标注在定位图上，情报未就绪前创意功能保持锁定，一篇草稿通过质量关卡，一周的排期被帖子填满。",
+      "caption": "这是动画讲解，不是录屏——下方的截图才是真实产品。无声音。",
+      "reducedNote": "你的系统设置了减少动态效果，因此已暂停。",
+      "play": "播放",
+      "pause": "暂停"
+    },
+    "intelligence": {
+      "headline": "大多数工具从一个空白提示词开始，<accent>所以</accent>写出来的东西也像一个提示词。",
+      "brandTitle": "把你的品牌复述给你听",
+      "brandBody": "粘贴一个网址。Contivo 会提取业务概述、价值主张、网站实际面向的受众和行文语气，然后让你逐项修改。之后的每一篇草稿都基于这些信息，而不是基于你的提示词。",
+      "brandAlt": "Contivo 的品牌记忆界面，显示提取出的业务概述、价值主张、目标受众画像和品牌语气标签。",
+      "marketTitle": "市场全景，你也在其中",
+      "marketBody": "它会找出与你规模相当的竞争对手，确认它们真实存在，并让你剔除那些其实不算你对手的公司。留下来的会在为你的市场定制的定位图上打分——你自己也被标在图上，而不是用一段文字描述。",
+      "marketAlt": "Contivo 的竞争格局图，按受众规模和产品成熟度把客户品牌与发现的竞争对手标注在一起。"
+    },
+    "actTwo": {
+      "headline": "它<accent>暂时</accent>不会写。",
+      "body": "在底层情报就绪之前，创意功能一直锁着。你说什么都绕不过去，模型也绕不过去。产出值得一读，靠的就是这一点。",
+      "chainAlt": "一个真实工作区的 Contivo 设置链：品牌记忆、市场地图、竞争对手关键词和一个发布渠道已完成；下一步是确定品牌的立场。",
+      "chainCaption": "真实产品里的真实流程。每一步都要等上一步跑完才会解锁。",
+      "checksTitle": "没有商量余地的检查",
+      "checks": {
+        "limits": "平台字数限制和你设定的字数范围",
+        "scaffolding": "残留的模板、占位符、“作为一个 AI……”",
+        "blocklist": "你的禁写话题清单，检查正文，不只看标题",
+        "duplicates": "与已发布内容高度相似的稿子"
+      },
+      "judgeTitle": "有否决权的评审",
+      "judge": {
+        "scores": "按 10 分制给品牌契合度、事实安全性和清晰度打分",
+        "strictest": "三项中事实安全性的门槛最严",
+        "vetoes": "否决编造的统计数据、点名的研究和客户轶事",
+        "held": "两家模型服务商都不可用？帖子会被暂扣，绝不会未经审核就发布。"
+      }
+    },
+    "actThree": {
+      "headline": "然后它开始写，并且<accent>发布</accent>。",
+      "body": "你设定发布频率、渠道，以及允许发布的时段。它会让接下来一周始终排满，把帖子分散在你的时段里，避免重复，队列快空时会自动补充。除非你想审批，否则不需要任何人审批。",
+      "cadence": "频率",
+      "cadenceValue": "每周 1–14 篇，始终提前排满 7 天",
+      "channels": "渠道",
+      "channelsValue": "LinkedIn · 你自己的网站",
+      "window": "时段",
+      "windowValue": "你选择的日期和当地时段",
+      "steering": "方向",
+      "steeringValue": "一个目标、要侧重的主题、绝不碰的话题",
+      "postAlt": "一个真实工作区的 Contivo 内容管道：它写的 LinkedIn 帖子，两篇已发布，一篇是带发布排期的草稿，每篇都标有目标字数。",
+      "postCaption": "一个真实工作区的内容管道，为本页截取。"
+    },
+    "channels": {
+      "headline": "社交平台走 OAuth，你自己的网站只需一个密钥。",
+      "body": "连接一次你的 LinkedIn 个人主页，Contivo 就会代你发帖。对于你自己的网站——不论用什么技术栈、托管在哪里——你会拿到一个 API 密钥，由你的网站来读取帖子。它从不往你的代码库里推送任何东西，也不安装任何插件。X 尚未开通；Instagram、Facebook 和 TikTok 都需要先通过各自平台的应用审核。",
+      "connect": "连接",
+      "connectBody": "LinkedIn 走一次 OAuth 授权，你的网站用一个密钥。",
+      "schedule": "排期",
+      "scheduleBody": "Contivo 在你允许的时段内挑选发布时间。",
+      "publish": "发布",
+      "publishBody": "调度器每分钟运行一次，发布到期的帖子。",
+      "record": "记录",
+      "recordBody": "每次运行都会逐步记录，包括它拒绝了什么。"
+    },
+    "close": {
+      "headline": "粘贴网址，然后回去<accent>工作</accent>。",
+      "body": "注册，把网址交给它，它会把你的网站读成品牌记忆和竞争地图。之后队列会自己填满，它唯一不做的，就是发布它自己都站不住脚的内容。",
+      "cta": "创建你的工作区",
+      "pricing": "查看价格"
+    },
+    "loop": {
+      "title": "循环",
+      "sub": "每周自动运行",
+      "position": "{n} / 06",
+      "tabsLabel": "循环阶段",
+      "stages": {
+        "know": {
+          "name": "了解",
+          "short": "品牌记忆",
+          "title": "把你的品牌复述给你听。",
+          "body": "业务概述、价值主张、受众和语气，都从你的网站提取——每一项你都可以修改。"
+        },
+        "watch": {
+          "name": "观察",
+          "short": "市场地图",
+          "title": "市场全景，你也在其中。",
+          "body": "与你规模相当、经确认真实存在的竞争对手，在为你的市场定制的定位图上打分，你也被标在其中。"
+        },
+        "think": {
+          "name": "思考",
+          "short": "01–02 完成前锁定",
+          "title": "它暂时不会写。",
+          "body": "底层情报就绪前，创意功能保持锁定。你和模型都跳不过这一步。"
+        },
+        "make": {
+          "name": "创作",
+          "short": "通过关卡的草稿",
+          "title": "然后它开始写。",
+          "body": "只保留能通过质量关卡的内容：先过硬性检查，再过一个有否决权的评审。"
+        },
+        "ship": {
+          "name": "发布",
+          "short": "你的渠道",
+          "title": "并且发布出去。",
+          "body": "每周 1–14 篇，在你允许的日期和时段内，发到 LinkedIn 或你自己的网站。"
+        },
+        "learn": {
+          "name": "复盘",
+          "short": "每次运行都有记录",
+          "title": "每次运行都有据可查。",
+          "body": "每次运行都会逐步记录，包括它拒绝了什么。"
+        }
+      }
+    },
+    "steps": {
+      "heading": "第一次读取做了什么 · ≈ 20 秒",
+      "read": "正在读取你的页面",
+      "memory": "正在写入品牌记忆",
+      "competitors": "正在寻找与你规模相当的竞争对手",
+      "charts": "正在为定位图打分"
+    },
+    "tryIt": {
+      "label": "试一试",
+      "button": "现在就让它写一篇",
+      "attempts": "{count, plural, =0 {还没按过} other {已按 # 次 · 仍然锁定}}",
+      "lines": {
+        "0": "按一下。其他工具一上来给你的就是这个按钮。",
+        "1": "已锁定。创意需要竞争对手关键词，而第 03 步还没运行。",
+        "2": "仍然锁定。再问一次也不会凭空生成底层情报。",
+        "3": "模型得到的回答和你一样。没有哪个提示词能打开它。",
+        "4": "完成 03——关键词——创意功能会自动解锁。"
+      },
+      "chain": {
+        "brand": "品牌记忆",
+        "market": "市场地图",
+        "keywords": "关键词",
+        "ideas": "创意",
+        "channel": "渠道",
+        "autopilot": "自动驾驶",
+        "done": "已完成",
+        "next": "下一步",
+        "locked": "已锁定"
+      }
+    },
+    "cadence": {
+      "label": "试试发布频率",
+      "value": "{count, plural, other {每周 # 篇}}",
+      "caption": "分散在你的时段里，同一个创意绝不会连着出现两次。"
+    },
+    "log": {
+      "title": "运行日志 · 示例",
+      "replay": "重播",
+      "rows": {
+        "r1": {
+          "kind": "计划",
+          "text": "本周你的时段内还有 3 个空位"
+        },
+        "r2": {
+          "kind": "草稿",
+          "text": "LinkedIn，来自你的一条故事线"
+        },
+        "r3": {
+          "kind": "已拒绝",
+          "text": "评审否决：引用了一项并不存在的研究"
+        },
+        "r4": {
+          "kind": "草稿",
+          "text": "去掉该说法后重写"
+        },
+        "r5": {
+          "kind": "通过",
+          "text": "品牌契合度、事实安全性和清晰度均高于门槛"
+        },
+        "r6": {
+          "kind": "已排期",
+          "text": "周四，在你的发布时段内"
+        }
+      }
+    },
+    "chapters": {
+      "thinkLabel": "思考——以及拒绝",
+      "makeShip": "创作 · 发布"
+    }
+  },
+  "footer": {
+    "blurb": "把你的网站读成品牌记忆和竞争地图，然后按你设定的节奏撰写、审核和发布。",
+    "provenance": "先在我们自己的网站上搭建和运行。此后已有 23 位早期用户付费使用；未经本人同意，这里不会公开任何人的名字。",
+    "productTitle": "产品",
+    "intelligence": "情报",
+    "qualityGate": "质量关卡",
+    "autopilot": "自动驾驶",
+    "pricing": "价格",
+    "publishesTitle": "发布到",
+    "ownSite": "你自己的网站",
+    "accountTitle": "账户",
+    "signIn": "登录",
+    "createWorkspace": "创建工作区",
+    "copyright": "© {year} Contivo",
+    "companyTitle": "公司",
+    "about": "关于",
+    "blog": "博客",
+    "contact": "联系",
+    "privacy": "隐私",
+    "terms": "条款",
+    "socialSoon": "X · Telegram · WordPress · Threads",
+    "soon": "即将推出",
+    "writeTo": "写信给真人",
+    "navLabel": "网站",
+    "features": "功能",
+    "compare": "对比",
+    "product": "工作原理",
+    "why": "为什么选 Contivo",
+    "team": "团队",
+    "roadmap": "路线图",
+    "disclaimer": "免责声明"
+  }
+}
