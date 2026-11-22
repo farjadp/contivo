@@ -1,17 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
-const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
-vi.mock('@/lib/ai-usage', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
-  recordAiUsage: recordAiUsageMock,
-}));
-
-vi.mock('@/lib/app-settings', () => ({
-  getGeminiCooldownSeconds: async () => 60,
-  getGeminiModel: async () => 'gemini-test',
-  getOpenAiFallbackModel: async () => 'gpt-test',
-}));
+// The provider chain itself is tested in lib/ai; here only what this module
+// asks for and what it does with the answer.
+const { runAiTaskMock } = vi.hoisted(() => ({ runAiTaskMock: vi.fn() }));
+vi.mock('@/lib/ai', () => ({ runAiTask: runAiTaskMock }));
 
 import { discoverCompetitorsWithGemini } from './gemini';
 
@@ -23,44 +15,43 @@ const competitor = {
   audienceGuess: 'Local families',
 };
 
-function respond(geminiStatus: number, openAiContent: string) {
-  return vi.fn(async (url: string) => {
-    if (url.includes('generativelanguage.googleapis.com')) {
-      return new Response('{"error":{"code":503}}', { status: geminiStatus });
-    }
-    return new Response(JSON.stringify({ choices: [{ message: { content: openAiContent } }] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  });
-}
+const failure = {
+  ok: false,
+  kind: 'all_unavailable',
+  attempts: [],
+  firstErrorClass: 'billing',
+  allRateLimited: false,
+};
 
-describe('discoverCompetitorsWithGemini when Gemini is unavailable', () => {
+describe('discoverCompetitorsWithGemini on the failover layer', () => {
   beforeEach(() => {
-    vi.stubEnv('GEMINI_API_KEY', 'test');
-    vi.stubEnv('OPENAI_API_KEY', 'test');
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    runAiTaskMock.mockReset();
     vi.spyOn(console, 'error').mockImplementation(() => {});
   });
-  afterEach(() => {
-    vi.unstubAllEnvs();
-    vi.unstubAllGlobals();
-    vi.restoreAllMocks();
+
+  it('asks for a {competitors: [...]} object under the legacy_competitors task and unwraps it', async () => {
+    runAiTaskMock.mockResolvedValue({ ok: true, provider: 'openai', model: 'gpt-test', text: '', json: { competitors: [competitor] } });
+
+    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' }, 'EN', { workspaceId: 'ws-1' })).resolves.toEqual([
+      competitor,
+    ]);
+
+    const [task, request, ctx] = runAiTaskMock.mock.calls[0];
+    expect(task).toBe('legacy_competitors');
+    expect(request.output.kind).toBe('json_schema');
+    expect(request.output.schema.required).toEqual(['competitors']);
+    expect(request.prompt).toContain('{"competitors": [...]}');
+    expect(ctx).toEqual({ workspaceId: 'ws-1' });
   });
 
-  it('unwraps the object OpenAI JSON mode returns', async () => {
-    vi.stubGlobal('fetch', respond(503, JSON.stringify({ competitors: [competitor] })));
-    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' })).resolves.toEqual([competitor]);
+  it('returns null, not an empty list, when the chain fails, so the caller can tell failure from "none"', async () => {
+    runAiTaskMock.mockResolvedValue(failure);
+    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' })).resolves.toBeNull();
+    expect(console.error).toHaveBeenCalledWith(expect.stringMatching(/discoverCompetitorsWithGemini.*legacy_competitors.*billing/));
   });
 
-  it('still accepts a bare array', async () => {
-    vi.stubGlobal('fetch', respond(503, JSON.stringify([competitor])));
-    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' })).resolves.toEqual([competitor]);
-  });
-
-  it('logs when OpenAI answered but the answer was unusable', async () => {
-    vi.stubGlobal('fetch', respond(503, JSON.stringify({ competitors: [] })));
-    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' })).resolves.toEqual([]);
-    expect(console.warn).toHaveBeenCalledWith(expect.stringMatching(/discoverCompetitorsWithGemini.*invalid/));
+  it('returns null when the answer holds no competitors', async () => {
+    runAiTaskMock.mockResolvedValue({ ok: true, provider: 'gemini', model: 'g', text: '', json: { competitors: [] } });
+    await expect(discoverCompetitorsWithGemini({ name: 'Camgara' })).resolves.toBeNull();
   });
 });

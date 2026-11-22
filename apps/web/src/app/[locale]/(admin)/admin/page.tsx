@@ -5,6 +5,7 @@ import { Link, getPathname } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth';
 import { AdminBarChart, AdminPieChart } from './charts';
 import { createAdminFormat } from './_components/AdminUi';
+import { AiProvidersCard } from './_components/AiProvidersCard';
 import { FinanceSection } from './_components/FinanceSection';
 import { getAdminFinance } from '@/lib/finance/ledger';
 import {
@@ -19,6 +20,7 @@ import {
 } from '@/app/actions/admin';
 import {
   type AdminSection,
+  getAdminAiProviders,
   getAdminAnalytics,
   getAdminContentItems,
   getAdminCreditLedger,
@@ -114,6 +116,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
   ]);
 
   const sectionData = await getSectionData(section, resolvedParams);
+  const aiProviders = section === 'integrations' ? await getAdminAiProviders() : null;
   const userOptions =
     section === 'users' || section === 'workspaces' || section === 'credits'
       ? await prisma.user.findMany({
@@ -227,7 +230,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         ) : null}
 
         {section === 'integrations' ? (
-          <IntegrationsSection integrations={integrations} />
+          <div className="space-y-8">
+            {aiProviders ? <AiProvidersCard data={aiProviders} /> : null}
+            <IntegrationsSection integrations={integrations} />
+          </div>
         ) : null}
       </div>
     </div>

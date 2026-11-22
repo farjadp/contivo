@@ -274,6 +274,32 @@ describe('getMatrixStatus', () => {
     expect(status.run?.errorKind).toBe('notEnoughEvidence');
   });
 
+  it.each([
+    ['AI_UNAVAILABLE: Matrix AI call chart_scores failed: all_unavailable (openai:billing:429)', 'aiUnavailable'],
+    // A billing 429 stored before the code existed is still an outage, not "wait".
+    ['Matrix AI call failed: 429 insufficient_quota', 'aiUnavailable'],
+    // Matrices have no rate-limit copy, so a genuine rate limit stays generic.
+    ['Matrix AI call chart_scores failed: all_unavailable (openai:rate_limit:429); rate limited by every provider', 'generic'],
+  ])('maps %s to the %s kind', async (error, kind) => {
+    withBlob(undefined);
+    runs(
+      {
+        id: 'r',
+        status: 'FAILED',
+        stage: null,
+        tokensUsed: 0,
+        error,
+        axisCandidates: null,
+        startedAt: new Date('2026-11-22T00:00:00Z'),
+        finishedAt: new Date('2026-11-22T00:01:00Z'),
+      },
+      null,
+    );
+    const status = await getMatrixStatus('ws-1');
+    if ('error' in status) throw new Error('unexpected');
+    expect(status.run?.errorKind).toBe(kind);
+  });
+
   it('is not stale when there is no DONE run', async () => {
     withBlob(undefined);
     runs(null, null);

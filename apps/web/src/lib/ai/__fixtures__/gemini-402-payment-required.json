@@ -1,0 +1,10 @@
+{
+  "source": "from docs, not recorded: https://aistudio.google.com/docs/api-errors (newer string-code shape; no example body published)",
+  "status": 402,
+  "body": {
+    "error": {
+      "code": "payment_required",
+      "message": "Prepay credits are depleted. Don't retry until credits are added."
+    }
+  }
+}

@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import type { EvidenceItem } from '@/lib/competitors/types';
 import type { RunErrorKind } from '@/lib/competitors/run-errors';
+import enGrowth from '../../../../../../../messages/en/growth.json';
+import faGrowth from '../../../../../../../messages/fa/growth.json';
+import itGrowth from '../../../../../../../messages/it/growth.json';
 import {
   MAX_POLL_MS,
   REJECTION_REASON_CHIPS,
@@ -126,6 +129,7 @@ describe('runOutcome', () => {
     expect(outcome('dispatch')).toEqual({ kind: 'failed', errorKind: 'dispatch' });
     expect(outcome('judgeOutage')).toEqual({ kind: 'failed', errorKind: 'judgeOutage' });
     expect(outcome('rateLimited')).toEqual({ kind: 'failed', errorKind: 'rateLimited' });
+    expect(outcome('aiUnavailable')).toEqual({ kind: 'failed', errorKind: 'aiUnavailable' });
     expect(outcome('generic')).toEqual({ kind: 'failed', errorKind: 'generic' });
   });
 });
@@ -295,5 +299,45 @@ describe('competitorBasisNotice (D8 label on Matrices, Keywords, Offerings)', ()
   it('gives a legacy result with no basis the quieter "predates this check" note, not the unconfirmed one', () => {
     expect(competitorBasisNotice({ charts: [] })).toBe('legacy');
     expect(competitorBasisNotice({ competitor_basis: 'something-else' })).toBe('legacy');
+  });
+});
+
+describe('run failure copy', () => {
+  // The panel renders `run.failedReason.${errorKind}` directly, so a kind with
+  // no key shows a raw message id. `satisfies` makes a new RunErrorKind fail
+  // to compile here until it is listed, and the loop fails until every
+  // locale has copy for it. notEnoughEvidence is written by matrix runs only
+  // (MatrixRunHeader has its copy), never by a discovery run.
+  const KINDS = {
+    timedOut: true,
+    dispatch: true,
+    judgeOutage: true,
+    searchUnavailable: true,
+    rateLimited: true,
+    aiUnavailable: true,
+    generic: true,
+  } satisfies Record<Exclude<RunErrorKind, 'notEnoughEvidence'>, true>;
+
+  const reasons = (messages: unknown) =>
+    (messages as { growth: { competitors: { run: { failedReason: Record<string, string> } } } }).growth.competitors.run
+      .failedReason;
+
+  it.each([
+    ['en', enGrowth],
+    ['fa', faGrowth],
+    ['it', itGrowth],
+  ])('%s has a failure message for every run error kind', (_locale, messages) => {
+    const copy = reasons(messages);
+    for (const kind of Object.keys(KINDS)) {
+      expect(copy[kind], kind).toEqual(expect.any(String));
+      expect(copy[kind].length, kind).toBeGreaterThan(0);
+    }
+  });
+
+  it('tells the customer an outage is ours and their work is kept', () => {
+    expect(reasons(enGrowth).aiUnavailable).toBe(
+      "The AI service is unavailable right now. We've been alerted and are fixing it. Your work is saved.",
+    );
+    expect(reasons(faGrowth).aiUnavailable).not.toMatch(/[0-9]/);
   });
 });

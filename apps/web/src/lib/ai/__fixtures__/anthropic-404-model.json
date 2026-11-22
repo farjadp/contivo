@@ -1,0 +1,11 @@
+{
+  "source": "documented shape from the claude-api skill (shared/error-codes.md, cached 2026-11-03); NOT recorded",
+  "status": 404,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "not_found_error",
+      "message": "model: claude-does-not-exist"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "source": "documented shape from OpenAI's error-codes guide (https://platform.openai.com/docs/guides/error-codes); NOT recorded",
+  "status": 500,
+  "body": {
+    "error": {
+      "message": "The server had an error while processing your request. Sorry about that!",
+      "type": "server_error",
+      "param": null,
+      "code": null
+    }
+  }
+}

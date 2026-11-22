@@ -7,7 +7,9 @@
  *   3. keep only channels that can actually publish (connected default account)
  *   4. ideate (with steering), dedupe against recent topics and the avoid list
  *   5. save ideas to the pipeline and generate drafts, each with a publish
- *      slot inside the policy window → item becomes SCHEDULED
+ *      slot inside the policy window → item becomes SCHEDULED, or, when the
+ *      agent's "Review drafts before they publish" is on (requireReview), is
+ *      held as GENERATED with its proposed slot for the user to approve
  *   6. record an AutopilotRun with a step-by-step log
  *
  * Publishing itself happens elsewhere once an item is SCHEDULED:
@@ -58,6 +60,26 @@ const RECENT_BODY_LOOKBACK = 10;
 const MAX_ATTEMPTS_PER_SLOT = 2;
 /** Statuses that count as "already occupying a slot". */
 const OCCUPYING_STATUSES = ['SCHEDULED', 'PUBLISHING', 'PUBLISHED'] as const;
+/**
+ * The status a gate-approved draft waits in when the agent requires review.
+ * GENERATED is what the pipeline already shows as a finished draft awaiting
+ * Approve/Schedule, and nothing publishes it: the social scheduler and the
+ * web publisher both select SCHEDULED only.
+ */
+const HELD_FOR_REVIEW_STATUS = 'GENERATED' as const;
+
+/**
+ * Items that take a publish slot. A draft an agent is holding for review
+ * keeps its proposed slot, so the next run does not fill the same week again
+ * while the user has not looked yet. Only agent-made items are ever held, so
+ * manual GENERATED drafts are not counted.
+ */
+const occupyingWhere = (agentId?: string): Prisma.ContentItemWhereInput => ({
+  OR: [
+    { status: { in: [...OCCUPYING_STATUSES] } },
+    { status: HELD_FOR_REVIEW_STATUS, agentId: agentId ?? { not: null } },
+  ],
+});
 
 /** ContentChannel → ideation `platform` hint. */
 const CHANNEL_TO_IDEATION_PLATFORM: Record<string, string> = {
@@ -239,7 +261,7 @@ async function runPolicyInAiContext(
       where: {
         workspaceId: policy.workspaceId,
         agentId: policy.id,
-        status: { in: [...OCCUPYING_STATUSES] },
+        ...occupyingWhere(policy.id),
         scheduledAtUtc: { gte: now, lte: horizonEnd },
       },
       select: { scheduledAtUtc: true },
@@ -250,7 +272,7 @@ async function runPolicyInAiContext(
     const workspaceBooked = await prisma.contentItem.findMany({
       where: {
         workspaceId: policy.workspaceId,
-        status: { in: [...OCCUPYING_STATUSES] },
+        ...occupyingWhere(),
         scheduledAtUtc: { gte: now, lte: horizonEnd },
       },
       select: { scheduledAtUtc: true },
@@ -291,6 +313,9 @@ async function runPolicyInAiContext(
     let itemsScheduled = 0;
     let itemsSkipped = 0;
     let itemsRejected = 0;
+    /** Approved by the gate but waiting for the user (requireReview). */
+    let itemsHeld = 0;
+    const requireReview = policy.requireReview === true;
     /** Set when the balance runs out part-way, so both loops unwind. */
     let outOfCredits = false;
     const usedTopics = [...recentTopics];
@@ -445,6 +470,7 @@ async function runPolicyInAiContext(
               generates, pays for and then throws away every post it writes.
             */
             language: asContentLanguage(ctx.workspace.contentLanguage),
+            aiContext: actor,
           });
 
           if (!verdict.approved) {
@@ -465,6 +491,8 @@ async function runPolicyInAiContext(
               topic: idea.topic,
               rejectedBy: verdict.rejectedBy,
               scores: verdict.scores,
+              judge: verdict.judge,
+              judgeModel: verdict.judgeModel,
               reasons: verdict.reasons.slice(0, 3),
             });
             continue;
@@ -472,8 +500,29 @@ async function runPolicyInAiContext(
 
           recentBodies.push(body);
           usedTopics.push(String(idea.topic));
-          itemsScheduled += 1;
           filled = true;
+
+          if (requireReview) {
+            // The user asked to see every draft first: take it out of the
+            // publish queue, keep the slot as the proposed time.
+            await prisma.contentItem.update({
+              where: { id: itemId },
+              data: { status: HELD_FOR_REVIEW_STATUS },
+            });
+            itemsHeld += 1;
+            note('held_for_review', {
+              channel,
+              itemId,
+              topic: idea.topic,
+              proposedSlot: slot.toISOString(),
+              scores: verdict.scores,
+              judge: verdict.judge,
+              judgeModel: verdict.judgeModel,
+            });
+            continue;
+          }
+
+          itemsScheduled += 1;
           note('scheduled', {
             channel,
             itemId,
@@ -481,6 +530,7 @@ async function runPolicyInAiContext(
             slot: slot.toISOString(),
             scores: verdict.scores,
             judge: verdict.judge,
+            judgeModel: verdict.judgeModel,
             humanized: 'humanize' in drafted ? (drafted.humanize as any)?.changed ?? false : false,
             image: 'image' in drafted ? Boolean((drafted.image as any)?.imageId) : false,
           });
@@ -503,7 +553,7 @@ async function runPolicyInAiContext(
 
     // An account that ran dry mid-run is not a failure to fix, so it is
     // reported as its own outcome rather than as a broken run.
-    if (outOfCredits && itemsScheduled === 0) {
+    if (outOfCredits && itemsScheduled === 0 && itemsHeld === 0) {
       return finish('SKIPPED', counts, {
         error: 'Ran out of credits before anything could be scheduled.',
       });
@@ -514,7 +564,10 @@ async function runPolicyInAiContext(
     if (itemsRejected > 0) {
       note('gate_summary', { rejected: itemsRejected });
     }
-    if (itemsScheduled === 0) {
+    if (itemsHeld > 0) {
+      note('held_summary', { held: itemsHeld });
+    }
+    if (itemsScheduled === 0 && itemsHeld === 0) {
       return finish('FAILED', counts, {
         error: 'Nothing could be scheduled this run.',
         rerunHours: FAILURE_RERUN_HOURS,

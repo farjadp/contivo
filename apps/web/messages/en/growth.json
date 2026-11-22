@@ -221,6 +221,7 @@
           "judgeOutage": "The service that checks each company against its evidence was unavailable, so nothing could be checked. The market you chose is not the problem.",
           "searchUnavailable": "The web search that looks for competitors was unavailable, so none could be found. The market you chose is not the problem.",
           "rateLimited": "The AI service is receiving too many requests right now. Wait a few minutes, then try again.",
+          "aiUnavailable": "The AI service is unavailable right now. We've been alerted and are fixing it. Your work is saved.",
           "generic": "Something went wrong in our system."
         },
         "pollStopped": "This page stopped checking on the search. Reload to see where it is.",

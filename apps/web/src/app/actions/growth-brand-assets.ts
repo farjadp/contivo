@@ -2,7 +2,7 @@
 
 import { randomUUID } from 'node:crypto';
 
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext, type AiFailure } from '@/lib/ai';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -120,15 +120,6 @@ function decodeHtmlEntities(input: string): string {
 
 function sanitizeText(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
-}
-
-function stripCodeFences(value: string): string {
-  return value
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
 }
 
 function toNonNegativeInt(value: unknown): number {
@@ -506,7 +497,11 @@ Each asset item:
 `;
 }
 
-async function callOpenAiJson(prompt: string): Promise<{
+/** No timeout existed before the failover layer; 60 s per provider attempt. */
+const AI_TIMEOUT_MS = 60_000;
+
+type AiJsonCall = {
+  /** The model's JSON, or null when it answered with something that is not an object. */
   parsed: any | null;
   usage: {
     model: string;
@@ -514,65 +509,41 @@ async function callOpenAiJson(prompt: string): Promise<{
     completion_tokens: number;
     total_tokens: number;
   } | null;
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
+  /** Set when no provider answered; `parsed` and `usage` are null then. */
+  failure: AiFailure | null;
+};
 
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: 'Be precise. Use only provided evidence. Return only valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.15,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error('OpenAI brand assets request error:', await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature: 'growth_brand_assets',
-      usage: parseOpenAiChatUsage(data),
-    });
-    const usage = {
-      model,
-      prompt_tokens: toNonNegativeInt(data?.usage?.prompt_tokens),
-      completion_tokens: toNonNegativeInt(data?.usage?.completion_tokens),
-      total_tokens: toNonNegativeInt(data?.usage?.total_tokens),
-    };
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') {
-      return { parsed: null, usage };
-    }
-
-    try {
-      return { parsed: JSON.parse(stripCodeFences(content)), usage };
-    } catch (error) {
-      console.error('OpenAI brand assets parse error:', error);
-      return { parsed: null, usage };
-    }
-  } catch (error) {
-    console.error('OpenAI brand assets call failed:', error);
-    return null;
+/**
+ * One JSON call through the failover layer (task `brand_assets`). The layer records
+ * usage on success, so this file no longer does.
+ */
+async function callOpenAiJson(prompt: string, ctx: AiCallContext): Promise<AiJsonCall> {
+  const result = await runAiTask(
+    'brand_assets',
+    {
+      system: 'Be precise. Use only provided evidence. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: AI_TIMEOUT_MS,
+      temperature: 0.15,
+    },
+    ctx,
+  );
+  if (!result.ok) {
+    console.error('brand assets AI call failed:', result.kind, result.firstErrorClass);
+    return { parsed: null, usage: null, failure: result };
   }
+  const json = result.json;
+  return {
+    parsed: json && typeof json === 'object' ? json : null,
+    usage: {
+      model: result.model,
+      prompt_tokens: toNonNegativeInt(result.usage.promptTokens),
+      completion_tokens: toNonNegativeInt(result.usage.completionTokens),
+      total_tokens: toNonNegativeInt(result.usage.totalTokens),
+    },
+    failure: null,
+  };
 }
 
 function emptyGroups(): BrandAssetGroups {
@@ -890,8 +861,13 @@ export async function generateWorkspaceBrandAssets(workspaceId: string) {
       faviconUrl: signals.favicon_url,
     });
 
-    const result = await callOpenAiJson(prompt);
-    if (!result?.parsed) {
+    const result = await callOpenAiJson(prompt, { workspaceId: workspace.id, userId: session.userId as string });
+    if (result.failure) {
+      // An outage is not an evidence problem: "no evidence" would send the
+      // user off to fix their website for a provider being down.
+      return { error: await actionError('brandAssetsFailed') };
+    }
+    if (!result.parsed) {
       return { error: await actionError('brandAssetsNoEvidence') };
     }
 

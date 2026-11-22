@@ -1,7 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Usage logging is exercised in ai-usage.test.ts; here it must not reach a database.
-const { recordAiUsageMock } = vi.hoisted(() => ({ recordAiUsageMock: vi.fn(async () => {}) }));
+import type { AiFailure, AiSuccess } from '@/lib/ai';
+
+// Every discovery AI call goes through the failover layer (lib/ai), which
+// records usage itself. No real network: runAiTask is mocked.
+const { runAiTaskMock, recordAiUsageMock } = vi.hoisted(() => ({
+  runAiTaskMock: vi.fn(),
+  recordAiUsageMock: vi.fn(async () => {}),
+}));
+vi.mock('@/lib/ai', () => ({ runAiTask: runAiTaskMock }));
 vi.mock('@/lib/ai-usage', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/ai-usage')>()),
   recordAiUsage: recordAiUsageMock,
@@ -12,15 +19,13 @@ import {
   JUDGE_MAX_KEY_FEATURES,
   JUDGE_NAME_MAX_CHARS,
   JUDGE_POSITIONING_MAX_CHARS,
+  JUDGE_REQUEST_TIMEOUT_MS,
   judgeCandidates,
 } from './judge';
-import { generateQueries, type BrandBrief } from './queries';
-import { harvestFromWebSearch } from './search';
+import { generateQueries, QUERY_REQUEST_TIMEOUT_MS, type BrandBrief } from './queries';
+import { classifyRunError, RUN_ERROR, withRunErrorCode } from './run-errors';
+import { harvestFromWebSearch, SEARCH_REQUEST_TIMEOUT_MS } from './search';
 import type { EnrichedCandidate } from './types';
-
-// Every OpenAI call the discovery pipeline makes must carry an AbortSignal,
-// so a hung call ends on its own deadline instead of undici's 300 s default
-// (Railway kills nothing). No real network: fetch is stubbed.
 
 function brief(): BrandBrief {
   return {
@@ -49,86 +54,131 @@ function enriched(domain: string): EnrichedCandidate {
   };
 }
 
-function jsonResponse(body: unknown): Response {
-  return { ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body) } as Response;
+function ok(json: unknown, overrides: Partial<AiSuccess> = {}): AiSuccess {
+  return {
+    ok: true,
+    provider: 'openai',
+    model: 'gpt-4.1',
+    text: JSON.stringify(json),
+    json,
+    usage: { promptTokens: 1, completionTokens: 2, totalTokens: 3 },
+    failedOver: [],
+    ...overrides,
+  };
 }
 
+const billingOutage: AiFailure = {
+  ok: false,
+  kind: 'all_unavailable',
+  attempts: [
+    { provider: 'openai', errorClass: 'billing', status: 429, message: 'insufficient_quota' },
+    { provider: 'anthropic', errorClass: 'not_configured', message: 'skipped' },
+    { provider: 'gemini', errorClass: 'not_configured', message: 'skipped' },
+  ],
+  firstErrorClass: 'billing',
+  allRateLimited: false,
+};
+
+const allRateLimited: AiFailure = {
+  ok: false,
+  kind: 'all_unavailable',
+  attempts: [
+    { provider: 'openai', errorClass: 'rate_limit', status: 429, message: 'Rate limit reached' },
+    { provider: 'anthropic', errorClass: 'rate_limit', status: 429, message: 'rate_limit_error' },
+  ],
+  firstErrorClass: 'rate_limit',
+  allRateLimited: true,
+};
+
 beforeEach(() => {
-  vi.stubEnv('OPENAI_API_KEY', 'sk-test-not-real');
+  runAiTaskMock.mockReset();
+  recordAiUsageMock.mockClear();
 });
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.unstubAllGlobals();
-});
+describe('discovery AI calls use the failover layer with the right task and timeout', () => {
+  it('generateQueries: competitor_queries, json_object, 60 s, ctx passed through', async () => {
+    runAiTaskMock.mockResolvedValue(ok({ queries: ['a', 'b', 'a'] }));
+    const ctx = { workspaceId: 'ws1', userId: 'u1' };
 
-describe('OpenAI calls carry a timeout signal', () => {
-  it('generateQueries', async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ choices: [{ message: { content: '{"queries":["a","b"]}' } }], usage: { total_tokens: 1 } }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
+    const result = await generateQueries(brief(), ctx);
 
-    await generateQueries(brief()).catch(() => undefined);
-
-    expect(fetchMock).toHaveBeenCalled();
-    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
-    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(result).toEqual({ queries: ['a', 'b'], tokens: 3 });
+    const [task, request, passedCtx] = runAiTaskMock.mock.calls[0];
+    expect(task).toBe('competitor_queries');
+    expect(request.output).toEqual({ kind: 'json_object' });
+    expect(request.timeoutMs).toBe(QUERY_REQUEST_TIMEOUT_MS);
+    expect(request.prompt).toContain('web search queries');
+    expect(passedCtx).toEqual(ctx);
+    // The layer records usage; the call site must not double count.
+    expect(recordAiUsageMock).not.toHaveBeenCalled();
   });
 
-  it('harvestFromWebSearch records its usage under competitor_web_search', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        jsonResponse({
-          model: 'gpt-5-mini-2025-08-07',
-          output: [{ type: 'web_search_call' }],
-          usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
-        }),
-      ),
+  it('harvestFromWebSearch: competitor_web_search, webSearch with country, 150 s, no hardcoded model', async () => {
+    runAiTaskMock.mockResolvedValue(
+      ok(undefined, { text: 'answer', json: undefined, webSearch: { query: '', citations: [], sourceUrls: [] } }),
     );
-    recordAiUsageMock.mockClear();
 
-    const result = await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
+    await harvestFromWebSearch(['q'], { country: 'IR', language: 'fa' }, new Set());
 
-    expect(result.tokens).toBe(15);
-    expect(recordAiUsageMock).toHaveBeenCalledWith({
-      provider: 'openai',
-      model: 'gpt-5-mini-2025-08-07',
-      feature: 'competitor_web_search',
-      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15, webSearchCalls: 1 },
-    });
+    const [task, request] = runAiTaskMock.mock.calls[0];
+    expect(task).toBe('competitor_web_search');
+    expect(request.webSearch).toEqual({ country: 'IR' });
+    expect(request.timeoutMs).toBe(SEARCH_REQUEST_TIMEOUT_MS);
+    expect(SEARCH_REQUEST_TIMEOUT_MS).toBe(150_000);
+    expect(request.modelOverride).toBeUndefined();
+    expect(request.output).toEqual({ kind: 'text' });
+    expect(recordAiUsageMock).not.toHaveBeenCalled();
   });
 
-  it('harvestFromWebSearch', async () => {
-    const fetchMock = vi.fn(async () => jsonResponse({ output: [], usage: { total_tokens: 1 } }));
-    vi.stubGlobal('fetch', fetchMock);
-
-    await harvestFromWebSearch(['q'], { country: null, language: 'en' }, new Set());
-
-    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
-    expect(init.signal).toBeInstanceOf(AbortSignal);
-  });
-
-  it('judgeCandidates', async () => {
-    const fetchMock = vi.fn(async () =>
-      jsonResponse({ choices: [{ message: { content: '{"results":[]}' } }], usage: { total_tokens: 1 } }),
-    );
-    vi.stubGlobal('fetch', fetchMock);
+  it('judgeCandidates: competitor_judge, strict json_schema, 90 s', async () => {
+    runAiTaskMock.mockResolvedValue(ok({ results: [] }));
 
     await judgeCandidates(brief(), [enriched('rival.com')]);
 
-    const init = (fetchMock.mock.calls[0] as unknown as [string, RequestInit])[1];
-    expect(init.signal).toBeInstanceOf(AbortSignal);
+    const [task, request] = runAiTaskMock.mock.calls[0];
+    expect(task).toBe('competitor_judge');
+    expect(request.output.kind).toBe('json_schema');
+    expect(request.output.name).toBe('competitor_judgments');
+    expect(request.output.schema).toMatchObject({ type: 'object', required: ['results'] });
+    expect(request.timeoutMs).toBe(JUDGE_REQUEST_TIMEOUT_MS);
+    expect(JUDGE_REQUEST_TIMEOUT_MS).toBe(90_000);
+    expect(recordAiUsageMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('a failed chain maps to the honest run error', () => {
+  it('generateQueries throws AI_UNAVAILABLE on a billing outage, never a rate-limit message', async () => {
+    runAiTaskMock.mockResolvedValue(billingOutage);
+
+    const error = await generateQueries(brief()).catch((e: Error) => e);
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/^AI_UNAVAILABLE: Query generation failed/);
+    expect(classifyRunError((error as Error).message)).toBe('aiUnavailable');
+  });
+
+  it('generateQueries: every provider rate limited -> rateLimited', async () => {
+    runAiTaskMock.mockResolvedValue(allRateLimited);
+
+    const error = (await generateQueries(brief()).catch((e: Error) => e)) as Error;
+
+    expect(classifyRunError(error.message)).toBe('rateLimited');
+  });
+
+  it('search: a billing outage on every query yields AI_UNAVAILABLE errors', async () => {
+    runAiTaskMock.mockResolvedValue(billingOutage);
+
+    const result = await harvestFromWebSearch(['q1', 'q2'], { country: null, language: 'en' }, new Set());
+
+    expect(result.candidates).toEqual([]);
+    expect(result.errors).toHaveLength(2);
+    expect(result.errors[0]).toMatch(/^AI_UNAVAILABLE: Search query failed for "q1"/);
   });
 });
 
 describe('judgeCandidates reports batch failures instead of hiding them', () => {
   it('returns every error and failedBatches === batches when every batch fails (e.g. a 429)', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => ({ ok: false, status: 429, text: async () => 'Rate limit reached' }) as Response),
-    );
+    runAiTaskMock.mockResolvedValue(allRateLimited);
 
     // 7 candidates at 5 per batch = 2 batches.
     const candidates = Array.from({ length: 7 }, (_, i) => enriched(`rival-${i}.com`));
@@ -139,18 +189,23 @@ describe('judgeCandidates reports batch failures instead of hiding them', () => 
     expect(result.failedBatches).toBe(2);
     expect(result.errors).toHaveLength(2);
     expect(result.errors[0]).toContain('429');
+    expect(classifyRunError(withRunErrorCode(RUN_ERROR.JUDGE_UNAVAILABLE, result.errors[0]))).toBe('rateLimited');
   });
 
-  it('counts a partial failure: one batch fails, one succeeds', async () => {
-    let call = 0;
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => {
-        call += 1;
-        if (call === 1) return { ok: false, status: 500, text: async () => 'boom' } as Response;
-        return jsonResponse({ choices: [{ message: { content: '{"results":[]}' } }], usage: { total_tokens: 3 } });
-      }),
-    );
+  it('a billing outage makes every batch error AI_UNAVAILABLE', async () => {
+    runAiTaskMock.mockResolvedValue(billingOutage);
+
+    const result = await judgeCandidates(brief(), [enriched('rival.com')]);
+
+    expect(result.failedBatches).toBe(1);
+    expect(result.errors[0]).toMatch(/^AI_UNAVAILABLE: Judge batch failed/);
+    expect(result.errors[0]).not.toContain('insufficient_quota');
+  });
+
+  it('counts a partial failure: one batch fails, one succeeds, and records who judged', async () => {
+    runAiTaskMock
+      .mockResolvedValueOnce({ ...billingOutage, kind: 'bad_request', firstErrorClass: 'bad_request', attempts: [] })
+      .mockResolvedValueOnce(ok({ results: [] }, { provider: 'anthropic', model: 'claude-opus-5-5' }));
 
     const candidates = Array.from({ length: 7 }, (_, i) => enriched(`rival-${i}.com`));
     const result = await judgeCandidates(brief(), candidates);
@@ -158,42 +213,55 @@ describe('judgeCandidates reports batch failures instead of hiding them', () => 
     expect(result.batches).toBe(2);
     expect(result.failedBatches).toBe(1);
     expect(result.errors).toHaveLength(1);
+    expect(result.judges).toEqual([{ provider: 'anthropic', model: 'claude-opus-5-5' }]);
+  });
+
+  it('records each distinct judge once when batches mix providers', async () => {
+    runAiTaskMock
+      .mockResolvedValueOnce(ok({ results: [] }))
+      .mockResolvedValueOnce(ok({ results: [] }, { provider: 'anthropic', model: 'claude-opus-5-5' }))
+      .mockResolvedValueOnce(ok({ results: [] }));
+
+    const candidates = Array.from({ length: 12 }, (_, i) => enriched(`rival-${i}.com`));
+    const result = await judgeCandidates(brief(), candidates);
+
+    expect(result.judges).toEqual([
+      { provider: 'openai', model: 'gpt-4.1' },
+      { provider: 'anthropic', model: 'claude-opus-5-5' },
+    ]);
+  });
+
+  it('a batch whose answer lacks "results" is dropped as an error, never approved', async () => {
+    runAiTaskMock.mockResolvedValue(ok({ nope: [] }));
+
+    const result = await judgeCandidates(brief(), [enriched('rival.com')]);
+
+    expect(result.judged).toEqual([]);
+    expect(result.errors[0]).toMatch(/missing a "results" array/);
   });
 });
 
 describe('judge free text is length-capped on parse', () => {
   it('truncates name, positioning and key features, and caps the feature count', async () => {
     const long = 'x'.repeat(5000);
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () =>
-        jsonResponse({
-          choices: [
-            {
-              message: {
-                content: JSON.stringify({
-                  results: [
-                    {
-                      domain: 'rival.com',
-                      name: long,
-                      isCompetitor: true,
-                      labels: ['BUSINESS'],
-                      type: 'DIRECT',
-                      scaleMatch: true,
-                      certainty: 'certain',
-                      reason: long,
-                      positioning: long,
-                      keyFeatures: Array.from({ length: 50 }, () => long),
-                      description: long,
-                    },
-                  ],
-                }),
-              },
-            },
-          ],
-          usage: { total_tokens: 1 },
-        }),
-      ),
+    runAiTaskMock.mockResolvedValue(
+      ok({
+        results: [
+          {
+            domain: 'rival.com',
+            name: long,
+            isCompetitor: true,
+            labels: ['BUSINESS'],
+            type: 'DIRECT',
+            scaleMatch: true,
+            certainty: 'certain',
+            reason: long,
+            positioning: long,
+            keyFeatures: Array.from({ length: 50 }, () => long),
+            description: long,
+          },
+        ],
+      }),
     );
 
     const { judged } = await judgeCandidates(brief(), [enriched('rival.com')]);

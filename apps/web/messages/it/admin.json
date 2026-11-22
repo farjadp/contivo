@@ -547,6 +547,44 @@
       "refundsTitle": "Rimborsi",
       "refundsSubtitle": "Importi restituiti ai clienti",
       "noRefunds": "Nessun rimborso."
+    },
+    "aiProviders": {
+      "title": "Provider AI",
+      "subtitle": "Quale provider risponde, quale è in pausa e ogni failover delle ultime 24 ore.",
+      "liveHealthNote": "Lo stato in tempo reale è quello visto da questo processo del server. Le pause si azzerano al riavvio; quelle per fatturazione e autenticazione vengono ripristinate dal registro eventi.",
+      "liveHealthUnavailable": "Non è stato possibile leggere lo stato in tempo reale su questo server. I dati qui sotto vengono solo dal registro eventi.",
+      "state": {
+        "healthy": "Operativo",
+        "coolingDown": "In pausa",
+        "notConfigured": "Nessuna chiave API",
+        "unknown": "Sconosciuto"
+      },
+      "coolingDownUntil": "In pausa fino a",
+      "reason": "Motivo",
+      "lastError": "Ultimo errore",
+      "none": "Nessuno",
+      "failedAttempts": "Tentativi falliti (24h)",
+      "failoversTitle": "Failover per attività (24h)",
+      "failoversSubtitle": "Un failover è un tentativo fallito che il provider successivo della catena ha preso in carico.",
+      "colTask": "Attività",
+      "colFailovers": "Failover",
+      "colUnrecovered": "Falliti, senza provider successivo",
+      "colAllUnavailable": "Tutti i provider giù",
+      "colLast": "Ultimo",
+      "routeCount": "{count, plural, one {# volta} other {# volte}}",
+      "noFailovers": "Nessun failover nelle ultime 24 ore.",
+      "eventsUnavailable": "Non è stato possibile leggere il registro eventi dei provider. Verifica che la migrazione ai_provider_events sia stata eseguita.",
+      "eventsTruncated": "Sono stati contati solo gli eventi più recenti; i totali reali sono più alti.",
+      "answeredTitle": "Risposte per provider (24h)",
+      "answeredSubtitle": "Chiamate riuscite registrate nel log di utilizzo, con il costo stimato.",
+      "colProvider": "Provider",
+      "colRequests": "Richieste",
+      "colCost": "Costo",
+      "providerUnrecorded": "Non registrato",
+      "noUsage": "Nessuna chiamata AI nelle ultime 24 ore.",
+      "usageUnavailable": "Non è stato possibile leggere il log di utilizzo.",
+      "recentTitle": "Ultimi eventi dei provider",
+      "recentSubtitle": "Le voci più recenti del registro eventi. I messaggi vengono ripuliti dai dati sensibili prima di essere salvati."
     }
   }
 }

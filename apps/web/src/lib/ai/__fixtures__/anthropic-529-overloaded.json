@@ -1,0 +1,11 @@
+{
+  "source": "documented shape from the claude-api skill (shared/error-codes.md, cached 2026-11-03); NOT recorded",
+  "status": 529,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "overloaded_error",
+      "message": "Overloaded"
+    }
+  }
+}

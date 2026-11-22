@@ -16,6 +16,7 @@
     "test:watch": "VITE_CONFIG_NATIVE_IGNORE_WARNING=true vitest"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.12.0",
     "@contivo/api": "workspace:*",
     "@contivo/types": "workspace:*",
     "@prisma/client": "^5.13.0",

@@ -55,3 +55,6 @@ apps/web/public/reports/
 # Impeccable inspection captures — evidence for a single run, not source.
 apps/web/.impeccable/review/
 *.tsbuildinfo
+
+# Judge eval data from the local DB (real drafts, never commit)
+apps/web/scripts/eval-judge/dataset.json

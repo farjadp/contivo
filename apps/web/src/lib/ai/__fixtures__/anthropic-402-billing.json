@@ -1,0 +1,11 @@
+{
+  "source": "documented shape from the claude-api skill (shared/error-codes.md, cached 2026-11-03); NOT recorded",
+  "status": 402,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "billing_error",
+      "message": "Billing or payment problem"
+    }
+  }
+}

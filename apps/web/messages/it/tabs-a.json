@@ -156,7 +156,10 @@
         "themesHint": "Separati da virgola o a capo. Vengono passati all'AI come indicazioni.",
         "avoid": "Non scrivere mai di",
         "avoidPlaceholder": "es. prezzi, politica, nomi dei concorrenti",
-        "avoidHint": "Le idee il cui argomento contiene una di queste frasi vengono scartate."
+        "avoidHint": "Le idee il cui argomento contiene una di queste frasi vengono scartate.",
+        "requireReview": "Rivedi le bozze prima della pubblicazione",
+        "requireReviewOff": "Disattivato: le bozze che superano i controlli di qualità vengono pubblicate come da programma.",
+        "requireReviewOn": "Attivato: ogni bozza ti aspetta nella pipeline finché non la approvi."
       },
       "channelDot": {
         "ready": "Pronto a pubblicare",

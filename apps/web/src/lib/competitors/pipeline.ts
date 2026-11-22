@@ -1,5 +1,6 @@
 import { Prisma } from '@prisma/client';
 
+import { hasHealthyProvider, type AiCallContext, type AiTask } from '@/lib/ai';
 import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -10,7 +11,7 @@ import { harvestFromSerp, harvestFromWebSearch } from './search';
 import { enrichCandidates, judgeCandidates } from './judge';
 import { rankAndKeep } from './scoring';
 import { sanitizeUpstreamText } from './redact';
-import { RUN_ERROR, withRunErrorCode } from './run-errors';
+import { RUN_ERROR, stageFailureError, withRunErrorCode } from './run-errors';
 import type { Candidate, EvidenceItem, ScoredCandidate, SourceHarvestStats, SourceStats } from './types';
 
 /**
@@ -20,6 +21,13 @@ import type { Candidate, EvidenceItem, ScoredCandidate, SourceHarvestStats, Sour
  * leaving it to spin the UI's poller forever.
  */
 export const STALE_RUN_MINUTES = 10;
+
+/**
+ * The tasks a discovery run cannot finish without. The pre-flight checks
+ * each has a configured provider that is not cooling down (health state
+ * only, no network call) before any query or search is paid for.
+ */
+export const DISCOVERY_AI_TASKS: readonly AiTask[] = ['competitor_queries', 'competitor_web_search', 'competitor_judge'];
 
 const STAGES = ['QUERIES', 'SEARCH', 'ENRICH', 'JUDGE', 'SAVE'] as const;
 type Stage = (typeof STAGES)[number];
@@ -226,6 +234,16 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
 
     const workspace = run.workspace;
     const allCompetitors = workspace.competitors;
+    const aiCtx: AiCallContext = { workspaceId: run.workspaceId, userId: run.userId };
+
+    // Pre-flight (spec B4): fail fast and spend nothing when a stage the run
+    // needs has no provider left to answer it.
+    const unavailable = DISCOVERY_AI_TASKS.filter((task) => !hasHealthyProvider(task));
+    if (unavailable.length > 0) {
+      throw new Error(
+        withRunErrorCode(RUN_ERROR.AI_UNAVAILABLE, `pre-flight: no healthy AI provider for ${unavailable.join(', ')}`),
+      );
+    }
 
     // --- QUERIES ------------------------------------------------------
     await setStage(runId, 'QUERIES');
@@ -247,7 +265,7 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
       })),
     });
 
-    const { queries, tokens: queryTokens } = await generateQueries(brief);
+    const { queries, tokens: queryTokens } = await generateQueries(brief, aiCtx);
     tokens.add(queryTokens);
     sourceStats.queries = { count: queries.length, tokens: queryTokens };
 
@@ -270,7 +288,7 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
     }
 
     const [webOutcome, serpOutcome] = await Promise.allSettled([
-      harvestFromWebSearch(queries, brief.market, exclude),
+      harvestFromWebSearch(queries, brief.market, exclude, aiCtx),
       harvestFromSerp(queries, brief.market, exclude),
     ]);
 
@@ -325,7 +343,8 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
             ? webOutcome.reason.message
             : String(webOutcome.reason)
           : webOutcome.value.errors[0];
-      throw new Error(withRunErrorCode(RUN_ERROR.SEARCH_UNAVAILABLE, detail));
+      const details = webOutcome.status === 'rejected' ? [detail] : webOutcome.value.errors;
+      throw new Error(stageFailureError(RUN_ERROR.SEARCH_UNAVAILABLE, details));
     }
 
     // --- ENRICH ---------------------------------------------------------
@@ -340,7 +359,7 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
 
     // --- JUDGE ------------------------------------------------------------
     await setStage(runId, 'JUDGE');
-    const judgeResult = await judgeCandidates(brief, enriched);
+    const judgeResult = await judgeCandidates(brief, enriched, aiCtx);
     const { judged, tokens: judgeTokens } = judgeResult;
     tokens.add(judgeTokens);
     runErrors.push(...judgeResult.errors);
@@ -353,13 +372,14 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
       ...(judgeResult.failedBatches > 0
         ? { batches: judgeResult.batches, failedBatches: judgeResult.failedBatches }
         : {}),
+      ...judgeIdentityStats(judgeResult.judges ?? []),
     };
     // Every batch failed: nothing was assessed, so "no competitors found"
     // (EMPTY) would be a lie that sends the user off to change their market.
     // End FAILED (uncharged) with the cause stored instead. A partial failure
     // carries on with what was judged; its errors are in sourceStats.
     if (judgeResult.batches > 0 && judgeResult.failedBatches === judgeResult.batches) {
-      throw new Error(withRunErrorCode(RUN_ERROR.JUDGE_UNAVAILABLE, judgeResult.errors[0]));
+      throw new Error(stageFailureError(RUN_ERROR.JUDGE_UNAVAILABLE, judgeResult.errors));
     }
 
     // --- SAVE ---------------------------------------------------------
@@ -520,6 +540,15 @@ async function runDiscoveryPipelineInAiContext(runId: string): Promise<void> {
     }
     // Deliberately not re-thrown — see module doc comment.
   }
+}
+
+/** The judge provider/model for sourceStats.judge (spec §Judge consistency 1). */
+export function judgeIdentityStats(
+  judges: Array<{ provider: string; model: string }>,
+): Pick<NonNullable<SourceStats['judge']>, 'judgeProvider' | 'judgeModel' | 'judges'> {
+  if (judges.length === 0) return {};
+  if (judges.length === 1) return { judgeProvider: judges[0].provider, judgeModel: judges[0].model, judges };
+  return { judges };
 }
 
 function loadRun(runId: string) {

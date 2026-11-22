@@ -50,6 +50,7 @@ const DEFAULT_FORM: AutopilotPolicyInput = {
   topicHints: [],
   avoidTopics: [],
   storylineIds: [],
+  requireReview: false,
 };
 
 function toForm(p: SerializedPolicy | null): AutopilotPolicyInput {
@@ -66,6 +67,7 @@ function toForm(p: SerializedPolicy | null): AutopilotPolicyInput {
     topicHints: p.topicHints,
     avoidTopics: p.avoidTopics,
     storylineIds: p.storylineIds ?? [],
+    requireReview: p.requireReview ?? false,
   };
 }
 
@@ -437,6 +439,22 @@ export function AutopilotTab({
           <span className="font-semibold">{t('autopilot.form.enable')}</span>
           <Zap className="w-4 h-4 text-amber-500" />
         </label>
+
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              className="h-5 w-5 accent-red-600"
+              checked={form.requireReview ?? false}
+              onChange={(e) => setForm((f) => ({ ...f, requireReview: e.target.checked }))}
+              aria-describedby="autopilot-require-review-hint"
+            />
+            <span className="font-semibold">{t('autopilot.form.requireReview')}</span>
+          </label>
+          <p id="autopilot-require-review-hint" className="mt-1 ps-8 text-xs text-moss-muted">
+            {form.requireReview ? t('autopilot.form.requireReviewOn') : t('autopilot.form.requireReviewOff')}
+          </p>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Field label={t('autopilot.form.postsPerWeek')}>

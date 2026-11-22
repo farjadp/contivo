@@ -76,6 +76,11 @@ export type SourceStats = {
     /** How many judge batches ran, and how many of them failed (present only when at least one failed). */
     batches?: number;
     failedBatches?: number;
+    /** Provider/model that judged, when every successful batch had the same judge. */
+    judgeProvider?: string;
+    judgeModel?: string;
+    /** Every provider/model that judged a batch, first-seen order; more than one means a mixed run. */
+    judges?: Array<{ provider: string; model: string }>;
   };
   save?: { saved: number };
   /**

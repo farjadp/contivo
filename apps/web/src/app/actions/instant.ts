@@ -102,9 +102,10 @@ export async function generateInstantContentAction(input: {
     channel,
     tone,
     language: contentLanguageForLocale(await getLocale()),
+    ctx: { userId },
   });
 
-  // Both providers failed. Fail loudly and do not charge — the previous
+  // The whole provider chain failed. Fail loudly and do not charge — the previous
   // behaviour elsewhere in the codebase was to write heuristic filler and
   // bill for it as if it were generated.
   if (!draft) {

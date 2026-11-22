@@ -1,9 +1,25 @@
-import { parseGeminiUsage, parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+/**
+ * Brand memory, content ideas, drafts and SERP analysis.
+ *
+ * Every model call goes through the AI provider failover layer (`@/lib/ai`,
+ * spec docs/superpowers/specs/2026-11-22-ai-provider-failover-design.md):
+ * content chain Gemini → OpenAI → Claude, usage logged by the layer.
+ *
+ * When the whole chain fails these functions return null. They used to return
+ * template text built from the brand profile ("fallbackDraft",
+ * "fallbackPositioning", a regex brand extraction, heuristic ideas) that looked
+ * exactly like a real generation — the same silent-fallback pattern that hid a
+ * dead Gemini model for months, at content level. Callers show "unavailable".
+ */
+
 import {
-  getGeminiCooldownSeconds,
-  getGeminiModel,
-  getOpenAiFallbackModel,
-} from '@/lib/app-settings';
+  runAiTask,
+  type AiCallContext,
+  type AiFailure,
+  type AiOutput,
+  type AiTask,
+  type ProviderId,
+} from '@/lib/ai';
 import {
   type FrameworkId,
   type FrameworkQualityScores,
@@ -22,20 +38,10 @@ import {
   type ContentLanguage,
 } from '@/lib/content-language';
 
-interface GeminiCallResult {
-  ok: boolean;
-  status: number;
-  text: string | null;
-}
-
-interface OpenAiCallResult {
-  ok: boolean;
-  status: number;
-  text: string | null;
-}
-
-let geminiCooldownUntil = 0;
-let geminiCooldownReason: string | null = null;
+/** Per attempt (spec §Timeouts): JSON and short prose. */
+const JSON_TIMEOUT_MS = 60_000;
+/** Per attempt: long drafts and large JSON (an idea list, a full rewrite). */
+const LONG_TIMEOUT_MS = 120_000;
 
 function sanitizeText(input: string): string {
   return input.replace(/\s+/g, ' ').trim();
@@ -56,32 +62,6 @@ function decodeHtmlEntities(input: string): string {
     });
 }
 
-function splitSentences(text: string): string[] {
-  return text
-    .split(/(?<=[.!?])\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
-function pickByRegex(text: string, patterns: RegExp[]): string | null {
-  for (const pattern of patterns) {
-    const match = text.match(pattern);
-    if (match?.[1]) {
-      return match[1].trim();
-    }
-  }
-
-  return null;
-}
-
-function toTitleCase(value: string): string {
-  return value
-    .split(' ')
-    .filter(Boolean)
-    .map((word) => word[0].toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-}
-
 function urlToDomainRoot(url: string): string {
   try {
     const withProtocol = /^https?:\/\//i.test(url) ? url : `https://${url}`;
@@ -92,202 +72,56 @@ function urlToDomainRoot(url: string): string {
   }
 }
 
-async function callGemini(prompt: string, expectJson: boolean, feature: string): Promise<GeminiCallResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    return { ok: false, status: 0, text: null };
-  }
+// ---------------------------------------------------------------------------
+// Transport: the failover layer
+// ---------------------------------------------------------------------------
 
-  if (geminiCooldownUntil > Date.now()) {
-    return { ok: false, status: 429, text: null };
-  }
-
-  const model = await getGeminiModel();
-  const fallbackCooldownMs = (await getGeminiCooldownSeconds()) * 1000;
-
-  try {
-    const body: Record<string, unknown> = {
-      contents: [{ parts: [{ text: prompt }] }],
-    };
-
-    if (expectJson) {
-      body.generationConfig = { responseMimeType: 'application/json' };
-    }
-
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      },
-    );
-
-    if (!res.ok) {
-      const errorBody = await res.text();
-      console.error('Gemini API Request Error:', errorBody);
-
-      // A 404 means the configured model no longer exists. Every call will
-      // fail forever and silently fall through to OpenAI, so say so loudly
-      // instead of burying it among transient errors.
-      if (res.status === 404) {
-        console.error(
-          `[gemini] Model "${model}" was rejected as unavailable (404). ` +
-            'Every Gemini call will fail and fall back to OpenAI until the model is changed ' +
-            '(admin panel, GEMINI_MODEL env, or DEFAULT_GEMINI_MODEL in app-settings.ts).',
-        );
-      }
-
-      if (res.status === 429 || res.status === 503) {
-        let cooldownMs = fallbackCooldownMs;
-        const retryDelayMatch = errorBody.match(/"retryDelay"\s*:\s*"(\d+)s"/i);
-        if (retryDelayMatch?.[1]) {
-          const parsed = Number(retryDelayMatch[1]);
-          if (Number.isFinite(parsed) && parsed > 0) {
-            cooldownMs = parsed * 1000;
-          }
-        }
-        geminiCooldownUntil = Date.now() + cooldownMs;
-        geminiCooldownReason = `status=${res.status} cooldown=${Math.ceil(cooldownMs / 1000)}s`;
-        console.warn(`Gemini temporary cooldown enabled: ${geminiCooldownReason}`);
-      }
-
-      return { ok: false, status: res.status, text: null };
-    }
-
-    geminiCooldownUntil = 0;
-    geminiCooldownReason = null;
-
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'gemini',
-      model: resolveResponseModel(data, model),
-      feature,
-      usage: parseGeminiUsage(data),
-    });
-    const resultText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!resultText || typeof resultText !== 'string') {
-      return { ok: false, status: res.status, text: null };
-    }
-
-    return { ok: true, status: res.status, text: resultText };
-  } catch (error) {
-    console.error('Gemini request failed:', error);
-    return { ok: false, status: -1, text: null };
-  }
+function logUnavailable(scope: string, task: AiTask, result: AiFailure): void {
+  console.error(
+    `[${scope}] AI ${result.kind} for ${task} (first error: ${result.firstErrorClass}); returning null, nothing generated`,
+  );
 }
 
-async function callOpenAi(
-  prompt: string,
-  expectJson: boolean,
-  systemPrompt: string | undefined,
-  feature: string,
-): Promise<OpenAiCallResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return { ok: false, status: 0, text: null };
-  }
-
-  const model = await getOpenAiFallbackModel();
-
-  try {
-    const body: Record<string, unknown> = {
-      model,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt || 'You are precise, factual, and follow output format exactly.',
-        },
-        { role: 'user', content: prompt },
-      ],
-      temperature: 0.2,
-    };
-
-    if (expectJson) {
-      body.response_format = { type: 'json_object' };
-    }
-
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      console.error('OpenAI API Request Error:', await res.text());
-      return { ok: false, status: res.status, text: null };
-    }
-
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature,
-      usage: parseOpenAiChatUsage(data),
-    });
-    const resultText = data?.choices?.[0]?.message?.content;
-    if (!resultText || typeof resultText !== 'string') {
-      return { ok: false, status: res.status, text: null };
-    }
-
-    return { ok: true, status: res.status, text: resultText };
-  } catch (error) {
-    console.error('OpenAI request failed:', error);
-    return { ok: false, status: -1, text: null };
-  }
-}
-
-function safeJsonParse<T>(raw: string): T | null {
-  const cleaned = raw
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
-
-  try {
-    return JSON.parse(cleaned) as T;
-  } catch {
+async function runText(
+  scope: string,
+  task: AiTask,
+  request: { system: string; prompt: string; timeoutMs: number },
+  ctx?: AiCallContext,
+): Promise<{ text: string; provider: ProviderId } | null> {
+  const result = await runAiTask(task, { ...request, output: { kind: 'text' } }, ctx);
+  if (!result.ok) {
+    logUnavailable(scope, task, result);
     return null;
   }
+  const text = result.text.trim();
+  return text ? { text, provider: result.provider } : null;
 }
 
-function logFallback(scope: string, geminiStatus: number, openAiStatus?: number): void {
-  const geminiUnavailable = geminiStatus === 429 || geminiStatus === 503 || geminiStatus === 0;
-  const openAiUnavailable = openAiStatus === 429 || openAiStatus === 503 || openAiStatus === 0;
-
-  if (geminiUnavailable && openAiStatus === undefined) {
-    const cooldownHint =
-      geminiCooldownUntil > Date.now()
-        ? ` (cooldown active for ~${Math.ceil((geminiCooldownUntil - Date.now()) / 1000)}s${geminiCooldownReason ? `, ${geminiCooldownReason}` : ''})`
-        : '';
-    console.warn(`${scope}: Gemini unavailable (${geminiStatus})${cooldownHint}. Using heuristic fallback output.`);
-    return;
+async function runJson<T>(
+  scope: string,
+  task: AiTask,
+  request: { system: string; prompt: string; timeoutMs: number; output?: AiOutput },
+  ctx?: AiCallContext,
+): Promise<{ data: T; provider: ProviderId } | null> {
+  const { output = { kind: 'json_object' }, ...rest } = request;
+  const result = await runAiTask(task, { ...rest, output }, ctx);
+  if (!result.ok) {
+    logUnavailable(scope, task, result);
+    return null;
   }
-
-  // Every caller reaches here only after both providers failed to give usable
-  // output, so an OpenAI 200 means its answer was unusable — say so instead of
-  // returning silently, which is how empty onboarding competitor lists went unlogged.
-  if (geminiUnavailable && openAiUnavailable) {
-    console.warn(
-      `${scope}: Gemini (${geminiStatus}) and OpenAI (${openAiStatus}) unavailable. Using heuristic fallback output.`,
-    );
-    return;
-  }
-
-  if (openAiStatus !== undefined) {
-    console.warn(
-      `${scope}: Gemini (${geminiStatus}) and OpenAI (${openAiStatus}) returned invalid responses. Using heuristic fallback output.`,
-    );
-    return;
-  }
-
-  console.warn(`${scope}: Gemini returned an invalid response (${geminiStatus}). Using heuristic fallback output.`);
+  if (result.json === undefined || result.json === null) return null;
+  return { data: result.json as T, provider: result.provider };
 }
 
+type Schema = Record<string, unknown>;
+const STRING: Schema = { type: 'string' };
+const NUMBER: Schema = { type: 'number' };
+const STRING_ARRAY: Schema = { type: 'array', items: STRING };
+
+/** OpenAI strict mode needs every property required and no extras; the layer validates the same for all providers. */
+function strictObject(properties: Record<string, Schema>): Schema {
+  return { type: 'object', properties, required: Object.keys(properties), additionalProperties: false };
+}
 const SCRAPE_JUNK_PATTERNS: RegExp[] = [
   /^(home|loading|menu|navigation|skip to content)$/i,
   /^(login|log in|sign in|sign up|register)$/i,
@@ -298,11 +132,19 @@ const SCRAPE_JUNK_PATTERNS: RegExp[] = [
   /^(copyright|powered by)\b/i,
 ];
 
+/*
+  Punctuation, symbols, digits and spaces only. This used to be /^[\W_]+$/,
+  and without the `u` flag \W matches every non-ASCII letter, so every line
+  of a Persian page was dropped as junk and a Persian-only site scraped to
+  nothing (or to its stray Latin lines).
+*/
+const NO_LETTERS = /^[\p{P}\p{S}\p{N}\s_]+$/u;
+
 function isScrapeJunkLine(value: string): boolean {
   const text = sanitizeText(value);
   if (!text) return true;
   if (text.length < 18) return true;
-  if (/^[\W_]+$/.test(text)) return true;
+  if (NO_LETTERS.test(text)) return true;
   if (SCRAPE_JUNK_PATTERNS.some((pattern) => pattern.test(text))) return true;
 
   const lower = text.toLowerCase();
@@ -335,168 +177,13 @@ function extractMetaContent(html: string, attrName: string, attrValue: string): 
   return null;
 }
 
-function inferIndustry(text: string): string {
-  const lower = text.toLowerCase();
-  const rules: Array<{ keywords: string[]; label: string }> = [
-    { keywords: ['saas', 'software', 'platform', 'api', 'automation'], label: 'Technology & SaaS' },
-    { keywords: ['ecommerce', 'shop', 'store', 'checkout', 'cart'], label: 'E-commerce' },
-    { keywords: ['agency', 'marketing', 'campaign', 'brand'], label: 'Marketing Services' },
-    { keywords: ['clinic', 'doctor', 'patient', 'health'], label: 'Healthcare' },
-    { keywords: ['finance', 'fintech', 'bank', 'payments', 'accounting'], label: 'Finance & Fintech' },
-    { keywords: ['education', 'course', 'learning', 'students'], label: 'Education' },
-  ];
-
-  for (const rule of rules) {
-    if (rule.keywords.some((keyword) => lower.includes(keyword))) {
-      return rule.label;
-    }
-  }
-
-  return 'Business Services';
-}
-
-function inferAudience(text: string, industry: string): string {
-  const lower = text.toLowerCase();
-  const explicitAudience =
-    pickByRegex(lower, [
-      /for\s+([a-z0-9\s,&-]{8,80})/i,
-      /built for\s+([a-z0-9\s,&-]{8,80})/i,
-      /helping\s+([a-z0-9\s,&-]{8,80})/i,
-    ]) || '';
-
-  if (explicitAudience) {
-    return toTitleCase(explicitAudience.replace(/[.,;:!?]+$/, ''));
-  }
-
-  if (industry === 'Technology & SaaS') return 'Founders, operators, and growth teams';
-  if (industry === 'E-commerce') return 'E-commerce operators and online shoppers';
-  if (industry === 'Marketing Services') return 'Marketing leads and business owners';
-  if (industry === 'Healthcare') return 'Patients and healthcare providers';
-  if (industry === 'Finance & Fintech') return 'Finance teams and digital-first businesses';
-  if (industry === 'Education') return 'Learners, educators, and training teams';
-
-  return 'General business audience';
-}
-
-function inferTone(text: string): string {
-  const lower = text.toLowerCase();
-  const tones: string[] = [];
-
-  if (/(trusted|secure|reliable|proven)/.test(lower)) tones.push('trustworthy');
-  if (/(fast|instant|quick|speed)/.test(lower)) tones.push('fast-paced');
-  if (/(simple|easy|clarity|straightforward)/.test(lower)) tones.push('clear');
-  if (/(innovative|future|next-gen|modern)/.test(lower)) tones.push('innovative');
-  if (/(premium|luxury|best-in-class)/.test(lower)) tones.push('premium');
-
-  if (tones.length < 3) {
-    tones.push('professional', 'practical', 'confident');
-  }
-
-  return Array.from(new Set(tones)).slice(0, 4).join(', ');
-}
-
-function inferCta(text: string): string {
-  const direct = pickByRegex(text, [
-    /\b(start free trial)\b/i,
-    /\b(book a demo)\b/i,
-    /\b(get started)\b/i,
-    /\b(contact us)\b/i,
-    /\b(request a demo)\b/i,
-    /\b(sign up)\b/i,
-    /\b(try for free)\b/i,
-  ]);
-
-  return direct || 'Get Started';
-}
-
-function inferHero(sentences: string[]): string {
-  const candidate = sentences.find((s) => s.length >= 25 && s.length <= 160);
-  if (candidate) return candidate;
-  if (sentences[0]) return sentences[0].slice(0, 160);
-  return 'Helping businesses grow with clearer strategy and execution.';
-}
-
-function inferValueProposition(sentences: string[]): string {
-  const candidate = sentences.find((sentence) =>
-    /(help|enable|empower|improve|optimi[sz]e|grow|save|scale|automate|transform)/i.test(sentence),
-  );
-
-  if (candidate) return candidate.slice(0, 220);
-  if (sentences[1]) return sentences[1].slice(0, 220);
-  return 'Delivers practical outcomes with a simpler, faster path to results.';
-}
-
-function inferPillars(industry: string): string[] {
-  if (industry === 'Technology & SaaS') return ['Industry Insights', 'Product Education', 'Customer Success Stories'];
-  if (industry === 'E-commerce') return ['Product Discovery', 'Buyer Education', 'Brand Trust & Social Proof'];
-  if (industry === 'Marketing Services') return ['Growth Playbooks', 'Case Studies', 'Market Trends'];
-  if (industry === 'Healthcare') return ['Patient Education', 'Expert Guidance', 'Service Trust Signals'];
-  if (industry === 'Finance & Fintech') return ['Financial Education', 'Risk & Compliance Clarity', 'Operational Efficiency'];
-  if (industry === 'Education') return ['Learning Tips', 'Program Outcomes', 'Community Stories'];
-  return ['Industry Education', 'Practical How-Tos', 'Proof of Results'];
-}
-
-function fallbackBrandExtraction(url: string, htmlText: string): BrandExtraction {
-  const cleaned = sanitizeText(htmlText);
-  const sentences = splitSentences(cleaned);
-  const industry = inferIndustry(cleaned);
-  const audience = inferAudience(cleaned, industry);
-  const domainRoot = toTitleCase(urlToDomainRoot(url).replace(/[-_]+/g, ' '));
-  const heroMessage = inferHero(sentences);
-  const valueProposition = inferValueProposition(sentences);
-  const businessSummary =
-    (sentences.slice(0, 2).join(' ').slice(0, 280) || `${domainRoot} offers services in ${industry}.`).trim();
-
-  return {
-    heroMessage,
-    extractedCta: inferCta(cleaned),
-    industry,
-    businessSummary,
-    audience,
-    tone: inferTone(cleaned),
-    valueProposition,
-    pillars: inferPillars(industry),
-    persona: {
-      title: industry === 'Technology & SaaS' ? 'Growth & Product Leader' : 'Business Decision Maker',
-      description: `A practical buyer evaluating ${domainRoot}'s solution for measurable outcomes and lower execution risk.`,
-    },
-  };
-}
-
-function normalizeBrandSummary(brandSummary: any): {
-  industry: string;
-  audience: string;
-  tone: string;
-  valueProposition: string;
-  pillars: string[];
-  businessSummary: string;
-} {
-  const industry = String(brandSummary?.industry || 'Business Services');
-  const audience = String(brandSummary?.audience || 'General business audience');
-  const tone = String(brandSummary?.tone || 'Professional, practical, confident');
-  const valueProposition = String(
-    brandSummary?.valueProposition || 'Delivers clear outcomes with less complexity and faster execution.',
-  );
-  const pillars = Array.isArray(brandSummary?.pillars) && brandSummary.pillars.length > 0
-    ? brandSummary.pillars.map((pillar: unknown) => String(pillar))
-    : inferPillars(industry);
-  const businessSummary = String(
-    brandSummary?.businessSummary || `A company operating in ${industry} for ${audience}.`,
-  );
-
-  return { industry, audience, tone, valueProposition, pillars, businessSummary };
-}
-
-function fallbackIdeas(brandSummary: any): ContentIdea[] {
-  const normalized = normalizeBrandSummary(brandSummary);
-  const formats = ['LinkedIn Post', 'Blog Article', 'Email Newsletter', 'Twitter Thread', 'LinkedIn Carousel'];
-
-  return normalized.pillars.slice(0, 5).map((pillar, index) => ({
-    topic: `${pillar}: Practical playbook for ${normalized.audience}`,
-    angle: `Break down one high-impact challenge in ${normalized.industry} and show a clear execution path. Tie it back to: ${normalized.valueProposition}`,
-    format: formats[index] || 'LinkedIn Post',
-    pillar,
-  }));
+/** Brand fields the idea normaliser reads. Missing stays empty: no invented defaults. */
+function normalizeBrandSummary(brandSummary: any): { valueProposition: string; pillars: string[] } {
+  const valueProposition = sanitizeText(String(brandSummary?.valueProposition || ''));
+  const pillars = Array.isArray(brandSummary?.pillars)
+    ? brandSummary.pillars.map((pillar: unknown) => sanitizeText(String(pillar))).filter(Boolean)
+    : [];
+  return { valueProposition, pillars };
 }
 
 const BAND_LABEL = ['low', 'mid', 'high'] as const;
@@ -678,47 +365,6 @@ function deriveKeywordAnchor(competitorKeywordsIntel: any): string {
   return 'Competitor keyword and content intent signals.';
 }
 
-function fallbackDraft(brandSummary: any, topic: string, context: string, channel: string): string {
-  const normalized = normalizeBrandSummary(brandSummary);
-  const hashtags = [
-    `#${normalized.industry.replace(/[^a-z0-9]+/gi, '')}`,
-    '#Growth',
-    '#Marketing',
-  ];
-
-  const intro = `Topic: ${topic}\nAudience: ${normalized.audience}\nTone: ${normalized.tone}`;
-  const body = `Most teams in ${normalized.industry} lose momentum because execution is fragmented.\n\n${normalized.businessSummary}\n\nPractical next step:\n1) Clarify the single outcome for this week.\n2) Prioritize one channel and one message.\n3) Measure response and iterate quickly.`;
-  const close = context
-    ? `\n\nContext to include: ${context}\n\n${hashtags.join(' ')}`
-    : `\n\n${hashtags.join(' ')}`;
-
-  if (String(channel).toUpperCase().includes('EMAIL')) {
-    return `${intro}\n\n${body}\n\nReply with your biggest blocker and we can share a focused plan.${close}`;
-  }
-
-  if (String(channel).toUpperCase().includes('BLOG')) {
-    return `${topic}\n\n${body}\n\nWhy this works:\n- It reduces noise\n- It tightens feedback loops\n- It creates repeatable growth${close}`;
-  }
-
-  return `${intro}\n\n${body}${close}`;
-}
-
-function fallbackCompetitors(brandSummary: any): CompetitorExtraction[] {
-  // Avoid synthetic competitor entries. Real competitors should come from model/search actions.
-  void brandSummary;
-  return [];
-}
-
-function fallbackPositioning(brandSummary: any, competitors: any[]): PositioningInsights {
-  const normalized = normalizeBrandSummary(brandSummary);
-  const competitorCount = Array.isArray(competitors) ? competitors.length : 0;
-
-  return {
-    positioningOpportunity: `Most of the ${competitorCount || 'current'} competitors appear to compete on similar claims. Your opportunity is to own a clearer promise around ${normalized.valueProposition.toLowerCase()}.`,
-    messagingDifferentiation: `Lead with concrete outcomes for ${normalized.audience} and show a simple, low-friction path to value. Avoid generic category claims and emphasize specific proof points.`,
-  };
-}
-
 export async function scrapeUrl(url: string): Promise<string | null> {
   try {
     let targetUrl = url;
@@ -800,49 +446,50 @@ interface BrandExtraction {
   };
 }
 
-function normalizeBrandExtraction(
-  candidate: Partial<BrandExtraction> | null,
-  url: string,
-  htmlText: string,
-): BrandExtraction {
-  const fallback = fallbackBrandExtraction(url, htmlText);
+/** A model value that is only scrape debris ("Read more", "©", "") counts as missing. */
+function cleanModelValue(value: unknown): string {
+  const text = sanitizeText(String(value ?? ''));
+  if (!text || NO_LETTERS.test(text)) return '';
+  if (SCRAPE_JUNK_PATTERNS.some((pattern) => pattern.test(text))) return '';
+  return text;
+}
+
+const BRAND_EXTRACTION_SCHEMA = strictObject({
+  heroMessage: STRING,
+  extractedCta: STRING,
+  industry: STRING,
+  businessSummary: STRING,
+  audience: STRING,
+  tone: STRING,
+  valueProposition: STRING,
+  pillars: STRING_ARRAY,
+  persona: strictObject({ title: STRING, description: STRING }),
+});
+
+/**
+ * Cleans the model's extraction. A field the model left empty stays empty —
+ * it used to be filled from a regex guess at the page ("Business Services",
+ * "Get Started", "General business audience") that was then saved as brand
+ * memory. Null when nothing usable came back at all.
+ */
+function normalizeBrandExtraction(candidate: Partial<BrandExtraction> | null): BrandExtraction | null {
   const safe = candidate || {};
-
-  const heroMessage = sanitizeText(String(safe.heroMessage || ''));
-  const extractedCta = sanitizeText(String(safe.extractedCta || ''));
-  const industry = sanitizeText(String(safe.industry || ''));
-  const businessSummary = sanitizeText(String(safe.businessSummary || ''));
-  const audience = sanitizeText(String(safe.audience || ''));
-  const tone = sanitizeText(String(safe.tone || ''));
-  const valueProposition = sanitizeText(String(safe.valueProposition || ''));
-
-  const pillarsRaw = Array.isArray(safe.pillars) ? safe.pillars : [];
-  const pillars = pillarsRaw
-    .map((item) => sanitizeText(String(item)))
-    .filter((item) => !isScrapeJunkLine(item))
-    .slice(0, 5);
-
-  const personaTitle = sanitizeText(String(safe.persona?.title || ''));
-  const personaDescription = sanitizeText(String(safe.persona?.description || ''));
-
-  return {
-    heroMessage: heroMessage && !isScrapeJunkLine(heroMessage) ? heroMessage : fallback.heroMessage,
-    extractedCta: extractedCta && !isScrapeJunkLine(extractedCta) ? extractedCta : fallback.extractedCta,
-    industry: industry || fallback.industry,
-    businessSummary:
-      businessSummary && !isScrapeJunkLine(businessSummary) ? businessSummary : fallback.businessSummary,
-    audience: audience && !isScrapeJunkLine(audience) ? audience : fallback.audience,
-    tone: tone || fallback.tone,
-    valueProposition:
-      valueProposition && !isScrapeJunkLine(valueProposition)
-        ? valueProposition
-        : fallback.valueProposition,
-    pillars: pillars.length > 0 ? pillars : fallback.pillars,
+  const result: BrandExtraction = {
+    heroMessage: cleanModelValue(safe.heroMessage),
+    extractedCta: cleanModelValue(safe.extractedCta),
+    industry: cleanModelValue(safe.industry),
+    businessSummary: cleanModelValue(safe.businessSummary),
+    audience: cleanModelValue(safe.audience),
+    tone: cleanModelValue(safe.tone),
+    valueProposition: cleanModelValue(safe.valueProposition),
+    pillars: (Array.isArray(safe.pillars) ? safe.pillars : []).map(cleanModelValue).filter(Boolean).slice(0, 5),
     persona: {
-      title: personaTitle || fallback.persona.title,
-      description: personaDescription || fallback.persona.description,
+      title: cleanModelValue(safe.persona?.title),
+      description: cleanModelValue(safe.persona?.description),
     },
   };
+  if (!result.businessSummary && !result.valueProposition && !result.industry) return null;
+  return result;
 }
 
 export async function analyzeWebsiteWithGemini(
@@ -857,6 +504,7 @@ export async function analyzeWebsiteWithGemini(
     Persian.
   */
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+  ctx?: AiCallContext,
 ): Promise<BrandExtraction | null> {
   const prompt = `
 You are an expert Brand Strategist and Marketing Analyst.
@@ -885,25 +533,23 @@ Please return a JSON object with EXACTLY these keys:
 - "persona": An object with "title" (e.g., "Growth Leader") and "description" (1 sentence about the persona).
 `;
 
-  const gemini = await callGemini(prompt, true, 'website_analysis');
-  if (gemini.ok && gemini.text) {
-    const parsed = safeJsonParse<BrandExtraction>(gemini.text);
-    if (parsed) return normalizeBrandExtraction(parsed, url, htmlText);
-  }
-
-  const openAi = await callOpenAi(
-    prompt,
-    true,
-    'You are an expert Brand Strategist. Return only valid JSON for the requested schema.',
+  const result = await runJson<Partial<BrandExtraction>>(
+    'analyzeWebsiteWithGemini',
     'website_analysis',
+    {
+      system: 'You are an expert Brand Strategist. Return only valid JSON for the requested schema.',
+      prompt,
+      timeoutMs: JSON_TIMEOUT_MS,
+      output: { kind: 'json_schema', name: 'brand_extraction', schema: BRAND_EXTRACTION_SCHEMA },
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) {
-    const parsed = safeJsonParse<BrandExtraction>(openAi.text);
-    if (parsed) return normalizeBrandExtraction(parsed, url, htmlText);
+  if (!result) return null;
+  const extraction = normalizeBrandExtraction(result.data);
+  if (!extraction) {
+    console.error(`[analyzeWebsiteWithGemini] ${result.provider} answered with no usable brand fields for ${url}; returning null`);
   }
-
-  logFallback('analyzeWebsiteWithGemini', gemini.status, openAi.status);
-  return normalizeBrandExtraction(null, url, htmlText);
+  return extraction;
 }
 
 export interface ContentIdea {
@@ -972,7 +618,6 @@ function normalizeIdeas(
 ): ContentIdea[] {
   const source = Array.isArray(candidate) ? candidate : [];
   const normalized = normalizeBrandSummary(brandSummary);
-  const fallback = fallbackIdeas(brandSummary);
   const formats = ['LinkedIn Post', 'Blog Article', 'Email Newsletter', 'Twitter Thread', 'LinkedIn Carousel'];
   const includeImages = Boolean(mediaConfig?.includeImages);
   const imageCount = Math.max(1, Math.min(3, Number(mediaConfig?.imageCount || 1)));
@@ -999,13 +644,13 @@ function normalizeIdeas(
       topic: topic.slice(0, 160),
       angle: angle.slice(0, 320),
       format: format || formats[result.length] || 'LinkedIn Post',
-      pillar: pillar || normalized.pillars[result.length % normalized.pillars.length] || 'General',
-      brand_anchor:
-        brandAnchor || `Brand signal: ${sanitizeText(normalized.valueProposition).slice(0, 160)}`,
-      market_anchor:
-        marketAnchor || `Market signal: ${sanitizeText(anchorDefaults?.marketAnchor || '').slice(0, 160)}`,
-      keyword_anchor:
-        keywordAnchor || `Keyword signal: ${sanitizeText(anchorDefaults?.keywordAnchor || '').slice(0, 160)}`,
+      pillar:
+        pillar ||
+        (normalized.pillars.length > 0 ? normalized.pillars[result.length % normalized.pillars.length] : '') ||
+        'General',
+      brand_anchor: brandAnchor.slice(0, 200),
+      market_anchor: marketAnchor.slice(0, 200),
+      keyword_anchor: keywordAnchor.slice(0, 200),
       include_images: includeImages,
       image_count: includeImages ? imageCount : 0,
       image_briefs:
@@ -1021,23 +666,9 @@ function normalizeIdeas(
     if (result.length >= count) break;
   }
 
-  if (result.length >= count) return result.slice(0, count);
-
-  const needed = count - result.length;
-  return [
-    ...result,
-    ...fallback.slice(0, needed).map((idea) => ({
-      ...idea,
-      brand_anchor: anchorDefaults?.brandAnchor || `Brand signal: ${normalized.valueProposition}`,
-      market_anchor: anchorDefaults?.marketAnchor || 'Market signal inferred from competitive matrices.',
-      keyword_anchor:
-        anchorDefaults?.keywordAnchor || 'Keyword signal inferred from competitor keyword analysis.',
-      include_images: includeImages,
-      image_count: includeImages ? imageCount : 0,
-      image_briefs: [],
-      auto_insert_to_calendar: autoInsertToCalendar,
-    })),
-  ];
+  // Only what the model wrote. A short list used to be padded with template
+  // ideas built from the brand pillars, indistinguishable from real ones.
+  return result.slice(0, count);
 }
 
 function buildIdeasPrompt(input: {
@@ -1153,6 +784,31 @@ function applyIdeaMeta(
   }));
 }
 
+const IDEAS_SCHEMA = strictObject({
+  ideas: {
+    type: 'array',
+    minItems: 1,
+    items: strictObject({
+      topic: STRING,
+      angle: STRING,
+      format: STRING,
+      pillar: STRING,
+      brand_anchor: STRING,
+      market_anchor: STRING,
+      keyword_anchor: STRING,
+      image_briefs: STRING_ARRAY,
+    }),
+  },
+  quality_scores: strictObject({
+    brand_fit: NUMBER,
+    audience_fit: NUMBER,
+    goal_fit: NUMBER,
+    platform_fit: NUMBER,
+    clarity_usefulness: NUMBER,
+    overall_score: NUMBER,
+  }),
+});
+
 async function generateIdeasWithFramework(
   brandSummary: any,
   frameworkSelection: ReturnType<typeof selectFramework>,
@@ -1176,11 +832,11 @@ async function generateIdeasWithFramework(
     defaultMarketAnchor: string;
     defaultKeywordAnchor: string;
   },
+  ctx?: AiCallContext,
 ): Promise<{
   ideas: ContentIdea[];
   qualityScores: FrameworkQualityScores;
-  geminiStatus: number;
-  openAiStatus: number;
+  provider: ProviderId;
 } | null> {
   const prompt = buildIdeasPrompt({
     brandSummary,
@@ -1201,52 +857,35 @@ async function generateIdeasWithFramework(
     language: context.language,
   });
 
-  const gemini = await callGemini(prompt, true, 'content_ideas');
-  if (gemini.ok && gemini.text) {
-    const parsed = safeJsonParse<{ ideas?: unknown; quality_scores?: Partial<FrameworkQualityScores> }>(gemini.text);
-    if (parsed?.ideas) {
-      return {
-        ideas: normalizeIdeas(parsed.ideas, brandSummary, requestedIdeaCount, mediaConfig, {
-          brandAnchor: intelligenceContext.defaultBrandAnchor,
-          marketAnchor: intelligenceContext.defaultMarketAnchor,
-          keywordAnchor: intelligenceContext.defaultKeywordAnchor,
-        }),
-        qualityScores: normalizeQualityScores(parsed.quality_scores),
-        geminiStatus: gemini.status,
-        openAiStatus: 0,
-      };
-    }
-  }
-
-  const openAi = await callOpenAi(
-    prompt,
-    true,
-    'You are Contivo Framework Engine. Return only valid JSON using the exact schema.',
+  const result = await runJson<{ ideas?: unknown; quality_scores?: Partial<FrameworkQualityScores> }>(
+    'generateIdeasWithFramework',
     'content_ideas',
+    {
+      system: 'You are Contivo Framework Engine. Return only valid JSON using the exact schema.',
+      prompt,
+      timeoutMs: LONG_TIMEOUT_MS,
+      output: { kind: 'json_schema', name: 'content_ideas', schema: IDEAS_SCHEMA },
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) {
-    const parsed = safeJsonParse<{ ideas?: unknown; quality_scores?: Partial<FrameworkQualityScores> }>(openAi.text);
-    if (parsed?.ideas) {
-      return {
-        ideas: normalizeIdeas(parsed.ideas, brandSummary, requestedIdeaCount, mediaConfig, {
-          brandAnchor: intelligenceContext.defaultBrandAnchor,
-          marketAnchor: intelligenceContext.defaultMarketAnchor,
-          keywordAnchor: intelligenceContext.defaultKeywordAnchor,
-        }),
-        qualityScores: normalizeQualityScores(parsed.quality_scores),
-        geminiStatus: gemini.status,
-        openAiStatus: openAi.status,
-      };
-    }
-  }
+  if (!result) return null;
 
-  logFallback('generateIdeasWithFramework', gemini.status, openAi.status);
-  return null;
+  const ideas = normalizeIdeas(result.data.ideas, brandSummary, requestedIdeaCount, mediaConfig, {
+    brandAnchor: intelligenceContext.defaultBrandAnchor,
+    marketAnchor: intelligenceContext.defaultMarketAnchor,
+    keywordAnchor: intelligenceContext.defaultKeywordAnchor,
+  });
+  if (ideas.length === 0) {
+    console.error(`[generateIdeasWithFramework] ${result.provider} returned no usable ideas; returning null`);
+    return null;
+  }
+  return { ideas, qualityScores: normalizeQualityScores(result.data.quality_scores), provider: result.provider };
 }
 
 export async function generateContentIdeasWithGemini(
   brandSummary: any,
   options?: IdeationRequestOptions,
+  ctx?: AiCallContext,
 ): Promise<ContentIdeasResult | null> {
   const marketMatrices = options?.marketMatrices;
   const competitorKeywordsIntel = options?.competitorKeywordsIntel;
@@ -1278,7 +917,9 @@ export async function generateContentIdeasWithGemini(
   const intelligenceContext = {
     marketMetricContext: summarizeMarketMetricContext(marketMatrices, options?.competitorBasis),
     competitorKeywordContext: summarizeCompetitorKeywordContext(competitorKeywordsIntel),
-    defaultBrandAnchor: `Brand signal: ${sanitizeText(normalizedBrand.valueProposition).slice(0, 180)}`,
+    defaultBrandAnchor: normalizedBrand.valueProposition
+      ? `Brand signal: ${normalizedBrand.valueProposition.slice(0, 180)}`
+      : '',
     defaultMarketAnchor: `Market signal: ${deriveMarketAnchor(marketMatrices)}`,
     defaultKeywordAnchor: `Keyword signal: ${deriveKeywordAnchor(competitorKeywordsIntel)}`,
   };
@@ -1294,6 +935,7 @@ export async function generateContentIdeasWithGemini(
     },
     { goal, platform, funnelStage, steeringNotes, language },
     intelligenceContext,
+    ctx,
   );
 
   if (primary) {
@@ -1324,6 +966,7 @@ export async function generateContentIdeasWithGemini(
           },
           { goal, platform, funnelStage, steeringNotes, language },
           intelligenceContext,
+          ctx,
         );
         if (fallbackResult && fallbackResult.qualityScores.overall_score >= primary.qualityScores.overall_score) {
           fallbackUsed = true;
@@ -1361,55 +1004,9 @@ export async function generateContentIdeasWithGemini(
     };
   }
 
-  const fallbackScores = normalizeQualityScores({
-    brand_fit: 6.6,
-    audience_fit: 6.4,
-    goal_fit: 6.5,
-    platform_fit: 6.4,
-    clarity_usefulness: 6.3,
-    overall_score: 6.44,
-  });
-  const fallbackIdeasList = applyIdeaMeta(
-    fallbackIdeas(brandSummary)
-      .slice(0, requestedIdeaCount)
-      .map((idea) => ({
-        ...idea,
-        brand_anchor: intelligenceContext.defaultBrandAnchor,
-        market_anchor: intelligenceContext.defaultMarketAnchor,
-        keyword_anchor: intelligenceContext.defaultKeywordAnchor,
-      })),
-    {
-      frameworkId: selection.framework_id,
-      frameworkName: selection.framework_name,
-      frameworkCategory: selection.framework_category,
-      selectionMode: selection.selection_mode,
-      selectionReason: `${selection.selection_reason} Generated via heuristic fallback.`,
-      qualityScores: fallbackScores,
-      fallbackUsed: false,
-      fallbackFrameworkId: null,
-    },
-  );
-  const fallbackWithMedia = fallbackIdeasList.map((idea) => ({
-    ...idea,
-    include_images: includeImages,
-    image_count: includeImages ? imageCount : 0,
-    image_briefs: [],
-    auto_insert_to_calendar: autoInsertToCalendar,
-  }));
-
-  return {
-    ideas: fallbackWithMedia,
-    framework: {
-      framework_id: selection.framework_id,
-      framework_name: selection.framework_name,
-      framework_category: selection.framework_category,
-      selection_mode: selection.selection_mode,
-      selection_reason: `${selection.selection_reason} Generated via heuristic fallback.`,
-    },
-    quality_scores: fallbackScores,
-    fallback_used: false,
-    fallback_framework_id: null,
-  };
+  // The chain failed or returned no usable ideas. There used to be a set of
+  // template ideas here with made-up quality scores (6.44) presented as real.
+  return null;
 }
 
 export async function generateContentDraftWithGemini(
@@ -1435,6 +1032,7 @@ export async function generateContentDraftWithGemini(
   storylineBlock?: string | null,
   /** The workspace's content language. See lib/content-language.ts. */
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+  ctx?: AiCallContext,
 ): Promise<string | null> {
   const frameworkId = String(frameworkContext?.frameworkId || '').trim();
   const frameworkGuide =
@@ -1510,23 +1108,20 @@ ${
 }
 `;
 
-  const gemini = await callGemini(prompt, false, 'content_draft');
-  if (gemini.ok && gemini.text) {
-    return gemini.text;
-  }
-
-  const openAi = await callOpenAi(
-    prompt,
-    false,
-    'You are an expert copywriter. Output only the final content with no preface.',
+  const result = await runText(
+    'generateContentDraftWithGemini',
     'content_draft',
+    {
+      system: 'You are an expert copywriter. Output only the final content with no preface.',
+      prompt,
+      timeoutMs: LONG_TIMEOUT_MS,
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) {
-    return openAi.text;
-  }
-
-  logFallback('generateContentDraftWithGemini', gemini.status, openAi.status);
-  return fallbackDraft(brandSummary, topic, context, channel);
+  // Null when the chain fails. This used to return fallbackDraft(): a
+  // "Topic: … Audience: … Practical next step: 1) Clarify the single outcome"
+  // template that was saved, scheduled and published as if it were written.
+  return result?.text ?? null;
 }
 
 /** Channel-specific shape for one-off generation with no brand profile. */
@@ -1546,10 +1141,9 @@ const INSTANT_CHANNEL_BRIEF: Record<string, string> = {
 /**
  * Generates one piece of content with no workspace behind it (Instant Content).
  *
- * Unlike `generateContentDraftWithGemini` this returns `null` when both
- * providers fail rather than a heuristic placeholder — the caller charges
+ * Returns `null` when the whole provider chain fails — the caller charges
  * credits for the result, so it must be able to tell a real generation from
- * a fallback and refuse to bill for the latter.
+ * a failure and refuse to bill for the latter.
  */
 export async function generateInstantDraft(input: {
   topic: string;
@@ -1557,7 +1151,8 @@ export async function generateInstantDraft(input: {
   tone?: string | null;
   /** Instant Content has no workspace, so this comes from the UI locale. */
   language?: ContentLanguage;
-}): Promise<{ content: string; provider: 'gemini' | 'openai' } | null> {
+  ctx?: AiCallContext;
+}): Promise<{ content: string; provider: ProviderId } | null> {
   const channel = String(input.channel || 'linkedin').toLowerCase();
   const brief = INSTANT_CHANNEL_BRIEF[channel] ?? INSTANT_CHANNEL_BRIEF.linkedin;
   const tone = String(input.tone || 'professional').trim();
@@ -1587,23 +1182,17 @@ or stock phrases, those win: they are written for that language, and these
 four are written for English.
 `;
 
-  const gemini = await callGemini(prompt, false, 'instant_draft');
-  if (gemini.ok && gemini.text?.trim()) {
-    return { content: gemini.text.trim(), provider: 'gemini' };
-  }
-
-  const openAi = await callOpenAi(
-    prompt,
-    false,
-    'You are an expert copywriter. Output only the final content, with no preface.',
+  const result = await runText(
+    'generateInstantDraft',
     'instant_draft',
+    {
+      system: 'You are an expert copywriter. Output only the final content, with no preface.',
+      prompt,
+      timeoutMs: LONG_TIMEOUT_MS,
+    },
+    input.ctx,
   );
-  if (openAi.ok && openAi.text?.trim()) {
-    return { content: openAi.text.trim(), provider: 'openai' };
-  }
-
-  logFallback('generateInstantDraft', gemini.status, openAi.status);
-  return null;
+  return result ? { content: result.text, provider: result.provider } : null;
 }
 
 export interface CompetitorExtraction {
@@ -1614,20 +1203,28 @@ export interface CompetitorExtraction {
   audienceGuess: string;
 }
 
-/** A non-empty competitor array, whether the model sent it bare or wrapped in an object. */
-function competitorList(raw: string): CompetitorExtraction[] | null {
-  const parsed = safeJsonParse<unknown>(raw);
-  const list = Array.isArray(parsed)
-    ? parsed
-    : parsed && typeof parsed === 'object'
-      ? Object.values(parsed as Record<string, unknown>).find(Array.isArray)
-      : null;
-  return Array.isArray(list) && list.length > 0 ? (list as CompetitorExtraction[]) : null;
-}
+const COMPETITORS_SCHEMA = strictObject({
+  competitors: {
+    type: 'array',
+    minItems: 1,
+    items: strictObject({
+      name: STRING,
+      domain: STRING,
+      description: STRING,
+      category: STRING,
+      audienceGuess: STRING,
+    }),
+  },
+});
 
+/**
+ * Null when the chain fails or no competitor came back. It used to return []
+ * on failure, which a caller cannot tell apart from "this brand has none".
+ */
 export async function discoverCompetitorsWithGemini(
   brandSummary: any,
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+  ctx?: AiCallContext,
 ): Promise<CompetitorExtraction[] | null> {
   const prompt = `
 You are an expert Market Analyst. Determine 5 to 8 potential competitors for the following brand.
@@ -1638,12 +1235,12 @@ written in the language above.
 
 Company names and domains are proper nouns and stay in their own script.
 
-Output ONLY a raw JSON array matching the required schema. Do not use markdown formatting.
+Output ONLY a JSON object of the form {"competitors": [...]} matching the required schema. Do not use markdown formatting.
 
 Brand Strategy Profile:
 ${JSON.stringify(brandSummary, null, 2)}
 
-Required Schema: An array of objects, where each object has these keys:
+Required Schema: "competitors" is an array of objects, where each object has these keys:
 - "name": Company name.
 - "domain": The website domain (e.g., "acme.com").
 - "description": A 1-2 sentence description of what they do.
@@ -1651,27 +1248,20 @@ Required Schema: An array of objects, where each object has these keys:
 - "audienceGuess": A description of their target audience.
 `;
 
-  const gemini = await callGemini(prompt, true, 'competitor_discovery_legacy');
-  if (gemini.ok && gemini.text) {
-    const parsed = competitorList(gemini.text);
-    if (parsed) return parsed;
-  }
-
-  // OpenAI's JSON mode can only return an object, never a bare array, so ask
-  // for the list under a key and unwrap it.
-  const openAi = await callOpenAi(
-    prompt,
-    true,
-    'You are an expert market analyst. Return only a JSON object of the form {"competitors": [...]}, where the array holds the real competitors in the schema described.',
-    'competitor_discovery_legacy',
+  const result = await runJson<{ competitors?: unknown }>(
+    'discoverCompetitorsWithGemini',
+    'legacy_competitors',
+    {
+      system:
+        'You are an expert market analyst. Return only a JSON object of the form {"competitors": [...]}, where the array holds the real competitors in the schema described.',
+      prompt,
+      timeoutMs: JSON_TIMEOUT_MS,
+      output: { kind: 'json_schema', name: 'legacy_competitors', schema: COMPETITORS_SCHEMA },
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) {
-    const parsed = competitorList(openAi.text);
-    if (parsed) return parsed;
-  }
-
-  logFallback('discoverCompetitorsWithGemini', gemini.status, openAi.status);
-  return fallbackCompetitors(brandSummary);
+  const list = Array.isArray(result?.data?.competitors) ? (result.data.competitors as CompetitorExtraction[]) : [];
+  return list.length > 0 ? list : null;
 }
 
 export interface PositioningInsights {
@@ -1679,10 +1269,18 @@ export interface PositioningInsights {
   messagingDifferentiation: string;
 }
 
+const POSITIONING_SCHEMA = strictObject({ positioningOpportunity: STRING, messagingDifferentiation: STRING });
+
+/**
+ * Null when the chain fails. It used to return fallbackPositioning(): "Most of
+ * the N competitors appear to compete on similar claims…" built from a
+ * template, not from the competitors.
+ */
 export async function generatePositioningInsights(
   brandSummary: any,
   competitors: any[],
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+  ctx?: AiCallContext,
 ): Promise<PositioningInsights | null> {
   const prompt = `
 You are an expert Brand Strategist and Marketing Analyst.
@@ -1705,25 +1303,22 @@ Required Schema:
 - "messagingDifferentiation": A sharp, 1-2 sentence recommendation for differentiation (e.g. "Competitors emphasize automation. Your messaging should emphasize strategic thinking.").
 `;
 
-  const gemini = await callGemini(prompt, true, 'positioning_insights');
-  if (gemini.ok && gemini.text) {
-    const parsed = safeJsonParse<PositioningInsights>(gemini.text);
-    if (parsed) return parsed;
-  }
-
-  const openAi = await callOpenAi(
-    prompt,
-    true,
-    'You are an expert brand strategist. Return only valid JSON with the required keys.',
-    'positioning_insights',
+  const result = await runJson<PositioningInsights>(
+    'generatePositioningInsights',
+    'positioning',
+    {
+      system: 'You are an expert brand strategist. Return only valid JSON with the required keys.',
+      prompt,
+      timeoutMs: JSON_TIMEOUT_MS,
+      output: { kind: 'json_schema', name: 'positioning', schema: POSITIONING_SCHEMA },
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) {
-    const parsed = safeJsonParse<PositioningInsights>(openAi.text);
-    if (parsed) return parsed;
-  }
-
-  logFallback('generatePositioningInsights', gemini.status, openAi.status);
-  return fallbackPositioning(brandSummary, competitors);
+  if (!result) return null;
+  const positioningOpportunity = sanitizeText(String(result.data.positioningOpportunity || ''));
+  const messagingDifferentiation = sanitizeText(String(result.data.messagingDifferentiation || ''));
+  if (!positioningOpportunity || !messagingDifferentiation) return null;
+  return { positioningOpportunity, messagingDifferentiation };
 }
 
 // ─── SEO Intelligence: SERP Analysis ─────────────────────────────────────────
@@ -1747,6 +1342,7 @@ export async function analyzeSerpResultsWithGemini(
   keyword: string,
   serpItems: SerpItem[],
   language: ContentLanguage = DEFAULT_CONTENT_LANGUAGE,
+  ctx?: AiCallContext,
 ): Promise<string | null> {
   const serpList = serpItems
     .map(
@@ -1779,46 +1375,15 @@ Based on this analysis, generate a structured SERP Insight Report with these exa
 
 Keep your analysis specific, actionable, and grounded in what you actually see in the SERP data.`;
 
-  const gemini = await callGemini(prompt, false, 'serp_analysis');
-  if (gemini.ok && gemini.text) return gemini.text;
-
-  const openAi = await callOpenAi(
-    prompt,
-    false,
-    'You are an SEO content strategist. Be specific, data-driven, and actionable.',
+  const result = await runText(
+    'analyzeSerpResultsWithGemini',
     'serp_analysis',
+    {
+      system: 'You are an SEO content strategist. Be specific, data-driven, and actionable.',
+      prompt,
+      timeoutMs: JSON_TIMEOUT_MS,
+    },
+    ctx,
   );
-  if (openAi.ok && openAi.text) return openAi.text;
-
-  logFallback('analyzeSerpResultsWithGemini', gemini.status, openAi.status);
-  return null;
-}
-
-/**
- * Runs a prompt through the standard provider chain (Gemini → OpenAI) and
- * parses the reply as JSON. Exposed so callers outside this module — such as
- * the Autopilot quality gate — reuse the same cooldown, fallback and
- * JSON-cleaning behaviour instead of talking to providers directly.
- *
- * Returns null only when BOTH providers fail or neither returns valid JSON;
- * callers must decide what an unavailable model means for them.
- */
-export async function requestJsonFromAi<T>(
-  prompt: string,
-  systemPrompt?: string,
-): Promise<{ data: T; provider: 'gemini' | 'openai' } | null> {
-  const gemini = await callGemini(prompt, true, 'request_json');
-  if (gemini.ok && gemini.text) {
-    const parsed = safeJsonParse<T>(gemini.text);
-    if (parsed) return { data: parsed, provider: 'gemini' };
-  }
-
-  const openAi = await callOpenAi(prompt, true, systemPrompt, 'request_json');
-  if (openAi.ok && openAi.text) {
-    const parsed = safeJsonParse<T>(openAi.text);
-    if (parsed) return { data: parsed, provider: 'openai' };
-  }
-
-  logFallback('requestJsonFromAi', gemini.status, openAi.status);
-  return null;
+  return result?.text ?? null;
 }

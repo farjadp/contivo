@@ -21,7 +21,7 @@
 
 import type { EvidenceKind } from '@prisma/client';
 
-import { requestJsonFromAi } from '@/lib/gemini';
+import { runAiTask, type AiCallContext, type AiTask } from '@/lib/ai';
 import {
   DEFAULT_CONTENT_LANGUAGE,
   languageInstructions,
@@ -66,6 +66,22 @@ export type NarrativeContext = {
    */
   language?: ContentLanguage;
 };
+
+/** One JSON call through the failover layer; null when the chain fails. */
+async function requestJson<T>(
+  task: AiTask,
+  prompt: string,
+  system: string,
+  timeoutMs: number,
+  aiCtx?: AiCallContext,
+): Promise<{ data: T; provider: string } | null> {
+  const result = await runAiTask(task, { system, prompt, output: { kind: 'json_object' }, timeoutMs }, aiCtx);
+  if (!result.ok) {
+    console.error(`[narrative] AI ${result.kind} for ${task} (first error: ${result.firstErrorClass}); returning null`);
+    return null;
+  }
+  return { data: result.json as T, provider: result.provider };
+}
 
 /** The language block, plus the rule that keeps the JSON parseable. */
 function narrativeLanguageBlock(ctx: NarrativeContext): string {
@@ -175,6 +191,7 @@ ${gapTopicLines.join('\n') || '- none'}
  */
 export async function proposeChanges(
   ctx: NarrativeContext,
+  aiCtx?: AiCallContext,
 ): Promise<{ options: ChangeHypothesis[]; provider: string } | null> {
   const prompt = `
 You are a positioning strategist. Below is verified intelligence about a company
@@ -198,9 +215,12 @@ Return JSON only:
 {"options":[{"change":"one sentence","rationale":"why this is defensible","evidence":["what in the data suggested it"]}]}
 `.trim();
 
-  const res = await requestJsonFromAi<{ options: ChangeHypothesis[] }>(
+  const res = await requestJson<{ options: ChangeHypothesis[] }>(
+    'narrative_change',
     prompt,
     'You are a precise positioning strategist. Output only valid JSON.',
+    60_000,
+    aiCtx,
   );
   if (!res?.data?.options?.length) return null;
 
@@ -234,6 +254,7 @@ export async function draftStorylines(
   ctx: NarrativeContext,
   change: string,
   evidence: EvidenceInput[],
+  aiCtx?: AiCallContext,
 ): Promise<{ storylines: DraftStoryline[]; provider: string } | null> {
   const allowed = evidence.filter((e) => e.kind !== 'FORBIDDEN_CLAIM');
   const forbidden = evidence.filter((e) => e.kind === 'FORBIDDEN_CLAIM');
@@ -289,9 +310,13 @@ Return JSON only:
 {"storylines":[{"claim":"","audience":"","winners":"","losers":"","promisedLand":"","gifts":[""],"sourceRefs":[""]}]}
 `.trim();
 
-  const res = await requestJsonFromAi<{ storylines: DraftStoryline[] }>(
+  const res = await requestJson<{ storylines: DraftStoryline[] }>(
+    'storylines',
     prompt,
     'You are a precise positioning strategist. Output only valid JSON. Never invent evidence.',
+    // Three or four full storylines: a long reply (spec §Timeouts).
+    120_000,
+    aiCtx,
   );
   if (!res?.data?.storylines?.length) return null;
 

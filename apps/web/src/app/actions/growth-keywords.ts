@@ -1,6 +1,6 @@
 'use server';
 
-import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+import { runAiTask, type AiCallContext, type AiFailure } from '@/lib/ai';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -102,15 +102,6 @@ function normalizeDomain(value: string | null | undefined): string {
   if (!raw) return '';
   const withoutProtocol = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
   return withoutProtocol.split('/')[0]?.toLowerCase().trim() || '';
-}
-
-function stripCodeFences(value: string): string {
-  return value
-    .trim()
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```$/i, '')
-    .trim();
 }
 
 function toNonNegativeInt(value: unknown): number {
@@ -331,9 +322,11 @@ Return JSON only with this schema:
 `;
 }
 
-async function callOpenAiKeywords(
-  prompt: string,
-): Promise<{
+/** No timeout existed before the failover layer; 60 s per provider attempt. */
+const AI_TIMEOUT_MS = 60_000;
+
+type AiJsonCall = {
+  /** The model's JSON, or null when it answered with something that is not an object. */
   parsed: any | null;
   usage: {
     model: string;
@@ -341,70 +334,50 @@ async function callOpenAiKeywords(
     completion_tokens: number;
     total_tokens: number;
   } | null;
-} | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+  /** Set when no provider answered; `parsed` and `usage` are null then. */
+  failure: AiFailure | null;
+};
 
-  const model = process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1';
-
-  try {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are rigorous about evidence and uncertainty. Return only valid JSON.',
-          },
-          { role: 'user', content: prompt },
-        ],
-        temperature: 0.2,
-      }),
-    });
-
-    if (!res.ok) {
-      console.error('OpenAI competitor keyword analysis error:', await res.text());
-      return null;
-    }
-
-    const data = await res.json();
-    void recordAiUsage({
-      provider: 'openai',
-      model: resolveResponseModel(data, model),
-      feature: 'growth_keywords',
-      usage: parseOpenAiChatUsage(data),
-    });
-    const usage = {
-      model,
-      prompt_tokens: toNonNegativeInt(data?.usage?.prompt_tokens),
-      completion_tokens: toNonNegativeInt(data?.usage?.completion_tokens),
-      total_tokens: toNonNegativeInt(data?.usage?.total_tokens),
-    };
-    const content = data?.choices?.[0]?.message?.content;
-    if (!content || typeof content !== 'string') {
-      return { parsed: null, usage };
-    }
-
-    try {
-      return {
-        parsed: JSON.parse(stripCodeFences(content)),
-        usage,
-      };
-    } catch (parseError) {
-      console.error('OpenAI competitor keyword JSON parse failed:', parseError);
-      return { parsed: null, usage };
-    }
-  } catch (error) {
-    console.error('OpenAI competitor keyword request failed:', error);
-    return null;
+/**
+ * One JSON call through the failover layer (task `keywords`). The layer records
+ * usage on success, so this file no longer does.
+ */
+async function callOpenAiKeywords(prompt: string, ctx: AiCallContext): Promise<AiJsonCall> {
+  const result = await runAiTask(
+    'keywords',
+    {
+      system: 'You are rigorous about evidence and uncertainty. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: AI_TIMEOUT_MS,
+      temperature: 0.2,
+    },
+    ctx,
+  );
+  if (!result.ok) {
+    console.error('competitor keywords AI call failed:', result.kind, result.firstErrorClass);
+    return { parsed: null, usage: null, failure: result };
   }
+  const json = result.json;
+  return {
+    parsed: json && typeof json === 'object' ? json : null,
+    usage: {
+      model: result.model,
+      prompt_tokens: toNonNegativeInt(result.usage.promptTokens),
+      completion_tokens: toNonNegativeInt(result.usage.completionTokens),
+      total_tokens: toNonNegativeInt(result.usage.totalTokens),
+    },
+    failure: null,
+  };
+}
+
+/**
+ * The error key for a call no provider answered. Only a genuine rate limit on
+ * every provider gets the "try again in a few minutes" copy; billing, auth or
+ * an outage gets the generic one, because waiting will not fix those.
+ */
+function aiFailureErrorKey(failure: AiFailure, rateLimitedKey: string, genericKey: string): string {
+  return failure.allRateLimited ? rateLimitedKey : genericKey;
 }
 
 function uniqueKeywordList(values: unknown, limit: number): string[] {
@@ -668,7 +641,10 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
       competitorSignals,
     });
 
-    const openAiResult = await callOpenAiKeywords(prompt);
+    const openAiResult = await callOpenAiKeywords(prompt, {
+      workspaceId: workspace.id,
+      userId: session.userId as string,
+    });
     const payload =
       openAiResult?.parsed != null
         ? normalizePayloadFromAi(openAiResult.parsed, { competitorSignals })
@@ -683,11 +659,18 @@ export async function generateWorkspaceCompetitorKeywords(workspaceId: string) {
         workspaceId: workspace.id,
         action: 'COMPETITOR_KEYWORDS_FAILED',
         detail: {
-          reason: payload ? 'no_keywords' : 'no_ai_result',
-          totalTokens: openAiResult?.usage?.total_tokens || 0,
+          reason: openAiResult.failure ? 'ai_unavailable' : payload ? 'no_keywords' : 'no_ai_result',
+          firstErrorClass: openAiResult.failure?.firstErrorClass ?? null,
+          totalTokens: openAiResult.usage?.total_tokens || 0,
         },
       });
-      return { error: await actionError('keywordsAiFailed') };
+      return {
+        error: await actionError(
+          openAiResult.failure
+            ? aiFailureErrorKey(openAiResult.failure, 'keywordsAiFailed', 'keywordsFailed')
+            : 'keywordsAiFailed',
+        ),
+      };
     }
 
     const existingTokenUsage = normalizeTokenUsage(
