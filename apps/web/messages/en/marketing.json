@@ -11,7 +11,11 @@
     "signIn": "Sign in",
     "startFree": "Start free",
     "features": "Features",
-    "siteOnlyNotice": "This site is translated, but Contivo writes your content in English or Persian."
+    "siteOnlyNotice": "This site is translated, but Contivo writes your content in English or Persian.",
+    "product": "How it works",
+    "why": "Why Contivo",
+    "compare": "Compare",
+    "blog": "Blog"
   },
   "localeSwitcher": {
     "label": "Language",
@@ -231,6 +235,85 @@
     "chapters": {
       "thinkLabel": "Think — and refuse",
       "makeShip": "Make · Ship"
+    },
+    "v2": {
+      "hero": {
+        "eyebrow": "Content marketing, done for you",
+        "headline": "Your LinkedIn and your blog, <accent>kept busy</accent> every week.",
+        "body": "Give Contivo your website. It learns what you sell and who you compete with, then writes posts for your LinkedIn and articles for your own site, and publishes them on the days you choose. Each one is checked before it goes out.",
+        "shotAlt": "The pipeline of a real Contivo workspace: posts published to LinkedIn and one draft waiting for its slot.",
+        "shotCaption": "A real workspace, captured from the app: posts published to LinkedIn, one draft scheduled."
+      },
+      "week": {
+        "title": "What a week looks like",
+        "facts": {
+          "posts": {
+            "title": "1 to 14 posts a week",
+            "body": "You choose how many. It keeps the next seven days planned."
+          },
+          "channels": {
+            "title": "Your LinkedIn and your own site",
+            "body": "Posts on your personal LinkedIn profile, articles on your website. X, Telegram, WordPress and Threads are on the way."
+          },
+          "time": {
+            "title": "On the days and hours you pick",
+            "body": "In your time zone, spread out so two posts on the same idea never land back to back."
+          }
+        }
+      },
+      "steps": {
+        "title": "How it works",
+        "link": "See every step",
+        "s1": {
+          "title": "It reads your site",
+          "body": "What you do, what you promise, who it's for and how you sound, written back for you to correct.",
+          "alt": "Brand memory in a real workspace: business summary, value proposition, audience and tone."
+        },
+        "s2": {
+          "title": "It researches your market",
+          "body": "Competitors your size, checked to exist and plotted against you, with the gaps they leave open.",
+          "alt": "A positioning chart in a real workspace, with the brand plotted among its competitors."
+        },
+        "s3": {
+          "title": "It writes and publishes",
+          "body": "Drafts in your voice, each tied to a storyline and checked, then posted to LinkedIn and your site on schedule.",
+          "alt": "The pipeline of a real workspace, with posts published to LinkedIn."
+        }
+      },
+      "notAi": {
+        "title": "Why it won't read like everyone else's AI",
+        "body": "Most tools start writing from a blank prompt. Contivo won't produce a single idea until it has your brand memory and your competitor research, and every draft then goes through a gate built to reject it.",
+        "whyLink": "Why Contivo",
+        "compareLink": "How it compares with other tools"
+      },
+      "pricing": {
+        "title": "What it costs",
+        "body": "New accounts are free during early access. Once billing starts:",
+        "link": "See full pricing"
+      },
+      "faq": {
+        "title": "Questions",
+        "publish": {
+          "q": "Does it publish without me?",
+          "a": "By default, yes: posts that pass the quality gate go out on schedule. Turn on approval and every draft waits for you instead."
+        },
+        "channels": {
+          "q": "Where does it publish?",
+          "a": "Your personal LinkedIn profile, and your own website through a read-only API that a developer connects once. Company pages, X, Telegram, WordPress and Threads are not live yet."
+        },
+        "languages": {
+          "q": "Which languages does it write in?",
+          "a": "English and Persian. This site is in more languages than that, but the content Contivo writes is in one of those two."
+        },
+        "cost": {
+          "q": "What does it cost?",
+          "a": "Nothing for new accounts during early access. After that, from $55 a month."
+        },
+        "need": {
+          "q": "What do I need to start?",
+          "a": "A website. To post on LinkedIn, your LinkedIn account; to publish on your site, a developer for one short setup."
+        }
+      }
     }
   },
   "footer": {
