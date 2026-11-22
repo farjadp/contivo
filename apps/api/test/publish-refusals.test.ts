@@ -64,7 +64,7 @@ function setup() {
   const conns = new SocialConnectionsService(prisma as any);
   const svc = new SocialPublishService(
     prisma as any,
-    new AdapterFactory(a as any, a as any, a as any, a as any, a as any),
+    new AdapterFactory(a as any, a as any, a as any, a as any, a as any, a as any),
     conns,
     { async enqueuePublish() {} } as any,
     new TokenRefreshService(prisma as any, conns, memoryLocks()),

@@ -35,7 +35,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 
 import { AdapterFactory, UnsupportedPlatformError } from './adapters/adapter.factory';
-import type { AdapterConnection, PublishPayload } from './adapters/social-adapter.interface';
+import type { AdapterConnection, PublishContext, PublishPayload } from './adapters/social-adapter.interface';
 import { CreatePublishJobDto } from './dto/create-publish-job.dto';
 import { PermanentPublishError, TransientPublishError } from './publish-errors';
 import { buildPublishPayload } from './publish-payload';
@@ -57,6 +57,9 @@ export type PublishOutcome = 'PUBLISHED' | 'FAILED' | 'CANCELLED';
 
 /** Every status write below except PUBLISHED: a user's Cancel is final. */
 const NOT_CANCELLED = { not: 'CANCELLED' as const };
+
+/** SocialPublishLog action for one delivered part of a multi-part post. */
+export const PART_SENT = 'PART_SENT';
 
 /** Internal: the job was cancelled while this attempt ran. */
 class JobCancelled extends Error {}
@@ -457,7 +460,7 @@ export class SocialPublishService {
       const current = await this.prisma.socialPublishJob.findUnique({ where: { id: jobId }, select: { status: true } });
       if (!current || current.status === 'CANCELLED') throw new JobCancelled();
 
-      const result = await adapter.publish(connection, enrichedPayload);
+      const result = await adapter.publish(connection, enrichedPayload, await this.publishContext(jobId, connectionId));
 
       if (!result.success) {
         const message = result.error ?? 'Unknown publish error';
@@ -535,6 +538,42 @@ export class SocialPublishService {
   }
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
+
+  /**
+   * Multi-part state for adapters that post in several messages (Telegram).
+   * Each delivered part is a PART_SENT log row on the job, so a retry — by
+   * BullMQ or the user's Retry button, which keeps the job id — skips parts
+   * already live instead of posting them twice.
+   */
+  private async publishContext(jobId: string, connectionId: string): Promise<PublishContext> {
+    const rows = await this.prisma.socialPublishLog.findMany({
+      where: { publishJobId: jobId, action: PART_SENT, status: 'SUCCESS' },
+      orderBy: { createdAt: 'asc' },
+    });
+    const sentParts = new Map<number, string>();
+    for (const row of rows) {
+      try {
+        const { index, externalId } = JSON.parse(row.requestSummary ?? '{}') as { index?: unknown; externalId?: unknown };
+        if (typeof index === 'number' && typeof externalId === 'string' && !sentParts.has(index)) {
+          sentParts.set(index, externalId);
+        }
+      } catch {
+        this.logger.warn(`Job ${jobId}: unreadable ${PART_SENT} log row ${row.id}`);
+      }
+    }
+    return {
+      sentParts,
+      recordPart: (index, externalId) => this.appendLog(jobId, PART_SENT, 'SUCCESS', { index, externalId }),
+      updateAccountIdentifier: async (newIdentifier) => {
+        await this.prisma.socialConnection.update({
+          where: { id: connectionId },
+          data:  { accountIdentifier: newIdentifier },
+        });
+        await this.appendLog(jobId, 'ACCOUNT_ID_MIGRATED', 'SUCCESS', { newIdentifier });
+        this.logger.log(`Connection ${connectionId} moved to a new platform id (group upgraded).`);
+      },
+    };
+  }
 
   /**
    * Job FAILED + ContentItem FAILED + failure log. Returns false (and writes
