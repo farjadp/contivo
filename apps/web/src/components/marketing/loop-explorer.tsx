@@ -10,7 +10,8 @@
  * log, which says "example" in its own title.
  *
  * It turns on its own while it is on screen, and stops for good the moment
- * the visitor picks a stage, hovers or focuses it. The server renders stage
+ * the visitor picks a stage. It waits while they read the panel (hover) or
+ * have keyboard focus inside. The server renders stage
  * one, fully visible; nothing waits on script to be readable.
  */
 
@@ -99,8 +100,6 @@ export function LoopExplorer() {
   return (
     <div
       ref={ref}
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
       onFocusCapture={() => setPaused(true)}
       onBlurCapture={() => setPaused(false)}
       className="grid grid-cols-[minmax(0,1fr)] items-center gap-8 lg:grid-cols-[minmax(0,27rem)_minmax(0,1fr)] lg:gap-14"
@@ -212,7 +211,14 @@ export function LoopExplorer() {
 
       {/* All six panels share one grid cell, so the section is as tall as its
           tallest stage and never jumps when the stage changes. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] [&>*]:col-start-1 [&>*]:row-start-1">
+      {/* Hover pauses only here, where someone is reading. Pausing on the
+          whole section left the ring still for most desktop visitors, whose
+          pointer rests somewhere over it after scrolling. */}
+      <div
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        className="grid grid-cols-[minmax(0,1fr)] [&>*]:col-start-1 [&>*]:row-start-1"
+      >
         {STAGES.map((s, i) => {
           const on = i === stage;
           return (
