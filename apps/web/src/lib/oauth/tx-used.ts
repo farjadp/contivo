@@ -12,10 +12,14 @@ const GRACE_SECONDS = 5 * 60;
 /** True only if this call is the first to use `jti`. Any error or conflict is false. */
 export async function claimTx(jti: string, txExpiresAtSeconds: number): Promise<boolean> {
   try {
+    // The column is a timezone-less timestamp. A bare Date parameter is cast
+    // through the SESSION timezone, so under a non-UTC session expiresAt lands
+    // hours early and prune could delete a live jti (a replay window). Pin it
+    // to UTC explicitly, matching prune's `NOW() AT TIME ZONE 'UTC'`.
     const expiresAt = new Date((txExpiresAtSeconds + GRACE_SECONDS) * 1000);
     const inserted = await prisma.$executeRaw`
       INSERT INTO oauth_tx_used (jti, "expiresAt")
-      VALUES (${jti}, ${expiresAt})
+      VALUES (${jti}, (${expiresAt}::timestamptz AT TIME ZONE 'UTC'))
       ON CONFLICT (jti) DO NOTHING
     `;
     return inserted === 1;
