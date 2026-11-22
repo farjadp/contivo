@@ -1,6 +1,6 @@
 # B8: quality gate on manually generated drafts
 
-Status: spec only. Build starts after PR #31 (B6/B7) merges to main. Owner: contivo-backend-developer; migration by contivo-database-engineer.
+Status: built on `myca/b8-manual-quality-gate` (see Build notes). Owner: contivo-backend-developer; migration by contivo-database-engineer.
 Source: QA E2E handover 2026-11-22, B8. CPO decision 2026-11-22: own branch off main, new column (not `failedReason`), override button approved with audit + plain-language reasons.
 
 ## Problem
@@ -80,3 +80,11 @@ B9 (cost/provenance), B10 (discovery), the gate thresholds themselves, the autop
 - the server actions for status, schedule and edit (`apps/web/src/app/actions/workspace.ts`, `calendar.ts`, and whichever action owns `updateContentStatus`)
 - `IdeationTab.tsx`, `PipelineTab.tsx`
 - `messages/{en,fa,it}/tabs-a.json`
+
+## Build notes (where the build differs from the text above)
+
+- **Unavailable codes:** the gate already returns `judge_unavailable` when no judge answers; that is stored as is. `gate_unavailable` is stored when the gate itself throws. Both are fails and both read as "the quality check could not run".
+- **"Publish anyway" lifts the block, then the post is scheduled normally:** it calls `updateContentStatus(id, 'READY', { override: true })`. The override stays on the verdict until the text changes, so rescheduling does not ask again.
+- **The editor never refuses a save:** `updateContentAndSchedule` on a blocked item (or on a gated item whose body changed) saves the text and holds it as GENERATED with no schedule, instead of throwing. Approve, schedule and quick-schedule do refuse with `quality_gate_blocked`. Moving to DRAFT or ARCHIVED is never gated.
+- **Failed scores are stored as `below[]`** at save time, so the UI can name them in the reader's language without importing the thresholds.
+- **Strings:** all five app locales (en, fa, it, es, he) carry `tabsA.quality`, because check-i18n requires them in sync.
