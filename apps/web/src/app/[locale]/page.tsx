@@ -23,7 +23,7 @@ import { UrlIntake } from '@/components/marketing/url-intake';
 import { Reveal } from '@/components/marketing/home-interactions';
 import { LoopExplorer } from '@/components/marketing/loop-explorer';
 import { GateDemo, LiveWeek } from '@/components/marketing/hero-live';
-import { PLAN_OFFERS, usd } from '@/lib/plan-catalogue';
+import { PlanPicker } from '@/components/marketing/plan-picker';
 
 /**
  * The emphasised words of each headline: a saffron marker stroke that sweeps
@@ -242,7 +242,6 @@ function ForNotFor() {
 
 function PricingBrief() {
   const t = useTranslations('home.v2.pricing');
-  const tp = useTranslations('pricing');
   return (
     <section className="border-t border-rule">
       <div className={`${SECTION} py-12 md:py-20`}>
@@ -255,23 +254,7 @@ function PricingBrief() {
             {t('link')}
           </Link>
         </div>
-        <ul className="mt-6 grid gap-3 md:mt-8 md:grid-cols-3 md:gap-4">
-          {PLAN_OFFERS.map((p) => (
-            <li
-              key={p.id}
-              className={`grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-4 gap-y-1 rounded-2xl p-5 md:flex md:flex-col md:gap-2 md:p-6 ${p.highlighted ? 'bg-forest text-chalk' : 'border border-rule bg-chalk-raised'}`}
-            >
-              <p className="font-display text-[22px] font-bold">
-                <bdi>{tp(`plans.${p.id}.name`)}</bdi>
-              </p>
-              <p className="flex items-baseline gap-2">
-                <bdi className="tnum font-plexmono text-[2rem] font-medium leading-none">{usd(p.monthlyUsd)}</bdi>
-                <span className={`text-[14px] ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>{tp('perMonth')}</span>
-              </p>
-              <p className={`col-span-2 text-[15px] ${p.highlighted ? 'text-forest-muted' : 'text-moss-muted'}`}>{tp(`plans.${p.id}.tagline`)}</p>
-            </li>
-          ))}
-        </ul>
+        <PlanPicker />
       </div>
     </section>
   );

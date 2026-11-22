@@ -264,7 +264,14 @@
       "pricing": {
         "title": "What it costs",
         "body": "New accounts are free during early access. Once billing starts:",
-        "link": "See full pricing"
+        "link": "See full pricing",
+        "picker": {
+          "postsLabel": "Posts a week, per brand",
+          "brandsLabel": "Brands",
+          "result": "About {count, number} posts a month. <b>{plan}</b> covers it.",
+          "over": "About {count, number} posts a month, more than {plan} includes ({limit, number}). Lower the cadence, or write to us.",
+          "fits": "Fits you"
+        }
       },
       "faq": {
         "title": "Questions",

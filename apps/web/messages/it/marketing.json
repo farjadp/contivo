@@ -264,7 +264,14 @@
       "pricing": {
         "title": "Quanto costa",
         "body": "Durante l'accesso anticipato i nuovi account sono gratis. Quando partirà la fatturazione:",
-        "link": "Vedi tutti i prezzi"
+        "link": "Vedi tutti i prezzi",
+        "picker": {
+          "postsLabel": "Post a settimana, per brand",
+          "brandsLabel": "Brand",
+          "result": "Circa {count, number} post al mese. Basta il piano <b>{plan}</b>.",
+          "over": "Circa {count, number} post al mese, più di quanti ne include {plan} ({limit, number}). Riduci il ritmo, oppure scrivici.",
+          "fits": "Fa per te"
+        }
       },
       "faq": {
         "title": "Domande",

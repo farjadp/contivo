@@ -264,7 +264,14 @@
       "pricing": {
         "title": "Cuánto cuesta",
         "body": "Las cuentas nuevas son gratis durante el acceso anticipado. Cuando empiece la facturación:",
-        "link": "Ver todos los precios"
+        "link": "Ver todos los precios",
+        "picker": {
+          "postsLabel": "Publicaciones por semana, por marca",
+          "brandsLabel": "Marcas",
+          "result": "Unas {count, number} publicaciones al mes. Con el plan <b>{plan}</b> te basta.",
+          "over": "Unas {count, number} publicaciones al mes, más de las que incluye {plan} ({limit, number}). Baja el ritmo o escríbenos.",
+          "fits": "Para ti"
+        }
       },
       "faq": {
         "title": "Preguntas",

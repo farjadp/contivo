@@ -264,7 +264,14 @@
       "pricing": {
         "title": "Ce que ça coûte",
         "body": "Les nouveaux comptes sont gratuits pendant l’accès anticipé. Une fois la facturation lancée :",
-        "link": "Voir tous les tarifs"
+        "link": "Voir tous les tarifs",
+        "picker": {
+          "postsLabel": "Publications par semaine, par marque",
+          "brandsLabel": "Marques",
+          "result": "Environ {count, number} publications par mois. La formule <b>{plan}</b> suffit.",
+          "over": "Environ {count, number} publications par mois, soit plus que ce qu’inclut {plan} ({limit, number}). Réduisez le rythme, ou écrivez-nous.",
+          "fits": "Pour vous"
+        }
       },
       "faq": {
         "title": "Questions",
