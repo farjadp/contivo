@@ -11,6 +11,7 @@
  * is worth more than an error message.
  */
 
+import { parseGeminiUsage, parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import {
   DEFAULT_CONTENT_LANGUAGE,
   languageInstructions,
@@ -68,6 +69,12 @@ async function callGemini(prompt: string): Promise<string> {
     throw new Error(`Gemini API error ${res.status}: ${body.slice(0, 200)}`);
   }
   const data = await res.json();
+  void recordAiUsage({
+    provider: 'gemini',
+    model: resolveResponseModel(data, GEMINI_MODEL),
+    feature: 'report_narrative',
+    usage: parseGeminiUsage(data),
+  });
   return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
 }
 
@@ -92,6 +99,12 @@ async function callOpenAi(prompt: string): Promise<string> {
     throw new Error(`OpenAI API error ${res.status}: ${body.slice(0, 200)}`);
   }
   const data = await res.json();
+  void recordAiUsage({
+    provider: 'openai',
+    model: resolveResponseModel(data, model),
+    feature: 'report_narrative',
+    usage: parseOpenAiChatUsage(data),
+  });
   return data?.choices?.[0]?.message?.content ?? '';
 }
 

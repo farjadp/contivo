@@ -17,6 +17,7 @@
 
 import type { ContentChannel, Prisma } from '@prisma/client';
 
+import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 import {
@@ -125,6 +126,15 @@ export async function runPolicy(
   policyId: string,
   options: { now?: Date; trigger?: RunTrigger } = {},
 ): Promise<RunResult> {
+  // A cron run has no session; every model call it makes is attributed to
+  // the policy's owner and workspace through this context instead.
+  return runWithAiContext({}, () => runPolicyInAiContext(policyId, options));
+}
+
+async function runPolicyInAiContext(
+  policyId: string,
+  options: { now?: Date; trigger?: RunTrigger },
+): Promise<RunResult> {
   const now = options.now ?? new Date();
   const trigger = options.trigger ?? 'manual';
   const log: LogEntry[] = [];
@@ -137,6 +147,7 @@ export async function runPolicy(
   }
   const base = { policyId: policy.id, workspaceId: policy.workspaceId };
   const actor = { userId: policy.userId, workspaceId: policy.workspaceId };
+  setAiContext(actor);
 
   if (!policy.enabled) {
     return skipped(policy.id, policy.workspaceId, 'policy disabled');

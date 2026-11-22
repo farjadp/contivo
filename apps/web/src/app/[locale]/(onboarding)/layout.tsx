@@ -2,6 +2,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { redirect } from '@/i18n/navigation';
 import { getSession } from '@/lib/auth';
+import { touchLastSeen } from '@/lib/last-seen';
 
 export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
   // Onboarding is a signed-in flow: it is where a new account chooses its
@@ -9,6 +10,10 @@ export default async function OnboardingLayout({ children }: { children: React.R
   // of its links led to a dead end.
   const session = await getSession();
   if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
+
+  // A new account without a workspace lands here, not on /dashboard, so this is
+  // where its first sessions start. Never throws.
+  await touchLastSeen(session.userId);
 
   const t = await getTranslations('onboarding');
 

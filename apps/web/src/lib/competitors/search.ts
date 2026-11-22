@@ -1,3 +1,5 @@
+import { parseOpenAiResponsesUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+
 import { normalizeCandidateDomain } from './domains';
 import { readTokenUsage } from './queries';
 import { sanitizeUpstreamText } from './redact';
@@ -155,6 +157,7 @@ async function runOneQuery(
   apiKey: string,
 ): Promise<{ result: QueryHarvestResult; tokens: number | null } | { error: string }> {
   try {
+    const model = process.env.OPENAI_SEARCH_MODEL || 'gpt-5-mini';
     const res = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       signal: AbortSignal.timeout(SEARCH_REQUEST_TIMEOUT_MS),
@@ -163,7 +166,7 @@ async function runOneQuery(
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENAI_SEARCH_MODEL || 'gpt-5-mini',
+        model,
         tools: [
           {
             type: 'web_search',
@@ -181,6 +184,12 @@ async function runOneQuery(
     }
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'openai',
+      model: resolveResponseModel(data, model),
+      feature: 'competitor_web_search',
+      usage: parseOpenAiResponsesUsage(data),
+    });
     return { result: extractQueryHarvest(query, data), tokens: readTokenUsage(data) };
   } catch (error) {
     return { error: `Search query threw for "${query}": ${(error as Error).message}` };

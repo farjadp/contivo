@@ -12,6 +12,7 @@
  * uploading to LinkedIn.
  */
 
+import { parseOpenAiImageUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { requestJsonFromAi } from '@/lib/gemini';
 
@@ -100,6 +101,13 @@ export async function generateImageForContentItem(input: {
     }
 
     const data = await res.json();
+    void recordAiUsage({
+      provider: 'openai',
+      model: resolveResponseModel(data, IMAGE_MODEL),
+      feature: 'content_image',
+      usage: parseOpenAiImageUsage(data),
+      workspaceId: input.workspaceId,
+    });
     const b64 = data?.data?.[0]?.b64_json;
     if (!b64 || typeof b64 !== 'string') return null;
 
