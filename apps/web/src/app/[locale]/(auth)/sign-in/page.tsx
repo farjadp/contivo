@@ -1,70 +1,22 @@
-'use client';
+import { enabledProviders, oauthStartHref } from '@/lib/oauth/providers';
+import { oauthErrorCode } from '@/lib/oauth-error-code';
 
-import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { SignInForm } from './SignInForm';
 
-import { login } from '@/app/actions/auth';
-import { AuthField, AuthShell, authAccent } from '@/components/marketing/auth-shell';
-import { Link } from '@/i18n/navigation';
+type Props = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ error?: string | string[] }>;
+};
 
-const initialState = { error: '' };
+/**
+ * Server wrapper: reads which providers are switched on (env) and the
+ * `?error=` code, and hands the form plain data. The env never reaches the
+ * client bundle; the error value is whitelisted before it goes anywhere.
+ */
+export default async function SignInPage({ params, searchParams }: Props) {
+  const { locale } = await params;
+  const { error } = await searchParams;
+  const providers = enabledProviders().map((id) => ({ id, href: oauthStartHref(id, { locale }) }));
 
-export default function SignInPage() {
-  const t = useTranslations('auth.signIn');
-  const [state, formAction, isPending] = useActionState(login as never, initialState);
-
-  return (
-    <AuthShell
-      eyebrow={t('eyebrow')}
-      title={t.rich('title', { accent: authAccent })}
-      blurb={t('blurb')}
-      footer={t.rich('footer', {
-        link: (chunks) => (
-          <Link
-            href="/sign-up"
-            className="font-semibold text-moss underline decoration-moss/30 underline-offset-4 transition-colors hover:decoration-saffron"
-          >
-            {chunks}
-          </Link>
-        ),
-      })}
-    >
-      <form action={formAction} className="space-y-8" noValidate>
-        {state?.error && (
-          <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700">
-            {state.error}
-          </p>
-        )}
-
-        <AuthField
-          id="email"
-          label={t('emailLabel')}
-          type="email"
-          autoComplete="email"
-          placeholder={t('emailPlaceholder')}
-        />
-        <AuthField
-          id="password"
-          label={t('passwordLabel')}
-          type="password"
-          autoComplete="current-password"
-          placeholder={t('passwordPlaceholder')}
-        />
-
-        <button
-          type="submit"
-          disabled={isPending}
-          className="group w-full bg-moss px-7 py-4 text-[14.5px] font-semibold text-chalk transition-colors duration-300 hover:bg-moss-700 disabled:opacity-60"
-        >
-          {isPending ? t('submitting') : t('submit')}
-          <span
-            aria-hidden
-            className="ms-3 inline-block transition-transform duration-300 group-hover:translate-x-1 rtl:rotate-180"
-          >
-            &rarr;
-          </span>
-        </button>
-      </form>
-    </AuthShell>
-  );
+  return <SignInForm providers={providers} errorCode={oauthErrorCode(error)} />;
 }

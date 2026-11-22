@@ -28,7 +28,7 @@
     "privacy": {
       "meta": {
         "title": "Privacy — Contivo",
-        "description": "What Contivo collects, which providers process it, the three cookies it sets, and how to have your data deleted."
+        "description": "What Contivo collects, which providers process it, the cookies it sets, and how to have your data deleted."
       },
       "eyebrow": "Privacy",
       "headline": "What we keep, and <accent>why</accent>.",
@@ -36,6 +36,7 @@
       "summary": [
         "We collect what the product needs to run: your account, your workspace, and the accounts you connect. Nothing for advertising.",
         "We never sell your data, never show you ads, and set no tracking or analytics cookies.",
+        "If you sign in with Google or GitHub, we receive your name and email and keep no access to your account there.",
         "Your text goes to AI providers (OpenAI, Anthropic and Google) to be analysed and written. That is how the product works, and we say so plainly.",
         "Write to {email} and we delete your account and workspace within 30 days."
       ],
@@ -54,7 +55,8 @@
           "blocks": [
             "Only what running the product requires:",
             [
-              "Account: your email address, your name if you give one, and your password. The password is stored only as a one-way hash; we cannot read it.",
+              "Account: your email address, your name if you give one, and your password if you use one. The password is stored only as a one-way hash; we cannot read it.",
+              "Sign-in with Google or GitHub: if you use it, your name and email address as that provider reports them, and the provider's own ID for your account. We also record which provider it was, whether the provider says the email is verified, and when you first and last signed in this way. We copy your name once, when the account is created. We never receive or store your password for that provider, your contacts or friends, your posts, or your profile picture, and we keep no token that gives us access to that account.",
               "Workspace: the website address you give us, what we read from that site's public pages, and what Contivo builds from it: brand memory, competitors, keywords, strategy, drafts and published content.",
               "Connected accounts: when you connect LinkedIn or X, an access token that lets Contivo post as you. It is stored encrypted.",
               "Your own site: if you connect it through the Site API, the key that lets Contivo publish there.",
@@ -69,6 +71,7 @@
           "title": "How we use it",
           "blocks": [
             "To run what you asked for: analyse your site and your market, write drafts, check them, and publish what you approve or what Autopilot is set to send.",
+            "To let you sign in: with the provider you chose, or with your email and password. Signing in with a provider is optional; email and password keep working.",
             "To keep the service working and secure: fixing errors, stopping abuse, enforcing usage limits.",
             "To write to you about your account: security notices, changes to these terms, billing once it exists. No marketing email unless you ask for it.",
             "We do not sell your data, rent it, use it for advertising, or train models of our own on it."
@@ -83,6 +86,7 @@
               "OpenAI, Anthropic (Claude) and Google (Gemini): your site's content, your brand memory and your instructions, to analyse, plan and write. If one of them is unavailable, the same request can go to another. What they do with API data is governed by their API terms.",
               "DataForSEO: keywords and domain names, to fetch search volumes and results pages. No personal information.",
               "LinkedIn and X: the posts you publish, and only once you have connected the account.",
+              "Google and GitHub (owned by Microsoft): only if you choose to sign in with them. They act as identity providers for sign-in and nothing else. They learn that you signed in to Contivo, and they handle that sign-in under their own privacy policies. We send them nothing from your workspace.",
               "Railway and Neon: hosting and the database, where everything above is stored.",
               "Sentry: error reports.",
               "Stripe: payments, once billing is live."
@@ -94,11 +98,12 @@
           "id": "cookies",
           "title": "Cookies",
           "blocks": [
-            "Contivo sets three cookies, all needed for the site to work:",
+            "Contivo sets three cookies for the site to work, and one more short-lived one if you sign in with a provider:",
             [
               "auth-token: keeps you signed in. It lasts seven days and cannot be read by scripts on the page.",
               "NEXT_LOCALE: remembers the language you chose.",
-              "tz: your time zone, so scheduled posts go out at the hour you meant."
+              "tz: your time zone, so scheduled posts go out at the hour you meant.",
+              "__Host-oauth_tx: carries a Google or GitHub sign-in from our site to the provider and back. It is a first-party cookie, used only while you sign in that way, deleted when the sign-in finishes and gone after 10 minutes at most."
             ],
             "No advertising cookies, no analytics cookies, no third-party trackers. That is why there is no cookie banner."
           ]
@@ -107,8 +112,25 @@
           "id": "retention",
           "title": "How long we keep it",
           "blocks": [
-            "As long as your account exists. Ask us to delete it and we delete your account, workspaces, content and connected-account tokens within 30 days.",
+            "As long as your account exists. Ask us to delete it and we delete your account, workspaces, content, connected-account tokens and sign-in records (provider, provider account ID and email) within 30 days. How to ask is in the next section.",
             "Two exceptions. Payment records we are required by law to keep stay for as long as the law says. And posts already published on LinkedIn, X or your own site stay there: we can remove them from Contivo, but deleting them from those platforms is done on those platforms."
+          ]
+        },
+        {
+          "id": "delete-account",
+          "title": "How to delete your account and data",
+          "blocks": [
+            "This applies to everyone, including people who signed in to Contivo with Google or GitHub. Contivo is run by {entity}. If you want your data deleted, this is how.",
+            "Send an email to {email} from the address on your account, and say you want your account deleted. If you signed in with a provider and are not sure which address we hold, tell us the provider and we will find it. We may ask one question to confirm the request is yours. We do not need your password.",
+            "Within 30 days we delete:",
+            [
+              "your account and your workspaces;",
+              "everything Contivo built or stored for you: brand memory, competitors, strategy, drafts and published content;",
+              "the connected-account tokens (LinkedIn, X) and any site key;",
+              "your sign-in records: the provider, the provider's ID for your account, and the email it reported."
+            ],
+            "We then write back to confirm it is done. Two exceptions: payment records we must keep by law stay for as long as the law says, and posts already published on LinkedIn, X or your own site stay there until you remove them on those platforms.",
+            "You can also remove Contivo from your Google or GitHub account yourself, in that provider's settings under connected apps or third-party apps. We hold no access token for your account there, so this changes nothing on our side. It only clears Contivo from your list at the provider."
           ]
         },
         {
@@ -180,7 +202,8 @@
           "id": "account",
           "title": "Your account",
           "blocks": [
-            "You must be at least 16, give a real email address, and keep your password to yourself. Whatever happens under your account is your responsibility, so if you think someone else has access, tell us straight away."
+            "You must be at least 16, give a real email address, and keep your password to yourself. Whatever happens under your account is your responsibility, so if you think someone else has access, tell us straight away.",
+            "If you sign in with Google or GitHub, that provider's own terms apply to your use of its sign-in. Signing in with a provider creates a Contivo account under these terms if you do not already have one."
           ]
         },
         {

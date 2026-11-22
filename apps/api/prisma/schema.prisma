@@ -39,6 +39,7 @@ model User {
   billingInvoices       BillingInvoice[]
   billingOneOffPayments BillingOneOffPayment[]
   billingRefunds        BillingRefund[]
+  oauthAccounts         OAuthAccount[]
 
   @@index([clerkId])
   @@index([email])
@@ -1162,4 +1163,37 @@ model BillingRefund {
 
   @@index([refundedAt])
   @@map("billing_refunds")
+}
+
+enum OAuthProvider {
+  GOOGLE
+  GITHUB
+}
+
+/// A social sign-in identity linked to a user (spec 2026-11-22-social-login-design.md §8).
+model OAuthAccount {
+  id                String        @id @default(cuid())
+  userId            String
+  provider          OAuthProvider
+  providerAccountId String
+  /// As reported by the provider, lower-cased.
+  email             String?
+  emailVerified     Boolean       @default(false)
+  createdAt         DateTime      @default(now())
+  lastUsedAt        DateTime?
+  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@unique([userId, provider])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+/// Single-use ledger for OAuth transaction ids (fail-closed replay guard, §14 H3).
+model OAuthTxUsed {
+  jti       String   @id
+  expiresAt DateTime
+
+  @@index([expiresAt])
+  @@map("oauth_tx_used")
 }
