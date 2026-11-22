@@ -90,10 +90,11 @@
       }
     },
     "behindTitle": "Who is behind it",
-    "behindBody": "Contivo is built in Ontario, Canada, and ran first on its founder's own sites. Twenty-three early-access users have paid for it since. Most of the rules it follows, from refusing to invent to showing no number it did not measure, came from a mistake it made once and was then built never to repeat.",
+    "behindBody": "Contivo is built by four founders and ran first on its own sites. Twenty-three early-access users have paid for it since. Most of the rules it follows, from refusing to invent to showing no number it did not measure, came from a mistake it made once and was then built never to repeat.",
     "aboutLink": "Read the rules, and how it got here",
     "closeHeadline": "Hand it your website and see what it finds.",
     "closeCta": "Start free in early access",
-    "closeProduct": "How it works, start to finish"
+    "closeProduct": "How it works, start to finish",
+    "teamLink": "Meet the four founders"
   }
 }

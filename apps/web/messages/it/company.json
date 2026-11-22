@@ -16,7 +16,7 @@
       "facts": {
         "who": {
           "label": "Chi la legge",
-          "value": "Il fondatore, non un team di assistenza"
+          "value": "Uno dei fondatori, non un team di assistenza"
         },
         "where": {
           "label": "Dove",
@@ -64,8 +64,8 @@
         "description": "Chi sviluppa Contivo, i principi su cui si basa e a che punto è davvero oggi."
       },
       "eyebrow": "Chi siamo",
-      "headline": "Messo alla prova prima sui siti del suo <accent>stesso</accent> fondatore.",
-      "intro": "Contivo è sviluppato da Farjad P.D, fondatore di {entity}, in Ontario, Canada. Nasce per un problema semplice: una piccola azienda sa che dovrebbe pubblicare con costanza e tenere d'occhio il proprio mercato, ma nessuno ha il tempo di farlo bene.",
+      "headline": "Messo alla prova prima sui <accent>propri</accent> siti.",
+      "intro": "Contivo è costruito da quattro fondatori e gestito da {entity}, in Ontario, Canada. Nasce per un problema semplice: una piccola azienda sa che dovrebbe pubblicare con costanza e tenere d'occhio il proprio mercato, ma nessuno ha il tempo di farlo bene.",
       "principlesTitle": "I principi su cui si basa",
       "principlesIntro": "Ognuno di questi è una scelta già presente nel prodotto, non una promessa. La data indica quando è stata introdotta.",
       "principles": [
@@ -132,7 +132,8 @@
       ],
       "ctaTitle": "Scopri se fa per il tuo sito.",
       "ctaStart": "Inizia gratis",
-      "ctaContact": "Oppure scrivici"
+      "ctaContact": "Oppure scrivici",
+      "teamLink": "Conosci i quattro fondatori"
     }
   }
 }
