@@ -27,8 +27,25 @@
  * workspace, because the attacker IS the creator. The code goes only to the
  * Telegram user who shared the chat, so saving needs both halves: the web
  * account that started the session and the Telegram account that owns the
- * chat. Guessing is capped at 5 attempts. The bot also names the workspace in
- * its first message, so a tricked victim sees whose workspace it is.
+ * chat. The bot also names the workspace in its first message, so a tricked
+ * victim sees whose workspace it is, and offers a "This wasn't me" button that
+ * kills the session.
+ *
+ * Limits (security review 2026-11-22). Every counter is an atomic store.incr,
+ * never a read-modify-write of the session JSON, so concurrent requests cannot
+ * share one count:
+ *   - 5 code attempts per SESSION, never reset — not by a new code, not by
+ *     picking another chat. The counter is checked before the session status,
+ *     so a stale session write cannot revive a dead session;
+ *   - 3 chats parked (= codes sent) per session, then the session fails;
+ *   - @username lookups: 5 per session and 20 per web user per hour, refused
+ *     while a code is pending, and a failed lookup never DMs the Telegram
+ *     user (the web user typed the name, not them);
+ *   - a park whose code DM was not delivered fails (no undeliverable code).
+ *
+ * Updates are re-checked with Telegram before they change stored data
+ * (my_chat_member → getChatMember; migrate → getChat on the old id), so a
+ * forged update cannot revoke or move a connection.
  *
  * Privacy: allowed_updates is message + my_chat_member only; messages outside
  * the bot's private chat are ignored except the group→supergroup migration
@@ -55,8 +72,10 @@ import { SocialConnectionsService } from '../social-connections.service';
 
 import {
   TelegramBotClient,
+  telegramDevSettingsAllowed,
   type TgAdministratorRights,
   type TgChat,
+  type TgCallbackQuery,
   type TgChatMemberUpdated,
   type TgMessage,
   type TgUpdate,
@@ -65,6 +84,10 @@ import { telegramText, type TelegramLang } from './telegram-messages';
 
 export const TG_SESSION_TTL_MS = 10 * 60 * 1000;
 export const TG_CONFIRM_MAX_ATTEMPTS = 5;
+export const TG_MAX_PARKS_PER_SESSION = 3;
+export const TG_USERNAME_LOOKUPS_PER_SESSION = 5;
+export const TG_USERNAME_LOOKUPS_PER_USER_HOUR = 20;
+const HOUR_MS = 60 * 60 * 1000;
 const UPDATE_DEDUPE_TTL_MS = 24 * 60 * 60 * 1000; // Telegram keeps updates ≤ 24 h
 
 export type TelegramSessionStatus = 'waiting' | 'started' | 'pending_confirm' | 'connected' | 'failed';
@@ -77,6 +100,9 @@ export type TelegramConnectErrorCode =
   | 'not_a_channel_or_group'
   | 'telegram_unavailable'
   | 'too_many_attempts';
+
+/** What the session can end with: a connect problem, or the Telegram user pressed "This wasn't me". */
+export type TelegramSessionError = TelegramConnectErrorCode | 'denied';
 
 type ChatType = 'channel' | 'group' | 'supergroup';
 
@@ -92,8 +118,7 @@ interface SessionRecord {
   lang?: TelegramLang;
   pending?: { chatId: string; chatType: ChatType; title?: string; username?: string };
   codeHash?: string;
-  attempts: number;
-  error?: TelegramConnectErrorCode;
+  error?: TelegramSessionError;
   connectionId?: string;
 }
 
@@ -104,8 +129,8 @@ export interface TelegramSessionView {
   /** True once someone tapped Start in Telegram with this session's link. */
   telegramLinked: boolean;
   /** Last problem; with status `started` the user can pick a chat again. */
-  error?: TelegramConnectErrorCode;
-  /** Code attempts left, while pending_confirm. */
+  error?: TelegramSessionError;
+  /** Code attempts left in this session (never reset), while pending_confirm. */
   attemptsLeft?: number;
   /** Only once connected. Chat details are not shown before the code is entered. */
   connection?: { id: string; accountName: string; chatType: ChatType; username?: string };
@@ -115,6 +140,11 @@ const sessionKey = (id: string) => `social:tg-session:${id}`;
 const nonceKey = (nonce: string) => `social:tg-nonce:${nonce}`;
 const userKey = (telegramUserId: number) => `social:tg-user:${telegramUserId}`;
 const updateKey = (updateId: number) => `social:tg-update:${updateId}`;
+const attemptsKey = (sessionId: string) => `social:tg-attempts:${sessionId}`;
+const parksKey = (sessionId: string) => `social:tg-parks:${sessionId}`;
+const lookupsKey = (sessionId: string) => `social:tg-lookups:${sessionId}`;
+const userLookupsKey = (userId: string) => `social:tg-user-lookups:${userId}`;
+const DENY_PREFIX = 'deny:';
 
 const RIGHTS_NONE: TgAdministratorRights = {
   is_anonymous: false,
@@ -167,7 +197,9 @@ export class TelegramConnectService {
     const missing: string[] = [];
     if (!process.env.TELEGRAM_BOT_TOKEN?.trim()) missing.push('TELEGRAM_BOT_TOKEN');
     if (!this.botUsername()) missing.push('TELEGRAM_BOT_USERNAME');
-    if (process.env.TELEGRAM_UPDATES_MODE?.trim() !== 'polling' && !process.env.TELEGRAM_WEBHOOK_SECRET?.trim()) {
+    // Polling is dev-only: production always needs the webhook secret.
+    const polling = process.env.TELEGRAM_UPDATES_MODE?.trim() === 'polling' && telegramDevSettingsAllowed();
+    if (!polling && !process.env.TELEGRAM_WEBHOOK_SECRET?.trim()) {
       missing.push('TELEGRAM_WEBHOOK_SECRET');
     }
     return missing;
@@ -209,7 +241,6 @@ export class TelegramConnectService {
       expiresAt: new Date(Date.now() + TG_SESSION_TTL_MS).toISOString(),
       status: 'waiting',
       requestIds: { channel: this.requestId(), group: this.requestId() },
-      attempts: 0,
     };
     if (session.requestIds.group === session.requestIds.channel) session.requestIds.group ^= 1;
 
@@ -229,28 +260,24 @@ export class TelegramConnectService {
   }
 
   async getSession(id: string, userId: string): Promise<TelegramSessionView> {
-    return this.view(await this.ownSession(id, userId));
+    const session = await this.ownSession(id, userId);
+    return this.view(session, await this.attemptsUsed(session));
   }
 
   async confirm(id: string, userId: string, code: string): Promise<TelegramSessionView> {
     const session = await this.ownSession(id, userId);
+    // The counter, not the session JSON, decides: a stale write cannot revive a dead session.
+    if ((await this.attemptsUsed(session)) >= TG_CONFIRM_MAX_ATTEMPTS) return this.tooManyAttempts(session);
     if (session.status !== 'pending_confirm' || !session.pending || !session.codeHash) {
       throw err(HttpStatus.CONFLICT, 'not_pending', 'There is no chat waiting for confirmation in this session.', { status: session.status });
     }
 
+    // Counted before the code is compared, atomically: concurrent confirms each get their own number.
+    const attempt = await this.bump(attemptsKey(session.id), this.ttlLeft(session));
+    if (attempt > TG_CONFIRM_MAX_ATTEMPTS) return this.tooManyAttempts(session);
     if (!this.codeMatches(session, normalizeDigits(String(code ?? '')))) {
-      session.attempts += 1;
-      const left = TG_CONFIRM_MAX_ATTEMPTS - session.attempts;
-      if (left <= 0) {
-        session.status = 'failed';
-        session.error = 'too_many_attempts';
-        session.pending = undefined;
-        session.codeHash = undefined;
-        await this.save(session);
-        this.logger.warn(`Telegram connect session failed: too many wrong codes (workspace=${session.workspaceId})`);
-        throw err(HttpStatus.TOO_MANY_REQUESTS, 'too_many_attempts', 'Too many wrong codes. Start the Telegram connection again.');
-      }
-      await this.save(session);
+      const left = TG_CONFIRM_MAX_ATTEMPTS - attempt;
+      if (left <= 0) return this.tooManyAttempts(session);
       throw err(HttpStatus.BAD_REQUEST, 'wrong_code', 'That code is not right. Check the latest message from the bot.', { attemptsLeft: left });
     }
 
@@ -299,17 +326,47 @@ export class TelegramConnectService {
       await this.say(session.telegramUserId, telegramText(session.lang, 'connected', { title: connection.accountName }));
     }
     this.logger.log(`Telegram connected: workspace=${session.workspaceId} chatType=${pending.chatType}`);
-    return this.view(session);
+    return this.view(session, attempt);
+  }
+
+  /** Marks the session failed (idempotent) and throws 429. */
+  private async tooManyAttempts(session: SessionRecord): Promise<never> {
+    if (session.status !== 'failed' || session.error !== 'too_many_attempts') {
+      session.status = 'failed';
+      session.error = 'too_many_attempts';
+      session.pending = undefined;
+      session.codeHash = undefined;
+      await this.save(session);
+      this.logger.warn(`Telegram connect session failed: too many attempts (workspace=${session.workspaceId})`);
+    }
+    throw err(HttpStatus.TOO_MANY_REQUESTS, 'too_many_attempts', this.problemMessage('too_many_attempts'));
   }
 
   /** Fallback for a public channel/group: the user names it instead of picking it in Telegram. */
   async connectByUsername(id: string, userId: string, input: string): Promise<TelegramSessionView> {
     const session = await this.ownSession(id, userId);
-    if (!session.telegramUserId || (session.status !== 'started' && session.status !== 'pending_confirm')) {
+    if (session.status === 'pending_confirm') {
+      // A new park would send the Telegram user another code; one pending code at a time.
+      throw err(HttpStatus.CONFLICT, 'already_pending', 'A chat is already waiting for its code. Enter the code from the bot, or start again.');
+    }
+    if (session.status === 'failed' || session.status === 'connected') {
+      throw err(HttpStatus.CONFLICT, 'session_finished', 'This Telegram connection attempt is over. Start again.', { status: session.status, ...(session.error && { error: session.error }) });
+    }
+    if (!session.telegramUserId || session.status !== 'started') {
       throw err(HttpStatus.CONFLICT, 'start_bot_first', 'Open the bot link and tap Start first, so we know your Telegram account.');
     }
     const username = parseTelegramUsername(input);
     if (!username) throw err(HttpStatus.BAD_REQUEST, 'invalid_username', 'Enter the public @username of the channel or group.');
+
+    // Each lookup makes Telegram calls about someone's chat; bound them per session and per user.
+    const [perSession, perUser] = await Promise.all([
+      this.bump(lookupsKey(session.id), this.ttlLeft(session)),
+      this.bump(userLookupsKey(userId), HOUR_MS),
+    ]);
+    if (perSession > TG_USERNAME_LOOKUPS_PER_SESSION || perUser > TG_USERNAME_LOOKUPS_PER_USER_HOUR) {
+      this.logger.warn(`Telegram @username lookups limited (workspace=${session.workspaceId}, session=${perSession}, user/h=${perUser})`);
+      throw err(HttpStatus.TOO_MANY_REQUESTS, 'too_many_lookups', 'Too many channel lookups. Wait a while, or pick the chat in Telegram instead.');
+    }
 
     const chat = await this.client.getChat(`@${username}`);
     if (!chat.ok) {
@@ -321,9 +378,11 @@ export class TelegramConnectService {
     if (chat.result.type === 'private') {
       throw err(HttpStatus.BAD_REQUEST, 'not_a_channel_or_group', 'That username belongs to a person or bot, not a channel or group.');
     }
-    const problem = await this.verifyAndPark(session, chat.result);
+    // notify=false: the web user typed this name, so failures go to the web, never to the Telegram user's DM.
+    const problem = await this.verifyAndPark(session, chat.result, { notify: false });
+    if (problem === 'too_many_attempts') throw err(HttpStatus.TOO_MANY_REQUESTS, problem, this.problemMessage(problem));
     if (problem) throw err(HttpStatus.CONFLICT, problem, this.problemMessage(problem));
-    return this.view(session);
+    return this.view(session, await this.attemptsUsed(session));
   }
 
   // ─── Telegram side ─────────────────────────────────────────────────────────
@@ -332,19 +391,58 @@ export class TelegramConnectService {
   async handleUpdate(update: TgUpdate): Promise<void> {
     try {
       if (typeof update?.update_id !== 'number') return;
+      const handler = this.route(update);
+      // Only updates we act on claim their id: ignored traffic writes nothing to the store.
+      if (!handler) return;
       if (!(await this.firstTime(update.update_id))) return;
-
-      if (update.my_chat_member) return await this.onMyChatMember(update.my_chat_member);
-      const msg = update.message;
-      if (!msg?.chat) return;
-      if (typeof msg.migrate_to_chat_id === 'number') return await this.onMigrated(msg.chat.id, msg.migrate_to_chat_id);
-      // Only the bot's private chat is read. Never customers' groups/channels.
-      if (msg.chat.type !== 'private' || !msg.from) return;
-      if (msg.chat_shared) return await this.onChatShared(msg);
-      if (typeof msg.text === 'string' && /^\/start(@\w+)?(\s|$)/.test(msg.text)) return await this.onStart(msg);
+      await handler();
     } catch (e) {
       this.logger.error(`Telegram update ${update?.update_id} failed: ${(e as Error).message}`);
     }
+  }
+
+  /** The handler for an update we act on, or null to ignore it. */
+  private route(update: TgUpdate): (() => Promise<unknown>) | null {
+    const member = update.my_chat_member;
+    if (member?.chat) return () => this.onMyChatMember(member);
+    const callback = update.callback_query;
+    if (callback?.from && typeof callback.data === 'string' && callback.data.startsWith(DENY_PREFIX)) {
+      return () => this.onDeny(callback);
+    }
+    const msg = update.message;
+    if (!msg?.chat) return null;
+    const migrateTo = msg.migrate_to_chat_id;
+    if (typeof migrateTo === 'number') return () => this.onMigrated(msg.chat.id, migrateTo);
+    // Only the bot's private chat is read. Never customers' groups/channels.
+    if (msg.chat.type !== 'private' || !msg.from) return null;
+    if (msg.chat_shared) return () => this.onChatShared(msg);
+    if (typeof msg.text === 'string' && /^\/start(@\w+)?(\s|$)/.test(msg.text)) return () => this.onStart(msg);
+    return null;
+  }
+
+  /**
+   * "This wasn't me": the Telegram user who opened the link ends the session.
+   * Only that Telegram user, and only before it is connected. The button is
+   * added to the bot's messages once its label exists in telegram-messages.ts.
+   */
+  private async onDeny(callback: TgCallbackQuery) {
+    const sessionId = callback.data!.slice(DENY_PREFIX.length);
+    const session = /^[A-Za-z0-9_-]{1,64}$/.test(sessionId) ? await this.load(sessionId) : null;
+    const answer = () => this.client.answerCallbackQuery(callback.id).then((r) => {
+      if (!r.ok) this.logger.warn(`Telegram answerCallbackQuery failed: ${r.description}`);
+    });
+    if (!session || session.telegramUserId !== callback.from.id || session.status === 'connected' || session.status === 'failed') {
+      return answer();
+    }
+    session.status = 'failed';
+    session.error = 'denied';
+    session.pending = undefined;
+    session.codeHash = undefined;
+    await this.save(session);
+    await this.safeDel(userKey(callback.from.id));
+    await this.safeDel(nonceKey(session.nonce));
+    this.logger.warn(`Telegram connect session denied by the Telegram user (workspace=${session.workspaceId})`);
+    await answer();
   }
 
   private async onStart(msg: TgMessage) {
@@ -416,7 +514,7 @@ export class TelegramConnectService {
     const info: TgChat = chat.ok
       ? chat.result
       : { id: shared.chat_id, type: shared.request_id === channel ? 'channel' : 'supergroup', title: shared.title, username: shared.username };
-    await this.verifyAndPark(session, info);
+    await this.verifyAndPark(session, info, { notify: true });
   }
 
   /**
@@ -424,28 +522,49 @@ export class TelegramConnectService {
    * parked (pending_confirm) and the code is sent; returns null. On failure
    * the session stays `started` with an error the web shows; the user can pick
    * again. Nothing is saved here.
+   *
+   * At most TG_MAX_PARKS_PER_SESSION codes are sent per session; past that the
+   * session fails (too_many_attempts). The code is stored only once Telegram
+   * accepted the DM carrying it. `notify` = tell the Telegram user about a
+   * failure (only when they picked the chat themselves).
    */
-  private async verifyAndPark(session: SessionRecord, chat: TgChat): Promise<TelegramConnectErrorCode | null> {
+  private async verifyAndPark(session: SessionRecord, chat: TgChat, opts: { notify: boolean }): Promise<TelegramConnectErrorCode | null> {
     const lang = session.lang;
     const telegramUserId = session.telegramUserId!;
+    const fail = (code: TelegramConnectErrorCode, title?: string) => this.fail(session, code, title, opts.notify);
+    if ((await this.attemptsUsed(session)) >= TG_CONFIRM_MAX_ATTEMPTS) return this.failSession(session);
     const chatType: ChatType | null = chat.type === 'private' ? null : chat.type;
-    if (!chatType) return this.fail(session, 'not_a_channel_or_group');
+    if (!chatType) return fail('not_a_channel_or_group');
 
     const bot = await this.client.getBotIdentity();
-    if (!bot.ok) return this.fail(session, 'telegram_unavailable');
+    if (!bot.ok) return fail('telegram_unavailable');
     const [botMember, userMember] = await Promise.all([
       this.client.getChatMember(chat.id, bot.result.id),
       this.client.getChatMember(chat.id, telegramUserId),
     ]);
-    if (!botMember.ok) return this.fail(session, botMember.kind === 'revoked' ? 'bot_not_admin' : 'telegram_unavailable', chat.title);
-    if (!memberCanPost(botMember.result, chatType)) return this.fail(session, 'bot_not_admin', chat.title);
-    if (!userMember.ok) return this.fail(session, userMember.kind === 'revoked' ? 'user_not_admin' : 'telegram_unavailable', chat.title);
+    if (!botMember.ok) return fail(botMember.kind === 'revoked' ? 'bot_not_admin' : 'telegram_unavailable', chat.title);
+    if (!memberCanPost(botMember.result, chatType)) return fail('bot_not_admin', chat.title);
+    if (!userMember.ok) return fail(userMember.kind === 'revoked' ? 'user_not_admin' : 'telegram_unavailable', chat.title);
     const userIsAdmin =
       userMember.result.status === 'creator' ||
       (userMember.result.status === 'administrator' && (chatType !== 'channel' || userMember.result.can_post_messages === true));
-    if (!userIsAdmin) return this.fail(session, 'user_not_admin', chat.title);
+    if (!userIsAdmin) return fail('user_not_admin', chat.title);
+
+    const parks = await this.bump(parksKey(session.id), this.ttlLeft(session));
+    if (parks > TG_MAX_PARKS_PER_SESSION) return this.failSession(session);
 
     const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+    const sent = await this.client.sendMessage({
+      chat_id: telegramUserId,
+      text: telegramText(lang, 'code', { title: chat.title ?? (chat.username ? `@${chat.username}` : ''), code }),
+      reply_markup: { remove_keyboard: true },
+    });
+    if (!sent.ok) {
+      // No code nobody can read: the web shows the error, the user can try again.
+      this.logger.warn(`Telegram code message failed: ${sent.description}`);
+      return this.fail(session, 'telegram_unavailable', chat.title, false);
+    }
+
     session.status = 'pending_confirm';
     session.pending = {
       chatId: String(chat.id),
@@ -454,30 +573,32 @@ export class TelegramConnectService {
       ...(chat.username && { username: chat.username }),
     };
     session.codeHash = this.hashCode(session.id, code);
-    session.attempts = 0;
     session.error = undefined;
     await this.save(session);
-
-    await this.client.sendMessage({
-      chat_id: telegramUserId,
-      text: telegramText(lang, 'code', { title: chat.title ?? (chat.username ? `@${chat.username}` : ''), code }),
-      reply_markup: { remove_keyboard: true },
-    }).then((r) => {
-      if (!r.ok) this.logger.warn(`Telegram code message failed: ${r.description}`);
-    });
     return null;
   }
 
-  private async fail(session: SessionRecord, code: TelegramConnectErrorCode, title?: string): Promise<TelegramConnectErrorCode> {
+  private async fail(session: SessionRecord, code: TelegramConnectErrorCode, title?: string, notify = true): Promise<TelegramConnectErrorCode> {
     session.status = 'started';
     session.error = code;
     session.pending = undefined;
     session.codeHash = undefined;
     await this.save(session);
-    if (session.telegramUserId) {
+    if (notify && session.telegramUserId) {
       await this.say(session.telegramUserId, telegramText(session.lang, code, { title: title ?? '' }));
     }
     return code;
+  }
+
+  /** The session is over (too many codes or attempts). Nothing is DMed. */
+  private async failSession(session: SessionRecord): Promise<TelegramConnectErrorCode> {
+    session.status = 'failed';
+    session.error = 'too_many_attempts';
+    session.pending = undefined;
+    session.codeHash = undefined;
+    await this.save(session);
+    this.logger.warn(`Telegram connect session failed: too many codes or attempts (workspace=${session.workspaceId})`);
+    return 'too_many_attempts';
   }
 
   private async backToStarted(session: SessionRecord, code: TelegramConnectErrorCode): Promise<never> {
@@ -485,18 +606,39 @@ export class TelegramConnectService {
     throw err(HttpStatus.CONFLICT, code, this.problemMessage(code));
   }
 
-  /** The bot was removed or lost its rights → every connection to that chat is REVOKED at once. */
+  /**
+   * The bot was removed or lost its rights → every connection to that chat is
+   * REVOKED at once. The update is not trusted on its own: Telegram is asked
+   * (getChatMember for the bot) before anything changes.
+   */
   private async onMyChatMember(update: TgChatMemberUpdated) {
     if (update.chat.type === 'private') return; // the user blocked the bot's DM; not a connection
     const chatType = update.chat.type;
-    const member = update.new_chat_member;
-    if (memberCanPost(member, chatType)) return;
-    const reason = member.status === 'left' || member.status === 'kicked' ? 'BOT_REMOVED' : 'BOT_RIGHTS_LOST';
+    if (memberCanPost(update.new_chat_member, chatType)) return;
 
     const rows = await this.prisma.socialConnection.findMany({
       where: { platform: 'TELEGRAM', accountIdentifier: String(update.chat.id), status: 'CONNECTED' },
       select: { id: true, metaJson: true },
     });
+    if (!rows.length) return; // not ours: no Telegram call spent on it
+
+    const bot = await this.client.getBotIdentity();
+    const live = bot.ok ? await this.client.getChatMember(update.chat.id, bot.result.id) : bot;
+    let reason: 'BOT_REMOVED' | 'BOT_RIGHTS_LOST';
+    if (live.ok) {
+      if (memberCanPost(live.result, chatType)) {
+        this.logger.warn('Telegram my_chat_member says the bot lost a chat, but Telegram says it can still post; ignored');
+        return;
+      }
+      reason = live.result.status === 'left' || live.result.status === 'kicked' ? 'BOT_REMOVED' : 'BOT_RIGHTS_LOST';
+    } else if (live.kind === 'revoked') {
+      reason = 'BOT_REMOVED';
+    } else {
+      // Unconfirmed: leave the rows; the next publish health check finds a real loss.
+      this.logger.warn(`Telegram my_chat_member not confirmed (${live.kind}); connections left as they are`);
+      return;
+    }
+
     for (const row of rows) {
       const meta = { ...((row.metaJson as Record<string, unknown> | null) ?? {}), revokedReason: reason, revokedAt: new Date().toISOString() };
       await this.prisma.socialConnection.updateMany({
@@ -504,12 +646,18 @@ export class TelegramConnectService {
         data: { status: 'REVOKED', metaJson: meta as Prisma.InputJsonValue },
       });
     }
-    if (rows.length) this.logger.warn(`Telegram ${reason}: ${rows.length} connection(s) marked REVOKED`);
+    this.logger.warn(`Telegram ${reason}: ${rows.length} connection(s) marked REVOKED`);
   }
 
+  /** Group → supergroup. Rewritten only when Telegram confirms the old id moved to exactly this one. */
   private async onMigrated(oldChatId: number, newChatId: number) {
+    const check = await this.client.getChat(oldChatId);
+    if (check.ok || check.kind !== 'migrated' || check.migrateToChatId !== newChatId) {
+      this.logger.warn(`Telegram migrate notice not confirmed by getChat (${check.ok ? 'chat not migrated' : check.kind}); ignored`);
+      return;
+    }
     const rows = await this.prisma.socialConnection.findMany({
-      where: { platform: 'TELEGRAM', accountIdentifier: String(oldChatId) },
+      where: { platform: 'TELEGRAM', accountIdentifier: String(oldChatId), status: { in: ['CONNECTED', 'EXPIRED'] } },
       select: { id: true, metaJson: true },
     });
     for (const row of rows) {
@@ -580,6 +728,29 @@ export class TelegramConnectService {
     }
   }
 
+  /** Atomic +1 on a counter key. A store failure is a 503, never "no limit". */
+  private async bump(key: string, ttlMs: number): Promise<number> {
+    try {
+      return await this.store.incr(key, ttlMs);
+    } catch (e) {
+      this.logger.error(`Telegram connect store unavailable: ${(e as Error).message}`);
+      throw new ServiceUnavailableException({ code: 'store_unavailable', message: 'Connecting is unavailable right now. Try again in a minute.' });
+    }
+  }
+
+  /** Code attempts used in this session so far (all parks together). */
+  private async attemptsUsed(session: SessionRecord): Promise<number> {
+    let raw: string | null;
+    try {
+      raw = await this.store.get(attemptsKey(session.id));
+    } catch (e) {
+      this.logger.error(`Telegram connect store unavailable: ${(e as Error).message}`);
+      throw new ServiceUnavailableException({ code: 'store_unavailable', message: 'Connecting is unavailable right now. Try again in a minute.' });
+    }
+    const n = Number(raw ?? 0);
+    return Number.isFinite(n) ? n : TG_CONFIRM_MAX_ATTEMPTS;
+  }
+
   /** True the first time an update id is seen. A store error lets it through (handlers are idempotent). */
   private async firstTime(updateId: number): Promise<boolean> {
     try {
@@ -606,14 +777,14 @@ export class TelegramConnectService {
     }
   }
 
-  private view(s: SessionRecord): TelegramSessionView {
+  private view(s: SessionRecord, attemptsUsed: number): TelegramSessionView {
     return {
       sessionId: s.id,
       status: s.status,
       expiresAt: s.expiresAt,
       telegramLinked: !!s.telegramUserId,
       ...(s.error && { error: s.error }),
-      ...(s.status === 'pending_confirm' && { attemptsLeft: TG_CONFIRM_MAX_ATTEMPTS - s.attempts }),
+      ...(s.status === 'pending_confirm' && { attemptsLeft: Math.max(0, TG_CONFIRM_MAX_ATTEMPTS - attemptsUsed) }),
       ...(s.status === 'connected' && s.connectionId && s.pending && {
         connection: {
           id: s.connectionId,

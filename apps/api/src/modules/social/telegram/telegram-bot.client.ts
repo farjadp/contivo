@@ -21,17 +21,29 @@
  *   not_configured  TELEGRAM_BOT_TOKEN unset; no request made
  *
  * TELEGRAM_API_BASE overrides https://api.telegram.org for tests (a local fake
- * server). It is not a production setting.
+ * server). It is not a production setting: with NODE_ENV=production it is
+ * ignored and logged as an error (a wrong base would send the bot token to
+ * whatever host it names).
  */
 
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 import { describeFetchError, isPreSendNetworkError } from '../adapters/http-health';
 
 export const TELEGRAM_TIMEOUT_MS = 10_000;
 
-/** What the bot subscribes to. Never channel_post: we do not read customers' channels. */
-export const TELEGRAM_ALLOWED_UPDATES = ['message', 'my_chat_member'] as const;
+/**
+ * What the bot subscribes to. Never channel_post: we do not read customers' channels.
+ * callback_query: only presses of the bot's own inline buttons ("This wasn't me").
+ */
+export const TELEGRAM_ALLOWED_UPDATES = ['message', 'my_chat_member', 'callback_query'] as const;
+
+/** Dev-only overrides (polling mode, TELEGRAM_API_BASE) are refused when NODE_ENV=production. */
+export function telegramDevSettingsAllowed(env: NodeJS.ProcessEnv = process.env): boolean {
+  return env.NODE_ENV?.trim() !== 'production';
+}
+
+const DEFAULT_API_BASE = 'https://api.telegram.org';
 
 export type TelegramFailureKind =
   | 'revoked'
@@ -99,10 +111,17 @@ export interface TgChatMemberUpdated {
   new_chat_member: TgChatMember;
 }
 
+export interface TgCallbackQuery {
+  id: string;
+  from: TgUser;
+  data?: string;
+}
+
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
   my_chat_member?: TgChatMemberUpdated;
+  callback_query?: TgCallbackQuery;
 }
 
 /** The 11 required booleans of ChatAdministratorRights, plus channel-only can_post_messages. */
@@ -138,7 +157,7 @@ export type TgReplyMarkup =
       resize_keyboard?: boolean;
     }
   | { remove_keyboard: true }
-  | { inline_keyboard: Array<Array<{ text: string; url: string }>> };
+  | { inline_keyboard: Array<Array<{ text: string; url: string } | { text: string; callback_data: string }>> };
 
 export interface SendMessageParams {
   chat_id: string | number;
@@ -207,6 +226,8 @@ export interface TelegramClientOptions {
 
 @Injectable()
 export class TelegramBotClient {
+  private static readonly logger = new Logger(TelegramBotClient.name);
+  private static warnedApiBase = false;
   private readonly timeoutMs: number;
   private readonly fetchImpl: typeof fetch;
   private readonly env?: NodeJS.ProcessEnv;
@@ -224,7 +245,17 @@ export class TelegramBotClient {
   }
 
   private base(): string {
-    return ((this.env ?? process.env).TELEGRAM_API_BASE?.trim() || 'https://api.telegram.org').replace(/\/+$/, '');
+    const env = this.env ?? process.env;
+    const override = env.TELEGRAM_API_BASE?.trim();
+    if (!override) return DEFAULT_API_BASE;
+    if (!telegramDevSettingsAllowed(env)) {
+      if (!TelegramBotClient.warnedApiBase) {
+        TelegramBotClient.warnedApiBase = true;
+        TelegramBotClient.logger.error('TELEGRAM_API_BASE is set with NODE_ENV=production; ignored, using api.telegram.org. Remove it from the deployment.');
+      }
+      return DEFAULT_API_BASE;
+    }
+    return override.replace(/\/+$/, '');
   }
 
   isConfigured(): boolean {
@@ -307,6 +338,11 @@ export class TelegramBotClient {
     const bytes = new Uint8Array(params.photo.data);
     form.append('photo', new Blob([bytes], { type: params.photo.mimeType }), params.photo.filename ?? 'image');
     return this.call<TgMessage>('sendPhoto', form);
+  }
+
+  /** Stops the spinner on an inline button press. */
+  answerCallbackQuery(callbackQueryId: string, text?: string) {
+    return this.call<boolean>('answerCallbackQuery', { callback_query_id: callbackQueryId, ...(text && { text }) });
   }
 
   setWebhook(params: SetWebhookParams) {

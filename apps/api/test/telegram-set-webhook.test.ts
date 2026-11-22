@@ -19,7 +19,7 @@ describe('webhookParams', () => {
     assert.deepEqual(webhookParams({ TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_WEBHOOK_SECRET: SECRET }, []), {
       url: PRODUCTION_WEBHOOK_URL,
       secret_token: SECRET,
-      allowed_updates: ['message', 'my_chat_member'],
+      allowed_updates: ['message', 'my_chat_member', 'callback_query'],
       drop_pending_updates: true,
     });
     assert.equal(PRODUCTION_WEBHOOK_URL, 'https://contivo-api-production.up.railway.app/api/v1/social/telegram/webhook');
@@ -45,7 +45,7 @@ describe('runSetWebhook', () => {
   after(async () => { await tg.close(); });
 
   it('calls setWebhook then getWebhookInfo and prints no token or secret', async () => {
-    tg.queue('getWebhookInfo', ok({ url: PRODUCTION_WEBHOOK_URL, pending_update_count: 0, allowed_updates: ['message', 'my_chat_member'] }));
+    tg.queue('getWebhookInfo', ok({ url: PRODUCTION_WEBHOOK_URL, pending_update_count: 0, allowed_updates: ['message', 'my_chat_member', 'callback_query'] }));
     const lines: string[] = [];
     const env = { TELEGRAM_BOT_TOKEN: TOKEN, TELEGRAM_WEBHOOK_SECRET: SECRET, TELEGRAM_API_BASE: tg.base };
     const code = await runSetWebhook(env, [], (l) => lines.push(l));

@@ -53,7 +53,7 @@ describe('TelegramPollingService', () => {
     assert.equal(await svc.pollOnce(0), 0);
     assert.deepEqual(handled, [10, 11]);
     const polls = tg.callsOf('getUpdates');
-    assert.deepEqual(polls[0].body.allowed_updates, ['message', 'my_chat_member']);
+    assert.deepEqual(polls[0].body.allowed_updates, ['message', 'my_chat_member', 'callback_query']);
     assert.equal(polls[1].body.offset, 12);
   });
 

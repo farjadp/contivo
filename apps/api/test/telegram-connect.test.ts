@@ -303,7 +303,9 @@ describe('TelegramConnectService', () => {
       }
       await assert.rejects(s.service.confirm(created.sessionId, OTHER, wrong), (e: any) =>
         e.getStatus() === 429 && e.getResponse().code === 'too_many_attempts');
-      await assert.rejects(s.service.confirm(created.sessionId, OTHER, real), (e: any) => e.getStatus() === 409);
+      // Dead for good: even the real code is refused.
+      await assert.rejects(s.service.confirm(created.sessionId, OTHER, real), (e: any) =>
+        e.getStatus() === 429 && e.getResponse().code === 'too_many_attempts');
       assert.equal(s.prisma.socialConnection.rows.length, 0);
       assert.equal((await s.service.getSession(created.sessionId, OTHER)).status, 'failed');
     });
@@ -361,6 +363,7 @@ describe('TelegramConnectService', () => {
     it('bot kicked → every connection for that chat REVOKED with a coded reason; others untouched', async () => {
       const s = setup();
       withConnections(s);
+      tg.queue('getChatMember', ok({ status: 'kicked', user: { id: BOT_ID } })); // Telegram confirms
       await s.service.handleUpdate(member(CHANNEL, 'kicked'));
       const rows = s.prisma.socialConnection.rows;
       assert.deepEqual(rows.map((r) => r.status), ['REVOKED', 'REVOKED', 'CONNECTED']);
@@ -372,6 +375,7 @@ describe('TelegramConnectService', () => {
     it('rights lost (admin without can_post_messages) → REVOKED BOT_RIGHTS_LOST', async () => {
       const s = setup();
       withConnections(s);
+      tg.queue('getChatMember', ok({ status: 'administrator', user: { id: BOT_ID }, can_post_messages: false }));
       await s.service.handleUpdate(member(CHANNEL, 'administrator', { can_post_messages: false }));
       assert.equal(s.prisma.socialConnection.rows[0].metaJson.revokedReason, 'BOT_RIGHTS_LOST');
     });
@@ -387,6 +391,7 @@ describe('TelegramConnectService', () => {
     it('group upgraded to supergroup → connections move to the new id', async () => {
       const s = setup();
       s.prisma.socialConnection.rows.push({ id: 'g', workspaceId: 'ws-owner', platform: 'TELEGRAM', accountIdentifier: '-55', status: 'CONNECTED', metaJson: { chatType: 'group' } });
+      tg.queue('getChat', fail(400, 'Bad Request: group chat was upgraded to a supergroup chat', { migrate_to_chat_id: -100555 }));
       await s.service.handleUpdate({ update_id: updateSeq++, message: { message_id: 1, chat: { id: -55, type: 'group' }, migrate_to_chat_id: -100555 } as any });
       assert.equal(s.prisma.socialConnection.rows[0].accountIdentifier, '-100555');
       assert.equal(s.prisma.socialConnection.rows[0].metaJson.chatType, 'supergroup');
@@ -402,7 +407,9 @@ describe('TelegramConnectService', () => {
       const s = setup();
       withConnections(s);
       const u = member(CHANNEL, 'kicked');
+      tg.queue('getChatMember', ok({ status: 'kicked', user: { id: BOT_ID } })); // a 2nd call would fall back to "can post"
       await s.service.handleUpdate(u);
+      assert.equal(s.prisma.socialConnection.rows[0].status, 'REVOKED');
       s.prisma.socialConnection.rows[0].status = 'CONNECTED';
       await s.service.handleUpdate(u);
       assert.equal(s.prisma.socialConnection.rows[0].status, 'CONNECTED');

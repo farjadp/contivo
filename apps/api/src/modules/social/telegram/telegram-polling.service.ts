@@ -15,7 +15,7 @@ import { Inject, Injectable, Logger, type OnApplicationBootstrap, type OnModuleD
 
 import { LOCK_STORE, type LockStore } from '../token-refresh.service';
 
-import { TELEGRAM_ALLOWED_UPDATES, TelegramBotClient } from './telegram-bot.client';
+import { TELEGRAM_ALLOWED_UPDATES, TelegramBotClient, telegramDevSettingsAllowed } from './telegram-bot.client';
 import { TelegramConnectService } from './telegram-connect.service';
 
 const LOCK_KEY = 'social:tg-polling';
@@ -23,8 +23,14 @@ const POLL_TIMEOUT_SEC = 20;
 const ERROR_BACKOFF_MS = 5_000;
 const CONFLICT_BACKOFF_MS = 60_000;
 
+/** Polling is dev-only: never with NODE_ENV=production (see onApplicationBootstrap for the log). */
 export function pollingEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.TELEGRAM_UPDATES_MODE?.trim() === 'polling' && env.WORKER_MODE !== 'true' && !!env.TELEGRAM_BOT_TOKEN?.trim();
+  return (
+    env.TELEGRAM_UPDATES_MODE?.trim() === 'polling' &&
+    telegramDevSettingsAllowed(env) &&
+    env.WORKER_MODE !== 'true' &&
+    !!env.TELEGRAM_BOT_TOKEN?.trim()
+  );
 }
 
 @Injectable()
@@ -44,6 +50,10 @@ export class TelegramPollingService implements OnApplicationBootstrap, OnModuleD
   ) {}
 
   onApplicationBootstrap() {
+    if (process.env.TELEGRAM_UPDATES_MODE?.trim() === 'polling' && !telegramDevSettingsAllowed()) {
+      this.logger.error('TELEGRAM_UPDATES_MODE=polling is ignored with NODE_ENV=production; updates come by webhook only. Remove the setting.');
+      return;
+    }
     if (!pollingEnabled()) return;
     this.logger.warn('TELEGRAM_UPDATES_MODE=polling: reading Telegram updates with getUpdates (dev only).');
     this.running = true;
