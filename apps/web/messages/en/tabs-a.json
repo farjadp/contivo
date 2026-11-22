@@ -301,7 +301,10 @@
         "slugLabel": "URL slug",
         "slugFrozen": "Fixed after publishing, so the post's address never changes.",
         "slugAuto": "Generated from the title when published.",
-        "saveFailed": "Your changes were not saved. Try again."
+        "saveFailed": "Your changes were not saved. Try again.",
+        "publishedEyebrow": "Edit published post",
+        "publishedNote": "Saving updates the live article on your site right away. Its address stays the same.",
+        "saveLive": "Save and update live"
       },
       "scheduleModal": {
         "title": "Schedule Content",
@@ -320,6 +323,7 @@
           "slug_frozen": "This post is published, so its slug can no longer change.",
           "not_found": "This post no longer exists. Refresh the page.",
           "invalid_channel": "Choose Blog or LinkedIn.",
+          "not_editable": "Only a published blog post can be edited here. Refresh the page.",
           "unknown": "Something went wrong. Try again."
         }
       },

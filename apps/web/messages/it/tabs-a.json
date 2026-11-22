@@ -301,7 +301,10 @@
         "slugLabel": "Slug dell'URL",
         "slugFrozen": "Non cambia dopo la pubblicazione, così l'indirizzo del post resta lo stesso.",
         "slugAuto": "Generato dal titolo al momento della pubblicazione.",
-        "saveFailed": "Le modifiche non sono state salvate. Riprova."
+        "saveFailed": "Le modifiche non sono state salvate. Riprova.",
+        "publishedEyebrow": "Modifica post pubblicato",
+        "publishedNote": "Salvando, l'articolo online sul tuo sito si aggiorna subito. L'indirizzo resta lo stesso.",
+        "saveLive": "Salva e aggiorna online"
       },
       "scheduleModal": {
         "title": "Programma contenuto",
@@ -320,6 +323,7 @@
           "slug_frozen": "Questo post è pubblicato, quindi lo slug non può più cambiare.",
           "not_found": "Questo post non esiste più. Aggiorna la pagina.",
           "invalid_channel": "Scegli Blog o LinkedIn.",
+          "not_editable": "Qui si può modificare solo un post del blog pubblicato. Aggiorna la pagina.",
           "unknown": "Qualcosa è andato storto. Riprova."
         }
       },
