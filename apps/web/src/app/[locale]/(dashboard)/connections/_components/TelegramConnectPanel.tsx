@@ -9,6 +9,8 @@
  *
  * The session lives in the API. This panel starts it, polls it every few
  * seconds while open, and stops on unmount, expiry or a terminal status.
+ * Opening the panel creates one session, also under StrictMode's double
+ * mount effect (createStartOnce).
  * All calls go through server actions (actions/social-telegram.ts).
  *
  * TelegramConnectSteps is the stateless view, rendered on its own in tests.
@@ -30,6 +32,7 @@ import { useRouter } from '@/i18n/navigation';
 import {
   TELEGRAM_CODE_LENGTH,
   TELEGRAM_POLL_MS,
+  createStartOnce,
   isCompleteCode,
   isExpired,
   endsSession,
@@ -310,8 +313,10 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
   const [code, setCode] = useState('');
   // Results of a session the user has already abandoned (Start again) are dropped.
   const generation = useRef(0);
+  // StrictMode's double mount effect shares one start instead of creating two sessions.
+  const [startOnce] = useState(() => createStartOnce<Awaited<ReturnType<typeof startTelegramConnect>>>());
 
-  const begin = useCallback(async () => {
+  const begin = useCallback(async (fresh: boolean) => {
     const gen = ++generation.current;
     setStart(null);
     setView(null);
@@ -322,7 +327,7 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
     setUsername('');
     setCode('');
     setBusy(true);
-    const result = await startTelegramConnect(workspaceId);
+    const result = await startOnce(workspaceId, () => startTelegramConnect(workspaceId), { fresh });
     if (gen !== generation.current) return;
     setBusy(false);
     if (!result.ok) {
@@ -330,10 +335,10 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
       return;
     }
     setStart(result.data);
-  }, [workspaceId]);
+  }, [workspaceId, startOnce]);
 
   useEffect(() => {
-    void begin();
+    void begin(false);
     // Unmount (or a new workspace) invalidates whatever is still in flight.
     const gen = generation;
     return () => {
@@ -453,7 +458,7 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
       }}
       onSubmitUsername={() => void runAction(() => submitTelegramUsername(start!.sessionId, username.trim()))}
       onSubmitCode={() => void runAction(() => confirmTelegramConnect(start!.sessionId, normalizeCodeInput(code)))}
-      onRestart={() => void begin()}
+      onRestart={() => void begin(true)}
       onDone={() => {
         router.refresh();
         onClose();

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   TELEGRAM_ERROR_CODES,
+  createStartOnce,
   endsSession,
   failedReason,
   isCompleteCode,
@@ -21,6 +22,58 @@ const view = (over: Partial<TelegramSessionView> = {}): TelegramSessionView => (
   expiresAt: '2026-11-22T10:15:00.000Z',
   telegramLinked: false,
   ...over,
+});
+
+describe('createStartOnce (one connect session per panel open)', () => {
+  const deferred = <T,>() => {
+    let resolve!: (v: T) => void;
+    let reject!: (e: unknown) => void;
+    const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+    return { promise, resolve, reject };
+  };
+
+  it('StrictMode mount → cleanup → mount starts ONE session; both callers get it', async () => {
+    const once = createStartOnce<string>();
+    const d = deferred<string>();
+    let calls = 0;
+    const run = () => { calls++; return d.promise; };
+    const a = once('ws-1', run);
+    const b = once('ws-1', run); // the effect's second run, same tick
+    expect(calls).toBe(1);
+    d.resolve('session-1');
+    expect(await a).toBe('session-1');
+    expect(await b).toBe('session-1');
+  });
+
+  it('"Start again" (fresh) always starts a new session', async () => {
+    const once = createStartOnce<number>();
+    let calls = 0;
+    const run = () => Promise.resolve(++calls);
+    expect(await once('ws-1', run)).toBe(1);
+    expect(await once('ws-1', run, { fresh: true })).toBe(2);
+    // Settled starts are not reused either: a later open is a new session.
+    expect(await once('ws-1', run)).toBe(3);
+    expect(calls).toBe(3);
+  });
+
+  it('another workspace is never given this one\'s session', async () => {
+    const once = createStartOnce<string>();
+    const d = deferred<string>();
+    let calls = 0;
+    void once('ws-1', () => { calls++; return d.promise; });
+    const other = once('ws-2', () => { calls++; return Promise.resolve('session-2'); });
+    expect(calls).toBe(2);
+    expect(await other).toBe('session-2');
+    d.resolve('session-1');
+  });
+
+  it('a failed start is not cached: the retry calls again', async () => {
+    const once = createStartOnce<string>();
+    let calls = 0;
+    await expect(once('ws-1', () => { calls++; return Promise.reject(new Error('down')); })).rejects.toThrow('down');
+    expect(await once('ws-1', () => { calls++; return Promise.resolve('ok'); })).toBe('ok');
+    expect(calls).toBe(2);
+  });
 });
 
 describe('panelStep', () => {

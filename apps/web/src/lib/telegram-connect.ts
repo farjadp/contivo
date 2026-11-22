@@ -79,6 +79,26 @@ export function isTelegramErrorCode(value: unknown): value is TelegramErrorCode 
   return typeof value === 'string' && (TELEGRAM_ERROR_CODES as readonly string[]).includes(value);
 }
 
+/**
+ * Starts at most one connect session per key at a time. React StrictMode (on
+ * in dev) runs the panel's mount effect twice — mount, cleanup, mount — and
+ * each run used to create its own API session (seen live: two "connect
+ * session created" log lines per open). The second run now gets the start
+ * that is already in flight. `fresh` ("Start again") always starts a new one;
+ * a settled start is never reused, and a failed one is never cached.
+ */
+export function createStartOnce<T>() {
+  let inflight: { key: string; promise: Promise<T> } | null = null;
+  return (key: string, run: () => Promise<T>, opts: { fresh?: boolean } = {}): Promise<T> => {
+    if (!opts.fresh && inflight?.key === key) return inflight.promise;
+    const promise: Promise<T> = run().finally(() => {
+      if (inflight?.promise === promise) inflight = null;
+    });
+    inflight = { key, promise };
+    return promise;
+  };
+}
+
 /** Poll interval while the panel is open and the session is still moving. */
 export const TELEGRAM_POLL_MS = 2500;
 
