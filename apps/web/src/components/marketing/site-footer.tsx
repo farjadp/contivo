@@ -126,7 +126,7 @@ export function SiteFooter() {
         <div className="flex flex-col gap-5 border-t border-forest-line py-7 text-[13px] text-forest-muted md:flex-row md:items-center md:justify-between">
           <p className="max-w-[46rem] leading-relaxed">{t('provenance')}</p>
           <div className="flex shrink-0 items-center gap-6">
-            <LocaleSwitcher className="[&_a]:!text-forest-muted [&_a:hover]:!text-chalk [&_a[aria-current]]:!text-chalk" />
+            <LocaleSwitcher variant="inline" className="[&_a]:!text-forest-muted [&_a:hover]:!text-chalk [&_a[aria-current]]:!text-chalk" />
             <span>
               {t('copyright', {
                 /* A year is a label, not a quantity: no thousands separator,

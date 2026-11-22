@@ -109,7 +109,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className="ms-auto flex items-center gap-2">
           {/* The marketing switcher, re-tinted for chalk rather than forked. */}
-          <LocaleSwitcher className="me-2 [&_a:hover]:text-moss [&_a[aria-current]]:text-moss [&_a[aria-current]]:decoration-saffron [&_a]:text-moss-muted" />
+          <LocaleSwitcher className="me-2" />
           <Link
             href="/settings"
             aria-label={t('nav.settings')}

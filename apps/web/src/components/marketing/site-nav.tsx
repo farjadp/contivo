@@ -47,7 +47,7 @@ export function SiteNav() {
         </nav>
 
         <div className="flex items-center gap-4 sm:gap-5">
-          <LocaleSwitcher className="hidden sm:block" />
+          <LocaleSwitcher />
           <Link
             href="/sign-in"
             className="text-[14px] text-moss-muted transition-colors hover:text-moss"
