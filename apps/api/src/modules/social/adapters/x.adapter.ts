@@ -36,6 +36,7 @@ import {
   PublishResult,
   ValidationResult,
 } from './social-adapter.interface';
+import { markdownToPlainText } from './social-text';
 
 
 @Injectable()
@@ -129,7 +130,9 @@ export class XAdapter implements SocialAdapter {
     try {
       // Append hashtags if provided
       const hashtags = (payload.hashtags ?? []).map((t) => `#${t}`).join(' ');
-      const tweetText = hashtags ? `${payload.body} ${hashtags}`.trim() : payload.body;
+      // X shows markdown as typed (B15): publish plain text.
+      const plainBody = markdownToPlainText(payload.body);
+      const tweetText = hashtags ? `${plainBody} ${hashtags}`.trim() : plainBody;
 
       const body: Record<string, unknown> = { text: tweetText };
 

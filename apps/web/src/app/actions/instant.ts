@@ -18,6 +18,7 @@
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { generateInstantDraft } from '@/lib/gemini';
+import { textForChannel } from '@/lib/social-text';
 import {
   INSTANT_CONTENT_COST,
   InsufficientCreditsError,
@@ -127,7 +128,8 @@ export async function generateInstantContentAction(input: {
       channel: channel as never,
       tone: tone as never,
       topic,
-      content: draft.content,
+      // LinkedIn, X and Instagram show markdown as typed (B15).
+      content: textForChannel(channel, draft.content),
       status: 'GENERATED',
       creditsCost: cost,
       jobId: job.id,

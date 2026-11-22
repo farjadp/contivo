@@ -1,0 +1,22 @@
+[
+  {
+    "name": "en LinkedIn draft as models write it",
+    "input": "**Most dental clinics lose patients after the first visit.**\n\nHere's why:\n\n- They never *follow up*\n- The booking link is buried\n* Reviews go unanswered\n\n## What to do instead\n\n1. Send a short note within 24 hours\n2. Ask one question, not five\n\n---\n\nRead more in [our guide](https://example.com/guide).\n\n#DentalMarketing #PatientRetention",
+    "output": "Most dental clinics lose patients after the first visit.\n\nHere's why:\n\n• They never follow up\n• The booking link is buried\n• Reviews go unanswered\n\nWhat to do instead\n\n1. Send a short note within 24 hours\n2. Ask one question, not five\n\nRead more in our guide (https://example.com/guide).\n\n#DentalMarketing #PatientRetention"
+  },
+  {
+    "name": "fa LinkedIn draft keeps ZWNJ, «» and Persian punctuation",
+    "input": "**چرا بیشتر کلینیک‌ها بیمار را بعد از اولین مراجعه از دست می‌دهند؟**\n\n- پیگیری نمی‌کنند؛ حتی یک پیام کوتاه.\n- لینک نوبت‌دهی پنهان است\n\n### چه باید کرد\n\nبه قول یکی از مدیران: «*یک پیام، یک سؤال*»، نه پنج سؤال.\n\n#بازاریابی_دندانپزشکی",
+    "output": "چرا بیشتر کلینیک‌ها بیمار را بعد از اولین مراجعه از دست می‌دهند؟\n\n• پیگیری نمی‌کنند؛ حتی یک پیام کوتاه.\n• لینک نوبت‌دهی پنهان است\n\nچه باید کرد\n\nبه قول یکی از مدیران: «یک پیام، یک سؤال»، نه پنج سؤال.\n\n#بازاریابی_دندانپزشکی"
+  },
+  {
+    "name": "leaves plain text and in-word markers alone",
+    "input": "2*3 = 6, file_name.txt and snake_case stay.\n*Terms apply\n#hashtag at line start is not a heading",
+    "output": "2*3 = 6, file_name.txt and snake_case stay.\n*Terms apply\n#hashtag at line start is not a heading"
+  },
+  {
+    "name": "blockquote, code, strike, bold-italic, stray bold",
+    "input": "> A quote line\n\n```\nnpm run build\n```\n\nUse `pnpm` not ~~npm~~. ***Big*** news** here.\n\n\n\nEnd.",
+    "output": "A quote line\n\nnpm run build\n\nUse pnpm not npm. Big news here.\n\nEnd."
+  }
+]

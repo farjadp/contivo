@@ -40,6 +40,7 @@ import { humanizeDraft } from '@/lib/humanize';
 import { generateImageForContentItem } from '@/lib/content-image';
 import { adjustWordCountForLanguage, asContentLanguage } from '@/lib/content-language';
 import { POST_BODY_MAX } from '@/lib/content-slug';
+import { textForChannel } from '@/lib/social-text';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -437,7 +438,8 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: 
       outline, or they wait for and pay for a second, different draft. It is
       AI text nobody has approved yet, so it lands as GENERATED, not READY.
     */
-    const previewBody = typeof preview?.body === 'string' ? preview.body.trim() : '';
+    // LinkedIn and X show markdown as typed (B15): store what will be published.
+    const previewBody = typeof preview?.body === 'string' ? textForChannel(channel, preview.body).trim() : '';
     if (previewBody.length > POST_BODY_MAX) return { error: 'Preview is too long to save.' };
     const fromPreview = previewBody.length > 0;
 
@@ -611,7 +613,8 @@ export async function generateDraftPreviewCore(
 
     return {
       success: true,
-      preview: generatedBody,
+      // What the user sees is what will be stored and published (B15).
+      preview: textForChannel(channel, generatedBody),
       channel,
       topic,
       targetWordCount,
@@ -791,6 +794,10 @@ export async function generateDraftForItem(
         tellsAfter: humanized.tellsAfter,
       };
     }
+
+    // LinkedIn and X render no markdown (B15). Converted here, before the
+    // autopilot gate reads it, so the gate judges the text that is published.
+    finalBody = textForChannel(item.channel, finalBody);
 
     const autoScheduleDelayHours = await getDefaultScheduleDelayHours();
     const baseAutoSchedule = new Date(Date.now() + autoScheduleDelayHours * 60 * 60 * 1000);
