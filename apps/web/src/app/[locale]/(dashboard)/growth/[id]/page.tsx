@@ -351,6 +351,16 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   });
   const activeTab = requestedTab === 'progress' && !progressReport ? 'pipeline' : requestedTab;
 
+  // Funnel signal: which pipeline step was opened, and whether it was gated.
+  // Not awaited and never rejects, so it cannot slow or break the render.
+  const activeGate = gates[activeTab];
+  void writeActivityLog({
+    userId: session.userId as string,
+    workspaceId: workspace.id,
+    action: 'STEP_VIEWED',
+    detail: { tab: activeTab, gated: Boolean(activeGate), ...(activeGate ? { gateKey: activeGate.key } : {}) },
+  });
+
   if (activeTab === 'progress' && progressReport) {
     await writeActivityLog({
       userId: session.userId as string,
