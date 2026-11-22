@@ -298,7 +298,7 @@ export function createAiRunner(deps: AiRunnerDeps): AiRunner {
           }
 
           const transition = deps.health.recordFailure(provider, errorClass, error.retryAfterMs);
-          if (transition) deps.alerts.healthChanged(transition, task, ctx);
+          if (transition) deps.alerts.healthChanged(transition, task, ctx, Boolean(error.forced));
 
           if (errorClass === 'bad_request') return fail('bad_request');
           if (errorClass === 'refusal') return fail('refusal');

@@ -16,6 +16,9 @@ import { sanitizeAiMessage } from './errors';
 import { CRITICAL_CLASSES, type HealthTransition } from './health';
 import type { AiAttempt, AiCallContext, AiErrorClass, AiTask, ProviderId } from './types';
 
+/** Prefix on every row caused by AI_FORCE_FAIL; such rows are evidence only, never restored as health. */
+export const FORCED_MARKER = '[AI_FORCE_FAIL]';
+
 export type AiProviderEventType = 'attempt_failed' | 'health_changed' | 'all_unavailable';
 
 export interface AiProviderEventRow {
@@ -56,7 +59,7 @@ export interface AttemptFailedAlert {
 
 export interface AiAlertSink {
   attemptFailed(alert: AttemptFailedAlert): void;
-  healthChanged(transition: HealthTransition, task: AiTask, ctx: AiCallContext): void;
+  healthChanged(transition: HealthTransition, task: AiTask, ctx: AiCallContext, forced?: boolean): void;
   allUnavailable(task: AiTask, attempts: AiAttempt[], ctx: AiCallContext, firstErrorClass: string): void;
   notConfigured(provider: ProviderId, keyEnv: string): void;
 }
@@ -106,7 +109,7 @@ export function createAlertSink(deps: {
 
   return {
     attemptFailed(alert) {
-      const message = sanitizeAiMessage(alert.forced ? `[AI_FORCE_FAIL] ${alert.message}` : alert.message);
+      const message = sanitizeAiMessage(alert.forced ? `${FORCED_MARKER} ${alert.message}` : alert.message);
       try {
         log.error(
           `[ai] ${alert.provider} ${alert.errorClass} → ${alert.failedOverTo ?? 'none'} for ${alert.task}` +
@@ -136,7 +139,7 @@ export function createAlertSink(deps: {
       );
     },
 
-    healthChanged(transition, task, ctx) {
+    healthChanged(transition, task, ctx, forced = false) {
       const until = transition.coolingDownUntil ? new Date(transition.coolingDownUntil).toISOString() : null;
       try {
         log.error(
@@ -152,7 +155,7 @@ export function createAlertSink(deps: {
         task,
         errorClass: transition.change,
         status: null,
-        message: until ? `cooling down until ${until}` : 'healthy again',
+        message: `${forced ? `${FORCED_MARKER} ` : ''}${until ? `cooling down until ${until}` : 'healthy again'}`,
         failedOverTo: null,
         eventType: 'health_changed',
         workspaceId: ctx.workspaceId ?? null,
@@ -216,13 +219,18 @@ export function createPrismaEventStore(): AiProviderEventStore {
             { eventType: 'attempt_failed', errorClass: { in: ['billing', 'auth', 'model_gone'] } },
             { eventType: 'health_changed', errorClass: { in: ['billing', 'auth', 'model_gone', 'recovered'] } },
           ],
+          // A forced (AI_FORCE_FAIL) failure must never come back as a real cool-down.
+          NOT: { message: { startsWith: FORCED_MARKER } },
         },
         orderBy: { createdAt: 'desc' },
         take: 50,
-        select: { provider: true, errorClass: true, createdAt: true },
+        select: { provider: true, errorClass: true, createdAt: true, message: true },
       });
       const latest = new Map<string, (typeof rows)[number]>();
-      for (const row of rows) if (!latest.has(row.provider)) latest.set(row.provider, row);
+      for (const row of rows) {
+        if (row.message?.startsWith(FORCED_MARKER)) continue; // belt and braces with the where clause
+        if (!latest.has(row.provider)) latest.set(row.provider, row);
+      }
       return [...latest.values()].map((row) =>
         row.errorClass === 'recovered'
           ? { provider: row.provider as ProviderId, recovered: true as const, createdAt: row.createdAt }
