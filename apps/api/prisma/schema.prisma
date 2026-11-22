@@ -537,6 +537,12 @@ model ContentItem {
   scheduledTimezone String?
   publishedAtUtc    DateTime?
   failedReason      String?
+  /// The quality gate's verdict on this AI draft: { approved, rejectedBy,
+  /// reasons[], scores, judge, judgeModel, checkedAt, source, override? }.
+  /// Null = never gated by this system (legacy rows and customer-written
+  /// "Write a post" items), which behave as before. Not failedReason: that
+  /// one means publishing failed.
+  qualityVerdict    Json?
   campaign          String?
   notes             String?
   createdAt         DateTime         @default(now())
