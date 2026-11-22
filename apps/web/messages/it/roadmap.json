@@ -1,0 +1,103 @@
+{
+  "roadmap": {
+    "meta": {
+      "title": "Roadmap di Contivo: cosa stiamo costruendo e cosa è uscito",
+      "description": "Cosa costruisce Contivo ora, dopo e più avanti, senza date promesse, e un elenco datato di ciò che è già uscito."
+    },
+    "eyebrow": "Roadmap",
+    "headline": "Cosa viene dopo, in ordine. <accent>Non</accent> per data.",
+    "intro": "L'ordine è un piano; una data sarebbe una promessa che potremmo non mantenere. Quando qualcosa esce passa all'elenco qui sotto, con il giorno in cui è entrato nel prodotto.",
+    "horizons": {
+      "now": {
+        "title": "Ora",
+        "body": "In costruzione."
+      },
+      "next": {
+        "title": "Dopo",
+        "body": "Progettato, ed è il prossimo da costruire."
+      },
+      "later": {
+        "title": "Più avanti",
+        "body": "Pianificato, non ancora iniziato."
+      }
+    },
+    "items": {
+      "channels": {
+        "title": "X, Telegram, WordPress e Threads",
+        "body": "Il nucleo di pubblicazione che condividono è uscito il 22 novembre. Ogni canale si accende solo dopo che un post vero è uscito attraverso di lui."
+      },
+      "billing": {
+        "title": "Piani a pagamento",
+        "body": "Founder, Growth e Agency, ai prezzi della pagina prezzi. Finché la fatturazione non parte, i nuovi account sono gratis."
+      },
+      "monitoring": {
+        "title": "Monitoraggio settimanale dei concorrenti",
+        "body": "Una rilettura settimanale di ogni concorrente confermato, con l'elenco di cosa è cambiato su sito, prezzi o posizionamento."
+      },
+      "imageQuality": {
+        "title": "Scegli la qualità delle immagini",
+        "body": "Veloce, standard o HD per ogni immagine, così un'immagine usa e getta e una principale non costano uguale."
+      },
+      "imageTemplate": {
+        "title": "Il tuo brand sulle immagini",
+        "body": "Titolo e logo sopra l'immagine nei tuoi colori e con un font vero, così il testo è corretto, persiano compreso."
+      },
+      "video": {
+        "title": "Script video e video da template",
+        "body": "Script da girare, e video brevi fatti senza telecamera."
+      },
+      "agency": {
+        "title": "Report white-label e link per i clienti",
+        "body": "Il report strategico con il brand dell'agenzia, e un link che il cliente apre senza account."
+      },
+      "networks": {
+        "title": "Instagram, Facebook e TikTok",
+        "body": "Ognuno richiede prima la revisione dell'app da parte della piattaforma, quindi i tempi dipendono in parte da loro."
+      },
+      "languages": {
+        "title": "Più lingue per i contenuti",
+        "body": "Scrivere in lingue oltre all'inglese e al persiano."
+      }
+    },
+    "note": "L'ordine può cambiare se i clienti ci dicono che qualcos'altro conta di più. Ciò che abbandoniamo viene tolto da questa pagina, non lasciato invecchiare.",
+    "shippedTitle": "Usciti di recente",
+    "shippedIntro": "Cambiamenti che un cliente nota, con il giorno in cui ognuno è entrato nel prodotto.",
+    "shipped": {
+      "ownPost": {
+        "title": "Scrivi il tuo post, e modifica quelli pubblicati",
+        "body": "Aggiungi alla pipeline un post scritto con parole tue, e correggi un articolo già online."
+      },
+      "failover": {
+        "title": "Un altro fornitore AI subentra",
+        "body": "Se un fornitore è giù, il successivo riprende il lavoro, e il passaggio viene registrato."
+      },
+      "security": {
+        "title": "Correzioni di sicurezza a pubblicazione e siti collegati",
+        "body": "La pubblicazione è legata al tuo workspace, e l'indirizzo di aggiornamento di un sito non può puntare a sistemi interni."
+      },
+      "tokens": {
+        "title": "Account collegati cifrati",
+        "body": "I token degli account social collegati sono cifrati a riposo."
+      },
+      "italian": {
+        "title": "Italiano",
+        "body": "Questo sito in italiano."
+      },
+      "discovery": {
+        "title": "Concorrenti e grafici basati su prove",
+        "body": "I concorrenti arrivano con le prove su cui sono stati trovati, e ogni punteggio mostra il suo ragionamento."
+      },
+      "report": {
+        "title": "Un nuovo report strategico",
+        "body": "Il modello è nostro; il modello AI scrive solo il testo e non posiziona mai i punti sui grafici."
+      },
+      "persian": {
+        "title": "Persiano",
+        "body": "Tutto il prodotto, e la scrittura stessa, in persiano."
+      }
+    },
+    "closeHeadline": "Ti serve qualcosa che qui non c'è?",
+    "closeCta": "Diccelo",
+    "closeFeatures": "Cosa funziona oggi"
+  }
+}

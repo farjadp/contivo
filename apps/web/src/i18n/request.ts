@@ -41,6 +41,8 @@ const NAMESPACES = [
   'compare',
   'why',
   'product',
+  'roadmap',
+  'team',
 ] as const;
 
 /**
