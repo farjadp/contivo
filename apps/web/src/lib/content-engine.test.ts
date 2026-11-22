@@ -114,6 +114,8 @@ describe('resolveChannelFromFormat', () => {
     ['Long-form article', 'blog'],
     ['Email newsletter', 'email'],
     ['instagram caption', 'instagram'],
+    ['telegram', 'telegram'],
+    ['Telegram channel post', 'telegram'],
     ['', 'linkedin'],
     [undefined, 'linkedin'],
   ])('%s → %s', (format, channel) => {

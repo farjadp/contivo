@@ -498,7 +498,8 @@
       "linkedin": "LinkedIn",
       "twitter": "Twitter / X",
       "email": "Email",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "telegram": "Telegram"
     },
     "finance": {
       "empty": "Ancora nessun pagamento. Le fatture compaiono qui man mano che Stripe le invia.",
