@@ -207,8 +207,13 @@ function parseBlocks(markdown: string): SourceBlock[] {
       const body: string[] = [];
       let j = i + 1;
       while (j < lines.length && !/^\s*```\s*$/.test(lines[j])) body.push(lines[j++]);
-      blocks.push({ kind: 'code', lang: fence[1], text: body.join('\n') });
-      i = j; // skips the closing fence (or runs to the end when unclosed)
+      // An unclosed fence is a stray ``` (model output often ends with one):
+      // drop that line and read the rest as normal text, rather than turning
+      // everything after it into code — or emitting an empty <pre></pre>.
+      if (j >= lines.length) continue;
+      // A closed fence with nothing in it renders nothing.
+      if (body.some((l) => l.trim())) blocks.push({ kind: 'code', lang: fence[1], text: body.join('\n') });
+      i = j; // skips the closing fence
       continue;
     }
     if (!line.trim()) { endPara(); continue; }
