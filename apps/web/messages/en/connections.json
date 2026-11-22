@@ -73,7 +73,8 @@
         "expired": "Expired",
         "failed": "Failed",
         "revoked": "Revoked",
-        "pendingReauth": "Needs re-auth"
+        "pendingReauth": "Needs re-auth",
+        "expiringSoon": "Expires in {days, plural, one {# day} other {# days}}"
       },
       "reconnecting": "Opening sign-in…",
       "statusHint": {
@@ -81,7 +82,8 @@
         "revoked": "Access to this <bdi>{platform}</bdi> account was withdrawn. Reconnect to publish to it again.",
         "pendingReauth": "<bdi>{platform}</bdi> needs you to sign in again before <bdi>Contivo</bdi> can publish.",
         "failed": "The connection to <bdi>{platform}</bdi> stopped working. Reconnect to publish to it again.",
-        "unsupported": "This <bdi>{platform}</bdi> connection stopped working, and it cannot be reconnected from this page yet."
+        "unsupported": "This <bdi>{platform}</bdi> connection stopped working, and it cannot be reconnected from this page yet.",
+        "expiringSoon": "Your <bdi>{platform}</bdi> sign-in ends in {days, plural, one {# day} other {# days}}. Reconnect now so scheduled posts keep publishing."
       },
       "errors": {
         "disconnect": "Could not disconnect this account.",

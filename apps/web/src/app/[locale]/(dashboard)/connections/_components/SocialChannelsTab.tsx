@@ -33,6 +33,9 @@ interface SocialAccount {
   isDefault: boolean;
   lastSyncAt: string | null;
   createdAt: string;
+  /** Status once tokenExpiresAt is taken into account (lib/connection-health). */
+  effectiveStatus?: string;
+  daysLeft?: number | null;
 }
 
 interface PublishJob {
