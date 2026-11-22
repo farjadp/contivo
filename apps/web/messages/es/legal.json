@@ -36,7 +36,7 @@
       "summary": [
         "Recopilamos lo que el producto necesita para funcionar: tu cuenta, tu workspace y las cuentas que conectes. Nada con fines publicitarios.",
         "Nunca vendemos tus datos, nunca te mostramos anuncios y no usamos cookies de seguimiento ni de analítica.",
-        "Tus textos se envían a proveedores de IA (OpenAI y Google) para analizarlos y redactar contenido. Así funciona el producto, y lo decimos claramente.",
+        "Tus textos se envían a proveedores de IA (OpenAI, Anthropic y Google) para analizarlos y redactar contenido. Así funciona el producto, y lo decimos claramente.",
         "Escribe a {email} y eliminaremos tu cuenta y tu workspace en un plazo de 30 días."
       ],
       "sections": [
@@ -80,10 +80,10 @@
           "blocks": [
             "Contivo funciona sobre la infraestructura de otras empresas. Cada una recibe solo lo que necesita para su parte del trabajo:",
             [
-              "OpenAI y Google (Gemini): el contenido de tu web, tu memoria de marca y tus instrucciones, para analizar, planificar y redactar. Lo que hacen con los datos de la API se rige por sus condiciones de la API.",
+              "OpenAI, Anthropic (Claude) y Google (Gemini): el contenido de tu web, tu memoria de marca y tus instrucciones, para analizar, planificar y redactar. Si uno de ellos no está disponible, la misma solicitud puede pasar a otro. Lo que hacen con los datos de la API se rige por sus condiciones de la API.",
               "DataForSEO: palabras clave y nombres de dominio, para obtener volúmenes de búsqueda y páginas de resultados. Ninguna información personal.",
               "LinkedIn y X: las publicaciones que publicas, y solo una vez que hayas conectado la cuenta.",
-              "Vercel, Railway y Neon: el alojamiento y la base de datos, donde se almacena todo lo anterior.",
+              "Railway y Neon: el alojamiento y la base de datos, donde se almacena todo lo anterior.",
               "Sentry: informes de errores.",
               "Stripe: pagos, cuando la facturación esté activa."
             ],
@@ -155,7 +155,7 @@
       "summary": [
         "Lo que aportas y lo que Contivo escribe para ti te pertenece.",
         "La IA puede equivocarse. El filtro de calidad detecta mucho, pero tú eres responsable de lo que se publica con tu nombre, incluido lo que publica Autopilot.",
-        "Contivo está en acceso anticipado y, por ahora, es gratis. Cuando empiece la facturación, podrás cancelar en cualquier momento.",
+        "Contivo está en acceso anticipado. Las cuentas nuevas son gratis por ahora, y algunos usuarios del acceso anticipado han pagado por un periodo determinado. Cuando empiece la facturación en la aplicación, podrás cancelar en cualquier momento.",
         "En los 14 días siguientes a cualquier pago, pídenoslo y te lo reembolsamos íntegramente. Sin preguntas."
       ],
       "sections": [
@@ -172,7 +172,8 @@
           "title": "Acceso anticipado",
           "blocks": [
             "Contivo está en acceso anticipado. Las funciones cambiarán, se añadirán algunas y se eliminarán otras, y habrá interrupciones del servicio. Por ahora no garantizamos ningún nivel de disponibilidad.",
-            "Mientras la facturación no esté activa, usar Contivo es gratis. Antes de empezar a cobrar, te diremos cuánto cuesta, y no se cobrará nada sin tu consentimiento."
+            "Las cuentas nuevas son gratis mientras la facturación en la aplicación no esté activa. Antes de empezar a cobrar en la aplicación, te diremos cuánto cuesta, y no se cobrará nada sin tu consentimiento.",
+            "Algunos usuarios del acceso anticipado pagaron una cuota única de 49 dólares estadounidenses por tres meses de acceso anticipado, acordada directamente con nosotros y no a través de la aplicación."
           ]
         },
         {
@@ -225,7 +226,7 @@
           "title": "Pagos y reembolsos",
           "blocks": [
             "Cuando la facturación esté activa, los precios serán los que muestre la página de Precios en el momento de suscribirte. Las suscripciones se renuevan en cada periodo hasta que canceles. Al cancelar se detiene la siguiente renovación, y tu plan sigue activo hasta el final del periodo que hayas pagado.",
-            "En los 14 días siguientes a cualquier pago, escribe a {email} y te reembolsaremos ese pago íntegramente. No te preguntaremos el motivo.",
+            "En los 14 días siguientes a cualquier pago, escribe a {email} y te reembolsaremos ese pago íntegramente. No te preguntaremos el motivo. Esto incluye los pagos del acceso anticipado acordados directamente con nosotros.",
             "Si cambiamos un precio, te avisaremos con al menos 30 días de antelación antes de que se te aplique. Se añadirán impuestos cuando la ley lo exija."
           ]
         },

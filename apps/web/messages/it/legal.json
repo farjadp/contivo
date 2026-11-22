@@ -226,7 +226,7 @@
           "title": "Pagamenti e rimborsi",
           "blocks": [
             "Quando la fatturazione sarà attiva, i prezzi saranno quelli indicati nella pagina Prezzi al momento dell'abbonamento. Gli abbonamenti si rinnovano a ogni periodo finché non disdici. La disdetta blocca il rinnovo successivo e il tuo piano resta attivo fino alla fine del periodo già pagato.",
-            "Entro 14 giorni da qualsiasi pagamento, scrivi a {email} e ti rimborsiamo quel pagamento per intero. Non ti chiederemo il motivo.",
+            "Entro 14 giorni da qualsiasi pagamento, scrivi a {email} e ti rimborsiamo quel pagamento per intero. Non ti chiederemo il motivo. Questo vale anche per i pagamenti dell'accesso anticipato concordati direttamente con noi.",
             "Se modifichiamo un prezzo, te lo comunichiamo almeno 30 giorni prima che si applichi a te. Le imposte vengono aggiunte dove previsto dalla legge."
           ]
         },

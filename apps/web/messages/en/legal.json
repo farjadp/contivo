@@ -226,7 +226,7 @@
           "title": "Payment and refunds",
           "blocks": [
             "When billing is live, prices are those shown on the Pricing page when you subscribe. Subscriptions renew each period until you cancel. Cancelling stops the next renewal, and your plan stays active until the end of the period you have paid for.",
-            "Within 14 days of any payment, write to {email} and we refund that payment in full. We will not ask why.",
+            "Within 14 days of any payment, write to {email} and we refund that payment in full. We will not ask why. This includes early-access payments arranged directly with us.",
             "If we change a price, we tell you at least 30 days before it applies to you. Taxes are added where the law requires."
           ]
         },
