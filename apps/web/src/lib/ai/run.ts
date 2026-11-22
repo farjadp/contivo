@@ -366,6 +366,17 @@ export function getProviderHealthSnapshot(): ProviderHealthSnapshot[] {
   return getDefaultRunner().getProviderHealthSnapshot();
 }
 
+/**
+ * Same as getProviderHealthSnapshot, but first restores billing/auth
+ * cool-downs from ai_provider_events, so after a restart the admin card does
+ * not show a provider that is really cooling down as healthy.
+ */
+export async function getProviderHealthSnapshotHydrated(): Promise<ProviderHealthSnapshot[]> {
+  const runner = getDefaultRunner();
+  await runner.hydrate();
+  return runner.getProviderHealthSnapshot();
+}
+
 /** For callers that prefer throwing: returns the success or throws AiUnavailableError. */
 export async function runAiTaskOrThrow(task: AiTask, request: AiRequest, ctx?: AiCallContext) {
   const result = await runAiTask(task, request, ctx);

@@ -7,6 +7,7 @@ export {
   AiUnavailableError,
   createAiRunner,
   getProviderHealthSnapshot,
+  getProviderHealthSnapshotHydrated,
   hasHealthyProvider,
   runAiTask,
   runAiTaskOrThrow,

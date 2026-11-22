@@ -346,6 +346,19 @@ describe('health restored from ai_provider_events after a restart', () => {
     expect(store.latestCriticalSince).toHaveBeenCalledTimes(1);
   });
 
+  it('a fresh runner: snapshot after hydrate shows a stored real billing cool-down as unhealthy', async () => {
+    const store: AiProviderEventStore = {
+      insert: vi.fn(async () => {}),
+      latestCriticalSince: vi.fn(async () => [{ provider: 'openai' as const, errorClass: 'billing' as const, createdAt: new Date(clock - 60_000) }]),
+    };
+    const h = makeRunner({}, { store });
+    expect(h.runner.getProviderHealthSnapshot()[0].healthy).toBe(true); // not hydrated yet: the bug QA saw
+    await h.runner.hydrate();
+    const openai = h.runner.getProviderHealthSnapshot().find((s) => s.provider === 'openai')!;
+    expect(openai).toMatchObject({ healthy: false, reason: 'billing' });
+    expect(openai.coolingDownUntil?.getTime()).toBe(clock - 60_000 + CRITICAL_COOLDOWN_MS);
+  });
+
   it('a recovery as the latest event, or a failing DB, does not block anything', async () => {
     const recovered: AiProviderEventStore = {
       insert: vi.fn(async () => {}),

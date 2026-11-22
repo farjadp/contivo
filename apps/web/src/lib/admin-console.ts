@@ -15,7 +15,7 @@ import { listUserAccessStates, listWorkspaceArchiveStates } from '@/lib/admin-st
 import { getFrameworkUsageSummary, listRecentFrameworkMetadata } from '@/lib/framework-metadata-log';
 import { listAllActivityLogs } from '@/lib/activity-log';
 import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
-import { PROVIDER_IDS, getProviderHealthSnapshot, sanitizeAiMessage, type ProviderHealthSnapshot } from '@/lib/ai';
+import { PROVIDER_IDS, getProviderHealthSnapshotHydrated, sanitizeAiMessage, type ProviderHealthSnapshot } from '@/lib/ai';
 
 export type AdminSection =
   | 'overview'
@@ -830,15 +830,15 @@ export type AdminAiProviders = Awaited<ReturnType<typeof getAdminAiProviders>>;
  * failed query is reported as unavailable instead of thrown.
  */
 export async function getAdminAiProviders(
-  options: { now?: Date; snapshot?: () => ProviderHealthSnapshot[] } = {},
+  options: { now?: Date; snapshot?: () => ProviderHealthSnapshot[] | Promise<ProviderHealthSnapshot[]> } = {},
 ) {
   const now = options.now ?? new Date();
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  const readSnapshot = options.snapshot ?? getProviderHealthSnapshot;
+  const readSnapshot = options.snapshot ?? getProviderHealthSnapshotHydrated;
 
   let snapshot: ProviderHealthSnapshot[] | null;
   try {
-    snapshot = readSnapshot();
+    snapshot = await readSnapshot();
   } catch {
     snapshot = null;
   }
