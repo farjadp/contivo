@@ -20,7 +20,15 @@ describe('fix-b6-twitter-channel classify', () => {
   });
 
   it('leaves formats that name X alone', () => {
-    for (const f of ['X thread', 'Twitter/X post', 'tweet', 'twitter']) assert.deepEqual(classify(saved(f)), { kind: 'x_intended' });
+    for (const f of ['X thread', 'Twitter/X post', 'tweet', 'twitter', 'Thread with an example']) {
+      assert.deepEqual(classify(saved(f)), { kind: 'x_intended' });
+    }
+  });
+
+  it('trusts the platform the user picked at ideation', () => {
+    assert.deepEqual(classify({ ...saved('Short post with an example'), chosenPlatform: 'x' }), { kind: 'x_intended' });
+    assert.deepEqual(classify({ ...saved('Short post with an example'), chosenPlatform: 'blog' }), { kind: 'misrouted', target: 'blog' });
+    assert.deepEqual(classify({ ...saved('X thread'), chosenPlatform: 'linkedin' }), { kind: 'x_intended' });
   });
 
   it('never touches published items or items with no save record', () => {

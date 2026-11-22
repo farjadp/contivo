@@ -90,35 +90,26 @@ export function normalizeWordCountLimits(raw: unknown): ContentWordCountLimits {
   return next;
 }
 
+/**
+ * Whole-word keywords → word-count platform, checked in order. Words, not
+ * substrings: `includes('x')` gave "LinkedIn text post … example" Twitter's
+ * word range.
+ */
+const WORD_COUNT_PLATFORM_RULES: ReadonlyArray<readonly [ReadonlySet<string>, WordCountPlatform]> = [
+  [new Set(['blog', 'article', 'articles']), 'blog'],
+  [new Set(['x', 'twitter', 'tweet', 'tweets', 'thread', 'threads']), 'twitter'],
+  [new Set(['email', 'newsletter']), 'email'],
+  [new Set(['instagram', 'insta', 'ig']), 'instagram'],
+];
+
 export function resolveWordCountPlatformKey(value: unknown): WordCountPlatform {
-  const normalized = String(value || '').trim().toLowerCase();
-  if (!normalized) return 'linkedin';
-
-  if (
-    normalized.includes('blog') ||
-    normalized.includes('article') ||
-    normalized.includes('blog_article')
-  ) {
-    return 'blog';
+  const words = String(value ?? '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  for (const [keywords, platform] of WORD_COUNT_PLATFORM_RULES) {
+    if (words.some((word) => keywords.has(word))) return platform;
   }
-
-  if (
-    normalized.includes('twitter') ||
-    /\bx\b/.test(normalized) || // whole word: "text", "example" are not X
-    normalized.includes('thread') ||
-    normalized.includes('twitter_thread')
-  ) {
-    return 'twitter';
-  }
-
-  if (normalized.includes('email') || normalized.includes('newsletter')) {
-    return 'email';
-  }
-
-  if (normalized.includes('instagram') || normalized.includes('insta')) {
-    return 'instagram';
-  }
-
   return 'linkedin';
 }
 

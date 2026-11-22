@@ -101,7 +101,12 @@ export function resolveChannelFromFormat(formatValue: unknown): 'linkedin' | 'tw
   return 'linkedin';
 }
 
-export type IdeaChannel = ReturnType<typeof resolveChannelFromFormat>;
+/**
+ * Every stored channel an idea can be saved for. telegram and threads are only
+ * ever chosen explicitly (the runner passes them); the format fallback never
+ * guesses them.
+ */
+export type IdeaChannel = ReturnType<typeof resolveChannelFromFormat> | 'telegram' | 'threads';
 
 /**
  * Platform values the user can pick (CONTENT_PLATFORM_OPTIONS) and channel
@@ -115,6 +120,8 @@ const PLATFORM_TO_CHANNEL: Readonly<Record<string, IdeaChannel>> = {
   blog: 'blog',
   email: 'email',
   instagram: 'instagram',
+  telegram: 'telegram',
+  threads: 'threads',
 };
 
 export function channelForPlatform(value: unknown): IdeaChannel | null {

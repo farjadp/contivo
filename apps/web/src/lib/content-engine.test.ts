@@ -197,6 +197,10 @@ describe('resolveIdeaChannel', () => {
     expect(resolveIdeaChannel({ format: 'LinkedIn text post … example' })).toBe('linkedin');
     expect(resolveIdeaChannel({ channel: 'landing_page', format: 'blog article' })).toBe('blog');
   });
+  it('keeps telegram and threads when chosen explicitly (autopilot runner)', () => {
+    expect(resolveIdeaChannel({ channel: 'telegram', format: 'LinkedIn post' })).toBe('telegram');
+    expect(resolveIdeaChannel({ channel: 'threads', format: 'LinkedIn post' })).toBe('threads');
+  });
   it('ignores prototype keys', () => {
     expect(resolveIdeaChannel({ channel: 'constructor', format: '' })).toBe('linkedin');
   });
