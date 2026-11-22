@@ -578,6 +578,23 @@
       },
       "errorPrefix": "Generation failed:",
       "done": "Report ready — your download will open automatically"
+    },
+    "credits": {
+      "lowTitle": "Your credits are running low",
+      "emptyTitle": "You are out of credits",
+      "lowBody": "One Autopilot post needs at least {cost, number} credits. You have {balance, number}, so Autopilot stops until the account is topped up.",
+      "earlyAccess": "Credits can't be bought yet. During early access, our team tops up accounts by hand.",
+      "runCost": "Each Autopilot run needs at least {cost, number} credits for one post.",
+      "request": "Request more credits",
+      "requesting": "Sending…",
+      "requested": "Request sent. Our team will top up your credits during early access.",
+      "alreadyRequested": "You already asked on {when}, and our team has your request. You can ask again {hours, number} hours after your last request.",
+      "requestFailed": "Your request could not be sent. Please try again.",
+      "balanceUnavailable": "Your credit balance could not be loaded.",
+      "runErrors": {
+        "OUT_OF_CREDITS": "Stopped: not enough credits for one post. A post needs at least {cost, number} credits.",
+        "OUT_OF_CREDITS_MID_RUN": "Stopped: credits ran out before anything could be scheduled."
+      }
     }
   }
 }

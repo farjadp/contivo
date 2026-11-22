@@ -126,6 +126,53 @@ export async function writeActivityLog(input: {
   }
 }
 
+/** Creates the log tables if this database has never had them. Safe to call repeatedly. */
+export async function ensureActivityLogTables(): Promise<void> {
+  return ensureLogTables();
+}
+
+/**
+ * Writes an activity row unless the same user already has one with the same
+ * action inside the window.
+ *
+ * Unlike `writeActivityLog`, this throws on failure: callers use it for rows
+ * the user is told were recorded ("your request was sent"), so a failed write
+ * must not come back looking like success. The check and the insert run under
+ * a per-user, per-action advisory lock so two quick clicks cannot both write.
+ */
+export async function recordActivityOncePerWindow(input: {
+  userId: string;
+  action: string;
+  workspaceId?: string | null;
+  detail?: unknown;
+  windowHours: number;
+}): Promise<{ recorded: true } | { recorded: false; lastAt: Date }> {
+  const lockKey = `activity_once:${input.action}:${input.userId}`;
+  return withLogTablesRetry(() =>
+    prisma.$transaction(async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey}))`;
+      const recent = await tx.$queryRaw<Array<{ createdAt: Date }>>`
+        SELECT created_at AS "createdAt"
+        FROM activity_logs
+        WHERE user_id = ${input.userId}
+          AND action = ${input.action}
+          AND created_at > NOW() - make_interval(hours => ${input.windowHours}::int)
+        ORDER BY created_at DESC
+        LIMIT 1
+      `;
+      if (recent[0]) return { recorded: false as const, lastAt: recent[0].createdAt };
+
+      await tx.$executeRaw`
+        INSERT INTO activity_logs (id, user_id, workspace_id, action, detail, created_at)
+        VALUES (${randomUUID()}, ${input.userId}, ${input.workspaceId || null}, ${input.action}, ${
+          input.detail ? JSON.stringify(input.detail) : null
+        }::jsonb, NOW())
+      `;
+      return { recorded: true as const };
+    }),
+  );
+}
+
 export async function listUserActivityLogs(userId: string, limit = 80): Promise<ActivityLogEntry[]> {
   return withLogTablesRetry(() =>
     prisma.$queryRaw<

@@ -15,6 +15,8 @@ import {
 } from '@/app/actions/autopilot';
 import { AGENT_RECIPES } from '@/lib/autopilot/recipes';
 import { CHANNEL_LABELS, CHANNEL_TO_PLATFORM, PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
+import { CREDITS_UPDATED_EVENT } from '@/components/shared/credit-balance';
+import { AutopilotCreditPanel, useRunErrorText } from './CreditNotice';
 
 type Props = {
   workspaceId: string;
@@ -85,6 +87,7 @@ export function AutopilotTab({
   const locale = useLocale();
   const format = useFormatter();
   const router = useRouter();
+  const runErrorText = useRunErrorText();
   const agents = initialAgents ?? (initialPolicy ? [initialPolicy] : []);
   // Which agent the editor below is bound to.
   const [selectedId, setSelectedId] = useState<string | null>(
@@ -197,7 +200,8 @@ export function AutopilotTab({
                 status,
                 scheduled: r.itemsScheduled,
                 skipped: r.itemsSkipped,
-                reason: r.reason,
+                // The template ends the sentence itself.
+                reason: (runErrorText(r.reason) ?? r.reason).replace(/\.$/, ''),
               })
             : t('autopilot.messages.runResult', {
                 status,
@@ -205,6 +209,8 @@ export function AutopilotTab({
                 skipped: r.itemsSkipped,
               }),
         });
+        // The run spent credits (or stopped for lack of them): re-read the balance.
+        window.dispatchEvent(new Event(CREDITS_UPDATED_EVENT));
         router.refresh();
       }
     });
@@ -228,6 +234,8 @@ export function AutopilotTab({
 
   return (
     <div className="space-y-6">
+      <AutopilotCreditPanel workspaceId={workspaceId} />
+
       {/* ── Agents ── */}
       <div className="bg-chalk-raised rounded-lg border p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -726,6 +734,7 @@ function statusStyle(status: string) {
 
 function RunRow({ run }: { run: SerializedRun }) {
   const t = useTranslations('tabsA');
+  const runErrorText = useRunErrorText();
   const format = useFormatter();
   const [open, setOpen] = useState(false);
   return (
@@ -753,7 +762,7 @@ function RunRow({ run }: { run: SerializedRun }) {
           {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </div>
       </button>
-      {run.error && <p className="mt-2 text-xs text-red-700">{run.error}</p>}
+      {run.error && <p className="mt-2 text-xs text-red-700">{runErrorText(run.error)}</p>}
       {open && (
         <ol
           dir="ltr"
