@@ -16,17 +16,47 @@
  *   The /callback endpoint validates the HMAC-signed state param (no session needed).
  */
 
-import { Controller, Get, Param, Query, Redirect, Logger, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Param, Query, Redirect, Logger, Req, Res, UnauthorizedException } from '@nestjs/common';
+import type { Request, Response } from 'express';
 
 import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
 import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
-import { SocialOAuthService } from './social-oauth.service';
+import { OAUTH_NONCE_COOKIE, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
 
 // OAuth platforms come from platforms.ts (typed against the Prisma enum).
 type Platform = OAuthPlatform;
+
+/**
+ * The nonce cookie lives on the API host: the browser navigates to the API for
+ * /connect (cookie set) and the provider sends it back to the API for
+ * /callback (cookie read). SameSite=Lax is sent on that top-level GET
+ * redirect from the provider; Strict would not be.
+ */
+const NONCE_COOKIE_OPTS = {
+  httpOnly: true,
+  sameSite: 'lax' as const,
+  secure: process.env.NODE_ENV === 'production',
+  path: '/api/v1/social/oauth',
+};
+
+function readCookie(req: Request, name: string): string | undefined {
+  const header = req.headers.cookie;
+  if (!header) return undefined;
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq > -1 && part.slice(0, eq).trim() === name) {
+      try {
+        return decodeURIComponent(part.slice(eq + 1).trim());
+      } catch {
+        return undefined;
+      }
+    }
+  }
+  return undefined;
+}
 
 @Controller('social/oauth')
 export class SocialOAuthController {
@@ -63,6 +93,7 @@ export class SocialOAuthController {
   async initiateOAuth(
     @Param('platform') platform: Platform,
     @Query('workspaceId') workspaceId: string,
+    @Res({ passthrough: true }) res: Response,
     @Query('t') handoffToken?: string,
   ) {
     const handoff = verifyHandoffToken(handoffToken);
@@ -76,7 +107,8 @@ export class SocialOAuthController {
     }
     await this.connections.validateWorkspaceAccess(targetWorkspaceId, handoff.userId);
 
-    const url = this.oauthService.getAuthUrl(platform, targetWorkspaceId);
+    const { url, nonce } = this.oauthService.startAuth(platform, targetWorkspaceId, handoff.userId);
+    res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...NONCE_COOKIE_OPTS, maxAge: STATE_TTL_MS });
     this.logger.log(`OAuth initiated: ${platform} workspace=${targetWorkspaceId}`);
     return { url, statusCode: 302 };
   }
@@ -86,8 +118,9 @@ export class SocialOAuthController {
    *
    * The provider redirects the user's browser here, so like /connect it can
    * carry no Authorization header and must be @Public. Its authentication is
-   * the `state` parameter: AES-GCM encrypted and issued by us in step 1, so a
-   * forged callback cannot name a workspace we did not authorise.
+   * the `state` parameter (AES-GCM, issued in step 1, naming user, workspace,
+   * platform and a nonce) plus the nonce cookie set in step 1, so a state
+   * replayed from another browser, or twice, is refused.
    *
    * Exchanges the code for a token, saves the connection, then redirects
    * the user back to the frontend /connections page.
@@ -99,15 +132,21 @@ export class SocialOAuthController {
     @Param('platform') platform: Platform,
     @Query('code') code: string,
     @Query('state') state: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
     @Query('error') error?: string,
   ) {
+    const cookieNonce = readCookie(req, OAUTH_NONCE_COOKIE);
+    // Single use either way: success, denial or failure ends this attempt.
+    res.clearCookie(OAUTH_NONCE_COOKIE, NONCE_COOKIE_OPTS);
+
     if (error) {
       this.logger.warn(`OAuth denied: ${platform} error=${error}`);
       const webUrl = process.env.WEB_APP_URL ?? 'http://localhost:3000';
       return { url: `${webUrl}/connections?error=${encodeURIComponent(error)}`, statusCode: 302 };
     }
 
-    const redirectUrl = await this.oauthService.handleCallback(platform, code, state);
+    const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce);
     return { url: redirectUrl, statusCode: 302 };
   }
 }

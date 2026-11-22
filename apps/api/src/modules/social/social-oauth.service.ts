@@ -10,7 +10,8 @@
  *   2. Platform → GET /social/oauth/:platform/callback?code=yyy&state=zzz
  *      → handleCallback() → exchange code for token → save connection → redirect to frontend
  *
- * CSRF protection: workspaceId is embedded in a signed state param (HMAC-SHA256).
+ * CSRF protection: AES-GCM state naming workspace, user, platform and a nonce;
+ * the nonce is also an httpOnly cookie and is single-use (see handleCallback).
  *
  * Security:
  *   - Client secrets only live server-side (NestJS env).
@@ -20,19 +21,31 @@
 
 import * as crypto from 'crypto';
 
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
+import { Inject, Injectable, Logger, BadRequestException, ForbiddenException } from '@nestjs/common';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
 import { getOAuthStateSecret } from './oauth-state-secret';
 import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
+import { LOCK_STORE, type LockStore } from './token-refresh.service';
 
 
 // ─── Platform config helper ───────────────────────────────────────────────────
 
 // OAuth platforms come from platforms.ts (typed against the Prisma enum).
 type Platform = OAuthPlatform;
+
+/** OAuth state lifetime; the nonce cookie lives as long. */
+export const STATE_TTL_MS = 10 * 60 * 1000;
+export const OAUTH_NONCE_COOKIE = 'contivo_oauth_nonce';
+
+interface StateContext {
+  workspaceId: string;
+  userId: string;
+  platform: Platform;
+  nonce: string;
+}
 
 @Injectable()
 export class SocialOAuthService {
@@ -41,6 +54,7 @@ export class SocialOAuthService {
   constructor(
     private readonly connections: SocialConnectionsService,
     private readonly prisma: PrismaService,
+    @Inject(LOCK_STORE) private readonly locks: LockStore,
   ) {
     // Fail at boot, not on the first connect attempt.
     getOAuthStateSecret();
@@ -75,7 +89,12 @@ export class SocialOAuthService {
     ) as Record<Platform, boolean>;
   }
 
-  getAuthUrl(platform: Platform, workspaceId: string): string {
+  /**
+   * Starts a connect flow. The returned `nonce` must be set by the controller
+   * as an httpOnly cookie on the API host; the callback only succeeds in the
+   * browser that holds it. The state also names the user and the platform.
+   */
+  startAuth(platform: Platform, workspaceId: string, userId: string): { url: string; nonce: string } {
     const missing = this.missingConfig(platform);
     if (missing.length > 0) {
       this.logger.error(`OAuth blocked: ${platform} is missing ${missing.join(', ')}`);
@@ -84,24 +103,61 @@ export class SocialOAuthService {
       );
     }
 
+    const ctx: StateContext = { workspaceId, userId, platform, nonce: crypto.randomBytes(18).toString('base64url') };
+    let url: string;
     switch (platform) {
-      case 'linkedin': return this.linkedInAuthUrl(workspaceId);
-      case 'x':        return this.xAuthUrl(workspaceId);
-      case 'facebook': return this.facebookAuthUrl(workspaceId);
-      case 'tiktok':   return this.tikTokAuthUrl(workspaceId);
+      case 'linkedin': url = this.linkedInAuthUrl(ctx); break;
+      case 'x':        url = this.xAuthUrl(ctx); break;
+      case 'facebook': url = this.facebookAuthUrl(ctx); break;
+      case 'tiktok':   url = this.tikTokAuthUrl(ctx); break;
       default:         throw new BadRequestException(`Unsupported platform: ${platform}`);
     }
+    return { url, nonce: ctx.nonce };
   }
 
   // ─── Step 2: Handle callback ─────────────────────────────────────────────
 
+  /**
+   * Checks, in order, before any code is exchanged: the state decrypts and is
+   * fresh; it was issued for this platform; the browser holds the nonce cookie
+   * set at /connect (a state lifted into another browser fails here); the
+   * nonce was not used before (Redis SET NX, single use); the user named in
+   * the state still has access to the workspace.
+   */
   async handleCallback(
     platform: Platform,
     code: string,
     stateParam: string,
+    cookieNonce: string | undefined,
   ): Promise<string> {
     const stateObj = this.verifyState(stateParam);
-    const workspaceId = stateObj.workspaceId;
+    const { workspaceId, userId, nonce } = stateObj as { workspaceId?: string; userId?: string; nonce?: string };
+
+    if (stateObj.platform !== platform) {
+      throw new BadRequestException('This sign-in was started for a different platform. Start the connection again.');
+    }
+    if (!workspaceId || !userId || !nonce || !cookieNonce || !this.sameNonce(nonce, cookieNonce)) {
+      this.logger.warn(`OAuth callback rejected: nonce cookie missing or mismatched (${platform})`);
+      throw new BadRequestException(
+        'This sign-in did not start in this browser, or it took too long. Start the connection again from the Connections page.',
+      );
+    }
+
+    let first: string | null;
+    try {
+      first = await this.locks.acquire(`social:oauth-state:${nonce}`, STATE_TTL_MS + 60_000);
+    } catch (err) {
+      throw new BadRequestException(`Could not verify the sign-in right now (${(err as Error).message}). Try again.`);
+    }
+    if (!first) {
+      throw new BadRequestException('This sign-in link was already used. Start the connection again from the Connections page.');
+    }
+
+    try {
+      await this.connections.validateWorkspaceAccess(workspaceId, userId);
+    } catch {
+      throw new ForbiddenException('You no longer have access to this workspace.');
+    }
 
     switch (platform) {
       case 'linkedin': return this.linkedInCallback(workspaceId, code);
@@ -112,10 +168,16 @@ export class SocialOAuthService {
     }
   }
 
+  private sameNonce(a: string, b: string): boolean {
+    const x = Buffer.from(a);
+    const y = Buffer.from(b);
+    return x.length === y.length && crypto.timingSafeEqual(x, y);
+  }
+
   // ─── LinkedIn ─────────────────────────────────────────────────────────────
 
-  private linkedInAuthUrl(workspaceId: string): string {
-    const state = this.buildState(workspaceId);
+  private linkedInAuthUrl(ctx: StateContext): string {
+    const state = this.buildState(ctx);
     const clientId    = process.env.LINKEDIN_CLIENT_ID!;
     const redirectUri = process.env.LINKEDIN_REDIRECT_URI!;
     const scopes      = ['openid', 'profile', 'email', 'w_member_social'].join(' ');
@@ -195,7 +257,7 @@ export class SocialOAuthService {
 
   // ─── X (Twitter) ─────────────────────────────────────────────────────────
 
-  private xAuthUrl(workspaceId: string): string {
+  private xAuthUrl(ctx: StateContext): string {
     const clientId    = process.env.TWITTER_CLIENT_ID!;
     const redirectUri = process.env.TWITTER_REDIRECT_URI!;
     const scopes      = ['tweet.read', 'tweet.write', 'users.read', 'offline.access'].join(' ');
@@ -203,7 +265,7 @@ export class SocialOAuthService {
     const codeVerifier = crypto.randomBytes(32).toString('base64url');
     const codeChallenge = crypto.createHash('sha256').update(codeVerifier).digest('base64url');
 
-    const state = this.buildState(workspaceId, { codeVerifier });
+    const state = this.buildState(ctx, { codeVerifier });
 
     const params = new URLSearchParams({
       response_type:         'code',
@@ -276,8 +338,8 @@ export class SocialOAuthService {
 
   // ─── Facebook ─────────────────────────────────────────────────────────────
 
-  private facebookAuthUrl(workspaceId: string): string {
-    const state = this.buildState(workspaceId);
+  private facebookAuthUrl(ctx: StateContext): string {
+    const state = this.buildState(ctx);
     const appId       = process.env.FACEBOOK_APP_ID!;
     const redirectUri = process.env.FACEBOOK_REDIRECT_URI!;
     const scopes      = ['pages_manage_posts', 'pages_read_engagement', 'pages_show_list'].join(',');
@@ -365,8 +427,8 @@ export class SocialOAuthService {
 
   // ─── TikTok ───────────────────────────────────────────────────────────────
 
-  private tikTokAuthUrl(workspaceId: string): string {
-    const state = this.buildState(workspaceId);
+  private tikTokAuthUrl(ctx: StateContext): string {
+    const state = this.buildState(ctx);
     const clientKey  = process.env.TIKTOK_CLIENT_KEY!;
     const redirectUri = process.env.TIKTOK_REDIRECT_URI!;
     // Required scopes for content posting
@@ -445,12 +507,12 @@ export class SocialOAuthService {
 
   // ─── State helpers (CSRF) ────────────────────────────────────────────────
 
-  private buildState(workspaceId: string, extraData: Record<string, string> = {}): string {
+  private buildState(ctx: StateContext, extraData: Record<string, string> = {}): string {
     const secret = getOAuthStateSecret();
     const key = crypto.createHash('sha256').update(secret).digest();
     const iv = crypto.randomBytes(12);
 
-    const payloadObj = { workspaceId, ts: Date.now(), ...extraData };
+    const payloadObj = { ...ctx, ts: Date.now(), ...extraData };
     const payloadBuffer = Buffer.from(JSON.stringify(payloadObj), 'utf8');
 
     const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
@@ -479,7 +541,7 @@ export class SocialOAuthService {
       const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()]);
       const payloadObj = JSON.parse(decrypted.toString('utf8'));
 
-      if (Date.now() - payloadObj.ts > 10 * 60 * 1000) {
+      if (Date.now() - payloadObj.ts > STATE_TTL_MS) {
         throw new Error('State expired');
       }
 

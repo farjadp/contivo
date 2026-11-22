@@ -90,10 +90,18 @@ interface Options {
   /** How long to wait for another worker's refresh. */
   waitMs: number;
   pollMs: number;
+  /**
+   * Must stay well above the adapters' 10 s fetch timeout (http-health.ts
+   * PLATFORM_FETCH_TIMEOUT_MS) plus the save retries, or the lock could
+   * expire while its holder is still refreshing.
+   */
   lockTtlMs: number;
+  /** Attempts and pause for persisting refreshed tokens. */
+  saveAttempts: number;
+  saveRetryDelayMs: number;
 }
 
-const DEFAULTS: Options = { waitMs: 15_000, pollMs: 250, lockTtlMs: 30_000 };
+const DEFAULTS: Options = { waitMs: 15_000, pollMs: 250, lockTtlMs: 30_000, saveAttempts: 3, saveRetryDelayMs: 300 };
 
 interface ConnectionRow {
   id: string;
@@ -173,16 +181,7 @@ export class TokenRefreshService {
 
       if (result.ok) {
         const refreshToken = result.refreshToken ?? current.refreshToken;
-        // One statement: access, refresh and expiry change together or not at all.
-        await this.prisma.socialConnection.update({
-          where: { id: row.id },
-          data: {
-            encryptedAccessTokenRef: this.connections.encryptToken(result.accessToken),
-            encryptedRefreshTokenRef: refreshToken ? this.connections.encryptToken(refreshToken) : null,
-            tokenExpiresAt: result.expiresAt ?? null,
-            lastSyncAt: new Date(),
-          },
-        });
+        await this.saveRefreshed(row, result.accessToken, refreshToken, result.expiresAt);
         this.logger.log(`Refreshed ${row.platform} token for connection ${row.id}`);
         return { accessToken: result.accessToken, refreshToken };
       }
@@ -209,6 +208,55 @@ export class TokenRefreshService {
         this.logger.warn(`Could not release token-refresh lock ${key}: ${(err as Error).message}`),
       );
     }
+  }
+
+  /**
+   * Persists refreshed tokens: access, refresh and expiry in one statement.
+   *
+   * Only into a row that is CONNECTED, or EXPIRED (a racing worker may have
+   * marked it while we refreshed; the refresh just proved the account works,
+   * so it goes back to CONNECTED). Never into a REVOKED / PENDING_REAUTH row:
+   * the user disconnected meanwhile and their tokens must stay deleted.
+   *
+   * Retries a failed write. The platform has already rotated the refresh
+   * token, so losing this write kills the connection at the next refresh.
+   */
+  private async saveRefreshed(row: ConnectionRow, accessToken: string, refreshToken: string | undefined, expiresAt?: Date) {
+    const data = {
+      encryptedAccessTokenRef: this.connections.encryptToken(accessToken),
+      encryptedRefreshTokenRef: refreshToken ? this.connections.encryptToken(refreshToken) : null,
+      tokenExpiresAt: expiresAt ?? null,
+      status: 'CONNECTED' as const,
+      lastSyncAt: new Date(),
+    };
+
+    let lastError: unknown;
+    for (let attempt = 1; attempt <= this.opts.saveAttempts; attempt++) {
+      try {
+        const { count } = await this.prisma.socialConnection.updateMany({
+          where: { id: row.id, status: { in: ['CONNECTED', 'EXPIRED'] } },
+          data,
+        });
+        if (count === 0) {
+          throw new PermanentPublishError(
+            `${row.platform} connection was disconnected while its token was being refreshed. Reconnect the account.`,
+            'CONNECTION_REVOKED',
+          );
+        }
+        return;
+      } catch (err) {
+        if (err instanceof PermanentPublishError) throw err;
+        lastError = err;
+        this.logger.warn(`Saving refreshed token for ${row.id} failed (attempt ${attempt}): ${(err as Error).message}`);
+        await new Promise((r) => setTimeout(r, this.opts.saveRetryDelayMs * attempt));
+      }
+    }
+    // The new access token is valid for this publish, but the rotated refresh
+    // token is lost: the next refresh will fail and mark the row EXPIRED.
+    this.logger.error(
+      `Could not save refreshed ${row.platform} token for connection ${row.id} after ${this.opts.saveAttempts} attempts: ` +
+        `${(lastError as Error)?.message}. The connection will need reconnecting at its next refresh.`,
+    );
   }
 
   private needsRefresh(row: ConnectionRow): boolean {

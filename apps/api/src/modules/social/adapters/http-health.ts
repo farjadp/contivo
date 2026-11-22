@@ -12,6 +12,25 @@
 import type { ConnectionHealth, PublishResult } from './social-adapter.interface';
 
 /**
+ * Per-request timeout for every platform call (health, publish, refresh).
+ * Well under the 30 s token-refresh lock TTL, so a hung platform cannot keep
+ * a refresh running after its lock expired.
+ */
+export const PLATFORM_FETCH_TIMEOUT_MS = 10_000;
+
+/** A fresh timeout signal for one platform request. */
+export function platformTimeout(): AbortSignal {
+  return AbortSignal.timeout(PLATFORM_FETCH_TIMEOUT_MS);
+}
+
+/** Platform error bodies go into the DB and the UI; keep them short. */
+export const MAX_ERROR_CHARS = 300;
+
+export function capError(text: string): string {
+  return text.length > MAX_ERROR_CHARS ? `${text.slice(0, MAX_ERROR_CHARS)}…` : text;
+}
+
+/**
  * Error codes that mean the request never reached the platform, so retrying a
  * publish cannot create a duplicate post.
  */
@@ -84,7 +103,8 @@ export function healthFromFetchError(err: unknown, label: string): ConnectionHea
  * A failed publish response. Only 429 is retried automatically: the platform
  * says it did not take the post. A 5xx may have created it.
  */
-export function failedPublishResult(status: number, error: string, retryAfter?: string | null): PublishResult {
+export function failedPublishResult(status: number, rawError: string, retryAfter?: string | null): PublishResult {
+  const error = capError(rawError);
   if (status === 429) {
     return { success: false, error, retryable: true, retryAfterSec: parseRetryAfter(retryAfter), failureCode: 'RATE_LIMITED' };
   }
@@ -98,7 +118,7 @@ export function failedPublishResult(status: number, error: string, retryAfter?: 
 export function failedPublishFromError(err: unknown, label: string): PublishResult {
   return {
     success: false,
-    error: `${label} unreachable: ${describeFetchError(err)}`,
+    error: capError(`${label} unreachable: ${describeFetchError(err)}`),
     retryable: isPreSendNetworkError(err),
     failureCode: 'UNREACHABLE',
   };

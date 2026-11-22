@@ -7,11 +7,12 @@
  *
  * Routes:
  *   GET    /                     List all connections for the workspace
- *   POST   /                     Save a new OAuth-connected account
  *   PATCH  /:id                  Update connection (default flag, display name)
  *   DELETE /:id                  Disconnect an account
  *   POST   /:id/reconnect        Start a reconnect: returns { connection, reconnect: { platform, flow } }.
  *                                 flow 'oauth' → web calls getSocialConnectUrl(platform, workspaceId).
+ * There is no raw "save a token" route: connections are created only by the
+ * OAuth callbacks, which verify the token with the platform first.
  * Auth: Protected by global SessionAuthGuard. User identity available via @CurrentUser().
  * SECURITY: No token fields are ever included in responses.
  */
@@ -30,10 +31,7 @@ import {
 
 import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.decorator';
 
-import {
-  CreateSocialConnectionDto,
-  UpdateSocialConnectionDto,
-} from './dto/create-social-connection.dto';
+import { UpdateSocialConnectionDto } from './dto/create-social-connection.dto';
 import { SocialConnectionsService } from './social-connections.service';
 
 @Controller('social/connections')
@@ -49,16 +47,6 @@ export class SocialConnectionsController {
     if (!workspaceId) throw new NotFoundException('workspaceId query param is required.');
     const connections = await this.service.list(workspaceId, user.id);
     return { connections, total: connections.length };
-  }
-
-  // POST /social/connections
-  @Post()
-  async create(
-    @Body() dto: CreateSocialConnectionDto,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const connection = await this.service.create(dto, user.id);
-    return { connection };
   }
 
   // PATCH /social/connections/:id

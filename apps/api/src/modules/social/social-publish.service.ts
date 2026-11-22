@@ -53,7 +53,13 @@ export interface AttemptInfo {
 /** A direct call (no queue) gets exactly one attempt. */
 const SINGLE_ATTEMPT: AttemptInfo = { attemptsMade: 0, maxAttempts: 1 };
 
-export type PublishOutcome = 'PUBLISHED' | 'FAILED';
+export type PublishOutcome = 'PUBLISHED' | 'FAILED' | 'CANCELLED';
+
+/** Every status write below except PUBLISHED: a user's Cancel is final. */
+const NOT_CANCELLED = { not: 'CANCELLED' as const };
+
+/** Internal: the job was cancelled while this attempt ran. */
+class JobCancelled extends Error {}
 
 @Injectable()
 export class SocialPublishService {
@@ -279,10 +285,23 @@ export class SocialPublishService {
       throw new BadRequestException('Cannot cancel a job that has already been published.');
     }
 
-    await this.prisma.socialPublishJob.update({
-      where: { id },
+    // Conditional: a publish that succeeds in the same instant wins, and the
+    // user is told rather than shown a cancel that did not happen.
+    const { count } = await this.prisma.socialPublishJob.updateMany({
+      where: { id, workspaceId, status: { not: 'PUBLISHED' } },
       data:  { status: 'CANCELLED' },
     });
+    if (count === 0) {
+      throw new BadRequestException('Cannot cancel a job that has already been published.');
+    }
+
+    // The item was claimed (PUBLISHING) for this job; give it back to the user.
+    if (job.contentItemId) {
+      await this.prisma.contentItem.updateMany({
+        where: { id: job.contentItemId, workspaceId, status: 'PUBLISHING' },
+        data:  { status: 'READY' },
+      });
+    }
 
     await this.appendLog(id, 'JOB_CANCELLED', 'SUCCESS');
     return this.findJobOrThrow(id);
@@ -311,10 +330,11 @@ export class SocialPublishService {
     const isFinalAttempt = attemptNo >= attempt.maxAttempts;
 
     try {
-      await this.prisma.socialPublishJob.update({
-        where: { id: jobId },
+      const claimed = await this.prisma.socialPublishJob.updateMany({
+        where: { id: jobId, status: NOT_CANCELLED },
         data:  { status: 'PUBLISHING' },
       });
+      if (claimed.count === 0) throw new JobCancelled();
 
       await this.appendLog(jobId, 'PUBLISH_ATTEMPT', 'SUCCESS', {
         platform,
@@ -385,6 +405,10 @@ export class SocialPublishService {
         );
       }
 
+      // Last point where Cancel can still stop the post from going out.
+      const current = await this.prisma.socialPublishJob.findUnique({ where: { id: jobId }, select: { status: true } });
+      if (!current || current.status === 'CANCELLED') throw new JobCancelled();
+
       const result = await adapter.publish(connection, enrichedPayload);
 
       if (!result.success) {
@@ -423,6 +447,10 @@ export class SocialPublishService {
       this.logger.log(`Job ${jobId} published successfully on ${platform}`);
       return 'PUBLISHED';
     } catch (err: unknown) {
+      if (err instanceof JobCancelled) {
+        this.logger.log(`Job ${jobId} was cancelled; attempt ${attemptNo} stopped before publishing.`);
+        return 'CANCELLED';
+      }
       const transient = err instanceof TransientPublishError;
       const code: PublishFailureCode =
         err instanceof TransientPublishError || err instanceof PermanentPublishError ? err.code : 'PLATFORM_ERROR';
@@ -432,10 +460,11 @@ export class SocialPublishService {
       if (transient && !isFinalAttempt) {
         // Not the user's problem yet: keep the item PUBLISHING and the
         // connection as it is, record why, and let BullMQ try again.
-        await this.prisma.socialPublishJob.update({
-          where: { id: jobId },
+        const requeued = await this.prisma.socialPublishJob.updateMany({
+          where: { id: jobId, status: NOT_CANCELLED },
           data:  { status: 'PUBLISH_QUEUED', lastError: message },
         });
+        if (requeued.count === 0) return 'CANCELLED'; // cancelled mid-attempt: no retry
         await this.appendLog(jobId, 'PUBLISH_RETRY_SCHEDULED', 'FAILURE', {
           attempt: attemptNo,
           maxAttempts: attempt.maxAttempts,
@@ -445,7 +474,7 @@ export class SocialPublishService {
         throw err;
       }
 
-      await this.recordFailure(jobId, message);
+      if (!(await this.recordFailure(jobId, message))) return 'CANCELLED';
       this.logger.error(`Job ${jobId} failed${transient ? ' after the final attempt' : ''}: ${message}`);
       return 'FAILED';
     }
@@ -453,23 +482,32 @@ export class SocialPublishService {
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  /** Job FAILED + ContentItem FAILED + failure log. */
-  private async recordFailure(jobId: string, message: string) {
-    const failed = await this.prisma.socialPublishJob.update({
-      where: { id: jobId },
+  /**
+   * Job FAILED + ContentItem FAILED + failure log. Returns false (and writes
+   * nothing) when the job was cancelled meanwhile.
+   */
+  private async recordFailure(jobId: string, message: string): Promise<boolean> {
+    const { count } = await this.prisma.socialPublishJob.updateMany({
+      where: { id: jobId, status: NOT_CANCELLED },
       data:  { status: 'FAILED', lastError: message },
+    });
+    if (count === 0) return false;
+    const failed = await this.prisma.socialPublishJob.findUnique({
+      where: { id: jobId },
+      select: { contentItemId: true },
     });
 
     await this.appendLog(jobId, 'PUBLISH_FAILURE', 'FAILURE', undefined, message);
 
     // Release the content item too, otherwise it sits in PUBLISHING and is
     // invisible to both the scheduler and the user.
-    if (failed.contentItemId) {
+    if (failed?.contentItemId) {
       await this.prisma.contentItem.updateMany({
         where: { id: failed.contentItemId, status: 'PUBLISHING' },
         data: { status: 'FAILED', failedReason: message },
       });
     }
+    return true;
   }
 
   /**

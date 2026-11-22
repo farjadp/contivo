@@ -59,6 +59,8 @@ export async function runPublishJob(job: Job<BaseJobPayload>, deps: Deps) {
     { attemptsMade: job.attemptsMade, maxAttempts: job.opts.attempts ?? 1 },
   );
 
+  if (outcome === 'CANCELLED') return { success: false, cancelled: true };
+
   if (outcome === 'FAILED') {
     // Already recorded in the DB. Fail the BullMQ job too (visible in Bull
     // Board) without burning the remaining attempts.

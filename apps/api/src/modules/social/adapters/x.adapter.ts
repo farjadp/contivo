@@ -24,6 +24,7 @@ import {
   failedPublishResult,
   healthFromFetchError,
   healthFromStatus,
+  platformTimeout,
 } from './http-health';
 import {
   SocialAdapter,
@@ -51,6 +52,7 @@ export class XAdapter implements SocialAdapter {
   async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       const res = await fetch(`${this.API_BASE}/users/me`, {
+        signal: platformTimeout(),
         headers: { Authorization: `Bearer ${connection.accessToken}` },
       });
       return healthFromStatus(res.status, 'X', res.headers.get('retry-after'));
@@ -80,6 +82,7 @@ export class XAdapter implements SocialAdapter {
 
     try {
       const res = await fetch(this.TOKEN_URL, {
+        signal: platformTimeout(),
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -136,6 +139,8 @@ export class XAdapter implements SocialAdapter {
       }
 
       const res = await fetch(`${this.API_BASE}/tweets`, {
+
+        signal: platformTimeout(),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${connection.accessToken}`,

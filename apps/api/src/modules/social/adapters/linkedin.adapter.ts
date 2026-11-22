@@ -26,6 +26,7 @@ import {
   failedPublishResult,
   healthFromFetchError,
   healthFromStatus,
+  platformTimeout,
 } from './http-health';
 import {
   SocialAdapter,
@@ -53,6 +54,7 @@ export class LinkedInAdapter implements SocialAdapter {
   async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       const res = await fetch(`${this.API_BASE}/userinfo`, {
+        signal: platformTimeout(),
         headers: { Authorization: `Bearer ${connection.accessToken}` },
       });
       return healthFromStatus(res.status, 'LinkedIn', res.headers.get('retry-after'));
@@ -86,6 +88,8 @@ export class LinkedInAdapter implements SocialAdapter {
       const ugcBody = this.buildUgcPost(connection.accountIdentifier, payload, assetUrn);
 
       const res = await fetch(`${this.API_BASE}/ugcPosts`, {
+
+        signal: platformTimeout(),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${connection.accessToken}`,
@@ -133,6 +137,7 @@ export class LinkedInAdapter implements SocialAdapter {
     try {
       // 1. Register the upload and receive a one-time upload URL + asset URN.
       const registerRes = await fetch(`${this.API_BASE}/assets?action=registerUpload`, {
+        signal: platformTimeout(),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${connection.accessToken}`,
@@ -171,6 +176,7 @@ export class LinkedInAdapter implements SocialAdapter {
 
       // 2. PUT the raw bytes to the returned URL.
       const uploadRes = await fetch(uploadUrl, {
+        signal: AbortSignal.timeout(60_000) /* image bytes */,
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${connection.accessToken}`,
