@@ -116,7 +116,8 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 //
 // OpenAI — https://developers.openai.com/api/docs/pricing (checked 2026-11-21)
 //   gpt-4.1     $2.00 in / $8.00 out
-//   gpt-5-mini  $0.25 in / $2.00 out
+//   gpt-5-mini  $0.25 in / $2.00 out (shutdown 2026-12-11)
+//   gpt-6.2-sol $2.00 in / $10.00 out (checked 2026-11-22; prompts > 272K: $4 / $15)
 //   Web search tool (Responses API): $10.00 / 1k calls + content tokens at model rates
 //   NOT priced: gpt-image-1 (no longer on the page; only gpt-image-1.5 / -mini are)
 //
@@ -148,6 +149,9 @@ const GEMINI_38_FLASH: PricePeriod[] = [
 const PRICES: Record<string, PricePeriod[]> = {
   'gpt-4.1': [{ inputPerM: 2, outputPerM: 8 }],
   'gpt-5-mini': [{ inputPerM: 0.25, outputPerM: 2 }],
+  'gpt-6.2-sol': [
+    { inputPerM: 2, outputPerM: 10, longContext: { abovePromptTokens: 272_000, inputPerM: 4, outputPerM: 15 } },
+  ],
   'gemini-2.5-pro': [
     {
       inputPerM: 1.25,
