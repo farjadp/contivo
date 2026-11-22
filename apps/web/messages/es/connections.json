@@ -76,7 +76,8 @@
         "expired": "Caducada",
         "failed": "Con errores",
         "revoked": "Revocada",
-        "pendingReauth": "Requiere reautenticación"
+        "pendingReauth": "Requiere reautenticación",
+        "expiringSoon": "Caduca en {days, plural, one {# día} other {# días}}"
       },
       "reconnecting": "Abriendo el inicio de sesión…",
       "statusHint": {
@@ -86,7 +87,8 @@
         "failed": "La conexión con <bdi>{platform}</bdi> dejó de funcionar. Vuelve a conectarla para publicar de nuevo.",
         "unsupported": "Esta conexión con <bdi>{platform}</bdi> dejó de funcionar y todavía no se puede volver a conectar desde esta página.",
         "telegramBotRemoved": "El bot de Contivo se eliminó de este canal, así que las publicaciones en él fallarán. Vuelve a conectarlo para añadir el bot de nuevo.",
-        "telegramBotRightsLost": "El bot de Contivo perdió el permiso para publicar en este canal, así que las publicaciones en él fallarán. Vuelve a conectarlo para devolverle el permiso."
+        "telegramBotRightsLost": "El bot de Contivo perdió el permiso para publicar en este canal, así que las publicaciones en él fallarán. Vuelve a conectarlo para devolverle el permiso.",
+        "expiringSoon": "Tu sesión de <bdi>{platform}</bdi> caduca en {days, plural, one {# día} other {# días}}. Vuelve a conectarla ahora para que las publicaciones programadas sigan saliendo."
       },
       "errors": {
         "disconnect": "No se pudo desconectar esta cuenta.",

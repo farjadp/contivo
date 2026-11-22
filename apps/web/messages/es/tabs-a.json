@@ -206,6 +206,10 @@
         "RUNNING": "en curso",
         "QUEUED": "en cola",
         "SKIPPED": "omitida"
+      },
+      "runCodes": {
+        "LINKEDIN_RECONNECT_REQUIRED": "Hay que volver a conectar <bdi>LinkedIn</bdi>. Su sesión ha caducado, así que esta ejecución se ha saltado <bdi>LinkedIn</bdi>.",
+        "reconnectCta": "Volver a conectar"
       }
     },
     "ideation": {

@@ -82,5 +82,12 @@
     "dismiss": "Descartar",
     "writtenForBrand": "escrito para esta marca",
     "guideLabel": "guía"
+  },
+  "connectionHealth": {
+    "expiredTitle": "Vuelve a conectar <bdi>LinkedIn</bdi>",
+    "expiredBody": "La sesión de <bdi>{account}</bdi> ha caducado, así que las publicaciones en <bdi>LinkedIn</bdi> fallarán hasta que vuelvas a conectarla. Una sesión de <bdi>LinkedIn</bdi> dura {period, number} días.",
+    "expiringTitle": "Tu sesión de <bdi>LinkedIn</bdi> caduca en {days, plural, one {# día} other {# días}}",
+    "expiringBody": "Vuelve a conectar <bdi>{account}</bdi> ahora para que las publicaciones programadas sigan saliendo. Una sesión de <bdi>LinkedIn</bdi> dura {period, number} días.",
+    "cta": "Volver a conectar"
   }
 }

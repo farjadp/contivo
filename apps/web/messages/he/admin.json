@@ -124,7 +124,9 @@
       "geminiKeyMissing": "חסר GEMINI_API_KEY.",
       "openAiKeyMissing": "חסר OPENAI_API_KEY.",
       "credentialsConfigured": "פרטי הגישה מוגדרים.",
-      "credentialsMissing": "פרטי הגישה לא מוגדרים."
+      "credentialsMissing": "פרטי הגישה לא מוגדרים.",
+      "linkedinExpiryTitle": "התחברויות ל-<bdi>LinkedIn</bdi>",
+      "linkedinExpiryDescription": "{expired, number} פגו, {soon, number} יפוגו בתוך {days, number} ימים. התחברות תקפה ל-{period, number} ימים ואי אפשר לחדש אותה בלי המשתמש."
     },
     "banner": {
       "saved": "השינוי נשמר.",

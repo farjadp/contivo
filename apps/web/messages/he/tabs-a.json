@@ -206,6 +206,10 @@
         "RUNNING": "רצה",
         "QUEUED": "בתור",
         "SKIPPED": "דולגה"
+      },
+      "runCodes": {
+        "LINKEDIN_RECONNECT_REQUIRED": "צריך להתחבר מחדש ל-<bdi>LinkedIn</bdi>. תוקף ההתחברות פג, ולכן ההרצה הזו דילגה על <bdi>LinkedIn</bdi>.",
+        "reconnectCta": "התחברות מחדש"
       }
     },
     "ideation": {

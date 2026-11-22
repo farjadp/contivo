@@ -82,5 +82,12 @@
     "dismiss": "סגירה",
     "writtenForBrand": "נכתב עבור המותג הזה",
     "guideLabel": "מדריך"
+  },
+  "connectionHealth": {
+    "expiredTitle": "צריך להתחבר מחדש ל-<bdi>LinkedIn</bdi>",
+    "expiredBody": "פג תוקף ההתחברות של <bdi>{account}</bdi>, ולכן פוסטים ל-<bdi>LinkedIn</bdi> ייכשלו עד שתתחברו מחדש. התחברות ל-<bdi>LinkedIn</bdi> תקפה ל-{period, number} ימים.",
+    "expiringTitle": "ההתחברות שלכם ל-<bdi>LinkedIn</bdi> תפוג {days, plural, one {בעוד יום} two {בעוד יומיים} other {בעוד # ימים}}",
+    "expiringBody": "כדאי לחבר מחדש את <bdi>{account}</bdi> עכשיו כדי שהפוסטים המתוזמנים ימשיכו להתפרסם. התחברות ל-<bdi>LinkedIn</bdi> תקפה ל-{period, number} ימים.",
+    "cta": "התחברות מחדש"
   }
 }
