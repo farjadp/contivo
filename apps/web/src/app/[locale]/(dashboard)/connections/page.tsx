@@ -19,6 +19,7 @@ import { getLocale, getTranslations } from 'next-intl/server';
 
 import { getSession } from '@/lib/auth';
 import { cn } from '@/lib/utils';
+import { ConnectResumeBanner } from './_components/ConnectResumeBanner';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
 import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
@@ -115,6 +116,9 @@ export default async function ConnectionsPage({ searchParams }: Props) {
           {t(`connectResult.${connectResult}`)}
         </div>
       )}
+
+      {/* ─── A LinkedIn connect that never came back (B13) ─────────────── */}
+      {workspace && <ConnectResumeBanner hasResult={connectResult != null} />}
 
       {/* ─── No workspace yet ───────────────────────────────────────────── */}
       {!workspace && (
