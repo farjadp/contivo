@@ -10,12 +10,14 @@ import { LocaleSwitcher } from './locale-switcher';
   locale-aware Link builds `/fa/#how` from these parts, where a literal
   '/#how' would have to be re-parsed to know which half is the route.
 */
+/* The real pages, not anchors into the home page: the home page no longer has
+   the six chapter sections the old links pointed at (22 Nov 2026). */
 const LINKS = [
-  { href: { pathname: '/', hash: 'know' }, key: 'intelligence' },
-  { href: { pathname: '/', hash: 'refusal' }, key: 'refusal' },
-  { href: { pathname: '/', hash: 'ship' }, key: 'autopilot' },
-  { href: { pathname: '/features' }, key: 'features' },
+  { href: { pathname: '/product' }, key: 'product' },
+  { href: { pathname: '/why' }, key: 'why' },
+  { href: { pathname: '/compare' }, key: 'compare' },
   { href: { pathname: '/pricing' }, key: 'pricing' },
+  { href: { pathname: '/blog' }, key: 'blog' },
 ] as const;
 
 export function SiteNav() {

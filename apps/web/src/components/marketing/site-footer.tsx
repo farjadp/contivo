@@ -31,9 +31,6 @@ export function SiteFooter() {
     {
       title: t('productTitle'),
       links: [
-        { href: { pathname: '/', hash: 'know' }, label: t('intelligence') },
-        { href: { pathname: '/', hash: 'refusal' }, label: t('qualityGate') },
-        { href: { pathname: '/', hash: 'ship' }, label: t('autopilot') },
         { href: { pathname: '/product' }, label: t('product') },
         { href: { pathname: '/why' }, label: t('why') },
         { href: { pathname: '/features' }, label: t('features') },
@@ -47,8 +44,8 @@ export function SiteFooter() {
         /* Network names are proper nouns and stay Latin in both languages,
            except where Persian has a settled spelling of its own — which the
            message catalogue decides, not this file. */
-        { href: { pathname: '/', hash: 'learn' }, label: 'LinkedIn' },
-        { href: { pathname: '/', hash: 'learn' }, label: t('ownSite') },
+        { href: { pathname: '/features', hash: 'ship' }, label: 'LinkedIn' },
+        { href: { pathname: '/features', hash: 'ship' }, label: t('ownSite') },
         { href: { pathname: '/features', hash: 'ship' }, label: t('socialSoon'), soon: true },
       ],
     },

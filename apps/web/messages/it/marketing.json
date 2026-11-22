@@ -11,7 +11,11 @@
     "signIn": "Accedi",
     "startFree": "Inizia gratis",
     "features": "Funzionalità",
-    "siteOnlyNotice": "Questo sito è tradotto, ma Contivo scrive i tuoi contenuti in inglese o in persiano."
+    "siteOnlyNotice": "Questo sito è tradotto, ma Contivo scrive i tuoi contenuti in inglese o in persiano.",
+    "product": "Come funziona",
+    "why": "Perché Contivo",
+    "compare": "Confronto",
+    "blog": "Blog"
   },
   "localeSwitcher": {
     "label": "Lingua",
@@ -231,6 +235,85 @@
     "chapters": {
       "thinkLabel": "Rifletti — e rifiuta",
       "makeShip": "Crea · Pubblica"
+    },
+    "v2": {
+      "hero": {
+        "eyebrow": "Content marketing, fatto per te",
+        "headline": "Il tuo LinkedIn e il tuo blog, <accent>sempre attivi</accent>, ogni settimana.",
+        "body": "Dai a Contivo il tuo sito. Capisce cosa vendi e chi sono i tuoi concorrenti, poi scrive post per il tuo LinkedIn e articoli per il tuo sito, e li pubblica nei giorni che scegli tu. Ognuno viene controllato prima di uscire.",
+        "shotAlt": "La pipeline di un workspace reale in Contivo: post pubblicati su LinkedIn e una bozza in attesa del suo turno.",
+        "shotCaption": "Un workspace reale, catturato dall'app: post pubblicati su LinkedIn, una bozza programmata."
+      },
+      "week": {
+        "title": "Com'è una settimana",
+        "facts": {
+          "posts": {
+            "title": "Da 1 a 14 post a settimana",
+            "body": "Decidi tu quanti. I sette giorni successivi restano sempre pianificati."
+          },
+          "channels": {
+            "title": "Il tuo LinkedIn e il tuo sito",
+            "body": "Post sul tuo profilo personale LinkedIn, articoli sul tuo sito. X, Telegram, WordPress e Threads sono in arrivo."
+          },
+          "time": {
+            "title": "Nei giorni e negli orari che scegli",
+            "body": "Nel tuo fuso orario, distribuiti in modo che due post sulla stessa idea non escano mai uno dopo l'altro."
+          }
+        }
+      },
+      "steps": {
+        "title": "Come funziona",
+        "link": "Guarda tutti i passaggi",
+        "s1": {
+          "title": "Legge il tuo sito",
+          "body": "Cosa fai, cosa prometti, a chi ti rivolgi e come parli, messo per iscritto perché tu possa correggerlo.",
+          "alt": "La memoria del brand in un workspace reale: sintesi dell'attività, proposta di valore, pubblico e tono."
+        },
+        "s2": {
+          "title": "Studia il tuo mercato",
+          "body": "Concorrenti delle tue dimensioni, verificati uno per uno e messi sul grafico accanto a te, con gli spazi che lasciano scoperti.",
+          "alt": "Un grafico di posizionamento in un workspace reale, con il brand tra i suoi concorrenti."
+        },
+        "s3": {
+          "title": "Scrive e pubblica",
+          "body": "Bozze con la tua voce, ognuna legata a una linea narrativa e controllata, poi pubblicate su LinkedIn e sul tuo sito secondo la programmazione.",
+          "alt": "La pipeline di un workspace reale, con post pubblicati su LinkedIn."
+        }
+      },
+      "notAi": {
+        "title": "Perché non sembrerà l'ennesimo testo scritto dall'IA",
+        "body": "La maggior parte degli strumenti comincia a scrivere da un prompt vuoto. Contivo non propone nemmeno un'idea finché non ha la memoria del tuo brand e l'analisi dei tuoi concorrenti, e poi ogni bozza passa da un controllo qualità pensato per scartarla.",
+        "whyLink": "Perché Contivo",
+        "compareLink": "Il confronto con gli altri strumenti"
+      },
+      "pricing": {
+        "title": "Quanto costa",
+        "body": "Durante l'accesso anticipato i nuovi account sono gratis. Quando partirà la fatturazione:",
+        "link": "Vedi tutti i prezzi"
+      },
+      "faq": {
+        "title": "Domande",
+        "publish": {
+          "q": "Pubblica senza di me?",
+          "a": "Di default sì: i post che superano il controllo qualità escono secondo la programmazione. Se attivi l'approvazione, ogni bozza aspetta te."
+        },
+        "channels": {
+          "q": "Dove pubblica?",
+          "a": "Sul tuo profilo personale LinkedIn e sul tuo sito, tramite un'API in sola lettura che uno sviluppatore collega una volta sola. Pagine aziendali, X, Telegram, WordPress e Threads non sono ancora attivi."
+        },
+        "languages": {
+          "q": "In quali lingue scrive?",
+          "a": "Inglese e persiano. Questo sito è disponibile in più lingue, ma i contenuti che Contivo scrive sono in una di queste due."
+        },
+        "cost": {
+          "q": "Quanto costa?",
+          "a": "Niente per i nuovi account durante l'accesso anticipato. Dopo, da 55 $ al mese."
+        },
+        "need": {
+          "q": "Cosa mi serve per iniziare?",
+          "a": "Un sito web. Per pubblicare su LinkedIn, il tuo account LinkedIn; per pubblicare sul tuo sito, uno sviluppatore per una breve configurazione."
+        }
+      }
     }
   },
   "footer": {
