@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  TELEGRAM_ERROR_CODES,
+  endsSession,
+  failedReason,
   isCompleteCode,
   isExpired,
   isTelegramErrorCode,
@@ -116,5 +119,46 @@ describe('isTelegramErrorCode', () => {
     expect(isTelegramErrorCode('start_bot_first')).toBe(true);
     expect(isTelegramErrorCode('made_up')).toBe(false);
     expect(isTelegramErrorCode(undefined)).toBe(false);
+  });
+});
+
+describe('session-ending API codes', () => {
+  it('too many attempts, too many codes, denied and session_finished end the session', () => {
+    for (const code of ['too_many_attempts', 'too_many_codes', 'denied', 'session_finished'] as const) {
+      expect(endsSession(code)).toBe(true);
+    }
+  });
+
+  it('already_pending, too_many_lookups and wrong_code do not: the user can act on the same screen', () => {
+    for (const code of ['already_pending', 'too_many_lookups', 'wrong_code', 'chat_not_found'] as const) {
+      expect(endsSession(code)).toBe(false);
+    }
+  });
+
+  it('the new API codes are known', () => {
+    for (const code of ['already_pending', 'session_finished', 'too_many_lookups', 'too_many_codes', 'denied']) {
+      expect(isTelegramErrorCode(code)).toBe(true);
+    }
+  });
+
+  it('the stopped screen uses the session reason, then the action error, else session_finished', () => {
+    expect(failedReason(view({ status: 'failed', error: 'denied' }), 'session_finished')).toBe('denied');
+    expect(failedReason(view({ status: 'failed', error: 'too_many_codes' }), null)).toBe('too_many_codes');
+    expect(failedReason(view({ status: 'failed' }), null)).toBe('session_finished');
+    expect(failedReason(null, null)).toBe('session_finished');
+  });
+
+  it('a denied session lands on the failed step', () => {
+    expect(panelStep(view({ status: 'failed', error: 'denied' }), { expired: false, usernameMode: false })).toBe('failed');
+  });
+});
+
+describe('every error code has a sentence in every locale', () => {
+  it('en, fa and it cover TELEGRAM_ERROR_CODES', async () => {
+    for (const locale of ['en', 'fa', 'it']) {
+      const messages = (await import(`../../messages/${locale}/connections.json`)).default;
+      const errors = messages.connections.telegram.errors as Record<string, string>;
+      for (const code of TELEGRAM_ERROR_CODES) expect(errors[code], `${locale}: ${code}`).toBeTruthy();
+    }
   });
 });

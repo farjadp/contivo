@@ -21,7 +21,11 @@ export type TelegramSessionProblem =
   | 'chat_not_found'
   | 'not_a_channel_or_group'
   | 'telegram_unavailable'
-  | 'too_many_attempts';
+  | 'too_many_attempts'
+  /** The bot already sent its three codes for this session. */
+  | 'too_many_codes'
+  /** The Telegram user pressed "This wasn't me". */
+  | 'denied';
 
 export interface TelegramSessionView {
   sessionId: string;
@@ -51,6 +55,11 @@ export const TELEGRAM_ERROR_CODES = [
   'not_a_channel_or_group',
   'telegram_unavailable',
   'too_many_attempts',
+  'too_many_codes',
+  'denied',
+  'already_pending',
+  'session_finished',
+  'too_many_lookups',
   'wrong_code',
   'not_pending',
   'start_bot_first',
@@ -75,6 +84,21 @@ export const TELEGRAM_POLL_MS = 2500;
 
 /** The code the bot sends is six digits. */
 export const TELEGRAM_CODE_LENGTH = 6;
+
+/**
+ * Action failures that end the session: the panel shows the "Start again"
+ * screen with this sentence instead of an inline error.
+ */
+export function endsSession(
+  code: TelegramErrorCode,
+): code is 'too_many_attempts' | 'too_many_codes' | 'denied' | 'session_finished' {
+  return code === 'too_many_attempts' || code === 'too_many_codes' || code === 'denied' || code === 'session_finished';
+}
+
+/** The sentence key for the "stopped" screen. A failed session without a reason is simply over. */
+export function failedReason(view: TelegramSessionView | null, actionError: TelegramErrorCode | null): TelegramErrorCode {
+  return view?.error ?? actionError ?? 'session_finished';
+}
 
 export function isTerminalStatus(status: TelegramSessionStatus): boolean {
   return status === 'connected' || status === 'failed';

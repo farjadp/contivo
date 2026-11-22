@@ -32,6 +32,8 @@ import {
   TELEGRAM_POLL_MS,
   isCompleteCode,
   isExpired,
+  endsSession,
+  failedReason,
   isTerminalStatus,
   normalizeCodeInput,
   panelStep,
@@ -278,7 +280,7 @@ export function TelegramConnectSteps(props: TelegramConnectStepsProps) {
         <div className="space-y-4">
           <StepHeading index={null} title={step === 'failed' ? t('failedTitle') : t('expiredTitle')} />
           <p className="text-sm text-moss-muted">
-            {step === 'failed' ? t(`errors.${view?.error ?? error ?? 'api_error'}`) : t('expiredBody')}
+            {step === 'failed' ? t(`errors.${failedReason(view, error)}`) : t('expiredBody')}
           </p>
           <button type="button" onClick={props.onRestart} disabled={busy} className={primaryButton}>
             {t('startAgain')}
@@ -406,8 +408,15 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
       setExpired(true);
       return;
     }
-    if (result.code === 'too_many_attempts') {
-      setView((v) => (v ? { ...v, status: 'failed', error: 'too_many_attempts' } : v));
+    if (endsSession(result.code)) {
+      // The session is over: straight to "Start again". session_finished has no
+      // reason of its own, so read the session for it (denied, too many codes, …).
+      const ended = result.code;
+      setView((v) => (v ? { ...v, status: 'failed', error: ended === 'session_finished' ? undefined : ended } : v));
+      if (ended === 'session_finished') {
+        const fresh = await getTelegramConnect(start.sessionId);
+        if (gen === generation.current && fresh.ok && fresh.data.status === 'failed') setView(fresh.data);
+      }
       return;
     }
     setActionError(result.code);

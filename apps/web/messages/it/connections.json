@@ -260,7 +260,12 @@
         "session_expired": "La tua sessione Contivo è terminata. Accedi di nuovo.",
         "forbidden": "Non hai accesso a questo workspace.",
         "unreachable": "Impossibile raggiungere il servizio di pubblicazione. Riprova tra un minuto.",
-        "api_error": "Qualcosa è andato storto da parte nostra. Riprova tra un minuto."
+        "api_error": "Qualcosa è andato storto da parte nostra. Riprova tra un minuto.",
+        "already_pending": "Un codice è già stato inviato al tuo Telegram. Inseriscilo qui. Per collegare un altro canale, ricomincia.",
+        "session_finished": "Questo tentativo di collegamento è terminato. Ricomincia per avere un nuovo link.",
+        "too_many_lookups": "Troppe ricerche di canali in poco tempo. Scegli il canale direttamente su Telegram, oppure riprova più tardi.",
+        "too_many_codes": "Il bot ha già inviato tre codici per questo tentativo e non ne invierà altri. Ricomincia per avere un nuovo link.",
+        "denied": "Su Telegram qualcuno ha premuto “This wasn't me”, quindi non è stato collegato nulla. Se l’hai premuto per errore, ricomincia."
       }
     }
   }

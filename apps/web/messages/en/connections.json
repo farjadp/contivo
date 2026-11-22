@@ -260,7 +260,12 @@
         "session_expired": "Your Contivo session has ended. Sign in again.",
         "forbidden": "You do not have access to this workspace.",
         "unreachable": "Could not reach the publishing service. Try again in a minute.",
-        "api_error": "Something went wrong on our side. Try again in a minute."
+        "api_error": "Something went wrong on our side. Try again in a minute.",
+        "already_pending": "A code is already on its way to your Telegram. Enter that code here. To connect a different channel, start again.",
+        "session_finished": "This connection attempt is over. Start again to get a new link.",
+        "too_many_lookups": "Too many channel lookups in a short time. Choose the channel in Telegram instead, or try again later.",
+        "too_many_codes": "The bot has already sent three codes for this attempt and will not send more. Start again to get a new link.",
+        "denied": "Someone pressed “This wasn't me” in Telegram, so nothing was connected. If that was you by mistake, start again."
       }
     }
   }
