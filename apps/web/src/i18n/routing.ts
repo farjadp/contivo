@@ -65,6 +65,8 @@ export const routing = defineRouting({
     '/compare': '/compare',
     '/why': '/why',
     '/product': '/product',
+    '/roadmap': '/roadmap',
+    '/team': '/team',
     '/about': '/about',
     '/contact': '/contact',
     '/privacy': '/privacy',

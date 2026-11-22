@@ -16,7 +16,7 @@
       "facts": {
         "who": {
           "label": "Who reads it",
-          "value": "The founder, not a support team"
+          "value": "One of the founders, not a support team"
         },
         "where": {
           "label": "Where",
@@ -64,8 +64,8 @@
         "description": "Who builds Contivo, the rules it is built on, and where it honestly stands today."
       },
       "eyebrow": "About",
-      "headline": "Run on its founder's <accent>own</accent> sites first.",
-      "intro": "Contivo is built by Farjad P.D, founder of {entity}, in Ontario, Canada. It is for a plain problem: a small company knows it should publish steadily and keep an eye on its market, and nobody has the hours to do it well.",
+      "headline": "Run on its <accent>own</accent> sites first.",
+      "intro": "Contivo is built by four founders and run by {entity}, in Ontario, Canada. It is for a plain problem: a small company knows it should publish steadily and keep an eye on its market, and nobody has the hours to do it well.",
       "principlesTitle": "The rules it is built on",
       "principlesIntro": "Each of these is a decision already made in the product, not a promise about one. The date is when it went in.",
       "principles": [
@@ -132,7 +132,8 @@
       ],
       "ctaTitle": "See whether it fits your site.",
       "ctaStart": "Start free",
-      "ctaContact": "Or write to us"
+      "ctaContact": "Or write to us",
+      "teamLink": "Meet the four founders"
     }
   }
 }
