@@ -282,7 +282,7 @@ describe('retry()', () => {
 
   it('a job with no ContentItem cannot be retried (no body to rebuild)', async () => {
     job(ctx.prisma).contentItemId = null;
-    await assert.rejects(ctx.service.retry('j1', 'w1', 'u1'), /no content item/i);
+    await assert.rejects(ctx.service.retry('j1', 'w1', 'u1'), (err: any) => err.getResponse().reason === 'NO_CONTENT_ITEM');
     assert.equal(ctx.enqueued.length, 0);
   });
 });

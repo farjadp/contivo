@@ -84,11 +84,27 @@ function isFailureCode(value: string): value is PublishFailureCode {
   return (PUBLISH_FAILURE_CODES as readonly string[]).includes(value);
 }
 
-/** `[CODE] detail`. A detail that already carries a known code keeps it. */
+/** Prisma cuid() ids (25 chars, leading "c"): job, connection, item ids. */
+const INTERNAL_ID = /\s*\bc[a-z0-9]{24}\b/g;
+
+/**
+ * Stored reasons are shown to users: they must never carry our internal ids.
+ * Removes cuids and the space before them ("connection c… no longer" →
+ * "connection no longer").
+ */
+function withoutInternalIds(detail: string): string {
+  return detail.replace(INTERNAL_ID, '');
+}
+
+/**
+ * `[CODE] detail`. A detail that already carries a known code keeps it.
+ * Internal ids are stripped from the detail either way.
+ */
 export function formatFailure(code: PublishFailureCode, detail: string): string {
-  const existing = FAILURE_PREFIX.exec(detail);
-  if (existing && isFailureCode(existing[1])) return detail;
-  return `[${code}] ${detail}`;
+  const clean = withoutInternalIds(detail);
+  const existing = FAILURE_PREFIX.exec(clean);
+  if (existing && isFailureCode(existing[1])) return clean;
+  return `[${code}] ${clean}`;
 }
 
 /** Splits a stored reason. Unknown or missing codes give `code: null`, detail unchanged. */
@@ -99,6 +115,36 @@ export function parseFailure(reason: string | null | undefined): { code: Publish
     return { code: match[1], detail: text.slice(match[0].length) };
   }
   return { code: null, detail: text };
+}
+
+// ─── Publish-job refusals ─────────────────────────────────────────────────────
+
+/**
+ * Why the API refused a Retry or Cancel, sent as `reason` in the error body
+ * (`{ message, reason }`) so the web localises it instead of showing the
+ * English message.
+ *
+ * - JOB_NOT_FOUND: no such job in this workspace.
+ * - NOT_RETRYABLE_STATUS: only FAILED jobs can be retried.
+ * - RETRY_LIMIT: the job has used its five retries.
+ * - NO_CONTENT_ITEM: the job has no content item (or it was deleted), so there is no body to send.
+ * - EMPTY_CONTENT: the content item has no body.
+ * - ALREADY_RETRYING: a retry for this job is already queued (double click).
+ * - ALREADY_PUBLISHED: the post is live; cancelling is too late.
+ */
+export const PUBLISH_JOB_REFUSALS = [
+  'JOB_NOT_FOUND',
+  'NOT_RETRYABLE_STATUS',
+  'RETRY_LIMIT',
+  'NO_CONTENT_ITEM',
+  'EMPTY_CONTENT',
+  'ALREADY_RETRYING',
+  'ALREADY_PUBLISHED',
+] as const;
+export type PublishJobRefusal = (typeof PUBLISH_JOB_REFUSALS)[number];
+
+export function isPublishJobRefusal(value: unknown): value is PublishJobRefusal {
+  return typeof value === 'string' && (PUBLISH_JOB_REFUSALS as readonly string[]).includes(value);
 }
 
 export const SocialConnectionStatus = z.enum([

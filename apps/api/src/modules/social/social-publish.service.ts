@@ -29,7 +29,7 @@ import {
 } from '@nestjs/common';
 import type { SocialPlatform } from '@prisma/client';
 
-import { formatFailure, type PublishFailureCode } from '@contivo/types';
+import { formatFailure, type PublishFailureCode, type PublishJobRefusal } from '@contivo/types';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
@@ -60,6 +60,12 @@ const NOT_CANCELLED = { not: 'CANCELLED' as const };
 
 /** Internal: the job was cancelled while this attempt ran. */
 class JobCancelled extends Error {}
+
+/**
+ * Error bodies for refused Retry / Cancel: `{ message, reason }`. The web
+ * localises on `reason`; `message` is the English fallback and names no id.
+ */
+const refusal = (reason: PublishJobRefusal, message: string) => ({ message, reason });
 
 @Injectable()
 export class SocialPublishService {
@@ -202,24 +208,25 @@ export class SocialPublishService {
   async retry(id: string, workspaceId: string, userId: string) {
     await this.connections.validateWorkspaceAccess(workspaceId, userId);
     const job = await this.prisma.socialPublishJob.findFirst({
-      where: { id, workspaceId, status: 'FAILED' },
+      where: { id, workspaceId },
     });
 
     if (!job) {
-      throw new NotFoundException(
-        `Publish job ${id} not found or is not in FAILED status.`,
-      );
+      throw new NotFoundException(refusal('JOB_NOT_FOUND', 'This publish job was not found.'));
+    }
+    if (job.status !== 'FAILED') {
+      throw new BadRequestException(refusal('NOT_RETRYABLE_STATUS', 'Only a failed publish job can be retried.'));
     }
 
     if (job.retryCount >= 5) {
       throw new BadRequestException(
-        `Job ${id} has exceeded the maximum retry count (5). Cancel and create a new job.`,
+        refusal('RETRY_LIMIT', 'This job has used all 5 retries. Cancel it and publish the post again.'),
       );
     }
 
     if (!job.contentItemId) {
       throw new BadRequestException(
-        `Job ${id} has no content item, so there is no body to publish again. Create a new job.`,
+        refusal('NO_CONTENT_ITEM', 'This job has no post attached, so there is nothing to publish again.'),
       );
     }
     const item = await this.prisma.contentItem.findUnique({
@@ -227,14 +234,14 @@ export class SocialPublishService {
       select: { id: true, topic: true, content: true, slug: true },
     });
     if (!item) {
-      throw new BadRequestException(`The content item for job ${id} no longer exists.`);
+      throw new BadRequestException(refusal('NO_CONTENT_ITEM', 'The post for this job no longer exists.'));
     }
 
     let payload: PublishPayload;
     try {
       payload = buildPublishPayload(item);
-    } catch (err) {
-      throw new BadRequestException((err as Error).message);
+    } catch {
+      throw new BadRequestException(refusal('EMPTY_CONTENT', 'The post has no text to publish.'));
     }
 
     // Conditional update: a double click must not enqueue twice.
@@ -244,7 +251,7 @@ export class SocialPublishService {
       data:  { status: 'PUBLISH_QUEUED', retryCount, lastError: null },
     });
     if (count === 0) {
-      throw new ConflictException(`Job ${id} is already being retried.`);
+      throw new ConflictException(refusal('ALREADY_RETRYING', 'This job is already being retried.'));
     }
 
     // Put the item back where the success/failure write-back looks for it.
@@ -279,10 +286,11 @@ export class SocialPublishService {
       where: { id, workspaceId },
     });
 
-    if (!job) throw new NotFoundException(`Publish job ${id} not found.`);
+    if (!job) throw new NotFoundException(refusal('JOB_NOT_FOUND', 'This publish job was not found.'));
 
+    const alreadyPublished = refusal('ALREADY_PUBLISHED', 'This post is already published, so it cannot be cancelled.');
     if (job.status === 'PUBLISHED') {
-      throw new BadRequestException('Cannot cancel a job that has already been published.');
+      throw new BadRequestException(alreadyPublished);
     }
 
     // Conditional: a publish that succeeds in the same instant wins, and the
@@ -292,7 +300,7 @@ export class SocialPublishService {
       data:  { status: 'CANCELLED' },
     });
     if (count === 0) {
-      throw new BadRequestException('Cannot cancel a job that has already been published.');
+      throw new BadRequestException(alreadyPublished);
     }
 
     // The item was claimed (PUBLISHING) for this job; give it back to the user.

@@ -160,7 +160,7 @@ export class TokenRefreshService {
       row = await this.read(connectionId);
       if (!this.needsRefresh(row)) return this.decrypt(row);
       if (Date.now() > deadline) {
-        throw new TransientPublishError(`Token refresh for connection ${connectionId} is still in progress elsewhere.`, undefined, 'PLATFORM_ERROR');
+        throw new TransientPublishError('A token refresh for this connection is still in progress elsewhere.', undefined, 'PLATFORM_ERROR');
       }
     }
 
@@ -285,7 +285,7 @@ export class TokenRefreshService {
         metaJson: true,
       },
     })) as ConnectionRow | null;
-    if (!row) throw new PermanentPublishError(`Social connection ${connectionId} no longer exists.`, 'NO_CONNECTION');
+    if (!row) throw new PermanentPublishError('Social connection no longer exists. Reconnect the account.', 'NO_CONNECTION');
     return row;
   }
 }

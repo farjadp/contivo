@@ -1,7 +1,8 @@
 /**
  * A tiny in-memory stand-in for the Prisma calls the social module makes.
  * Supports equality, `{ in: [] }`, `{ not: x }` and `{ lte: Date }` filters,
- * `{ increment: n }` updates and `select` (ignored: whole rows are returned).
+ * `{ increment: n }` updates, a single-key `orderBy` on findFirst, and
+ * `select` (ignored: whole rows are returned).
  * Not a Prisma emulator — only what the tests here exercise.
  */
 type Row = Record<string, any>;
@@ -34,14 +35,22 @@ function applyData(row: Row, data: Row) {
 
 let seq = 0;
 
+/** `{ field: 'asc' | 'desc' }` only; other shapes keep insertion order. */
+function sorted(rows: Row[], orderBy?: Row): Row[] {
+  const [key, dir] = Object.entries(orderBy ?? {})[0] ?? [];
+  if (!key || (dir !== 'asc' && dir !== 'desc')) return rows;
+  const sign = dir === 'asc' ? 1 : -1;
+  return [...rows].sort((a, b) => (a[key] < b[key] ? -sign : a[key] > b[key] ? sign : 0));
+}
+
 function table(rows: Row[]) {
   return {
     rows,
     async findUnique({ where }: { where: Row }) {
       return rows.find((r) => matches(r, where)) ?? null;
     },
-    async findFirst({ where }: { where?: Row } = {}) {
-      return rows.find((r) => matches(r, where)) ?? null;
+    async findFirst({ where, orderBy }: { where?: Row; orderBy?: Row } = {}) {
+      return sorted(rows, orderBy).find((r) => matches(r, where)) ?? null;
     },
     async findMany({ where }: { where?: Row } = {}) {
       return rows.filter((r) => matches(r, where));

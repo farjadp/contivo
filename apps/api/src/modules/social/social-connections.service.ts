@@ -155,16 +155,21 @@ export class SocialConnectionsService {
   /** Soft-disconnects a connection by marking status = REVOKED and clearing tokens. */
   async disconnect(id: string, workspaceId: string, userId: string) {
     await this.validateWorkspaceAccess(workspaceId, userId);
-    await this.findOrThrow(id, workspaceId);
+    const { isDefault: wasDefault, platform } = await this.findOrThrow(id, workspaceId);
 
+    // A REVOKED row must not stay the default: the scheduler only publishes
+    // through a CONNECTED default, so the platform would silently stop.
     await this.prisma.socialConnection.update({
       where: { id },
       data: {
         status: 'REVOKED',
+        isDefault: false,
         encryptedAccessTokenRef:  null,
         encryptedRefreshTokenRef: null,
       },
     });
+
+    if (wasDefault) await this.promoteOldestConnected(workspaceId, platform);
 
     this.logger.log(`Social connection disconnected: id=${id} workspace=${workspaceId}`);
   }
@@ -268,6 +273,28 @@ export class SocialConnectionsService {
     });
     if (!conn) throw new NotFoundException(`Social connection ${id} not found.`);
     return conn;
+  }
+
+  /**
+   * After the default is disconnected: the oldest CONNECTED account of the
+   * same platform becomes default (oldest = the one the user has relied on
+   * longest; a deterministic choice the user can change with Make default).
+   * Does nothing when another default already exists or none is connected.
+   */
+  private async promoteOldestConnected(workspaceId: string, platform: SocialPlatform) {
+    const hasDefault = await this.prisma.socialConnection.findFirst({
+      where: { workspaceId, platform, status: 'CONNECTED', isDefault: true },
+      select: { id: true },
+    });
+    if (hasDefault) return;
+    const next = await this.prisma.socialConnection.findFirst({
+      where: { workspaceId, platform, status: 'CONNECTED' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (!next) return;
+    await this.prisma.socialConnection.update({ where: { id: next.id }, data: { isDefault: true } });
+    this.logger.log(`Default ${platform} connection moved to ${next.id} after a disconnect in workspace=${workspaceId}`);
   }
 
   private async clearDefaultForPlatform(workspaceId: string, platform: SocialPlatform) {
