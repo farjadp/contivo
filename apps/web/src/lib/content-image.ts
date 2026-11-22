@@ -14,7 +14,7 @@
 
 import { parseOpenAiImageUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
-import { requestJsonFromAi } from '@/lib/gemini';
+import { runAiTask } from '@/lib/ai';
 
 const IMAGE_MODEL = 'gpt-image-1';
 const IMAGE_SIZE = '1024x1024';
@@ -35,13 +35,19 @@ async function buildImageBrief(input: {
   topic: string;
   body: string;
   brandSummary: unknown;
+  workspaceId?: string;
 }): Promise<{ prompt: string; altText: string }> {
   const brand = input.brandSummary as any;
   const fallbackPrompt =
     'Minimal flat vector illustration, deep navy background, a single bright green ascending line with three node points, generous negative space, editorial business style, no text, no letters, no logos, no people';
 
-  const result = await requestJsonFromAi<{ prompt?: unknown; alt?: unknown }>(
-    `Art-direct one image for this social post.
+  const result = await runAiTask(
+    'image_prompt',
+    {
+      system: 'You are an art director for editorial illustration. Return only valid JSON.',
+      output: { kind: 'json_object' },
+      timeoutMs: 60_000,
+      prompt: `Art-direct one image for this social post.
 
 Industry: ${brand?.industry ?? 'business services'}
 Post topic: ${input.topic}
@@ -59,11 +65,18 @@ Hard rules for the prompt:
 Also write alt text: one factual sentence describing what the image shows, for a screen reader.
 
 Return JSON only: {"prompt": "...", "alt": "..."}`,
-    'You are an art director for editorial illustration. Return only valid JSON.',
+    },
+    { workspaceId: input.workspaceId },
   );
+  if (!result.ok) {
+    // The image is decoration: a post without a tailored brief still gets the
+    // neutral house illustration below, never invented post content.
+    console.error(`[content-image] image prompt AI ${result.kind} (first error: ${result.firstErrorClass}); using the neutral brief`);
+  }
+  const brief = (result.ok ? result.json : undefined) as { prompt?: unknown; alt?: unknown } | undefined;
 
-  const prompt = String(result?.data?.prompt || '').trim();
-  const alt = String(result?.data?.alt || '').trim();
+  const prompt = String(brief?.prompt || '').trim();
+  const alt = String(brief?.alt || '').trim();
   return {
     prompt: prompt && prompt.length > 20 ? prompt : fallbackPrompt,
     altText: alt || `Abstract illustration representing ${input.topic}`,

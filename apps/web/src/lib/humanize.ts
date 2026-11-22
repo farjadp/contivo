@@ -14,7 +14,7 @@
  * is what gets judged and published.
  */
 
-import { requestJsonFromAi } from '@/lib/gemini';
+import { runAiTask, type AiCallContext } from '@/lib/ai';
 import { DEFAULT_CONTENT_LANGUAGE, type ContentLanguage } from '@/lib/content-language';
 
 /** Phrases that mark copy as machine-written. Used to score, not to censor. */
@@ -114,6 +114,8 @@ export async function humanizeDraft(input: {
   hashtags?: number;
   /** The workspace's content language. See lib/content-language.ts. */
   language?: ContentLanguage;
+  /** Who the AI usage and any provider alert are attributed to. */
+  ctx?: AiCallContext;
 }): Promise<HumanizeResult> {
   const original = String(input.text || '').trim();
   const tellsBefore = findTells(original);
@@ -188,15 +190,23 @@ ${original.slice(0, 6000)}
 
 Return JSON only: {"text": "the rewritten post"}`;
 
-  const result = await requestJsonFromAi<{ text?: unknown }>(
-    prompt,
-    'You are a ghostwriter who makes copy sound human and specific. Return only valid JSON.',
+  const result = await runAiTask(
+    'humanize',
+    {
+      system: 'You are a ghostwriter who makes copy sound human and specific. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      // A full rewrite of a long draft (spec §Timeouts: long drafts 120 s).
+      timeoutMs: 120_000,
+    },
+    input.ctx,
   );
-  if (!result) {
+  if (!result.ok) {
+    console.error(`[humanize] AI ${result.kind} (first error: ${result.firstErrorClass}); keeping the original draft`);
     return { text: original, changed: false, tellsBefore, tellsAfter: tellsBefore, source: 'unchanged' };
   }
 
-  const rewritten = String(result.data.text || '').trim();
+  const rewritten = String((result.json as { text?: unknown } | undefined)?.text || '').trim();
 
   // Guard against a rewrite that truncated or came back empty. When we asked
   // for expansion, a much longer result is the point, so the ceiling lifts.
