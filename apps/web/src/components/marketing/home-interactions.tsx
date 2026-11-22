@@ -380,7 +380,7 @@ export function TryTheLock() {
           <li
             key={key}
             className={cn(
-              'flex flex-col gap-0.5 border-t-[3px] px-3.5 py-3',
+              'flex min-w-0 flex-col gap-0.5 border-t-[3px] px-2.5 py-3 sm:px-3.5',
               state === 'done' && 'border-chalk',
               state === 'next' && 'rounded-b-xl border-saffron bg-moss',
               state === 'next' && shaking && 'motion-safe:animate-shake',
@@ -390,7 +390,11 @@ export function TryTheLock() {
             <span className={cn('font-plexmono text-[12px]', state === 'next' ? 'text-saffron' : 'text-forest-muted')}>
               {format.number(i + 1, { minimumIntegerDigits: 2 })} · {t(`chain.${state}`)}
             </span>
-            <span className={cn('font-semibold', state === 'locked' && 'text-forest-muted')}>{t(`chain.${key}`)}</span>
+            {/* Hyphenated by the page's lang: three tiles across a 320px phone
+                leave about 55px, and "automatique" did not fit. */}
+            <span className={cn('hyphens-auto break-words font-semibold', state === 'locked' && 'text-forest-muted')}>
+              {t(`chain.${key}`)}
+            </span>
           </li>
         ))}
       </ol>
@@ -488,7 +492,10 @@ export function RunLog() {
           <li
             key={`${run}-${row}`}
             className={cn(
-              'grid grid-cols-[56px_96px_minmax(0,1fr)] gap-2 border-t border-forest-line py-1.5',
+              /* On a phone the message gets its own full-width line under the
+                 time and kind: in a 104px third column, long Italian and French
+                 words could not wrap and pushed the page sideways. */
+              'grid grid-cols-[56px_minmax(0,1fr)] gap-x-2 gap-y-0.5 border-t border-forest-line py-1.5 sm:grid-cols-[56px_104px_minmax(0,1fr)] sm:gap-2',
               seen ? 'motion-safe:animate-fade-in' : 'motion-safe:opacity-0',
             )}
             style={{ animationDelay: `${i * 450}ms` }}
@@ -497,7 +504,7 @@ export function RunLog() {
             <span className={row === 'r3' ? 'text-saffron' : row === 'r5' || row === 'r6' ? 'text-forest-muted' : ''}>
               {t(`rows.${row}.kind`)}
             </span>
-            <span>{t(`rows.${row}.text`)}</span>
+            <span className="col-span-2 break-words sm:col-span-1">{t(`rows.${row}.text`)}</span>
           </li>
         ))}
       </ol>

@@ -127,8 +127,12 @@ export default function ComparePage() {
         </div>
         <p className="mt-3 text-[14px] text-moss-muted md:hidden">{t('swipe')}</p>
 
-        {/* The table scrolls inside its own box on a phone; the page never does. */}
-        <div className="mt-5 overflow-x-auto rounded-2xl border border-rule bg-chalk-raised">
+        {/* The table scrolls inside its own box on a phone; the page never does.
+            `relative` is load-bearing: the sr-only status labels in the cells
+            are absolutely positioned, and without a positioned ancestor here
+            they escaped the box's clipping and widened the whole page (about
+            870px at a 375px viewport, in every language). */}
+        <div className="relative mt-5 overflow-x-auto rounded-2xl border border-rule bg-chalk-raised">
           <table className="w-full min-w-[60rem] border-collapse text-start text-[14px]">
             <caption className="sr-only">{t('tableTitle')}</caption>
             <thead>
