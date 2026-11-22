@@ -46,7 +46,7 @@ export function SiteFooter() {
            message catalogue decides, not this file. */
         { href: { pathname: '/', hash: 'learn' }, label: 'LinkedIn' },
         { href: { pathname: '/', hash: 'learn' }, label: t('ownSite') },
-        { href: { pathname: '/', hash: 'learn' }, label: t('socialSoon'), soon: true },
+        { href: { pathname: '/features', hash: 'ship' }, label: t('socialSoon'), soon: true },
       ],
     },
     {
