@@ -31,7 +31,7 @@ export type MatrixRunView = {
   status: 'PENDING' | 'RUNNING' | 'NEEDS_AXES' | 'DONE' | 'FAILED';
   stage: string | null;
   tokensUsed: number;
-  errorKind: 'timedOut' | 'dispatch' | 'notEnoughEvidence' | 'generic' | null;
+  errorKind: 'timedOut' | 'dispatch' | 'notEnoughEvidence' | 'aiUnavailable' | 'generic' | null;
   axisCandidates: StoredMarketAxis[];
   startedAt: string;
   finishedAt: string | null;
@@ -98,7 +98,7 @@ function toRunView(run: {
     errorKind:
       kind === null
         ? null
-        : kind === 'timedOut' || kind === 'dispatch' || kind === 'notEnoughEvidence'
+        : kind === 'timedOut' || kind === 'dispatch' || kind === 'notEnoughEvidence' || kind === 'aiUnavailable'
           ? kind
           : 'generic',
     axisCandidates: normaliseMarketAxes(run.axisCandidates, MAX_AXIS_CANDIDATES),

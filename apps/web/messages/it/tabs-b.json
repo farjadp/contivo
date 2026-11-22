@@ -123,6 +123,7 @@
           "timedOut": "L'esecuzione ha richiesto troppo tempo ed è stata interrotta. Riprova.",
           "dispatch": "L'esecuzione non è partita per un problema da parte nostra. Riprova tra poco.",
           "notEnoughEvidence": "Meno di due concorrenti hanno sul sito qualcosa su cui valutarli. Rilancia la ricerca dei concorrenti, poi riprova.",
+          "aiUnavailable": "Il servizio AI non è disponibile in questo momento. Siamo già stati avvisati e ci stiamo lavorando. Il tuo lavoro è salvato.",
           "generic": "Qualcosa è andato storto nel nostro sistema. Riprova."
         },
         "empty": {
