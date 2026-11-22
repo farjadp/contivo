@@ -62,6 +62,7 @@ export function SiteFooter() {
         { href: { pathname: '/contact' }, label: t('contact') },
         { href: { pathname: '/privacy' }, label: t('privacy') },
         { href: { pathname: '/terms' }, label: t('terms') },
+        { href: { pathname: '/disclaimer' }, label: t('disclaimer') },
       ],
     },
     {

@@ -1,5 +1,5 @@
 /**
- * The shell every legal page is poured into: privacy, terms.
+ * The shell every legal page is poured into: privacy, terms, disclaimer.
  *
  * Content lives in `messages/<locale>/legal.json` as data — sections of
  * paragraphs and lists — because the Persian text is written as Persian, not
@@ -23,17 +23,19 @@ import { SiteNav } from './site-nav';
 type Block = string | string[];
 type Section = { id: string; title: string; blocks: Block[] };
 
-export type LegalDoc = 'privacy' | 'terms';
+export type LegalDoc = 'privacy' | 'terms' | 'disclaimer';
 
 /** When each document last changed in substance. Shown, and used by the sitemap. */
 export const LEGAL_UPDATED: Record<LegalDoc, Date> = {
   privacy: new Date('2026-09-27T00:00:00Z'),
   terms: new Date('2026-09-27T00:00:00Z'),
+  disclaimer: new Date('2026-11-22T00:00:00Z'),
 };
 
-const RELATED: Record<LegalDoc, ReadonlyArray<'privacy' | 'terms' | 'contact'>> = {
+const RELATED: Record<LegalDoc, ReadonlyArray<'privacy' | 'terms' | 'disclaimer' | 'contact'>> = {
   privacy: ['terms', 'contact'],
-  terms: ['privacy', 'contact'],
+  terms: ['privacy', 'disclaimer', 'contact'],
+  disclaimer: ['terms', 'privacy', 'contact'],
 };
 
 const accent = (chunks: React.ReactNode) => (
