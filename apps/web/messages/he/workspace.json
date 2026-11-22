@@ -13,6 +13,7 @@
         "why": "מאשרים את המתחרים שהם באמת שלך, ואז יוצרים את מפות המיצוב. הרעיונות נבנים מהפערים שמתגלים בהן.",
         "actionDiscover": "לגלות ולאשר לפחות 2 מתחרים",
         "actionCharts": "ליצור את מטריצות המיצוב",
+        "actionRerunCharts": "להריץ מחדש את המפות על המתחרים שאישרת",
         "detailDone": "{charts, number} מפות · {competitors, number} מתחרים אושרו",
         "detailPartial": "{accepted, number} מתוך {total, number} מתחרים אושרו · עדיין אין מפות",
         "detailNone": "עדיין לא התגלו מתחרים"

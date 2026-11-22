@@ -1,0 +1,34 @@
+{
+  "team": {
+    "meta": {
+      "title": "הצוות של Contivo",
+      "description": "ארבעת המייסדים שלוקחים את Contivo מרעיון למוצר."
+    },
+    "eyebrow": "צוות",
+    "headline": "ארבעה מייסדים, בעיה <accent>אחת</accent> פשוטה.",
+    "intro": "ארבעת האנשים שלוקחים את Contivo מרעיון למוצר, בשביל חברות קטנות שיודעות שהן צריכות לפרסם בקביעות ולעקוב אחרי השוק שלהן, ואין להן אף אחד עם השעות לעשות את זה.",
+    "foundersTitle": "מייסדים",
+    "linkedin": "{name} ב-LinkedIn",
+    "founders": {
+      "mohajer": {
+        "name": "Hamidreza Salmanmohajer",
+        "role": "CEO, מכירות ושיווק"
+      },
+      "souzangar": {
+        "name": "Saeed Souzangar",
+        "role": "CTO, רשתות ואבטחה"
+      },
+      "kavian": {
+        "name": "Mohsen Kavian",
+        "role": "COO"
+      },
+      "khamouddoust": {
+        "name": "Bahareh Khamouddoust",
+        "role": "Project manager ו-Scrum Master"
+      }
+    },
+    "closeHeadline": "כתבו לאנשים שבונים אותו.",
+    "closeCta": "צור קשר",
+    "closeAbout": "אודות Contivo"
+  }
+}

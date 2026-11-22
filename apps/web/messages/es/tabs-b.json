@@ -81,13 +81,29 @@
       "coreAxes": {
         "offer_breadth_specialization": {
           "name": "Amplitud y especialización de la oferta",
-          "x": { "label": "Amplitud de la oferta", "low": "Una sola cosa", "high": "Suite completa" },
-          "y": { "label": "Especialización", "low": "Generalista", "high": "Experto de nicho" }
+          "x": {
+            "label": "Amplitud de la oferta",
+            "low": "Una sola cosa",
+            "high": "Suite completa"
+          },
+          "y": {
+            "label": "Especialización",
+            "low": "Generalista",
+            "high": "Experto de nicho"
+          }
         },
         "content_presence_focus": {
           "name": "Presencia y enfoque del contenido",
-          "x": { "label": "Presencia de contenido", "low": "Casi ninguna", "high": "Máquina de publicar" },
-          "y": { "label": "Enfoque del contenido", "low": "Temas dispersos", "high": "Muy temático" }
+          "x": {
+            "label": "Presencia de contenido",
+            "low": "Casi ninguna",
+            "high": "Máquina de publicar"
+          },
+          "y": {
+            "label": "Enfoque del contenido",
+            "low": "Temas dispersos",
+            "high": "Muy temático"
+          }
         }
       },
       "run": {
@@ -578,6 +594,23 @@
       },
       "errorPrefix": "Error en la generación:",
       "done": "Informe listo: la descarga se abrirá automáticamente"
+    },
+    "credits": {
+      "lowTitle": "Te quedan pocos créditos",
+      "emptyTitle": "Te has quedado sin créditos",
+      "lowBody": "Una publicación de Autopilot necesita al menos {cost, number} créditos. Tienes {balance, number}, así que Autopilot se detiene hasta que se recargue la cuenta.",
+      "earlyAccess": "Todavía no se pueden comprar créditos. Durante el acceso anticipado, nuestro equipo recarga las cuentas a mano.",
+      "runCost": "Cada ejecución de Autopilot necesita al menos {cost, number} créditos para una publicación.",
+      "request": "Pedir más créditos",
+      "requesting": "Enviando…",
+      "requested": "Solicitud enviada. Nuestro equipo recargará tus créditos durante el acceso anticipado.",
+      "alreadyRequested": "Ya lo pediste el {when} y nuestro equipo tiene tu solicitud. Puedes volver a pedirlo {hours, number} horas después de tu última solicitud.",
+      "requestFailed": "No se pudo enviar tu solicitud. Inténtalo de nuevo.",
+      "balanceUnavailable": "No se pudo cargar tu saldo de créditos.",
+      "runErrors": {
+        "OUT_OF_CREDITS": "Detenido: no hay créditos suficientes para una publicación. Una publicación necesita al menos {cost, number} créditos.",
+        "OUT_OF_CREDITS_MID_RUN": "Detenido: los créditos se agotaron antes de poder programar nada."
+      }
     }
   }
 }

@@ -73,21 +73,6 @@
         "back": "חזרה לסביבות העבודה"
       }
     },
-    "review": {
-      "title": "זה מה שמצאנו",
-      "subtitle": "סרקנו את האתר שלכם וניסחנו טיוטה של אסטרטגיית התוכן הראשית. בדקו, ערכו ואשרו את הפרטים.",
-      "businessSummary": "תקציר העסק",
-      "targetAudience": "קהל יעד",
-      "brandTone": "טון המותג",
-      "detectedIndustry": "התחום שזוהה",
-      "emptySummary": "לא חולץ תקציר.",
-      "emptyAudience": "לא חולץ קהל יעד.",
-      "emptyIndustry": "התחום לא ידוע.",
-      "positioning": "הזדמנות מיצוב",
-      "messaging": "בידול במסרים",
-      "confirm": "אישור ויצירת אסטרטגיה",
-      "saving": "שומר שינויים..."
-    },
     "workspace": {
       "metaTitle": "לוח הבקרה של סביבת העבודה",
       "warningsTitle": "ההגדרה הסתיימה עם בעיות",

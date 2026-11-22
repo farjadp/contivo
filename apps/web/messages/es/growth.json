@@ -73,21 +73,6 @@
         "back": "Volver a workspaces"
       }
     },
-    "review": {
-      "title": "Esto es lo que encontramos",
-      "subtitle": "Hemos analizado tu sitio web y hemos preparado un borrador de tu estrategia de contenido principal. Revisa, edita y confirma estos datos.",
-      "businessSummary": "Resumen del negocio",
-      "targetAudience": "Público objetivo",
-      "brandTone": "Tono de marca",
-      "detectedIndustry": "Sector detectado",
-      "emptySummary": "No se extrajo ningún resumen.",
-      "emptyAudience": "No se extrajo ningún público.",
-      "emptyIndustry": "Sector desconocido.",
-      "positioning": "Oportunidad de posicionamiento",
-      "messaging": "Diferenciación del mensaje",
-      "confirm": "Confirmar y generar estrategia",
-      "saving": "Guardando cambios..."
-    },
     "workspace": {
       "metaTitle": "Dashboard del workspace",
       "warningsTitle": "La configuración terminó con problemas",

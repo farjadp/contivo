@@ -18,6 +18,10 @@
         "contact": {
           "title": "Contacto",
           "body": "Si esta página no responde a tu pregunta, la atiende una persona."
+        },
+        "disclaimer": {
+          "title": "Aviso legal",
+          "body": "Lo que el sitio y el producto no prometen."
         }
       }
     },
@@ -254,6 +258,94 @@
           "blocks": [
             "Si modificamos estos términos, cambiará la fecha de la parte superior. Si el cambio es relevante, te enviaremos un correo al menos 14 días antes de que entre en vigor. Si sigues usando Contivo después de esa fecha, aceptas los nuevos términos. Si no los aceptas, puedes cerrar tu cuenta.",
             "Las preguntas sobre estos términos se envían a {email}."
+          ]
+        }
+      ]
+    },
+    "disclaimer": {
+      "meta": {
+        "title": "Aviso legal — Contivo",
+        "description": "Lo que Contivo y este sitio no prometen: no es asesoramiento profesional, la IA puede equivocarse, las estimaciones son estimaciones, no hay resultados garantizados y los nombres de otras empresas se usan solo para comparar."
+      },
+      "eyebrow": "Aviso legal",
+      "headline": "Lo que <accent>no</accent> prometemos.",
+      "intro": "Esta página explica los límites de lo que prometen Contivo y este sitio web. Complementa los Términos de uso, que son el acuerdo entre tú y {entity}. Si ambos difieren, prevalecen los Términos.",
+      "summary": [
+        "Nada de lo que hay en este sitio es asesoramiento legal, financiero ni de ningún otro tipo profesional.",
+        "Contivo escribe con IA. Puede equivocarse, y lo que se publica con tu nombre es responsabilidad tuya.",
+        "Los hallazgos sobre la competencia y las puntuaciones de posicionamiento son estimaciones a partir de información pública, no datos medidos.",
+        "No se garantiza ningún resultado de posicionamiento, tráfico, contactos ni ventas.",
+        "Los nombres de otras empresas aparecen solo para comparar, con datos tomados de sus propias páginas en la fecha indicada."
+      ],
+      "sections": [
+        {
+          "id": "advice",
+          "title": "No es asesoramiento profesional",
+          "blocks": [
+            "Los artículos, guías y comparativas de este sitio y del blog de Contivo son información general sobre marketing de contenidos. No son asesoramiento legal, fiscal, financiero, de inversión ni de ningún otro tipo profesional. Si una decisión depende de tu situación concreta, consulta a un profesional cualificado.",
+            "Lo que Contivo escribe para tu negocio es contenido de marketing. Si trata temas legales, financieros, de salud u otros sectores regulados, pide a alguien cualificado que lo revise antes de publicarlo."
+          ]
+        },
+        {
+          "id": "ai",
+          "title": "Lo que produce la IA",
+          "blocks": [
+            "Contivo escribe con modelos de IA de proveedores externos. Los modelos se equivocan: un dato erróneo, un detalle desactualizado, una afirmación que tu negocio no puede respaldar. El filtro de calidad está diseñado para rechazar estadísticas, estudios e historias de clientes inventados, pero no detecta todos los errores. Además, lo que produce la IA puede parecerse mucho a textos ya existentes, así que comprueba que lo que publicas no copia el trabajo de otra persona.",
+            "De forma predeterminada, Autopilot publica sin preguntarte: las publicaciones que superan el filtro de calidad salen antes de que las hayas leído. Activa la aprobación si quieres ver cada una antes. Los Términos de uso dan más detalles en «Lo que escribe la IA»."
+          ]
+        },
+        {
+          "id": "estimates",
+          "title": "Las estimaciones son estimaciones",
+          "blocks": [
+            "El descubrimiento de competidores, los gráficos de posicionamiento, los hallazgos de palabras clave y el informe de estrategia se elaboran a partir de información pública y de la lectura que hace el modelo de ella. Un competidor marcado como «verificado» es una empresa cuya web responde, no un rival confirmado. La puntuación de un gráfico es la estimación del modelo, que se muestra con su razonamiento, no una medición.",
+            "Los volúmenes de búsqueda proceden de un proveedor de datos conectado. Cuando no hay ninguno disponible, Contivo no muestra ninguna cifra en lugar de una estimación."
+          ]
+        },
+        {
+          "id": "results",
+          "title": "Sin resultados garantizados",
+          "blocks": [
+            "Contivo te ayuda a publicar con constancia y de acuerdo con tu estrategia. No garantiza ningún posicionamiento, tráfico, seguidores, contactos, ventas ni otro resultado de negocio, y nada de lo que hay en este sitio debe entenderse como una promesa de ello."
+          ]
+        },
+        {
+          "id": "comparisons",
+          "title": "Comparativas y nombres de otras empresas",
+          "blocks": [
+            "La página de comparativa nombra otros productos para describir categorías de herramientas. Esos datos se tomaron de las páginas públicas de cada empresa en la fecha que allí se indica. Puede que hayan cambiado desde entonces, y esas empresas no han revisado ni respaldado la comparativa. Consulta sus sitios antes de decidir. Cómo describimos el lugar que ocupa Contivo, y en qué se queda corto, es nuestra propia opinión, no una afirmación de hecho sobre esos productos.",
+            "Los nombres de productos y las marcas pertenecen a sus propietarios. Se usan aquí solo para identificar los productos comparados, y su uso no implica ninguna afiliación con Contivo ni respaldo a Contivo."
+          ]
+        },
+        {
+          "id": "third-party",
+          "title": "Otras plataformas y enlaces",
+          "blocks": [
+            "Contivo publica a través de plataformas de otras empresas, como LinkedIn. Sus normas, su disponibilidad y su acceso pueden cambiar, y una publicación puede fallar o ser eliminada por motivos ajenos a nuestro control.",
+            "Los enlaces a otros sitios web están ahí por comodidad. No controlamos esos sitios ni somos responsables de lo que dicen.",
+            "Contivo no está afiliado a LinkedIn ni a ninguna otra plataforma en la que publica, ni cuenta con su respaldo."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Acceso anticipado",
+          "blocks": [
+            "Contivo está en acceso anticipado. Las funciones, los planes y los precios que se describen en este sitio pueden cambiar, y lo que aparece como «próximamente» aún no está disponible. El sitio describe lo que funciona en la fecha de su última actualización."
+          ]
+        },
+        {
+          "id": "accuracy",
+          "title": "Exactitud de este sitio",
+          "blocks": [
+            "Procuramos que este sitio sea exacto y esté al día, pero puede contener errores o estar desactualizado.",
+            "Si una traducción de esta página difiere de la versión en inglés, prevalece la versión en inglés."
+          ]
+        },
+        {
+          "id": "questions",
+          "title": "Preguntas",
+          "blocks": [
+            "Si algo de lo que hay aquí no está claro, o crees que algo de este sitio es incorrecto, escribe a {email}."
           ]
         }
       ]

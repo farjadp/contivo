@@ -16,7 +16,8 @@
       "twitter": "X (Twitter)",
       "instagram": "Instagram",
       "blog": "בלוג",
-      "email": "אימייל"
+      "email": "אימייל",
+      "telegram": "Telegram"
     },
     "goals": {
       "authority": "סמכות מקצועית",
@@ -56,7 +57,8 @@
       "linkedin": "LinkedIn",
       "twitter": "Twitter / X",
       "email": "אימייל",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "telegram": "Telegram"
     },
     "timezones": {
       "America/Toronto": "שעון החוף המזרחי (ET)",
@@ -246,6 +248,7 @@
       "generatePreview": "יצירת תצוגה מקדימה",
       "generatingPreview": "יוצרים תצוגה מקדימה...",
       "addToPipeline": "הוספה לצנרת",
+      "addPreviewToPipeline": "הוספת הטיוטה הזו לצנרת",
       "addedToPipeline": "נוסף לצנרת",
       "contentPreview": "תצוגה מקדימה של התוכן",
       "closePreview": "סגירת התצוגה המקדימה",

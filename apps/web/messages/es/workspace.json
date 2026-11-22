@@ -13,6 +13,7 @@
         "why": "Acepta los competidores que de verdad lo son y genera los gráficos de posicionamiento. Las ideas nacen de los huecos que salen a la luz.",
         "actionDiscover": "Descubre y acepta al menos 2 competidores",
         "actionCharts": "Genera las matrices de posicionamiento",
+        "actionRerunCharts": "Volver a generar los gráficos con tus competidores aceptados",
         "detailDone": "{charts, number} gráficos · {competitors, number} competidores aceptados",
         "detailPartial": "{accepted, number} de {total, number} competidores aceptados · aún sin gráficos",
         "detailNone": "Aún no se han descubierto competidores"

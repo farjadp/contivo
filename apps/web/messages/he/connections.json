@@ -41,7 +41,9 @@
         "facebookLabel": "דף Facebook",
         "facebookDescription": "פרסום פוסטים ושיתופי קישורים בדף <bdi>Facebook</bdi> שאתם מנהלים.",
         "tiktokLabel": "TikTok",
-        "tiktokDescription": "פרסום קרוסלות תמונות וסרטונים בחשבון ה-<bdi>TikTok</bdi> שלכם."
+        "tiktokDescription": "פרסום קרוסלות תמונות וסרטונים בחשבון ה-<bdi>TikTok</bdi> שלכם.",
+        "telegramLabel": "Telegram",
+        "telegramDescription": "פרסום בערוץ או בקבוצה ב-<bdi>Telegram</bdi> שאתם מנהלים."
       },
       "unavailableTitle": "ל-{platform} אין פרטי API בהתקנה הזו.",
       "unavailableDescription": "לא הוגדר בהתקנה הזו — עדיין אין פרטי API.",
@@ -52,7 +54,8 @@
       "permissionsTitle": "ההרשאות המבוקשות",
       "securityNote": "אסימון הגישה שלכם מוצפן ונשמר בצורה מאובטחת. הוא אף פעם לא נחשף לצד הלקוח. אפשר לבטל את הגישה בכל רגע.",
       "preparing": "מכין…",
-      "continueOAuth": "המשך ל-OAuth של {platform}"
+      "continueOAuth": "המשך ל-OAuth של {platform}",
+      "telegramUnavailable": "עדיין לא הופעל."
     },
     "accounts": {
       "title": "חשבונות מחוברים",
@@ -81,12 +84,19 @@
         "revoked": "הגישה לחשבון <bdi>{platform}</bdi> הזה בוטלה. התחברו מחדש כדי לפרסם בו שוב.",
         "pendingReauth": "<bdi>{platform}</bdi> מבקש שתתחברו שוב לפני ש-<bdi>Contivo</bdi> יוכל לפרסם.",
         "failed": "החיבור ל-<bdi>{platform}</bdi> הפסיק לעבוד. התחברו מחדש כדי לפרסם בו שוב.",
-        "unsupported": "החיבור הזה ל-<bdi>{platform}</bdi> הפסיק לעבוד, ועדיין אי אפשר לחבר אותו מחדש מהדף הזה."
+        "unsupported": "החיבור הזה ל-<bdi>{platform}</bdi> הפסיק לעבוד, ועדיין אי אפשר לחבר אותו מחדש מהדף הזה.",
+        "telegramBotRemoved": "הבוט של Contivo הוסר מהערוץ הזה, ולכן פוסטים אליו ייכשלו. התחברו מחדש כדי להחזיר את הבוט.",
+        "telegramBotRightsLost": "הבוט של Contivo איבד את ההרשאה לפרסם בערוץ הזה, ולכן פוסטים אליו ייכשלו. התחברו מחדש כדי להחזיר את ההרשאה."
       },
       "errors": {
         "disconnect": "לא הצלחנו לנתק את החשבון הזה.",
         "setDefault": "לא הצלחנו להגדיר את החשבון הזה כברירת מחדל.",
         "reconnect": "לא הצלחנו להתחיל את החיבור מחדש."
+      },
+      "telegramChatType": {
+        "channel": "ערוץ",
+        "group": "קבוצה",
+        "supergroup": "קבוצה"
       }
     },
     "rules": {
@@ -196,6 +206,67 @@
       "keyCopySnippet": "העתקת הקוד",
       "keyStore": "שמרו את המפתח באתר שלכם כ-<code>CONTIVO_API_KEY</code> — בצד השרת בלבד.",
       "keySinglePost": "פוסט בודד: <code>/api/v1/posts/{slug}</code>"
+    },
+    "telegram": {
+      "stepOf": "שלב {step, number} מתוך {total, number}",
+      "starting": "מכינים את הקישור שלכם ל-Telegram…",
+      "openTitle": "פתחו את הבוט של Contivo ב-Telegram",
+      "openBody": "הקישו על Start בצ׳אט שייפתח. הדף הזה יעבור לשלב הבא בעצמו.",
+      "openButton": "פתיחת Telegram",
+      "waitingStart": "ממתינים שתקישו על Start…",
+      "chooseTitle": "בחרו את הערוץ שלכם",
+      "chooseBody": "ב-Telegram, הקישו על \"Choose a channel\" ובחרו את הערוץ שלכם. הבוט של Contivo יתווסף כמנהל שיכול רק לפרסם הודעות.",
+      "waitingChoice": "ממתינים לבחירה שלכם ב-Telegram…",
+      "openAgain": "פתיחת Telegram שוב",
+      "usernameLink": "הערוץ שלי ציבורי והבוט כבר מנהל בו",
+      "usernameTitle": "חיבור ערוץ ציבורי",
+      "usernameBody": "הפכו את הבוט של Contivo למנהל עם הרשאה לפרסם הודעות, ואז הזינו את שם המשתמש הציבורי של הערוץ.",
+      "usernameLabel": "שם המשתמש של הערוץ",
+      "usernameSubmit": "חיפוש הערוץ",
+      "usernameBack": "חזרה לבחירה ב-Telegram",
+      "codeTitle": "הזינו את הקוד",
+      "codeBody": "הזינו את הקוד בן 6 הספרות שהבוט שלח לכם ב-Telegram.",
+      "codeLabel": "קוד",
+      "codeSubmit": "אישור",
+      "attemptsLeft": "{count, plural, one {נותר ניסיון אחד.} two {נותרו 2 ניסיונות.} other {נותרו # ניסיונות.}}",
+      "working": "בודקים…",
+      "connectedTitle": "Telegram מחובר",
+      "connectedBody": "Contivo יפרסם ב-<bdi>{name}</bdi>.",
+      "chatType": {
+        "channel": "ערוץ",
+        "group": "קבוצה",
+        "supergroup": "קבוצה"
+      },
+      "done": "סיום",
+      "expiredTitle": "תוקף הקישור הזה פג",
+      "expiredBody": "קישור חיבור עובד רק כמה דקות. התחילו מחדש כדי לקבל קישור חדש.",
+      "failedTitle": "החיבור נעצר",
+      "startAgain": "התחלה מחדש",
+      "retry": "ניסיון נוסף",
+      "errors": {
+        "bot_not_admin": "הבוט של Contivo עדיין לא יכול לפרסם שם. הפכו אותו למנהל עם הרשאה לפרסם הודעות, ואז בחרו שוב את הערוץ.",
+        "user_not_admin": "חשבון ה-Telegram שלכם צריך להיות מנהל שיכול לפרסם בערוץ הזה.",
+        "chat_not_found": "Telegram לא מצא ערוץ או קבוצה ציבוריים עם שם המשתמש הזה, או שהבוט לא נמצא בהם.",
+        "not_a_channel_or_group": "זה לא ערוץ ולא קבוצה. בחרו ערוץ או קבוצה.",
+        "telegram_unavailable": "Telegram לא ענה. נסו שוב בעוד דקה.",
+        "too_many_attempts": "הוזן קוד שגוי יותר מדי פעמים. התחילו מחדש כדי לקבל קוד חדש.",
+        "wrong_code": "הקוד הזה לא נכון. בדקו את ההודעה האחרונה מהבוט.",
+        "not_pending": "עדיין אין ערוץ שממתין לקוד. בחרו קודם את הערוץ שלכם ב-Telegram.",
+        "start_bot_first": "פתחו את Telegram והקישו קודם על Start בבוט.",
+        "invalid_username": "הזינו את שם המשתמש הציבורי של הערוץ, זה שמתחיל ב-@.",
+        "session_not_found": "תוקף קישור החיבור הזה פג. התחילו מחדש.",
+        "telegram_not_configured": "Telegram עדיין לא הופעל ב-Contivo.",
+        "store_unavailable": "אי אפשר להתחבר כרגע. נסו שוב בעוד דקה.",
+        "session_expired": "ההתחברות שלכם ל-Contivo הסתיימה. היכנסו שוב.",
+        "forbidden": "אין לכם גישה לסביבת העבודה הזו.",
+        "unreachable": "לא הצלחנו להגיע לשירות הפרסום. נסו שוב בעוד דקה.",
+        "api_error": "משהו השתבש אצלנו. נסו שוב בעוד דקה.",
+        "already_pending": "קוד כבר בדרך ל-Telegram שלכם. הזינו את הקוד הזה כאן. כדי לחבר ערוץ אחר, התחילו מחדש.",
+        "session_finished": "ניסיון החיבור הזה הסתיים. התחילו מחדש כדי לקבל קישור חדש.",
+        "too_many_lookups": "יותר מדי חיפושי ערוצים בזמן קצר. בחרו את הערוץ ב-Telegram במקום זאת, או נסו שוב מאוחר יותר.",
+        "too_many_codes": "הבוט כבר שלח שלושה קודים בניסיון הזה ולא ישלח עוד. התחילו מחדש כדי לקבל קישור חדש.",
+        "denied": "מישהו הקיש \"This wasn't me\" ב-Telegram, ולכן שום דבר לא חובר. אם זה הייתם אתם בטעות, התחילו מחדש."
+      }
     }
   }
 }
