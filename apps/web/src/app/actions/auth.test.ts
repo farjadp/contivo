@@ -65,7 +65,7 @@ describe('register', () => {
     expect(writeActivityLogMock).toHaveBeenCalledWith({
       userId: 'user-1',
       action: 'USER_SIGNED_UP',
-      detail: { locale: 'fa', cohort: null },
+      detail: { locale: 'fa', cohort: null, method: 'password' },
     });
     expect(redirectMock).toHaveBeenCalledWith({ href: '/dashboard', locale: 'fa' });
   });
@@ -77,7 +77,7 @@ describe('register', () => {
 
     expect(prismaMock.user.create.mock.calls[0][0].data.cohort).toBe('mentee-nov26');
     expect(writeActivityLogMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'USER_SIGNED_UP', detail: { locale: 'fa', cohort: 'mentee-nov26' } }),
+      expect.objectContaining({ action: 'USER_SIGNED_UP', detail: { locale: 'fa', cohort: 'mentee-nov26', method: 'password' } }),
     );
   });
 
@@ -95,7 +95,7 @@ describe('register', () => {
     expect(prismaMock.user.create).toHaveBeenCalledTimes(1);
     expect(prismaMock.user.create.mock.calls[0][0].data.cohort).toBeUndefined();
     expect(writeActivityLogMock).toHaveBeenCalledWith(
-      expect.objectContaining({ action: 'USER_SIGNED_UP', detail: { locale: 'fa', cohort: null } }),
+      expect.objectContaining({ action: 'USER_SIGNED_UP', detail: { locale: 'fa', cohort: null, method: 'password' } }),
     );
   });
 
@@ -124,7 +124,7 @@ describe('login', () => {
     expect(writeActivityLogMock).toHaveBeenCalledWith({
       userId: 'user-1',
       action: 'USER_SIGNED_IN',
-      detail: { locale: 'fa' },
+      detail: { locale: 'fa', method: 'password' },
     });
     expect(writeActivityLogMock.mock.invocationCallOrder[0]).toBeLessThan(redirectMock.mock.invocationCallOrder[0]);
   });
