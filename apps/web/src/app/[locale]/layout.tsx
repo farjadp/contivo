@@ -2,33 +2,55 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
-import {
-  Bricolage_Grotesque,
-  IBM_Plex_Mono,
-  IBM_Plex_Sans,
-  IBM_Plex_Sans_Hebrew,
-  Inter,
-  JetBrains_Mono,
-  Vazirmatn,
-} from 'next/font/google';
+import localFont from 'next/font/local';
 
 import { GlobalHeader } from '@/components/layout/global-header';
 import { TimezoneProbe } from '@/components/layout/timezone-probe';
 import { dirFor, routing } from '@/i18n/routing';
 import '../globals.css';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
+/*
+  Every face is self-hosted from src/fonts (see the README there). next/font's
+  Google loader fetches and parses Google's CSS at build time, and that parse
+  failed `next build` on roughly two runs in three (loader.js:122, "reading
+  '1'" of null), which would have made Railway deploys fail at random. The
+  files are the same OFL faces; weights and variables are unchanged.
+*/
+const inter = localFont({
+  src: '../../fonts/inter-latin-wght.woff2',
+  weight: '100 900',
+  variable: '--font-inter',
+});
+const mono = localFont({
+  src: '../../fonts/jetbrains-mono-latin-wght.woff2',
+  weight: '100 800',
+  variable: '--font-mono',
+});
 
 /** The signed-in surface's text and numbers (Chalk & Saffron). */
-const plex = IBM_Plex_Sans({ subsets: ['latin'], weight: ['400', '500', '600'], variable: '--font-plex' });
-const plexMono = IBM_Plex_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--font-plex-mono' });
+const plex = localFont({
+  src: [
+    { path: '../../fonts/ibm-plex-sans-latin-400.woff2', weight: '400', style: 'normal' },
+    { path: '../../fonts/ibm-plex-sans-latin-500.woff2', weight: '500', style: 'normal' },
+    { path: '../../fonts/ibm-plex-sans-latin-600.woff2', weight: '600', style: 'normal' },
+  ],
+  variable: '--font-plex',
+});
+const plexMono = localFont({
+  src: [
+    { path: '../../fonts/ibm-plex-mono-latin-400.woff2', weight: '400', style: 'normal' },
+    { path: '../../fonts/ibm-plex-mono-latin-500.woff2', weight: '500', style: 'normal' },
+  ],
+  variable: '--font-plex-mono',
+});
 
 /** Display voice: an editorial grotesque with real character, not a UI sans blown up. */
-const display = Bricolage_Grotesque({
-  subsets: ['latin'],
+/* Variable in weight and optical size; the browser applies opsz from the
+   font size on its own (font-optical-sizing: auto). */
+const display = localFont({
+  src: '../../fonts/bricolage-grotesque-latin-opsz-wght.woff2',
+  weight: '200 800',
   variable: '--font-display',
-  axes: ['opsz'],
 });
 
 /*
@@ -37,8 +59,9 @@ const display = Bricolage_Grotesque({
   Persian surface — body and display — at nine real weights, so nothing on the
   Persian side is ever faux-bold.
 */
-const vazir = Vazirmatn({
-  subsets: ['arabic', 'latin'],
+const vazir = localFont({
+  src: '../../fonts/vazirmatn-wght.woff2',
+  weight: '100 900',
   variable: '--font-vazir',
   display: 'swap',
 });
@@ -48,9 +71,13 @@ const vazir = Vazirmatn({
   display, sans and Plex variables at this face, the way Vazirmatn carries /fa.
   Not preloaded: only /he needs it.
 */
-const plexHebrew = IBM_Plex_Sans_Hebrew({
-  subsets: ['hebrew', 'latin'],
-  weight: ['400', '500', '600', '700'],
+const plexHebrew = localFont({
+  src: [
+    { path: '../../fonts/ibm-plex-sans-hebrew-400.woff2', weight: '400', style: 'normal' },
+    { path: '../../fonts/ibm-plex-sans-hebrew-500.woff2', weight: '500', style: 'normal' },
+    { path: '../../fonts/ibm-plex-sans-hebrew-600.woff2', weight: '600', style: 'normal' },
+    { path: '../../fonts/ibm-plex-sans-hebrew-700.woff2', weight: '700', style: 'normal' },
+  ],
   variable: '--font-plex-hebrew',
   display: 'swap',
   preload: false,
