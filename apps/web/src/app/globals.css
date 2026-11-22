@@ -191,6 +191,23 @@
   }
 }
 
+/*
+  Chinese uses the CJK face the reader's device already has, not a web font.
+  Every current OS ships one (PingFang SC on Apple, Microsoft YaHei on
+  Windows, Noto Sans CJK on Android and Linux), most Chinese sites do the same,
+  and a CJK web font is megabytes. It was Noto Sans SC through next/font until
+  22 Nov 2026; that loader failed `next build` on 2 of 3 runs while parsing
+  Google's CSS, which would have made deploys fail at random.
+
+  Defined on :root, not only under [lang='zh'], because the Plex stacks in
+  tailwind.config.ts name var(--font-cjk) on every locale, and an undefined
+  var() would invalidate the whole font-family declaration.
+*/
+:root {
+  --font-cjk: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans CJK SC', 'Source Han Sans SC',
+    'Noto Sans SC';
+}
+
 /* ── Arabic and Chinese surfaces (site-only locales) ─────────────────────────
    The same rules Persian needs, for the same reasons: a font that has the
    script, for display as well as body; no tracking (it breaks Arabic joining
