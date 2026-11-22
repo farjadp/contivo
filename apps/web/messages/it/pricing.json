@@ -7,8 +7,8 @@
     "headline": "Paghi in base a quanto lavora <accent>senza</accent> di te.",
     "intro": "Brand, post e immagini al mese. Nessun costo per utente: il punto è proprio che non serve nessuno davanti allo schermo.",
     "earlyAccess": {
-      "lead": "Accesso anticipato: per ora non si paga nulla.",
-      "body": "La fatturazione non è ancora partita, quindi tutto ciò che è pronto è gratis finché lo mettiamo alla prova. Questi sono i prezzi da quando partirà, e il piano lo scegli allora. Oggi non chiediamo nessuna carta."
+      "lead": "Accesso anticipato: i nuovi account per ora non pagano nulla.",
+      "body": "La fatturazione per i nuovi iscritti non è ancora partita, quindi tutto ciò che è pronto è gratis finché lo mettiamo alla prova. Questi sono i prezzi da quando partirà, e il piano lo scegli allora. Oggi non chiediamo nessuna carta."
     },
     "mostUseful": "Il più utile",
     "perMonth": "/ mese",
@@ -81,7 +81,7 @@
       },
       "cancel": {
         "q": "Posso disdire?",
-        "a": "Sì, quando vuoi. Il piano resta attivo fino alla fine del periodo pagato. Oggi non c'è niente da disdire, perché la fatturazione non è ancora partita."
+        "a": "Sì, quando vuoi. Il piano resta attivo fino alla fine del periodo pagato. Un nuovo account oggi non ha niente da disdire, perché la fatturazione non è ancora partita."
       },
       "pay": {
         "q": "Come pagherò?",

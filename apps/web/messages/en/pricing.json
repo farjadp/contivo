@@ -7,8 +7,8 @@
     "headline": "Priced by how much runs <accent>without</accent> you.",
     "intro": "Brands, posts and images a month. No per-seat fees: the point is that nobody has to sit in the seat.",
     "earlyAccess": {
-      "lead": "Early access: nothing is charged yet.",
-      "body": "Billing has not started, so everything that is built is free while we prove it. These are the prices once it starts, and you pick a plan then. No card is asked for today."
+      "lead": "Early access: new accounts are not charged yet.",
+      "body": "Billing has not started for new sign-ups, so everything that is built is free while we prove it. These are the prices once it starts, and you pick a plan then. No card is asked for today."
     },
     "mostUseful": "Most useful",
     "perMonth": "/ month",
@@ -81,7 +81,7 @@
       },
       "cancel": {
         "q": "Can I cancel?",
-        "a": "Yes, any time. The plan runs to the end of the period you paid for. Today there is nothing to cancel, because billing has not started."
+        "a": "Yes, any time. The plan runs to the end of the period you paid for. A new account has nothing to cancel today, because billing has not started."
       },
       "pay": {
         "q": "How will I pay?",
