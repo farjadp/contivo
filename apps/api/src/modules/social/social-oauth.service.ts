@@ -271,7 +271,10 @@ export class SocialOAuthService {
    * mismatched attempt (a victim's browser landing on an attacker's flow)
    * destroys it and the attacker cannot finalize it afterwards.
    */
-  async finalizeConnect(ticket: string, sessionUserId: string): Promise<{ platform: Platform; accounts: number }> {
+  async finalizeConnect(
+    ticket: string,
+    sessionUserId: string,
+  ): Promise<{ platform: Platform; accounts: number; workspaceId: string }> {
     if (!ticket || typeof ticket !== 'string') throw new BadRequestException('ticket is required.');
     const raw = await this.store.take(pendingKey(ticket));
     if (!raw) throw new GoneException('This connection attempt expired or was already used. Connect again.');
@@ -308,7 +311,10 @@ export class SocialOAuthService {
     this.logger.log(
       `OAuth connected: ${pending.platform} workspace=${pending.workspaceId} accounts=${pending.accounts.length}`,
     );
-    return { platform: pending.platform, accounts: pending.accounts.length };
+    // workspaceId came from the signed handoff, through the signed state and
+    // the server-side pending record, and was re-checked just above. The web
+    // uses it to return the customer to the workspace they connected (B17).
+    return { platform: pending.platform, accounts: pending.accounts.length, workspaceId: pending.workspaceId };
   }
 
   private sameNonce(a: string, b: string): boolean {

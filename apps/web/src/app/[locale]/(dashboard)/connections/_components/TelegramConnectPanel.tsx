@@ -460,6 +460,9 @@ export function TelegramConnectPanel({ workspaceId, onClose }: TelegramConnectPa
       onSubmitCode={() => void runAction(() => confirmTelegramConnect(start!.sessionId, normalizeCodeInput(code)))}
       onRestart={() => void begin(true)}
       onDone={() => {
+        // Name the workspace in the URL (B17): a bare refresh re-resolves the
+        // page, which may land on another workspace than the one connected.
+        router.replace({ pathname: '/connections', query: { tab: 'social', workspaceId } });
         router.refresh();
         onClose();
       }}
