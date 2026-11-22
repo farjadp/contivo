@@ -82,7 +82,10 @@ function Hero() {
       </div>
       {/* The visitor's own address goes in, a week comes out: the result,
           moving. The real capture is in step 3 below. */}
-      <div className="motion-safe:animate-fade-in">
+      {/* Painted at full opacity from the first frame: a fade from 0 left it
+          near-invisible for seconds on a busy tab (same trap as the H1, #34).
+          `rise` only moves it. */}
+      <div className="motion-safe:animate-rise motion-safe:[animation-delay:280ms]">
         <LiveWeek />
       </div>
     </section>
