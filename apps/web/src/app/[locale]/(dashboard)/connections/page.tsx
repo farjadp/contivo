@@ -42,7 +42,7 @@ export async function generateMetadata({
 // ─── Page Props ───────────────────────────────────────────────────────────────
 
 type Props = {
-  searchParams: Promise<{ tab?: string; workspaceId?: string; pending?: string; connect?: string }>;
+  searchParams: Promise<{ tab?: string; workspaceId?: string; pending?: string; connect?: string; error?: string }>;
 };
 
 // ─── Page Component ───────────────────────────────────────────────────────────
@@ -65,10 +65,14 @@ export default async function ConnectionsPage({ searchParams }: Props) {
       locale: await getLocale(),
     });
   }
+  // ?error=<code> comes straight from the API callback (denied, expired,
+  // replayed, platform failure). The code itself is only for logs/support.
   const connectResult =
     params.connect === 'ok' || params.connect === 'foreign' || params.connect === 'failed'
       ? params.connect
-      : null;
+      : params.error
+        ? 'failed'
+        : null;
   const activeMainTab = params.tab === 'websites' ? 'websites' : 'social';
 
   // Resolve a REAL workspace. This used to fall back to session.userId, which

@@ -78,6 +78,27 @@ interface PendingConnect {
 const pendingKey = (ticket: string) => `social:oauth-pending:${ticket}`;
 const nonceKey = (nonce: string) => `social:oauth-state:${nonce}`;
 
+/** Every platform call in the connect flow gives up after this long. */
+const PLATFORM_TIMEOUT_MS = 10_000;
+const platformSignal = () => AbortSignal.timeout(PLATFORM_TIMEOUT_MS);
+
+/** Platform error bodies go to our logs only, and never in full. */
+const capped = (text: string) => text.slice(0, 300);
+
+/**
+ * A callback failure with a stable, non-sensitive code. The controller sends
+ * only the code to the browser (/connections?error=<code>); the message is
+ * for our logs.
+ */
+export class OAuthFlowError extends BadRequestException {
+  constructor(
+    public readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 // ─── Platform config helper ───────────────────────────────────────────────────
 
 type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
@@ -173,17 +194,20 @@ export class SocialOAuthService {
     const { workspaceId, userId, nonce } = stateObj as Partial<StateContext>;
 
     if (stateObj.platform !== platform) {
-      throw new BadRequestException('This sign-in was started for a different platform. Start the connection again.');
+      throw new OAuthFlowError('oauth_platform', 'State was issued for a different platform.');
     }
     if (!workspaceId || !userId || !nonce || !cookieNonce || !this.sameNonce(nonce, cookieNonce)) {
       this.logger.warn(`OAuth callback rejected: nonce cookie missing or mismatched (${platform})`);
-      throw new BadRequestException(
-        'This sign-in did not start in this browser, or it took too long. Start the connection again from the Connections page.',
-      );
+      throw new OAuthFlowError('oauth_browser', 'Nonce cookie missing or does not match the state.');
     }
-    if (!(await this.store.claimOnce(nonceKey(nonce), STATE_TTL_MS + 60_000))) {
-      throw new BadRequestException('This sign-in link was already used. Start the connection again from the Connections page.');
+    let first: boolean;
+    try {
+      first = await this.store.claimOnce(nonceKey(nonce), STATE_TTL_MS + 60_000);
+    } catch (err) {
+      // Fail closed: without the store we cannot prove the state is unused.
+      throw new OAuthFlowError('oauth_unavailable', `OAuth store unavailable: ${capped((err as Error).message)}`);
     }
+    if (!first) throw new OAuthFlowError('oauth_replayed', 'State nonce was already used.');
 
     let accounts: ExchangedAccount[];
     switch (platform) {
@@ -206,7 +230,11 @@ export class SocialOAuthService {
       })),
     };
     const ticket = crypto.randomBytes(24).toString('base64url');
-    await this.store.put(pendingKey(ticket), JSON.stringify(pending), STATE_TTL_MS);
+    try {
+      await this.store.put(pendingKey(ticket), JSON.stringify(pending), STATE_TTL_MS);
+    } catch (err) {
+      throw new OAuthFlowError('oauth_unavailable', `OAuth store unavailable: ${capped((err as Error).message)}`);
+    }
 
     this.logger.log(`OAuth callback parked: ${platform} workspace=${workspaceId} accounts=${accounts.length}`);
     const web = process.env.WEB_APP_URL ?? 'http://localhost:3000';
@@ -313,6 +341,7 @@ export class SocialOAuthService {
 
     // Exchange code for token
     const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      signal: platformSignal(),
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -326,7 +355,7 @@ export class SocialOAuthService {
 
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
-      throw new BadRequestException(`LinkedIn token exchange failed: ${err}`);
+      throw new OAuthFlowError('oauth_exchange', `LinkedIn token exchange failed (${tokenRes.status}): ${capped(err)}`);
     }
 
     const { access_token, refresh_token, expires_in } = await tokenRes.json() as {
@@ -337,10 +366,11 @@ export class SocialOAuthService {
 
     // Fetch user info (OpenID Connect userinfo endpoint)
     const userRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      signal: platformSignal(),
       headers: { Authorization: `Bearer ${access_token}` },
     });
 
-    if (!userRes.ok) throw new BadRequestException('Failed to fetch LinkedIn user info');
+    if (!userRes.ok) throw new OAuthFlowError('oauth_exchange', `LinkedIn userinfo failed (${userRes.status})`);
 
     const user = await userRes.json() as {
       sub: string;      // LinkedIn member URN ID
@@ -397,6 +427,7 @@ export class SocialOAuthService {
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
     const tokenRes = await fetch('https://api.twitter.com/2/oauth2/token', {
+      signal: platformSignal(),
       method: 'POST',
       headers: {
         'Content-Type':  'application/x-www-form-urlencoded',
@@ -412,7 +443,7 @@ export class SocialOAuthService {
 
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
-      throw new BadRequestException(`X token exchange failed: ${err}`);
+      throw new OAuthFlowError('oauth_exchange', `X token exchange failed (${tokenRes.status}): ${capped(err)}`);
     }
 
     const { access_token, refresh_token, expires_in } = await tokenRes.json() as {
@@ -423,6 +454,7 @@ export class SocialOAuthService {
 
     // Fetch user info
     const userRes = await fetch('https://api.twitter.com/2/users/me', {
+      signal: platformSignal(),
       headers: { Authorization: `Bearer ${access_token}` },
     });
     const { data: xUser } = await userRes.json() as { data: { id: string; name: string; username: string } };
@@ -472,20 +504,21 @@ export class SocialOAuthService {
     tokenUrl.searchParams.set('redirect_uri',  redirectUri);
     tokenUrl.searchParams.set('code',          code);
 
-    const tokenRes = await fetch(tokenUrl.toString());
+    const tokenRes = await fetch(tokenUrl.toString(), { signal: platformSignal() });
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
-      throw new BadRequestException(`Facebook token exchange failed: ${err}`);
+      throw new OAuthFlowError('oauth_exchange', `Facebook token exchange failed (${tokenRes.status}): ${capped(err)}`);
     }
 
     const { access_token } = await tokenRes.json() as { access_token: string };
 
     // Get user info
-    const meRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${access_token}`);
+    const meRes = await fetch(`https://graph.facebook.com/v19.0/me?fields=id,name&access_token=${access_token}`, { signal: platformSignal() });
     const fbUser = await meRes.json() as { id: string; name: string };
 
     const pagesRes = await fetch(
       `https://graph.facebook.com/v19.0/${fbUser.id}/accounts?access_token=${access_token}`,
+      { signal: platformSignal() },
     );
     const { data: pages } = await pagesRes.json() as {
       data: Array<{ id: string; name: string; access_token: string }>;
@@ -493,7 +526,7 @@ export class SocialOAuthService {
 
     if (!pages || pages.length === 0) {
       this.logger.warn(`Facebook connected but no pages found for workspace=${workspaceId}`);
-      throw new BadRequestException('No Facebook Pages found. Please ensure you selected a Page during authorization.');
+      throw new OAuthFlowError('oauth_no_pages', 'No Facebook Pages were authorised.');
     }
 
     // One connection per Page the user authorized; finalizeConnect() updates
@@ -535,6 +568,7 @@ export class SocialOAuthService {
 
     // Exchange code for token
     const tokenRes = await fetch('https://open.tiktokapis.com/v2/oauth/token/', {
+      signal: platformSignal(),
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
@@ -548,7 +582,7 @@ export class SocialOAuthService {
 
     if (!tokenRes.ok) {
       const err = await tokenRes.text();
-      throw new BadRequestException(`TikTok token exchange failed: ${err}`);
+      throw new OAuthFlowError('oauth_exchange', `TikTok token exchange failed (${tokenRes.status}): ${capped(err)}`);
     }
 
     const tokenData = await tokenRes.json() as {
@@ -561,7 +595,7 @@ export class SocialOAuthService {
     // Fetch user info
     const userRes = await fetch(
       'https://open.tiktokapis.com/v2/user/info/?fields=display_name,avatar_url',
-      { headers: { Authorization: `Bearer ${tokenData.access_token}` } },
+      { signal: platformSignal(), headers: { Authorization: `Bearer ${tokenData.access_token}` } },
     );
 
     const userJson = await userRes.json() as {
@@ -607,6 +641,7 @@ export class SocialOAuthService {
       const secret = getOAuthStateSecret();
       const key = crypto.createHash('sha256').update(secret).digest();
 
+      if (typeof stateParam !== 'string' || stateParam === '') throw new Error('State missing');
       const packed = Buffer.from(stateParam, 'base64url');
       if (packed.length < 28) throw new Error('State too short');
 
@@ -626,7 +661,7 @@ export class SocialOAuthService {
 
       return payloadObj;
     } catch (err) {
-      throw new BadRequestException(`Invalid OAuth state: ${(err as Error).message}`);
+      throw new OAuthFlowError('oauth_state', `Invalid OAuth state: ${capped((err as Error).message)}`);
     }
   }
 }
