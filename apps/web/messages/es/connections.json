@@ -14,6 +14,13 @@
       "foreign": "No se ha conectado nada: este enlace se inició desde otra cuenta de Contivo. Si no lo iniciaste tú, ignóralo. Para conectar tu propia cuenta, usa el botón Conectar cuenta de abajo.",
       "failed": "La conexión no se completó o ha caducado. No se ha conectado nada. Inténtalo de nuevo."
     },
+    "resume": {
+      "title": "La conexión con {platform} no terminó",
+      "body": "No se conectó nada. Si {platform} te pidió iniciar sesión, puede que haya abierto tu feed en lugar de traerte de vuelta. Seguramente ya has iniciado sesión, así que al intentarlo de nuevo normalmente irás directo a la pantalla de permisos.",
+      "retry": "Volver a conectar {platform}",
+      "retrying": "Abriendo…",
+      "dismiss": "Descartar"
+    },
     "tabs": {
       "social": "Canales sociales",
       "websites": "Sitios web"
@@ -35,23 +42,20 @@
       "close": "Cerrar",
       "platforms": {
         "linkedinLabel": "LinkedIn",
-        "linkedinDescription": "Publica posts de texto y artículos en tu perfil o tu página de empresa de <bdi>LinkedIn</bdi>.",
-        "xLabel": "X (Twitter)",
-        "xDescription": "Publica tweets e hilos en tu cuenta de <bdi>X</bdi>.",
-        "facebookLabel": "Página de Facebook",
-        "facebookDescription": "Publica posts y enlaces en una página de <bdi>Facebook</bdi> que administres.",
-        "tiktokLabel": "TikTok",
-        "tiktokDescription": "Publica carruseles de fotos y vídeos en tu cuenta de <bdi>TikTok</bdi>.",
+        "linkedinDescription": "Publica posts en tu perfil personal de <bdi>LinkedIn</bdi>. Las páginas de empresa aún no están disponibles.",
         "telegramLabel": "Telegram",
         "telegramDescription": "Publica en un canal o grupo de <bdi>Telegram</bdi> que administres."
       },
       "unavailableTitle": "{platform} no tiene credenciales de API en este despliegue.",
       "unavailableDescription": "No está configurado en este despliegue: todavía no hay credenciales de API.",
-      "instagramLabel": "Instagram Business",
-      "instagramNote": "Llega en la fase 2: requiere un pipeline de medios.",
-      "instagramBadge": "Pronto",
+      "soonTitle": "Próximamente",
+      "soon": {
+        "x": "X",
+        "threads": "Threads"
+      },
       "backToList": "Volver a la lista de plataformas",
       "permissionsTitle": "Permisos solicitados",
+      "linkedinSignInHint": "Inicia sesión en LinkedIn en este navegador antes de continuar. Si LinkedIn te pide iniciar sesión a mitad del proceso, a veces abre tu feed en lugar de volver aquí. Si pasa, vuelve a esta página y conecta de nuevo.",
       "securityNote": "Tu token de acceso se cifra y se guarda de forma segura. Nunca se expone en el frontend. Puedes revocar el acceso cuando quieras.",
       "preparing": "Preparando…",
       "continueOAuth": "Continuar a OAuth de {platform}",
@@ -62,7 +66,7 @@
       "subtitle": "Gestiona tus cuentas de redes sociales vinculadas.",
       "connect": "Conectar cuenta",
       "emptyTitle": "Aún no hay cuentas conectadas",
-      "emptyBody": "Conecta <bdi>LinkedIn</bdi>, <bdi>X</bdi> o <bdi>Facebook</bdi> para empezar a publicar directamente desde <bdi>Contivo</bdi>.",
+      "emptyBody": "Conecta tu perfil de <bdi>LinkedIn</bdi> o un canal de <bdi>Telegram</bdi> para empezar a publicar directamente desde <bdi>Contivo</bdi>.",
       "emptyCta": "Conecta tu primera cuenta",
       "defaultBadge": "Predeterminada",
       "synced": "Sincronizada {date}",

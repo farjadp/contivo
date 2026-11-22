@@ -254,7 +254,7 @@ export function ConnectedAccountsSection({
       {accounts.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-rule p-10 text-center">
           <div className="flex justify-center gap-3 mb-4">
-            {(['LINKEDIN', 'X', 'FACEBOOK'] as const).map((p) => {
+            {(['LINKEDIN', 'TELEGRAM'] as const).map((p) => {
               const { Icon, color } = PLATFORM_META[p];
               return (
                 <div key={p} className="w-10 h-10 rounded-full flex items-center justify-center bg-chalk-sunk">

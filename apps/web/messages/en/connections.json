@@ -14,6 +14,13 @@
       "foreign": "Nothing was connected: this link was started from another Contivo account. If you didn't start it, ignore it. To connect your own account, use the Connect Account button below.",
       "failed": "The connection didn't finish or has expired. Nothing was connected. Try again."
     },
+    "resume": {
+      "title": "Your {platform} connection didn't finish",
+      "body": "Nothing was connected. If {platform} asked you to sign in, it may have opened your feed instead of sending you back here. You're probably signed in now, so trying again usually goes straight to the permission screen.",
+      "retry": "Connect {platform} again",
+      "retrying": "Opening…",
+      "dismiss": "Dismiss"
+    },
     "tabs": {
       "social": "Social Channels",
       "websites": "Websites"
@@ -35,23 +42,20 @@
       "close": "Close",
       "platforms": {
         "linkedinLabel": "LinkedIn",
-        "linkedinDescription": "Publish text posts and articles to your <bdi>LinkedIn</bdi> profile or company page.",
-        "xLabel": "X (Twitter)",
-        "xDescription": "Post tweets and threads to your <bdi>X</bdi> account.",
-        "facebookLabel": "Facebook Page",
-        "facebookDescription": "Publish posts and link shares to a <bdi>Facebook</bdi> Page you manage.",
-        "tiktokLabel": "TikTok",
-        "tiktokDescription": "Publish photo carousel posts and videos to your <bdi>TikTok</bdi> account.",
+        "linkedinDescription": "Publish posts to your personal <bdi>LinkedIn</bdi> profile. Company pages are not supported yet.",
         "telegramLabel": "Telegram",
         "telegramDescription": "Post to a <bdi>Telegram</bdi> channel or group you manage."
       },
       "unavailableTitle": "{platform} has no API credentials on this deployment.",
       "unavailableDescription": "Not set up on this deployment — no API credentials yet.",
-      "instagramLabel": "Instagram Business",
-      "instagramNote": "Coming in Phase 2 — requires media pipeline.",
-      "instagramBadge": "Soon",
+      "soonTitle": "Coming soon",
+      "soon": {
+        "x": "X",
+        "threads": "Threads"
+      },
       "backToList": "Back to platform list",
       "permissionsTitle": "Permissions requested",
+      "linkedinSignInHint": "Sign in to LinkedIn in this browser before you continue. If LinkedIn asks you to sign in midway, it sometimes opens your feed instead of coming back here. If that happens, return to this page and connect again.",
       "securityNote": "Your access token is encrypted and stored securely. It is never exposed to the frontend. You can revoke access at any time.",
       "preparing": "Preparing…",
       "continueOAuth": "Continue to {platform} OAuth",
@@ -62,7 +66,7 @@
       "subtitle": "Manage your linked social media accounts.",
       "connect": "Connect Account",
       "emptyTitle": "No accounts connected yet",
-      "emptyBody": "Connect <bdi>LinkedIn</bdi>, <bdi>X</bdi>, or <bdi>Facebook</bdi> to start publishing directly from <bdi>Contivo</bdi>.",
+      "emptyBody": "Connect your <bdi>LinkedIn</bdi> profile or a <bdi>Telegram</bdi> channel to start publishing directly from <bdi>Contivo</bdi>.",
       "emptyCta": "Connect your first account",
       "defaultBadge": "Default",
       "synced": "Synced {date}",

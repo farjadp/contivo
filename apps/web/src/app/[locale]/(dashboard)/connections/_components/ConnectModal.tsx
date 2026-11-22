@@ -12,17 +12,18 @@
  * the bot, pick the channel in Telegram, type back the code). `initialPlatform`
  * opens straight on a platform, for Reconnect on a TELEGRAM row.
  *
- * Phase 2: Add Instagram (requires Meta Business OAuth + media pipeline).
+ * Only live channels are connectable; the rest are listed as coming soon.
  */
 
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight, Send } from 'lucide-react';
+import { X, Linkedin, Twitter, AtSign, Info, ChevronRight, Send } from 'lucide-react';
 
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
 import { getConfiguredPlatforms, type PlatformConfig } from '@/app/actions/social-config';
+import { markConnectAttempt } from '@/lib/connect-attempt';
 
 import { TelegramConnectPanel } from './TelegramConnectPanel';
 
@@ -36,13 +37,18 @@ interface ConnectModalProps {
   initialPlatform?: Platform;
 }
 
-export type Platform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'TIKTOK' | 'TELEGRAM';
+/** Channels a customer can connect and publish to today. */
+export type Platform = 'LINKEDIN' | 'TELEGRAM';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 
 /**
- * Visual identity only. The label and the description are message keys, because
- * "Facebook Page" and "Post tweets and threads…" are copy, not configuration.
+ * Only channels that publish end to end are offered (B12, 22 Nov): a LinkedIn
+ * personal profile and a Telegram channel or group. Everything else is a
+ * non-clickable "coming soon" row, the same list the site footer shows. Do not
+ * add a platform here until it has published for real in production.
+ *
+ * Visual identity only. Labels and descriptions are message keys.
  */
 const PLATFORMS: {
   id: Platform;
@@ -60,34 +66,8 @@ const PLATFORMS: {
     bg: '#EFF7FF',
     border: '#BFDBFE',
     Icon: Linkedin,
-    scopes: ['w_member_social', 'r_basicprofile'],
-  },
-  {
-    id: 'X',
-    key: 'x',
-    color: '#000000',
-    bg: '#F0F0F0',
-    border: '#E5E7EB',
-    Icon: Twitter,
-    scopes: ['tweet.write', 'tweet.read', 'users.read'],
-  },
-  {
-    id: 'FACEBOOK',
-    key: 'facebook',
-    color: '#1877F2',
-    bg: '#EEF4FF',
-    border: '#BFDBFE',
-    Icon: Facebook,
-    scopes: ['pages_manage_posts', 'pages_read_engagement'],
-  },
-  {
-    id: 'TIKTOK',
-    key: 'tiktok',
-    color: '#010101',
-    bg: '#F0F0F0',
-    border: '#E5E7EB',
-    Icon: Music2,
-    scopes: ['video.publish', 'video.upload'],
+    // What the API actually asks for (social-oauth.service.ts linkedInAuthUrl).
+    scopes: ['openid', 'profile', 'email', 'w_member_social'],
   },
   {
     id: 'TELEGRAM',
@@ -99,6 +79,12 @@ const PLATFORMS: {
     // Not OAuth scopes: the admin right Telegram gives the bot in the chosen channel.
     scopes: ['can_post_messages'],
   },
+];
+
+/** Being built (publishing-channels program). Shown, never clickable. */
+const COMING_SOON: { key: string; Icon: React.ElementType }[] = [
+  { key: 'x', Icon: Twitter },
+  { key: 'threads', Icon: AtSign },
 ];
 
 /** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
@@ -133,6 +119,9 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
         setConnectError(result.error);
         return;
       }
+      // LinkedIn's sign-in can drop the way back to us (B13); remember the
+      // attempt so /connections can offer a retry if no result comes back.
+      markConnectAttempt(selected.toLowerCase(), workspaceId);
       window.location.href = result.url;
     });
   };
@@ -205,18 +194,22 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
                 );
               })}
 
-              {/* Instagram coming soon */}
-              <div className="flex items-center gap-4 rounded-2xl border border-dashed border-rule bg-chalk p-4 opacity-70">
-                <div className="w-11 h-11 rounded-xl bg-pink-50 flex items-center justify-center shrink-0">
-                  <span className="text-lg">📸</span>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold text-moss-muted">{t('instagramLabel')}</p>
-                  <p className="text-xs text-moss-muted mt-0.5">{t('instagramNote')}</p>
-                </div>
-                <span className="text-[10px] font-bold text-moss-muted bg-chalk-sunk rounded-full px-2 py-0.5">
-                  {t('instagramBadge')}
-                </span>
+              {/* Coming soon: listed so nobody hunts for them, never clickable */}
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-moss-muted mb-2 uppercase tracking-wide">
+                  {t('soonTitle')}
+                </p>
+                <ul className="flex flex-wrap gap-2" aria-label={t('soonTitle')}>
+                  {COMING_SOON.map(({ key, Icon }) => (
+                    <li
+                      key={key}
+                      className="flex items-center gap-2 rounded-full border border-dashed border-rule bg-chalk px-3 py-1.5 text-xs text-moss-muted select-none"
+                    >
+                      <Icon className="w-3.5 h-3.5" aria-hidden />
+                      <span className="font-semibold">{t(`soon.${key}`)}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
           ) : (
@@ -268,6 +261,10 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
                       ))}
                     </div>
                   </div>
+
+                  {platform!.id === 'LINKEDIN' && (
+                    <p className="text-xs text-moss-muted mb-3">{t('linkedinSignInHint')}</p>
+                  )}
 
                   {/* Security note */}
                   <div className="flex gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-5">

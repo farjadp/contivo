@@ -14,6 +14,13 @@
       "foreign": "Non è stato collegato nulla: questo link è stato avviato da un altro account Contivo. Se non l'hai avviato tu, ignoralo. Per collegare il tuo account usa il pulsante Collega account qui sotto.",
       "failed": "Il collegamento non è stato completato o è scaduto. Non è stato collegato nulla. Riprova."
     },
+    "resume": {
+      "title": "Il collegamento a {platform} non è stato completato",
+      "body": "Non è stato collegato nulla. Se {platform} ti ha chiesto di accedere, potrebbe aver aperto il tuo feed invece di riportarti qui. Probabilmente ora hai già effettuato l'accesso, quindi riprovando di solito arrivi direttamente alla schermata dei permessi.",
+      "retry": "Ricollega {platform}",
+      "retrying": "Apertura…",
+      "dismiss": "Chiudi"
+    },
     "tabs": {
       "social": "Canali social",
       "websites": "Siti web"
@@ -35,23 +42,20 @@
       "close": "Chiudi",
       "platforms": {
         "linkedinLabel": "LinkedIn",
-        "linkedinDescription": "Pubblica post e articoli sul tuo profilo o sulla pagina aziendale <bdi>LinkedIn</bdi>.",
-        "xLabel": "X (Twitter)",
-        "xDescription": "Pubblica post e thread sul tuo account <bdi>X</bdi>.",
-        "facebookLabel": "Pagina Facebook",
-        "facebookDescription": "Pubblica post e link su una Pagina <bdi>Facebook</bdi> che gestisci.",
-        "tiktokLabel": "TikTok",
-        "tiktokDescription": "Pubblica caroselli di foto e video sul tuo account <bdi>TikTok</bdi>.",
+        "linkedinDescription": "Pubblica post sul tuo profilo personale <bdi>LinkedIn</bdi>. Le pagine aziendali non sono ancora supportate.",
         "telegramLabel": "Telegram",
         "telegramDescription": "Pubblica in un canale o gruppo <bdi>Telegram</bdi> che gestisci."
       },
       "unavailableTitle": "{platform} non ha credenziali API in questo deployment.",
       "unavailableDescription": "Non configurato in questo deployment: mancano ancora le credenziali API.",
-      "instagramLabel": "Instagram Business",
-      "instagramNote": "In arrivo nella Fase 2: richiede la pipeline dei contenuti multimediali.",
-      "instagramBadge": "Presto",
+      "soonTitle": "In arrivo",
+      "soon": {
+        "x": "X",
+        "threads": "Threads"
+      },
       "backToList": "Torna all'elenco delle piattaforme",
       "permissionsTitle": "Autorizzazioni richieste",
+      "linkedinSignInHint": "Accedi a LinkedIn in questo browser prima di continuare. Se LinkedIn ti chiede di accedere a metà, a volte apre il tuo feed invece di tornare qui. Se succede, torna su questa pagina e collegati di nuovo.",
       "securityNote": "Il tuo token di accesso è crittografato e conservato in modo sicuro. Non viene mai esposto al frontend. Puoi revocare l'accesso in qualsiasi momento.",
       "preparing": "Preparazione…",
       "continueOAuth": "Continua con l'OAuth di {platform}",
@@ -62,7 +66,7 @@
       "subtitle": "Gestisci i tuoi account social collegati.",
       "connect": "Collega account",
       "emptyTitle": "Ancora nessun account collegato",
-      "emptyBody": "Collega <bdi>LinkedIn</bdi>, <bdi>X</bdi> o <bdi>Facebook</bdi> per iniziare a pubblicare direttamente da <bdi>Contivo</bdi>.",
+      "emptyBody": "Collega il tuo profilo <bdi>LinkedIn</bdi> o un canale <bdi>Telegram</bdi> per iniziare a pubblicare direttamente da <bdi>Contivo</bdi>.",
       "emptyCta": "Collega il tuo primo account",
       "defaultBadge": "Predefinito",
       "synced": "Sincronizzato {date}",

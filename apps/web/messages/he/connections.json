@@ -14,6 +14,13 @@
       "foreign": "שום דבר לא חובר: הקישור הזה נפתח מחשבון Contivo אחר. אם לא אתם התחלתם את התהליך, התעלמו ממנו. כדי לחבר את החשבון שלכם, השתמשו בכפתור 'חיבור חשבון' למטה.",
       "failed": "החיבור לא הושלם או שפג תוקפו. שום דבר לא חובר. נסו שוב."
     },
+    "resume": {
+      "title": "החיבור ל-{platform} לא הושלם",
+      "body": "שום דבר לא חובר. אם {platform} ביקש מכם להתחבר, ייתכן שהוא פתח את הפיד במקום להחזיר אתכם לכאן. סביר שאתם כבר מחוברים עכשיו, ולכן ניסיון נוסף בדרך כלל מוביל ישר למסך ההרשאות.",
+      "retry": "חיבור מחדש ל-{platform}",
+      "retrying": "פותח…",
+      "dismiss": "סגירה"
+    },
     "tabs": {
       "social": "ערוצים חברתיים",
       "websites": "אתרים"
@@ -35,23 +42,20 @@
       "close": "סגירה",
       "platforms": {
         "linkedinLabel": "LinkedIn",
-        "linkedinDescription": "פרסום פוסטים טקסטואליים ומאמרים בפרופיל או בדף החברה שלכם ב-<bdi>LinkedIn</bdi>.",
-        "xLabel": "X (Twitter)",
-        "xDescription": "פרסום ציוצים ושרשורים בחשבון ה-<bdi>X</bdi> שלכם.",
-        "facebookLabel": "דף Facebook",
-        "facebookDescription": "פרסום פוסטים ושיתופי קישורים בדף <bdi>Facebook</bdi> שאתם מנהלים.",
-        "tiktokLabel": "TikTok",
-        "tiktokDescription": "פרסום קרוסלות תמונות וסרטונים בחשבון ה-<bdi>TikTok</bdi> שלכם.",
+        "linkedinDescription": "פרסום פוסטים בפרופיל האישי שלכם ב-<bdi>LinkedIn</bdi>. דפי חברה עדיין לא נתמכים.",
         "telegramLabel": "Telegram",
         "telegramDescription": "פרסום בערוץ או בקבוצה ב-<bdi>Telegram</bdi> שאתם מנהלים."
       },
       "unavailableTitle": "ל-{platform} אין פרטי API בהתקנה הזו.",
       "unavailableDescription": "לא הוגדר בהתקנה הזו — עדיין אין פרטי API.",
-      "instagramLabel": "Instagram Business",
-      "instagramNote": "יגיע בשלב 2 — דורש צנרת מדיה.",
-      "instagramBadge": "בקרוב",
+      "soonTitle": "בקרוב",
+      "soon": {
+        "x": "X",
+        "threads": "Threads"
+      },
       "backToList": "חזרה לרשימת הפלטפורמות",
       "permissionsTitle": "ההרשאות המבוקשות",
+      "linkedinSignInHint": "התחברו ל-LinkedIn בדפדפן הזה לפני שממשיכים. אם LinkedIn מבקש להתחבר באמצע התהליך, לפעמים הוא פותח את הפיד במקום לחזור לכאן. אם זה קורה, חזרו לדף הזה וחברו שוב.",
       "securityNote": "אסימון הגישה שלכם מוצפן ונשמר בצורה מאובטחת. הוא אף פעם לא נחשף לצד הלקוח. אפשר לבטל את הגישה בכל רגע.",
       "preparing": "מכין…",
       "continueOAuth": "המשך ל-OAuth של {platform}",
@@ -62,7 +66,7 @@
       "subtitle": "ניהול החשבונות המקושרים ברשתות החברתיות.",
       "connect": "חיבור חשבון",
       "emptyTitle": "עדיין אין חשבונות מחוברים",
-      "emptyBody": "חברו את <bdi>LinkedIn</bdi>, <bdi>X</bdi> או <bdi>Facebook</bdi> כדי להתחיל לפרסם ישירות מ-<bdi>Contivo</bdi>.",
+      "emptyBody": "חברו את הפרופיל שלכם ב-<bdi>LinkedIn</bdi> או ערוץ <bdi>Telegram</bdi> כדי להתחיל לפרסם ישירות מ-<bdi>Contivo</bdi>.",
       "emptyCta": "חיבור החשבון הראשון",
       "defaultBadge": "ברירת מחדל",
       "synced": "סונכרן {date}",
