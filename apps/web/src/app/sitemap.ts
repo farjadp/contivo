@@ -17,6 +17,7 @@ const PAGES: ReadonlyArray<{ path: string; priority: number; modified?: Date }> 
   { path: '', priority: 1 },
   { path: '/features', priority: 0.8 },
   { path: '/pricing', priority: 0.8 },
+  { path: '/compare', priority: 0.7 },
   { path: '/about', priority: 0.6 },
   { path: '/contact', priority: 0.5 },
   { path: '/docs/site-api', priority: 0.4 },
