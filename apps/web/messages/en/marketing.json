@@ -24,7 +24,8 @@
     "submit": "Read my site",
     "submitting": "Opening…",
     "errorEmpty": "Type the address of the site you want read.",
-    "errorInvalid": "That does not look like a website address."
+    "errorInvalid": "That does not look like a website address.",
+    "hint": "Next is a short sign-up. The address comes with you."
   },
   "home": {
     "actOne": {
@@ -108,7 +109,7 @@
     },
     "close": {
       "headline": "Paste a URL and go back to <accent>work</accent>.",
-      "body": "In under a minute you have a brand memory and a competitive map. From there the queue fills itself, and the only thing it will not do is publish something it could not stand behind.",
+      "body": "Sign up, hand it your address, and it reads your site into a brand memory and a competitive map. From there the queue fills itself, and the only thing it will not do is publish something it could not stand behind.",
       "cta": "Create your workspace",
       "pricing": "See pricing"
     },
@@ -157,7 +158,7 @@
       }
     },
     "steps": {
-      "heading": "What happens when you press Read · ≈ 20 sec",
+      "heading": "What the first read does · ≈ 20 sec",
       "read": "Reading your pages",
       "memory": "Writing your brand memory",
       "competitors": "Finding competitors at your scale",
@@ -246,7 +247,7 @@
     "contact": "Contact",
     "privacy": "Privacy",
     "terms": "Terms",
-    "socialSoon": "X · Instagram · TikTok · Facebook",
+    "socialSoon": "X · Telegram · WordPress · Threads",
     "soon": "Soon",
     "writeTo": "Write to a person",
     "navLabel": "Site",

@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
 import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
+import { finalizeSocialConnect } from '@/app/actions/social-connect';
 import {
   getPublishJobs,
   getSocialConnections,
@@ -41,7 +42,7 @@ export async function generateMetadata({
 // ─── Page Props ───────────────────────────────────────────────────────────────
 
 type Props = {
-  searchParams: Promise<{ tab?: string; workspaceId?: string }>;
+  searchParams: Promise<{ tab?: string; workspaceId?: string; pending?: string; connect?: string; error?: string }>;
 };
 
 // ─── Page Component ───────────────────────────────────────────────────────────
@@ -53,6 +54,25 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   const t = await getTranslations('connections');
 
   const params = await searchParams;
+
+  // Back from a platform's consent screen: confirm the parked connection as
+  // the signed-in user, then drop the one-time ticket from the URL so a
+  // reload, a shared link or a Referer never carries it.
+  if (params.pending) {
+    const result = await finalizeSocialConnect(params.pending);
+    redirect({
+      href: { pathname: '/connections', query: { tab: 'social', connect: result } },
+      locale: await getLocale(),
+    });
+  }
+  // ?error=<code> comes straight from the API callback (denied, expired,
+  // replayed, platform failure). The code itself is only for logs/support.
+  const connectResult =
+    params.connect === 'ok' || params.connect === 'foreign' || params.connect === 'failed'
+      ? params.connect
+      : params.error
+        ? 'failed'
+        : null;
   const activeMainTab = params.tab === 'websites' ? 'websites' : 'social';
 
   // Resolve a REAL workspace. This used to fall back to session.userId, which
@@ -80,6 +100,21 @@ export default async function ConnectionsPage({ searchParams }: Props) {
         <h1 className="text-3xl font-bold tracking-tight text-moss">{t('title')}</h1>
         <p className="text-moss-muted mt-2 text-sm">{t('subtitle')}</p>
       </div>
+
+      {/* ─── Result of a social connect ──────────────────────────────────── */}
+      {connectResult && (
+        <div
+          role="status"
+          className={cn(
+            'rounded-2xl border p-4 text-sm',
+            connectResult === 'ok'
+              ? 'border-green-200 bg-green-50 text-green-800'
+              : 'border-amber-200 bg-amber-50 text-amber-900',
+          )}
+        >
+          {t(`connectResult.${connectResult}`)}
+        </div>
+      )}
 
       {/* ─── No workspace yet ───────────────────────────────────────────── */}
       {!workspace && (

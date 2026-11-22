@@ -107,15 +107,21 @@ export function UrlIntake() {
         </button>
       </div>
 
-      <div className="mt-2 min-h-[1.5rem]">
+      {/* The error and the hint share one line: the hint says what pressing
+          the button leads to (a sign-up, not an instant read), and an error
+          replaces it in place, so the page never jumps. */}
+      <div className="relative mt-2 min-h-[1.5rem]">
         <p
           id="site-error"
           role="alert"
-          className={`text-[14px] text-red-700 transition-opacity duration-200 ${
+          className={`absolute inset-x-0 top-0 text-[14px] text-red-700 transition-opacity duration-200 ${
             error ? 'opacity-100' : 'select-none opacity-0'
           }`}
         >
           {error ?? ' '}
+        </p>
+        <p aria-hidden={error ? true : undefined} className={`text-[14px] leading-snug text-moss-muted ${error ? 'invisible' : ''}`}>
+          {t('hint')}
         </p>
       </div>
     </form>
