@@ -51,6 +51,7 @@ import { ProgressReportTab } from './_components/ProgressReportTab';
 import { SeoIntelligenceTab } from './_components/SeoIntelligenceTab';
 import { ReportsTab } from '@/components/workspace/ReportsTab';
 import { AutopilotTab } from './_components/AutopilotTab';
+import { WorkspaceCreditBalance, WorkspaceCreditBanner } from './_components/WorkspaceCredits';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
 import { LoopRail } from './_components/LoopRail';
@@ -544,6 +545,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           </div>
 
           <div className="flex shrink-0 flex-col items-stretch gap-3 lg:items-end">
+            <WorkspaceCreditBalance />
             <Link
               href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }}
               className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
@@ -593,6 +595,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           </div>
         </div>
       </div>
+
+      <WorkspaceCreditBanner workspaceId={workspace.id} />
 
       {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
       <JourneyGuide workspaceId={workspace.id} journey={journey} />

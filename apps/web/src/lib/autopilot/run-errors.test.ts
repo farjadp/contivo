@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
+import en from '../../../messages/en/tabs-b.json';
+import fa from '../../../messages/fa/tabs-b.json';
+import it_ from '../../../messages/it/tabs-b.json';
 import { AUTOPILOT_RUN_ERROR, autopilotRunErrorCode } from './run-errors';
 
 describe('autopilotRunErrorCode', () => {
@@ -31,5 +34,25 @@ describe('autopilotRunErrorCode', () => {
     expect(autopilotRunErrorCode('')).toBeNull();
     expect(autopilotRunErrorCode(null)).toBeNull();
     expect(autopilotRunErrorCode(undefined)).toBeNull();
+  });
+});
+
+describe('run error copy', () => {
+  // The tab renders t(`runErrors.${code}`); a code without copy would print its key path.
+  it.each([
+    ['en', en],
+    ['fa', fa],
+    ['it', it_],
+  ])('%s has a message for every code', (_locale, catalogue) => {
+    const runErrors = (catalogue as { tabsB: { credits: { runErrors: Record<string, string> } } }).tabsB.credits
+      .runErrors;
+    for (const code of Object.values(AUTOPILOT_RUN_ERROR)) {
+      expect(runErrors[code], code).toBeTruthy();
+    }
+  });
+
+  it('Persian copy uses the ICU count, never a hardcoded digit', () => {
+    const runErrors = fa.tabsB.credits.runErrors as Record<string, string>;
+    for (const text of Object.values(runErrors)) expect(text).not.toMatch(/[0-9۰-۹]/);
   });
 });
