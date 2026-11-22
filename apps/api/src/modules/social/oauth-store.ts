@@ -4,7 +4,8 @@
  * Short-lived server-side state for the OAuth connect flow, in Redis:
  *   - single-use OAuth state nonces (a replayed callback is refused);
  *   - pending connections waiting for the web session to confirm them
- *     (see SocialOAuthService.finalizeConnect).
+ *     (see SocialOAuthService.finalizeConnect);
+ *   - Telegram connect sessions (telegram/telegram-connect.service.ts).
  *
  * Behind an interface so tests can use an in-memory store.
  */
@@ -17,9 +18,24 @@ export interface OAuthStore {
   /** True the first time a key is claimed within ttlMs, false afterwards. */
   claimOnce(key: string, ttlMs: number): Promise<boolean>;
   put(key: string, value: string, ttlMs: number): Promise<void>;
+  /** Reads without consuming (Telegram connect sessions are polled). */
+  get(key: string): Promise<string | null>;
+  /** Removes a key; no-op when absent. */
+  del(key: string): Promise<void>;
   /** Reads and deletes in one step, so a value can be taken only once. */
   take(key: string): Promise<string | null>;
+  /**
+   * Atomic counter: adds 1 and returns the new value. The key expires ttlMs
+   * after it was first created (a fixed window, not extended by later calls).
+   */
+  incr(key: string, ttlMs: number): Promise<number>;
 }
+
+/** INCR, then PEXPIRE when the key is new or has no TTL — one atomic step. */
+const INCR_WITH_TTL = `
+local n = redis.call('INCR', KEYS[1])
+if n == 1 or redis.call('PTTL', KEYS[1]) < 0 then redis.call('PEXPIRE', KEYS[1], ARGV[1]) end
+return n`;
 
 export function redisOAuthStore(redis: Redis): OAuthStore {
   return {
@@ -29,6 +45,12 @@ export function redisOAuthStore(redis: Redis): OAuthStore {
     async put(key, value, ttlMs) {
       await redis.set(key, value, 'PX', ttlMs);
     },
+    async get(key) {
+      return redis.get(key);
+    },
+    async del(key) {
+      await redis.del(key);
+    },
     async take(key) {
       // MULTI GET + DEL rather than GETDEL: works on Redis < 6.2 too.
       const res = await redis.multi().get(key).del(key).exec();
@@ -36,6 +58,9 @@ export function redisOAuthStore(redis: Redis): OAuthStore {
       const [getErr, value] = res[0];
       if (getErr) throw getErr;
       return (value as string | null) ?? null;
+    },
+    async incr(key, ttlMs) {
+      return Number(await redis.eval(INCR_WITH_TTL, 1, key, String(Math.max(1, Math.ceil(ttlMs)))));
     },
   };
 }
@@ -57,10 +82,22 @@ export function memoryOAuthStore(): OAuthStore & { keys(): string[] } {
     async put(key, value, ttlMs) {
       data.set(key, { value, exp: Date.now() + ttlMs });
     },
+    async get(key) {
+      return live(key)?.value ?? null;
+    },
+    async del(key) {
+      data.delete(key);
+    },
     async take(key) {
       const hit = live(key);
       data.delete(key);
       return hit?.value ?? null;
+    },
+    async incr(key, ttlMs) {
+      const hit = live(key);
+      const n = (hit ? Number(hit.value) : 0) + 1;
+      data.set(key, { value: String(n), exp: hit ? hit.exp : Date.now() + ttlMs });
+      return n;
     },
     keys: () => [...data.keys()],
   };

@@ -80,17 +80,23 @@ export function buildPipelineDraftContent(idea: any): string {
 /**
  * Whole-word format keywords → channel, checked in order. Matching words, not
  * substrings: the old `format.includes('x')` sent "explainer", "text post" and
- * anything else with an x to X. Only channels with content today; telegram and
- * threads are chosen explicitly, never guessed from a format label.
+ * anything else with an x to X. Threads is chosen explicitly, never guessed
+ * from a format label. `telegram` is matched only as the whole word: the
+ * Autopilot runner forces a slot's channel by passing it as the format.
  */
-const FORMAT_CHANNEL_RULES: ReadonlyArray<readonly [ReadonlySet<string>, 'twitter' | 'blog' | 'email' | 'instagram']> = [
+const FORMAT_CHANNEL_RULES: ReadonlyArray<
+  readonly [ReadonlySet<string>, 'twitter' | 'blog' | 'email' | 'instagram' | 'telegram']
+> = [
+  [new Set(['telegram']), 'telegram'],
   [new Set(['x', 'twitter', 'tweet', 'tweets']), 'twitter'],
   [new Set(['blog', 'article', 'articles']), 'blog'],
   [new Set(['email', 'newsletter']), 'email'],
   [new Set(['instagram', 'insta', 'ig']), 'instagram'],
 ];
 
-export function resolveChannelFromFormat(formatValue: unknown): 'linkedin' | 'twitter' | 'blog' | 'email' | 'instagram' {
+export function resolveChannelFromFormat(
+  formatValue: unknown,
+): 'linkedin' | 'twitter' | 'blog' | 'email' | 'instagram' | 'telegram' {
   const words = String(formatValue ?? '')
     .toLowerCase()
     .split(/[^a-z0-9]+/)

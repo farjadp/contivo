@@ -122,6 +122,14 @@ describe('createOwnPost', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('creates a Telegram POST', async () => {
+    const result = await createOwnPost({ workspaceId: 'ws-1', title: 'TG', content: 'Body', channel: 'telegram' });
+    expect(result.ok).toBe(true);
+    expect(createData().type).toBe('POST');
+    expect(createData().channel).toBe('telegram');
+    expect(createData().slug).toBeNull();
+  });
+
   it('returns not_found for a workspace the user does not own', async () => {
     prismaMock.workspace.findFirst.mockResolvedValue(null);
     const result = await createOwnPost({ workspaceId: 'ws-other', title: 'T', content: 'B', channel: 'blog' });

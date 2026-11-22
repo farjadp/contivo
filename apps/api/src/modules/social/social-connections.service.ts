@@ -22,7 +22,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import type { SocialConnectionStatus, SocialPlatform } from '@prisma/client';
+import type { Prisma, SocialConnectionStatus, SocialPlatform } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
@@ -30,15 +30,18 @@ import {
   CreateSocialConnectionDto,
   UpdateSocialConnectionDto,
 } from './dto/create-social-connection.dto';
-import { isOAuthPlatform } from './platforms';
+import { connectFlowFor, type ConnectFlow } from './platforms';
 import * as tokenCrypto from './token-crypto';
 
 /** What the web needs to restart a connect flow for a connection. */
 export interface ReconnectInstruction {
   /** Lower-case platform key, as getSocialConnectUrl() expects. */
   platform: string;
-  /** `oauth`: call getSocialConnectUrl(platform, workspaceId) and navigate. */
-  flow: 'oauth' | 'unsupported';
+  /**
+   * `oauth`: call getSocialConnectUrl(platform, workspaceId) and navigate.
+   * `telegram`: start a Telegram connect session (platforms.ts ConnectFlow).
+   */
+  flow: ConnectFlow;
 }
 
 @Injectable()
@@ -79,7 +82,7 @@ export class SocialConnectionsService {
       await this.clearDefaultForPlatform(dto.workspaceId, dto.platform);
     }
 
-    const encryptedAccessTokenRef  = this.encryptToken(dto.accessToken);
+    const encryptedAccessTokenRef  = dto.accessToken ? this.encryptToken(dto.accessToken) : null;
     const encryptedRefreshTokenRef = dto.refreshToken
       ? this.encryptToken(dto.refreshToken)
       : null;
@@ -104,6 +107,8 @@ export class SocialConnectionsService {
       status:                   'CONNECTED' as const,
       isDefault:                dto.isDefault ?? false,
       lastSyncAt:               new Date(),
+      ...(dto.authProvider !== undefined && { authProvider: dto.authProvider }),
+      ...(dto.meta !== undefined && { metaJson: dto.meta as Prisma.InputJsonValue }),
     };
 
     const connection = existing
@@ -198,7 +203,7 @@ export class SocialConnectionsService {
     const platform = String(conn.platform).toLowerCase();
     const reconnect: ReconnectInstruction = {
       platform,
-      flow: isOAuthPlatform(platform) ? 'oauth' : 'unsupported',
+      flow: connectFlowFor(platform),
     };
     return { connection, reconnect };
   }
@@ -316,6 +321,7 @@ export class SocialConnectionsService {
       accountIdentifier:true,
       authProvider:     true,
       scopesJson:       true,
+      metaJson:         true, // non-secret by contract (schema comment)
       status:           true,
       isDefault:        true,
       createdAt:        true,

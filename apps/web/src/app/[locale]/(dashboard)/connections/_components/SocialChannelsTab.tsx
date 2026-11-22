@@ -17,7 +17,8 @@ import { ConnectedAccountsSection } from './ConnectedAccountsSection';
 import { PublishRulesSection } from './PublishRulesSection';
 import { PublishQueueSection } from './PublishQueueSection';
 import { PublishHistorySection } from './PublishHistorySection';
-import { ConnectModal } from './ConnectModal';
+import { ConnectModal, type Platform } from './ConnectModal';
+import type { ConnectionMeta } from '@/lib/telegram-connect';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,6 +37,7 @@ interface SocialAccount {
   /** Status once tokenExpiresAt is taken into account (lib/connection-health). */
   effectiveStatus?: string;
   daysLeft?: number | null;
+  meta: ConnectionMeta;
 }
 
 interface PublishJob {
@@ -82,7 +84,10 @@ export function SocialChannelsTab({
 }: SocialChannelsTabProps) {
   const t = useTranslations('connections.socialTabs');
   const [activeTab, setActiveTab] = useState<TabId>('accounts');
-  const [showConnectModal, setShowConnectModal] = useState(false);
+  // null = closed; `platform` opens the modal straight on one (Telegram reconnect).
+  const [connectModal, setConnectModal] = useState<{ platform?: Platform } | null>(null);
+  const openConnect = () => setConnectModal({});
+  const openTelegram = () => setConnectModal({ platform: 'TELEGRAM' });
 
   return (
     <div>
@@ -112,7 +117,8 @@ export function SocialChannelsTab({
           <ConnectedAccountsSection
             accounts={accounts}
             workspaceId={workspaceId}
-            onConnectNew={() => setShowConnectModal(true)}
+            onConnectNew={openConnect}
+            onReconnectTelegram={openTelegram}
           />
         )}
         {activeTab === 'rules' && <PublishRulesSection />}
@@ -121,7 +127,8 @@ export function SocialChannelsTab({
             jobs={jobs}
             workspaceId={workspaceId}
             onOpenAccounts={() => setActiveTab('accounts')}
-            onConnectNew={() => setShowConnectModal(true)}
+            onConnectNew={openConnect}
+            onReconnectTelegram={openTelegram}
           />
         )}
         {activeTab === 'history' && (
@@ -129,14 +136,19 @@ export function SocialChannelsTab({
             jobs={jobs}
             workspaceId={workspaceId}
             onOpenAccounts={() => setActiveTab('accounts')}
-            onConnectNew={() => setShowConnectModal(true)}
+            onConnectNew={openConnect}
+            onReconnectTelegram={openTelegram}
           />
         )}
       </div>
 
       {/* Connect modal */}
-      {showConnectModal && (
-        <ConnectModal onClose={() => setShowConnectModal(false)} workspaceId={workspaceId} />
+      {connectModal && (
+        <ConnectModal
+          onClose={() => setConnectModal(null)}
+          workspaceId={workspaceId}
+          initialPlatform={connectModal.platform}
+        />
       )}
     </div>
   );

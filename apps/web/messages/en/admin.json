@@ -500,7 +500,8 @@
       "linkedin": "LinkedIn",
       "twitter": "Twitter / X",
       "email": "Email",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "telegram": "Telegram"
     },
     "finance": {
       "empty": "No payments yet. Invoices appear here as Stripe sends them.",
@@ -587,6 +588,22 @@
       "usageUnavailable": "The usage log could not be read.",
       "recentTitle": "Latest provider events",
       "recentSubtitle": "The newest entries in the event log. Messages are redacted before they are stored."
+    },
+    "lowCredits": {
+      "title": "Low / zero credits",
+      "subtitle": "Accounts that cannot pay for one Autopilot run ({cost, number} credits), plus anyone who asked for more. Pending requests first.",
+      "colUser": "User",
+      "colBalance": "Balance",
+      "colRequest": "Request",
+      "colActions": "Actions",
+      "pending": "Asked {when}",
+      "noRequest": "No pending request",
+      "noLedger": "No ledger rows yet",
+      "topUp": "Top up",
+      "userPage": "User page",
+      "empty": "Every account can pay for at least one run, and nobody is waiting on a top-up.",
+      "pendingCount": "{count, plural, one {# credit request is waiting for a top-up} other {# credit requests are waiting for a top-up}}",
+      "review": "Open credits"
     }
   }
 }

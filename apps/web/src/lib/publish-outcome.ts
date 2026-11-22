@@ -22,12 +22,14 @@ const RECONNECT_STATUSES: ReadonlySet<string> = new Set<SocialConnectionStatus>(
 ]);
 
 /**
- * Platforms with an OAuth connect flow today: the allow-list in
- * `getSocialConnectUrl` (actions/social-connect.ts). A subset of PLATFORM_KEYS,
- * typed against it so a renamed platform fails to compile. TELEGRAM and THREADS
- * are deliberately absent until their connect flows exist.
+ * Platforms with a connect flow the web can restart today: the OAuth
+ * allow-list in `getSocialConnectUrl` (actions/social-connect.ts), plus
+ * TELEGRAM, which reconnects through the Telegram connect panel (API
+ * `reconnect.flow === 'telegram'`). A subset of PLATFORM_KEYS, typed against
+ * it so a renamed platform fails to compile. THREADS stays absent until its
+ * connect flow exists.
  */
-const CONNECTABLE_PLATFORMS: ReadonlySet<string> = new Set<SocialPlatform>(['LINKEDIN', 'X', 'FACEBOOK', 'TIKTOK']);
+const CONNECTABLE_PLATFORMS: ReadonlySet<string> = new Set<SocialPlatform>(['LINKEDIN', 'X', 'FACEBOOK', 'TIKTOK', 'TELEGRAM']);
 
 export function needsReconnect(connectionStatus: string | null | undefined): boolean {
   return connectionStatus != null && RECONNECT_STATUSES.has(connectionStatus);

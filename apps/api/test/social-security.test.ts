@@ -60,7 +60,7 @@ function mk(onPublish: (c: any, prisma: any) => any = () => ({ success: true, ex
     async publish(c: any) { used.push(c.accessToken); return onPublish(c, prisma); },
     normalizeError: String,
   };
-  const factory = new AdapterFactory(adapter, adapter, adapter, adapter, adapter);
+  const factory = new AdapterFactory(adapter, adapter, adapter, adapter, adapter, adapter);
   const conns = new SocialConnectionsService(prisma);
   const enq: any[] = [];
   const svc = new SocialPublishService(

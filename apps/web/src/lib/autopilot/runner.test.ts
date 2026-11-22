@@ -44,7 +44,9 @@ vi.mock('@/lib/credits', () => ({
 const SLOT = new Date('2026-11-24T15:00:00.000Z');
 vi.mock('./schedule', () => ({ pickPublishSlots: vi.fn(() => [SLOT]) }));
 
+import { InsufficientCreditsError, canAfford, chargeCredits, getCreditBalance } from '@/lib/credits';
 import { CHANNEL_TO_PLATFORM } from './channels';
+import { AUTOPILOT_RUN_ERROR } from './run-errors';
 import { runPolicy } from './runner';
 
 function policy(requireReview: boolean) {
@@ -212,5 +214,58 @@ describe('runner: LinkedIn sign-in past its expiry', () => {
 
     expect(result.status).toBe('SUCCEEDED');
     expect(runLog().some((e) => e.step === 'channel_skipped')).toBe(false);
+  });
+});
+
+// When a run stops for credits, the stored `error` is a stable code the UI
+// translates, not an English sentence rendered verbatim in Persian.
+describe('runner: out of credits', () => {
+  function storedError(): unknown {
+    return prismaMock.autopilotRun.update.mock.calls.at(-1)?.[0]?.data?.error;
+  }
+
+  it('below one run at the start: SKIPPED with OUT_OF_CREDITS, nothing ideated', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    vi.mocked(getCreditBalance).mockResolvedValueOnce(8);
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('SKIPPED');
+    expect(storedError()).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS);
+    expect(result.reason).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS);
+    expect(engine.ideateForWorkspace).not.toHaveBeenCalled();
+    expect(runLog().find((e) => e.step === 'out_of_credits')).toMatchObject({ balance: 8, needed: 9 });
+  });
+
+  it('runs dry before the first draft: SKIPPED with OUT_OF_CREDITS_MID_RUN', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    // ideation affordable, the draft attempt is not
+    vi.mocked(canAfford).mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('SKIPPED');
+    expect(storedError()).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN);
+    expect(engine.generateDraftForItem).not.toHaveBeenCalled();
+  });
+
+  it('cannot afford ideation mid-run: reported as out of credits, not as a failed run', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    vi.mocked(canAfford).mockResolvedValueOnce(false);
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('SKIPPED');
+    expect(storedError()).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN);
+  });
+
+  it('balance raced away between check and charge: same code, not the English exception text', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    vi.mocked(chargeCredits).mockRejectedValueOnce(new InsufficientCreditsError(1, 2));
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('SKIPPED');
+    expect(storedError()).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN);
   });
 });

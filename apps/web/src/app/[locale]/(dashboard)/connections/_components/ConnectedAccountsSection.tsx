@@ -27,6 +27,7 @@ import {
   Clock,
   XCircle,
   Loader2,
+  Send,
 } from 'lucide-react';
 import {
   disconnectSocialConnection,
@@ -37,6 +38,7 @@ import {
 import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
 import { canStartConnectFlow, needsReconnect } from '@/lib/publish-outcome';
 import { socialActionDetail, type SocialActionDetail } from '@/lib/social-action-error';
+import { telegramChatUrl, type ConnectionMeta } from '@/lib/telegram-connect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -56,6 +58,8 @@ interface SocialAccount {
    */
   effectiveStatus?: string;
   daysLeft?: number | null;
+  /** The safe slice of metaJson (Telegram chat type, public username, why it was revoked). */
+  meta?: ConnectionMeta;
 }
 
 type ActionKind = 'disconnect' | 'setDefault' | 'reconnect';
@@ -64,6 +68,8 @@ interface ConnectedAccountsSectionProps {
   accounts: SocialAccount[];
   workspaceId: string;
   onConnectNew: () => void;
+  /** Opens the Connect modal on Telegram: a TELEGRAM row reconnects there, not on a sign-in page. */
+  onReconnectTelegram: () => void;
 }
 
 // ─── Platform helpers ─────────────────────────────────────────────────────────
@@ -73,7 +79,45 @@ const PLATFORM_META: Record<string, { label: string; color: string; bg: string; 
   X:         { label: 'X',         color: '#000000', bg: '#F0F0F0', Icon: Twitter },
   FACEBOOK:  { label: 'Facebook',  color: '#1877F2', bg: '#EEF4FF', Icon: Facebook },
   INSTAGRAM: { label: 'Instagram', color: '#E1306C', bg: '#FFF0F4', Icon: Instagram },
+  TELEGRAM:  { label: 'Telegram',  color: '#229ED9', bg: '#E8F6FC', Icon: Send },
 };
+
+/** Telegram rows: why the bot can no longer post, from metaJson.revokedReason. */
+const TELEGRAM_REVOKED_HINT = {
+  BOT_REMOVED: 'statusHint.telegramBotRemoved',
+  BOT_RIGHTS_LOST: 'statusHint.telegramBotRightsLost',
+} as const;
+
+/**
+ * The second line under the account name. A Telegram chat id (-100…) means
+ * nothing to anyone: show what kind of chat it is and its public @username.
+ */
+function AccountDetail({ account, label }: { account: SocialAccount; label: string }) {
+  const t = useTranslations('connections.accounts');
+  if (account.platform !== 'TELEGRAM') {
+    return (
+      <>
+        <bdi>{label}</bdi> · <bdi>{account.accountIdentifier}</bdi>
+      </>
+    );
+  }
+  const chatType = account.meta?.chatType;
+  const url = telegramChatUrl(account.meta?.username);
+  return (
+    <>
+      <bdi>{label}</bdi>
+      {chatType && <> · {t(`telegramChatType.${chatType}`)}</>}
+      {url && (
+        <>
+          {' · '}
+          <a href={url} target="_blank" rel="noopener noreferrer" dir="ltr" className="text-moss-700 hover:underline">
+            @{account.meta!.username}
+          </a>
+        </>
+      )}
+    </>
+  );
+}
 
 /** `key` indexes into `connections.accounts.status.*` — the label itself is copy. */
 const STATUS_META: Record<string, { key: string; color: string; Icon: React.ElementType }> = {
@@ -88,12 +132,19 @@ const STATUS_META: Record<string, { key: string; color: string; Icon: React.Elem
 /** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
 const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
+function hintKey(account: SocialAccount, statusKey: string, reconnectable: boolean): string {
+  if (!reconnectable) return 'statusHint.unsupported';
+  const reason = account.platform === 'TELEGRAM' && account.status === 'REVOKED' ? account.meta?.revokedReason : null;
+  return reason ? TELEGRAM_REVOKED_HINT[reason] : `statusHint.${statusKey}`;
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function ConnectedAccountsSection({
   accounts,
   workspaceId,
   onConnectNew,
+  onReconnectTelegram,
 }: ConnectedAccountsSectionProps) {
   const t = useTranslations('connections.accounts');
   const format = useFormatter();
@@ -162,6 +213,12 @@ export function ConnectedAccountsSection({
     });
     try {
       const result = await reconnectSocialConnection(id, workspaceId);
+      if (result.data?.reconnect?.flow === 'telegram') {
+        // No sign-in page: a new connect session upserts this same row.
+        setLoading(null);
+        onReconnectTelegram();
+        return;
+      }
       const url = result.data?.url;
       if (!url) {
         // reconnect_unsupported and every other code land here, localised.
@@ -263,7 +320,7 @@ export function ConnectedAccountsSection({
                         )}
                       </div>
                       <p className="text-xs text-moss-muted">
-                        <bdi>{platform.label}</bdi> · <bdi>{account.accountIdentifier}</bdi>
+                        <AccountDetail account={account} label={platform.label} />
                       </p>
                     </div>
                   </div>
@@ -346,7 +403,7 @@ export function ConnectedAccountsSection({
                 {/* What the status means and what to do about it. */}
                 {showReconnect && (
                   <p className="mt-3 text-xs text-amber-800">
-                    {t.rich(reconnectable ? `statusHint.${status.key}` : 'statusHint.unsupported', {
+                    {t.rich(hintKey(account, status.key, reconnectable), {
                       platform: platform.label,
                       days,
                       bdi,

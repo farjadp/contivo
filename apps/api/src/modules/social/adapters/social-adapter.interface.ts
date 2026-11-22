@@ -90,6 +90,31 @@ export interface PublishResult {
   failureCode?: PublishFailureCode;
 }
 
+/**
+ * Per-job state the service hands to adapters that post in several parts
+ * (Telegram splits long posts). Lets a retry skip parts already delivered.
+ */
+/** A part delivered by an earlier attempt of the same job. */
+export interface SentPart {
+  externalId: string;
+  /** sha256 (hex) of what was sent. Missing on rows written before hashes existed → treated as changed. */
+  contentHash?: string;
+}
+
+export interface PublishContext {
+  /** Parts delivered by an earlier attempt of this job, by part index. */
+  sentParts: ReadonlyMap<number, SentPart>;
+  /**
+   * Records one delivered part with the hash of its content, so a retry can
+   * tell an unchanged part (skip) from an edited post (stop). Called before
+   * the next part is sent; if it throws, the adapter must stop (a retry would
+   * otherwise post it twice).
+   */
+  recordPart(index: number, externalId: string, contentHash: string): Promise<void>;
+  /** The platform moved the account to a new id (Telegram group → supergroup). */
+  updateAccountIdentifier(newIdentifier: string): Promise<void>;
+}
+
 /** Validation result returned before attempting publish. */
 export interface ValidationResult {
   valid: boolean;
@@ -104,6 +129,13 @@ export interface SocialAdapter {
 
   /** Where the credential comes from; decides whether a stored token is required. */
   readonly credential: CredentialKind;
+
+  /**
+   * For `platform_env` adapters: whether this deployment has the credential.
+   * False makes the factory refuse the platform (NO_PUBLISHER) instead of
+   * retrying a publish that cannot work. Absent = always configured.
+   */
+  isConfigured?(): boolean;
 
   /**
    * Checks the connection is usable. Never throws: network errors are
@@ -132,6 +164,7 @@ export interface SocialAdapter {
   publish(
     connection: AdapterConnection,
     payload: PublishPayload,
+    context?: PublishContext,
   ): Promise<PublishResult>;
 
   /**

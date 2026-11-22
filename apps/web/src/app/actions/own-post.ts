@@ -20,7 +20,7 @@ import {
   type OwnPostError,
 } from '@/lib/content-slug';
 
-export type OwnPostChannel = 'blog' | 'linkedin';
+export type OwnPostChannel = 'blog' | 'linkedin' | 'telegram';
 
 export type OwnPostResult = { ok: true; item: ContentItem } | { ok: false; error: OwnPostError };
 
@@ -47,10 +47,11 @@ export interface UpdatePublishedPostInput {
 const TYPE_BY_CHANNEL: Record<OwnPostChannel, 'ARTICLE' | 'POST'> = {
   blog: 'ARTICLE',
   linkedin: 'POST',
+  telegram: 'POST',
 };
 
 function isOwnPostChannel(value: unknown): value is OwnPostChannel {
-  return value === 'blog' || value === 'linkedin';
+  return value === 'blog' || value === 'linkedin' || value === 'telegram';
 }
 
 function isUniqueViolation(error: unknown): boolean {

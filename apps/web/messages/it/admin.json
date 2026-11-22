@@ -500,7 +500,8 @@
       "linkedin": "LinkedIn",
       "twitter": "Twitter / X",
       "email": "Email",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "telegram": "Telegram"
     },
     "finance": {
       "empty": "Ancora nessun pagamento. Le fatture compaiono qui man mano che Stripe le invia.",
@@ -587,6 +588,22 @@
       "usageUnavailable": "Non è stato possibile leggere il log di utilizzo.",
       "recentTitle": "Ultimi eventi dei provider",
       "recentSubtitle": "Le voci più recenti del registro eventi. I messaggi vengono ripuliti dai dati sensibili prima di essere salvati."
+    },
+    "lowCredits": {
+      "title": "Crediti bassi o esauriti",
+      "subtitle": "Account che non possono pagare un'esecuzione di Autopilot ({cost, number} crediti), più chi ha chiesto altri crediti. Prima le richieste in attesa.",
+      "colUser": "Utente",
+      "colBalance": "Saldo",
+      "colRequest": "Richiesta",
+      "colActions": "Azioni",
+      "pending": "Richiesta del {when}",
+      "noRequest": "Nessuna richiesta in attesa",
+      "noLedger": "Ancora nessuna riga nel registro",
+      "topUp": "Ricarica",
+      "userPage": "Pagina utente",
+      "empty": "Ogni account può pagare almeno un'esecuzione e nessuno è in attesa di una ricarica.",
+      "pendingCount": "{count, plural, one {# richiesta di crediti è in attesa di ricarica} other {# richieste di crediti sono in attesa di ricarica}}",
+      "review": "Apri crediti"
     }
   }
 }

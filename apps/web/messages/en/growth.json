@@ -73,21 +73,6 @@
         "back": "Back to workspaces"
       }
     },
-    "review": {
-      "title": "Here’s what we found",
-      "subtitle": "We scanned your website and drafted your primary content strategy. Review, edit, and confirm these details.",
-      "businessSummary": "Business Summary",
-      "targetAudience": "Target Audience",
-      "brandTone": "Brand Tone",
-      "detectedIndustry": "Detected Industry",
-      "emptySummary": "No summary extracted.",
-      "emptyAudience": "No audience extracted.",
-      "emptyIndustry": "Unknown industry.",
-      "positioning": "Positioning Opportunity",
-      "messaging": "Messaging Differentiation",
-      "confirm": "Confirm & Generate Strategy",
-      "saving": "Saving Changes..."
-    },
     "workspace": {
       "metaTitle": "Workspace Dashboard",
       "warningsTitle": "Setup finished with problems",

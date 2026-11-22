@@ -131,6 +131,7 @@
       "CREDITS_EXHAUSTED": "I crediti di pubblicazione su questa piattaforma sono esauriti.",
       "UNREACHABLE": "La piattaforma non era raggiungibile, nemmeno dopo i tentativi.",
       "PLATFORM_ERROR": "La piattaforma ha rifiutato il post."
-    }
+    },
+    "creditRequestFailed": "Non è stato possibile inviare la richiesta. Riprova."
   }
 }

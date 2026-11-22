@@ -13,6 +13,7 @@
         "why": "Accept the competitors that are really yours, then generate the positioning charts. Ideas are built from the gaps this reveals.",
         "actionDiscover": "Discover and accept at least 2 competitors",
         "actionCharts": "Generate the positioning matrices",
+        "actionRerunCharts": "Re-run the charts on your accepted competitors",
         "detailDone": "{charts, number} charts · {competitors, number} competitors accepted",
         "detailPartial": "{accepted, number} of {total, number} competitors accepted · no charts yet",
         "detailNone": "No competitors discovered yet"

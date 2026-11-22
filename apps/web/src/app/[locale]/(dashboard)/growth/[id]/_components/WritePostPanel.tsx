@@ -14,7 +14,7 @@ import {
   type OwnPostError,
 } from '@/lib/content-slug';
 
-type Channel = 'blog' | 'linkedin';
+type Channel = 'blog' | 'linkedin' | 'telegram';
 type Field = 'title' | 'slug' | 'body' | 'form';
 
 /** Which input an error belongs next to. */
@@ -130,7 +130,7 @@ export function WritePostPanel({
             {t('pipeline.write.channelLabel')}
           </legend>
           <div className="inline-flex rounded-xl border border-rule bg-chalk p-1">
-            {(['blog', 'linkedin'] as const).map((value) => (
+            {(['blog', 'linkedin', 'telegram'] as const).map((value) => (
               <label
                 key={value}
                 className={`cursor-pointer rounded-lg px-4 py-1.5 text-sm font-bold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-saffron ${

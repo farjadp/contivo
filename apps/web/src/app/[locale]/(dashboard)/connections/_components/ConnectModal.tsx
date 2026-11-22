@@ -8,6 +8,10 @@
  * After the user authorizes, the platform calls our callback endpoint which
  * saves the encrypted token and redirects back to /connections.
  *
+ * Telegram has no OAuth: choosing it shows TelegramConnectPanel (deep link to
+ * the bot, pick the channel in Telegram, type back the code). `initialPlatform`
+ * opens straight on a platform, for Reconnect on a TELEGRAM row.
+ *
  * Phase 2: Add Instagram (requires Meta Business OAuth + media pipeline).
  */
 
@@ -15,10 +19,12 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight } from 'lucide-react';
+import { X, Linkedin, Twitter, Facebook, Music2, Info, ChevronRight, Send } from 'lucide-react';
 
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
 import { getConfiguredPlatforms, type PlatformConfig } from '@/app/actions/social-config';
+
+import { TelegramConnectPanel } from './TelegramConnectPanel';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,9 +32,11 @@ interface ConnectModalProps {
   onClose: () => void;
   /** The workspace ID to embed in the OAuth state param so the callback knows which workspace to connect. */
   workspaceId: string;
+  /** Open on this platform instead of the picker (Reconnect on a TELEGRAM row). */
+  initialPlatform?: Platform;
 }
 
-type Platform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'TIKTOK';
+export type Platform = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'TIKTOK' | 'TELEGRAM';
 
 // ─── Platform config ──────────────────────────────────────────────────────────
 
@@ -81,6 +89,16 @@ const PLATFORMS: {
     Icon: Music2,
     scopes: ['video.publish', 'video.upload'],
   },
+  {
+    id: 'TELEGRAM',
+    key: 'telegram',
+    color: '#229ED9',
+    bg: '#E8F6FC',
+    border: '#B9E3F5',
+    Icon: Send,
+    // Not OAuth scopes: the admin right Telegram gives the bot in the chosen channel.
+    scopes: ['can_post_messages'],
+  },
 ];
 
 /** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
@@ -88,9 +106,9 @@ const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
+export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectModalProps) {
   const t = useTranslations('connections.modal');
-  const [selected, setSelected] = useState<Platform | null>(null);
+  const [selected, setSelected] = useState<Platform | null>(initialPlatform ?? null);
   const [connectError, setConnectError] = useState('');
   const [isConnecting, startConnect] = useTransition();
   // Null means "we could not ask" — the API being down is not the same as a
@@ -101,7 +119,7 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
     void getConfiguredPlatforms().then(setConfig);
   }, []);
 
-  /** The API names platforms `linkedin`/`x`/`facebook`/`tiktok`. */
+  /** The API names platforms `linkedin`/`x`/`facebook`/`tiktok`/`telegram`. */
   const isUnavailable = (id: Platform) => config != null && config[id.toLowerCase()] === false;
 
   // The API's /connect route is opened by the browser, so it cannot carry an
@@ -176,7 +194,7 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                       <p className="text-sm font-bold text-moss">{label}</p>
                       <p className="text-xs text-moss-muted mt-0.5 line-clamp-1">
                         {unavailable
-                          ? t('unavailableDescription')
+                          ? t(p.id === 'TELEGRAM' ? 'telegramUnavailable' : 'unavailableDescription')
                           : t.rich(`platforms.${p.key}Description`, { bdi })}
                       </p>
                     </div>
@@ -232,52 +250,58 @@ export function ConnectModal({ onClose, workspaceId }: ConnectModalProps) {
                 </div>
               </div>
 
-              {/* Permissions */}
-              <div className="mb-4">
-                <p className="text-xs font-semibold text-moss-muted mb-2 uppercase tracking-wide">
-                  {t('permissionsTitle')}
-                </p>
-                <div className="space-y-1.5">
-                  {platform!.scopes.map((scope) => (
-                    <div key={scope} className="flex items-center gap-2 text-xs text-moss-muted">
-                      <div className="w-1.5 h-1.5 rounded-full bg-moss" />
-                      <code className="font-plexmono">{scope}</code>
+              {platform!.id === 'TELEGRAM' ? (
+                <TelegramConnectPanel workspaceId={workspaceId} onClose={onClose} />
+              ) : (
+                <>
+                  {/* Permissions */}
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold text-moss-muted mb-2 uppercase tracking-wide">
+                      {t('permissionsTitle')}
+                    </p>
+                    <div className="space-y-1.5">
+                      {platform!.scopes.map((scope) => (
+                        <div key={scope} className="flex items-center gap-2 text-xs text-moss-muted">
+                          <div className="w-1.5 h-1.5 rounded-full bg-moss" />
+                          <code className="font-plexmono">{scope}</code>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
 
-              {/* Security note */}
-              <div className="flex gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-5">
-                <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700">{t('securityNote')}</p>
-              </div>
+                  {/* Security note */}
+                  <div className="flex gap-2 rounded-xl bg-amber-50 border border-amber-200 p-3 mb-5">
+                    <Info className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <p className="text-xs text-amber-700">{t('securityNote')}</p>
+                  </div>
 
-              {/* CTA — mints a signed handoff link, then redirects to the provider */}
-              {connectError && (
-                <p className="mb-3 text-xs text-red-600">{connectError}</p>
+                  {/* CTA — mints a signed handoff link, then redirects to the provider */}
+                  {connectError && (
+                    <p className="mb-3 text-xs text-red-600">{connectError}</p>
+                  )}
+                  <button
+                    onClick={handleConnect}
+                    disabled={isConnecting}
+                    className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-chalk shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
+                    style={{ backgroundColor: platform!.color }}
+                  >
+                    {isConnecting ? (
+                      t('preparing')
+                    ) : (
+                      <>
+                        {/* The label is Latin either way, so it needs no isolation
+                            of its own: the whole button is a Latin run. */}
+                        {t('continueOAuth', {
+                          platform: t(`platforms.${platform!.key}Label`),
+                        })}
+                        <span aria-hidden className="rtl:rotate-180">
+                          &rarr;
+                        </span>
+                      </>
+                    )}
+                  </button>
+                </>
               )}
-              <button
-                onClick={handleConnect}
-                disabled={isConnecting}
-                className="w-full flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-bold text-chalk shadow-sm hover:opacity-90 active:scale-[0.99] transition-all disabled:opacity-60"
-                style={{ backgroundColor: platform!.color }}
-              >
-                {isConnecting ? (
-                  t('preparing')
-                ) : (
-                  <>
-                    {/* The label is Latin either way, so it needs no isolation
-                        of its own: the whole button is a Latin run. */}
-                    {t('continueOAuth', {
-                      platform: t(`platforms.${platform!.key}Label`),
-                    })}
-                    <span aria-hidden className="rtl:rotate-180">
-                      &rarr;
-                    </span>
-                  </>
-                )}
-              </button>
             </div>
           )}
         </div>

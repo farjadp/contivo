@@ -578,6 +578,23 @@
       },
       "errorPrefix": "Generazione non riuscita:",
       "done": "Report pronto: il download partirà in automatico"
+    },
+    "credits": {
+      "lowTitle": "I tuoi crediti stanno per finire",
+      "emptyTitle": "Hai esaurito i crediti",
+      "lowBody": "Un post di Autopilot richiede almeno {cost, number} crediti. Ne hai {balance, number}, quindi Autopilot si ferma finché l'account non viene ricaricato.",
+      "earlyAccess": "Per ora i crediti non si possono acquistare. Durante l'accesso anticipato, il nostro team ricarica gli account a mano.",
+      "runCost": "Ogni esecuzione di Autopilot richiede almeno {cost, number} crediti per un post.",
+      "request": "Richiedi altri crediti",
+      "requesting": "Invio in corso…",
+      "requested": "Richiesta inviata. Durante l'accesso anticipato, il nostro team ricaricherà i tuoi crediti.",
+      "alreadyRequested": "Hai già fatto richiesta il {when} e il nostro team l'ha ricevuta. Puoi chiedere di nuovo {hours, number} ore dopo l'ultima richiesta.",
+      "requestFailed": "Non è stato possibile inviare la richiesta. Riprova.",
+      "balanceUnavailable": "Non è stato possibile caricare il saldo dei crediti.",
+      "runErrors": {
+        "OUT_OF_CREDITS": "Interrotto: crediti insufficienti per un post. Un post richiede almeno {cost, number} crediti.",
+        "OUT_OF_CREDITS_MID_RUN": "Interrotto: i crediti sono finiti prima che si potesse programmare qualcosa."
+      }
     }
   }
 }

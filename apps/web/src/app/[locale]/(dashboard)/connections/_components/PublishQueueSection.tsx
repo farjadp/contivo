@@ -47,6 +47,8 @@ interface PublishQueueSectionProps {
   onOpenAccounts: () => void;
   /** Opens the Connect modal (no account behind the job). */
   onConnectNew: () => void;
+  /** Opens the Connect modal on Telegram (Reconnect on a TELEGRAM job's connection). */
+  onReconnectTelegram: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -64,12 +66,12 @@ const STATUS_CONFIG: Record<string, { key: string; className: string; Icon: Reac
 };
 
 const PLATFORM_LABELS: Record<string, string> = {
-  LINKEDIN: 'LinkedIn', X: 'X', FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram',
+  LINKEDIN: 'LinkedIn', X: 'X', FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram', TELEGRAM: 'Telegram',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishQueueSectionProps) {
+export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConnectNew, onReconnectTelegram }: PublishQueueSectionProps) {
   const t = useTranslations('connections.queue');
   const format = useFormatter();
   const router = useRouter();
@@ -123,7 +125,10 @@ export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConne
       delete next[jobId];
       return next;
     });
-    const detail = await startReconnect(connectionId, workspaceId);
+    const detail = await startReconnect(connectionId, workspaceId, undefined, () => {
+      setLoading(null);
+      onReconnectTelegram();
+    });
     if (detail) {
       setErrors((prev) => ({ ...prev, [jobId]: { action: 'reconnect', detail } }));
       setLoading(null);

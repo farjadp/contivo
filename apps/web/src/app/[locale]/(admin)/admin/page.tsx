@@ -8,6 +8,8 @@ import { createAdminFormat } from './_components/AdminUi';
 import { AiProvidersCard } from './_components/AiProvidersCard';
 import { FinanceSection } from './_components/FinanceSection';
 import { LinkedInExpiryCard } from './_components/LinkedInExpiryCard';
+import { LowCreditsPanel, PendingCreditRequestsNotice } from './_components/LowCreditsPanel';
+import { listLowCreditUsers } from '@/lib/credit-requests';
 import { getAdminFinance } from '@/lib/finance/ledger';
 import {
   adjustCredits,
@@ -118,6 +120,8 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
   const sectionData = await getSectionData(section, resolvedParams);
   const aiProviders = section === 'integrations' ? await getAdminAiProviders() : null;
+  // Low balances and "Request more credits" rows; the overview shows only the pending count.
+  const lowCredits = section === 'credits' || section === 'overview' ? await listLowCreditUsers() : [];
   const userOptions =
     section === 'users' || section === 'workspaces' || section === 'credits'
       ? await prisma.user.findMany({
@@ -148,7 +152,10 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
         </div>
 
         {section === 'overview' ? (
-          <OverviewSection overview={overview} analytics={analytics} />
+          <div className="space-y-6">
+            <PendingCreditRequestsNotice count={lowCredits.filter((row) => row.pending).length} />
+            <OverviewSection overview={overview} analytics={analytics} />
+          </div>
         ) : null}
         {section === 'overview' ? <LinkedInExpiryCard /> : null}
 
@@ -188,6 +195,7 @@ export default async function AdminDashboardPage({ searchParams }: Props) {
 
         {section === 'credits' ? (
           <CreditsSection
+            lowCredits={lowCredits}
             rows={sectionData.creditLedger || []}
             subscriptions={sectionData.subscriptions || []}
             userOptions={userOptions}
@@ -930,6 +938,7 @@ function SettingsSection({
 }
 
 function CreditsSection({
+  lowCredits,
   rows,
   subscriptions,
   userOptions,
@@ -937,6 +946,7 @@ function CreditsSection({
   billingStatus,
   filterUserId,
 }: {
+  lowCredits: Awaited<ReturnType<typeof listLowCreditUsers>>;
   rows: Awaited<ReturnType<typeof getAdminCreditLedger>>;
   subscriptions: Array<{
     id: string;
@@ -963,10 +973,12 @@ function CreditsSection({
     <div className="space-y-4">
       <StatusBanner status={status} />
       <StatusBanner status={billingStatus} />
+      <LowCreditsPanel rows={lowCredits} />
       <div className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Panel title={t('credits.manualTitle')} subtitle={t('credits.manualSubtitle')}>
           <form action={adjustCredits} className="grid gap-3">
-            <select name="userId" defaultValue="" className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" required>
+            {/* Preselected when arriving from the low-credits list (?userId=). */}
+            <select name="userId" defaultValue={filterUserId} className="rounded-xl border border-rule-strong px-3 py-2 text-sm outline-none focus:border-moss" required>
               <option value="">{t('common.selectUser')}</option>
               {userOptions.map((item) => <option key={item.id} value={item.id}>{item.email}</option>)}
             </select>

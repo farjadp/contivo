@@ -21,14 +21,19 @@ export interface CreateSocialConnectionDto {
   accountIdentifier: string;
   /**
    * Raw OAuth access token — encrypted and stored by the service.
-   * Write-only: never returned in responses.
+   * Write-only: never returned in responses. Absent only for platforms whose
+   * credential lives in env (Telegram's one Contivo bot).
    */
-  accessToken: string;
+  accessToken?: string;
   refreshToken?: string;
   /** Token expiry time as provided by the platform. */
   tokenExpiresAt?: Date;
   scopes?: string[];
   isDefault?: boolean;
+  /** Defaults to 'oauth2' in the schema. Telegram: 'telegram_bot'. */
+  authProvider?: string;
+  /** Non-secret per-connection settings (SocialConnection.metaJson). Never a secret. */
+  meta?: Record<string, unknown>;
 }
 
 export interface UpdateSocialConnectionDto {
