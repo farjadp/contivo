@@ -162,7 +162,7 @@ describe('Telegram security review', () => {
       await s.service.handleUpdate(privateMsg(TG_VICTIM, { chat_shared: { request_id: channelReq, chat_id: VICTIM_CHANNEL } }));
       const v = await s.service.getSession(c.sessionId, ATTACKER);
       assert.equal(v.status, 'failed');
-      assert.equal(v.error, 'too_many_attempts');
+      assert.equal(v.error, 'too_many_codes');
       assert.equal(tg.callsOf('sendMessage').filter((x) => /\d{6}/.test(x.body.text)).length, before, 'no 4th code');
     });
 
@@ -353,13 +353,34 @@ describe('Telegram security review', () => {
       const c = await victimStarted(s);
       await s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan');
       const real = lastCode(tg, TG_VICTIM)!;
-      await s.service.handleUpdate(callback(TG_VICTIM, `deny:${c.sessionId}`));
+      // The code message names the workspace and the chat, and carries the button.
+      const codeMsg = tg.callsOf('sendMessage').filter((x) => /\d{6}/.test(x.body.text)).pop()!;
+      assert.match(codeMsg.body.text, /Attacker Co/);
+      assert.match(codeMsg.body.text, /Victim channel/);
+      const button = codeMsg.body.reply_markup.inline_keyboard[0][0];
+      assert.equal(button.text, 'This wasn\'t me');
+      assert.equal(button.callback_data, `deny:${c.sessionId}`);
+      assert.ok(Buffer.byteLength(button.callback_data) <= 64);
+      await s.service.handleUpdate(callback(TG_VICTIM, button.callback_data));
       assert.equal(tg.callsOf('answerCallbackQuery').length, 1);
+      assert.match(tg.callsOf('sendMessage').pop()!.body.text, /Nothing was connected/);
       const v = await s.service.getSession(c.sessionId, ATTACKER);
       assert.equal(v.status, 'failed');
       assert.equal(v.error, 'denied');
       await assert.rejects(s.service.confirm(c.sessionId, ATTACKER, real), (e: any) => e.getStatus() === 409);
       assert.equal(s.prisma.socialConnection.rows.length, 0);
+    });
+
+    it('Persian user: code message and button in Persian, with the workspace name', async () => {
+      const s = setup();
+      const c = await s.service.createSession('ws-att', ATTACKER);
+      const upd = start(TG_VICTIM, new URL(c.deepLink).searchParams.get('start')!);
+      upd.message!.from!.language_code = 'fa';
+      await s.service.handleUpdate(upd);
+      await s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan');
+      const codeMsg = tg.callsOf('sendMessage').filter((x) => /[۰-۹]{6}/.test(x.body.text)).pop()!;
+      assert.match(codeMsg.body.text, /فضای کاری «Attacker Co»/);
+      assert.equal(codeMsg.body.reply_markup.inline_keyboard[0][0].text, 'من نبودم');
     });
 
     it('someone else pressing it changes nothing', async () => {

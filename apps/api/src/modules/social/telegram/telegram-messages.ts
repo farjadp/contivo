@@ -18,7 +18,9 @@ type Key =
   | 'choose'
   | 'buttonChannel'
   | 'buttonGroup'
+  | 'buttonNotMe'
   | 'code'
+  | 'denied'
   | 'connected'
   | 'bot_not_admin'
   | 'user_not_admin'
@@ -35,9 +37,11 @@ const EN: Record<Key, string> = {
     'If you did not start this in your own Contivo account, ignore this message.',
   buttonChannel: 'Choose a channel',
   buttonGroup: 'Choose a group',
+  buttonNotMe: 'This wasn\'t me',
   code:
-    '“{title}” is ready. To finish, enter this code in Contivo:\n\n{code}\n\n' +
-    'Enter it only in your own Contivo account. Contivo will never ask you to send it to anyone.',
+    'The Contivo workspace “{workspace}” wants to post to “{title}”. To finish, enter this code in that Contivo account:\n\n{code}\n\n' +
+    'If you did not start this, tap “This wasn\'t me” below. Never send this code to anyone.',
+  denied: 'Stopped. Nothing was connected, and the code no longer works.',
   connected: 'Connected. Contivo will post to “{title}”.',
   bot_not_admin: 'The Contivo bot cannot post in “{title}”. Make it an admin with the Post messages right, then choose the chat again.',
   user_not_admin: 'You need to be an admin who can post in “{title}” to connect it.',
@@ -55,9 +59,11 @@ const FA: Record<Key, string> = {
     'اگر خودتان این کار را در حساب Contivo شروع نکرده‌اید، این پیام را نادیده بگیرید.',
   buttonChannel: 'انتخاب کانال',
   buttonGroup: 'انتخاب گروه',
+  buttonNotMe: 'من نبودم',
   code:
-    '«{title}» آماده است. برای تمام کردن اتصال، این کد را در Contivo وارد کنید:\n\n{code}\n\n' +
-    'این کد را فقط در حساب Contivo خودتان وارد کنید. Contivo هیچ‌وقت از شما نمی‌خواهد آن را برای کسی بفرستید.',
+    'فضای کاری «{workspace}» در Contivo می‌خواهد در «{title}» پست بگذارد. برای تمام کردن اتصال، این کد را در همان حساب Contivo وارد کنید:\n\n{code}\n\n' +
+    'اگر این درخواست را شما نداده‌اید، دکمهٔ «من نبودم» را بزنید. این کد را برای هیچ‌کس نفرستید.',
+  denied: 'اتصال لغو شد. چیزی وصل نشد و این کد دیگر کار نمی‌کند.',
   connected: 'وصل شد. از این به بعد Contivo در «{title}» پست می‌گذارد.',
   bot_not_admin: 'ربات Contivo نمی‌تواند در «{title}» پست بگذارد. آن را با اجازهٔ «ارسال پیام» مدیر کنید و بعد دوباره کانال را انتخاب کنید.',
   user_not_admin: 'برای وصل کردن «{title}»، خودتان باید در آن مدیری باشید که اجازهٔ ارسال پیام دارد.',

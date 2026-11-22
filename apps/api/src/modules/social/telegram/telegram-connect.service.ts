@@ -102,7 +102,7 @@ export type TelegramConnectErrorCode =
   | 'too_many_attempts';
 
 /** What the session can end with: a connect problem, or the Telegram user pressed "This wasn't me". */
-export type TelegramSessionError = TelegramConnectErrorCode | 'denied';
+export type TelegramSessionError = TelegramConnectErrorCode | 'denied' | 'too_many_codes';
 
 type ChatType = 'channel' | 'group' | 'supergroup';
 
@@ -380,6 +380,8 @@ export class TelegramConnectService {
     }
     // notify=false: the web user typed this name, so failures go to the web, never to the Telegram user's DM.
     const problem = await this.verifyAndPark(session, chat.result, { notify: false });
+    if (problem === 'too_many_codes') throw err(HttpStatus.TOO_MANY_REQUESTS, problem, 'Too many codes were sent in this connection attempt. Start again.');
+    if (problem === 'denied') throw err(HttpStatus.CONFLICT, 'session_finished', 'This Telegram connection attempt is over. Start again.');
     if (problem === 'too_many_attempts') throw err(HttpStatus.TOO_MANY_REQUESTS, problem, this.problemMessage(problem));
     if (problem) throw err(HttpStatus.CONFLICT, problem, this.problemMessage(problem));
     return this.view(session, await this.attemptsUsed(session));
@@ -422,8 +424,8 @@ export class TelegramConnectService {
 
   /**
    * "This wasn't me": the Telegram user who opened the link ends the session.
-   * Only that Telegram user, and only before it is connected. The button is
-   * added to the bot's messages once its label exists in telegram-messages.ts.
+   * Only that Telegram user, and only before it is connected. The button sits
+   * on the code message.
    */
   private async onDeny(callback: TgCallbackQuery) {
     const sessionId = callback.data!.slice(DENY_PREFIX.length);
@@ -443,6 +445,7 @@ export class TelegramConnectService {
     await this.safeDel(nonceKey(session.nonce));
     this.logger.warn(`Telegram connect session denied by the Telegram user (workspace=${session.workspaceId})`);
     await answer();
+    await this.say(callback.from.id, telegramText(session.lang, 'denied'));
   }
 
   private async onStart(msg: TgMessage) {
@@ -528,11 +531,11 @@ export class TelegramConnectService {
    * accepted the DM carrying it. `notify` = tell the Telegram user about a
    * failure (only when they picked the chat themselves).
    */
-  private async verifyAndPark(session: SessionRecord, chat: TgChat, opts: { notify: boolean }): Promise<TelegramConnectErrorCode | null> {
+  private async verifyAndPark(session: SessionRecord, chat: TgChat, opts: { notify: boolean }): Promise<TelegramSessionError | null> {
     const lang = session.lang;
     const telegramUserId = session.telegramUserId!;
     const fail = (code: TelegramConnectErrorCode, title?: string) => this.fail(session, code, title, opts.notify);
-    if ((await this.attemptsUsed(session)) >= TG_CONFIRM_MAX_ATTEMPTS) return this.failSession(session);
+    if ((await this.attemptsUsed(session)) >= TG_CONFIRM_MAX_ATTEMPTS) return this.failSession(session, 'too_many_attempts');
     const chatType: ChatType | null = chat.type === 'private' ? null : chat.type;
     if (!chatType) return fail('not_a_channel_or_group');
 
@@ -551,13 +554,21 @@ export class TelegramConnectService {
     if (!userIsAdmin) return fail('user_not_admin', chat.title);
 
     const parks = await this.bump(parksKey(session.id), this.ttlLeft(session));
-    if (parks > TG_MAX_PARKS_PER_SESSION) return this.failSession(session);
+    if (parks > TG_MAX_PARKS_PER_SESSION) return this.failSession(session, 'too_many_codes');
 
     const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
+    // Names the workspace and the chat, so a tricked user sees whose request this is,
+    // and offers "This wasn't me" (one reply_markup per message: the inline button
+    // replaces remove_keyboard; the request_chat keyboard is one_time and folds itself).
+    const workspace = await this.prisma.workspace.findUnique({ where: { id: session.workspaceId }, select: { name: true } });
     const sent = await this.client.sendMessage({
       chat_id: telegramUserId,
-      text: telegramText(lang, 'code', { title: chat.title ?? (chat.username ? `@${chat.username}` : ''), code }),
-      reply_markup: { remove_keyboard: true },
+      text: telegramText(lang, 'code', {
+        title: chat.title ?? (chat.username ? `@${chat.username}` : ''),
+        workspace: workspace?.name ?? '',
+        code,
+      }),
+      reply_markup: { inline_keyboard: [[{ text: telegramText(lang, 'buttonNotMe'), callback_data: `${DENY_PREFIX}${session.id}` }]] },
     });
     if (!sent.ok) {
       // No code nobody can read: the web shows the error, the user can try again.
@@ -590,15 +601,15 @@ export class TelegramConnectService {
     return code;
   }
 
-  /** The session is over (too many codes or attempts). Nothing is DMed. */
-  private async failSession(session: SessionRecord): Promise<TelegramConnectErrorCode> {
+  /** The session is over (too many codes sent, or too many attempts). Nothing is DMed. */
+  private async failSession(session: SessionRecord, reason: 'too_many_attempts' | 'too_many_codes'): Promise<TelegramSessionError> {
     session.status = 'failed';
-    session.error = 'too_many_attempts';
+    session.error = reason;
     session.pending = undefined;
     session.codeHash = undefined;
     await this.save(session);
-    this.logger.warn(`Telegram connect session failed: too many codes or attempts (workspace=${session.workspaceId})`);
-    return 'too_many_attempts';
+    this.logger.warn(`Telegram connect session failed: ${reason} (workspace=${session.workspaceId})`);
+    return reason;
   }
 
   private async backToStarted(session: SessionRecord, code: TelegramConnectErrorCode): Promise<never> {
