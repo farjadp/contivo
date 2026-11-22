@@ -13,8 +13,12 @@
  *     messages (Telegram: no more than one message per second per chat);
  *   - image: whole post ≤ 1,024 chars → one sendPhoto with caption, else the
  *     photo first and then the text (previews off, the photo is the visual);
- *   - every delivered part is recorded through PublishContext, and a retry
- *     skips parts already delivered — a failure on part 3 never re-posts 1-2;
+ *   - every delivered part is recorded through PublishContext with the
+ *     sha256 of what was sent, and a retry skips parts already delivered — a
+ *     failure on part 3 never re-posts 1-2. If the post was edited between
+ *     attempts (a delivered part's hash no longer matches), nothing is sent:
+ *     non-retryable INVALID_CONTENT, because skipping would leave a mixed
+ *     post and resending would duplicate it;
  *   - migrate_to_chat_id (group upgraded to supergroup) → store the new id,
  *     resend once.
  * Write-back: externalPostId "<chat_id>:<first message_id>"; URL
@@ -22,6 +26,8 @@
  * (private; opens for members only. The -100 rule is ASSUMED until checked
  * on a real private channel).
  */
+
+import * as crypto from 'crypto';
 
 import { Injectable, Logger } from '@nestjs/common';
 import type { SocialPlatform } from '@prisma/client';
@@ -41,6 +47,7 @@ import type {
   PublishContext,
   PublishPayload,
   PublishResult,
+  SentPart,
   SocialAdapter,
   ValidationResult,
 } from './social-adapter.interface';
@@ -58,6 +65,23 @@ type ChatType = 'channel' | 'group' | 'supergroup';
 type Part =
   | { kind: 'photo'; caption?: string }
   | { kind: 'text'; html: string; noPreview: boolean };
+
+/** What a part's hash covers: the HTML sent, or for a photo the image bytes and caption. */
+export type TelegramPartContent =
+  | { kind: 'text'; html: string }
+  | { kind: 'photo'; caption?: string; image?: Buffer };
+
+/** sha256 (hex) of one part's content, stored with PART_SENT. */
+export function telegramPartHash(part: TelegramPartContent): string {
+  const h = crypto.createHash('sha256');
+  if (part.kind === 'text') {
+    h.update('text\0').update(part.html);
+  } else {
+    h.update('photo\0').update(crypto.createHash('sha256').update(part.image ?? Buffer.alloc(0)).digest('hex'));
+    h.update('\0').update(part.caption ?? '');
+  }
+  return h.digest('hex');
+}
 
 /** Can the bot (as this chat member) post in a chat of this type? */
 export function memberCanPost(member: TgChatMember, chatType: ChatType): boolean {
@@ -189,7 +213,23 @@ export class TelegramAdapter implements SocialAdapter {
       return { success: false, error: validation.errors.join(' '), retryable: false, failureCode: 'INVALID_CONTENT' };
     }
     const parts = this.plan(payload);
-    const sent = context?.sentParts ?? new Map<number, string>();
+    const sent = context?.sentParts ?? new Map<number, SentPart>();
+    const hashes = parts.map((part) =>
+      telegramPartHash(part.kind === 'text' ? part : { kind: 'photo', caption: part.caption, image: payload.image?.data }));
+
+    // Checked for every delivered part before anything is sent.
+    for (const [index, done] of sent) {
+      if (index >= parts.length || done.contentHash !== hashes[index]) {
+        this.logger.warn(`Telegram post for connection ${connection.id} changed after part ${index + 1} was delivered; not sending`);
+        return {
+          success: false,
+          retryable: false,
+          failureCode: 'INVALID_CONTENT',
+          error: `Post changed after partial delivery: part ${index + 1} is already in the Telegram chat with different content. Delete the posted parts in Telegram, then publish the post again as a new post.`,
+        };
+      }
+    }
+
     const ids: string[] = [];
     let chatId = connection.accountIdentifier;
     let migrated = false;
@@ -198,7 +238,7 @@ export class TelegramAdapter implements SocialAdapter {
     for (let index = 0; index < parts.length; index++) {
       const already = sent.get(index);
       if (already) {
-        ids[index] = already;
+        ids[index] = already.externalId;
         continue;
       }
       if (sentThisRun > 0 || index > 0) await this.pause(TELEGRAM_PART_PAUSE_MS);
@@ -220,7 +260,7 @@ export class TelegramAdapter implements SocialAdapter {
       ids[index] = messageId;
       sentThisRun += 1;
       try {
-        await context?.recordPart(index, messageId);
+        await context?.recordPart(index, messageId, hashes[index]);
       } catch (err) {
         // The part is live but unrecorded: a retry would post it again. Stop here.
         this.logger.error(`Telegram part ${index + 1} sent but not recorded (connection ${connection.id}): ${(err as Error).message}`);

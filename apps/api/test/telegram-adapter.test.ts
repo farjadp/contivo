@@ -11,8 +11,9 @@
 import { strict as assert } from 'node:assert';
 import { after, afterEach, before, beforeEach, describe, it } from 'node:test';
 
-import type { AdapterConnection, PublishContext } from '../src/modules/social/adapters/social-adapter.interface';
-import { TelegramAdapter } from '../src/modules/social/adapters/telegram.adapter';
+import type { AdapterConnection, PublishContext, SentPart } from '../src/modules/social/adapters/social-adapter.interface';
+import { splitTelegramMessages } from '../src/modules/social/adapters/telegram-format';
+import { TelegramAdapter, telegramPartHash } from '../src/modules/social/adapters/telegram.adapter';
 import { TelegramBotClient } from '../src/modules/social/telegram/telegram-bot.client';
 
 import { BOT_ID, fail, ok, startFakeTelegram, type FakeTelegram } from './helpers/fake-telegram';
@@ -25,7 +26,7 @@ const conn = (over: Partial<AdapterConnection> = {}): AdapterConnection => ({
   ...over,
 });
 
-function ctx(sent: Record<number, string> = {}) {
+function ctx(sent: Record<number, SentPart> = {}) {
   const recorded: Array<[number, string]> = [];
   const identifiers: string[] = [];
   const context: PublishContext = {
@@ -170,7 +171,11 @@ describe('TelegramAdapter', () => {
 
     it('retry skips parts already sent and keeps the first id', async () => {
       const body = Array.from({ length: 6 }, (_, i) => `Para ${i} ${'x '.repeat(900)}`).join('\n\n');
-      const { context, recorded } = ctx({ 0: '501', 1: '502' });
+      const [p0, p1] = splitTelegramMessages(body);
+      const { context, recorded } = ctx({
+        0: { externalId: '501', contentHash: telegramPartHash({ kind: 'text', html: p0 }) },
+        1: { externalId: '502', contentHash: telegramPartHash({ kind: 'text', html: p1 }) },
+      });
       const r = await adapter.publish(conn(), { body }, context);
       assert.equal(r.success, true);
       assert.ok(!tg.callsOf('sendMessage').some((c) => c.body.text.startsWith('Para 0')));

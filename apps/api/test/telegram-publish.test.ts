@@ -126,6 +126,22 @@ describe('Telegram publish through the core', () => {
     assert.equal(indexes.length, 1 + retrySends.length);
   });
 
+  it('PART_SENT stores a content hash; post edited before the retry → [INVALID_CONTENT], no part re-sent', async () => {
+    const s = setup(LONG);
+    await s.scheduler.handleScheduledPublishing();
+    tg.queue('sendMessage', ok({ message_id: 4001, chat: { id: 1 } }), fail(429, 'Too Many Requests: retry after 4', { retry_after: 4 }));
+    await runQueued(s).catch(() => undefined);
+    const part = s.prisma.socialPublishLog.rows.find((l) => l.action === 'PART_SENT')!;
+    assert.match(JSON.parse(part.requestSummary).contentHash, /^[0-9a-f]{64}$/);
+
+    const queued = s.enqueued[s.enqueued.length - 1];
+    queued.metadata = { ...queued.metadata, body: LONG.replace('Para 0', 'Para zero') };
+    const before = tg.callsOf('sendMessage').length;
+    assert.equal(await runQueued(s, { attemptsMade: 1, maxAttempts: 3 }), 'FAILED');
+    assert.equal(tg.callsOf('sendMessage').length, before, 'nothing sent');
+    assert.match(job(s.prisma).lastError, /^\[INVALID_CONTENT\] Post changed after partial delivery/);
+  });
+
   it('bot kicked → connection REVOKED, item FAILED with CONNECTION_REVOKED, nothing sent', async () => {
     const s = setup();
     await s.scheduler.handleScheduledPublishing();

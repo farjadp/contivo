@@ -94,14 +94,23 @@ export interface PublishResult {
  * Per-job state the service hands to adapters that post in several parts
  * (Telegram splits long posts). Lets a retry skip parts already delivered.
  */
+/** A part delivered by an earlier attempt of the same job. */
+export interface SentPart {
+  externalId: string;
+  /** sha256 (hex) of what was sent. Missing on rows written before hashes existed → treated as changed. */
+  contentHash?: string;
+}
+
 export interface PublishContext {
-  /** Parts delivered by an earlier attempt of this job: part index → platform message id. */
-  sentParts: ReadonlyMap<number, string>;
+  /** Parts delivered by an earlier attempt of this job, by part index. */
+  sentParts: ReadonlyMap<number, SentPart>;
   /**
-   * Records one delivered part. Called before the next part is sent; if it
-   * throws, the adapter must stop (a retry would otherwise post it twice).
+   * Records one delivered part with the hash of its content, so a retry can
+   * tell an unchanged part (skip) from an edited post (stop). Called before
+   * the next part is sent; if it throws, the adapter must stop (a retry would
+   * otherwise post it twice).
    */
-  recordPart(index: number, externalId: string): Promise<void>;
+  recordPart(index: number, externalId: string, contentHash: string): Promise<void>;
   /** The platform moved the account to a new id (Telegram group → supergroup). */
   updateAccountIdentifier(newIdentifier: string): Promise<void>;
 }

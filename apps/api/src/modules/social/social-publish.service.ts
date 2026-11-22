@@ -35,7 +35,7 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';
 
 import { AdapterFactory, UnsupportedPlatformError } from './adapters/adapter.factory';
-import type { AdapterConnection, PublishContext, PublishPayload } from './adapters/social-adapter.interface';
+import type { AdapterConnection, PublishContext, PublishPayload, SentPart } from './adapters/social-adapter.interface';
 import { CreatePublishJobDto } from './dto/create-publish-job.dto';
 import { PermanentPublishError, TransientPublishError } from './publish-errors';
 import { buildPublishPayload } from './publish-payload';
@@ -550,12 +550,12 @@ export class SocialPublishService {
       where: { publishJobId: jobId, action: PART_SENT, status: 'SUCCESS' },
       orderBy: { createdAt: 'asc' },
     });
-    const sentParts = new Map<number, string>();
+    const sentParts = new Map<number, SentPart>();
     for (const row of rows) {
       try {
-        const { index, externalId } = JSON.parse(row.requestSummary ?? '{}') as { index?: unknown; externalId?: unknown };
+        const { index, externalId, contentHash } = JSON.parse(row.requestSummary ?? '{}') as { index?: unknown; externalId?: unknown; contentHash?: unknown };
         if (typeof index === 'number' && typeof externalId === 'string' && !sentParts.has(index)) {
-          sentParts.set(index, externalId);
+          sentParts.set(index, { externalId, ...(typeof contentHash === 'string' && { contentHash }) });
         }
       } catch {
         this.logger.warn(`Job ${jobId}: unreadable ${PART_SENT} log row ${row.id}`);
@@ -563,7 +563,7 @@ export class SocialPublishService {
     }
     return {
       sentParts,
-      recordPart: (index, externalId) => this.appendLog(jobId, PART_SENT, 'SUCCESS', { index, externalId }),
+      recordPart: (index, externalId, contentHash) => this.appendLog(jobId, PART_SENT, 'SUCCESS', { index, externalId, contentHash }),
       updateAccountIdentifier: async (newIdentifier) => {
         await this.prisma.socialConnection.update({
           where: { id: connectionId },
