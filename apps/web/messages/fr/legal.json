@@ -36,7 +36,7 @@
       "summary": [
         "Nous collectons ce dont le produit a besoin pour fonctionner : votre compte, votre espace de travail et les comptes que vous connectez. Rien à des fins publicitaires.",
         "Nous ne vendons jamais vos données, ne vous montrons jamais de publicité et ne déposons aucun cookie de suivi ou de mesure d’audience.",
-        "Vos textes sont envoyés à des fournisseurs d’IA (OpenAI et Google) pour être analysés et rédigés. C’est ainsi que le produit fonctionne, et nous le disons clairement.",
+        "Vos textes sont envoyés à des fournisseurs d’IA (OpenAI, Anthropic et Google) pour être analysés et rédigés. C’est ainsi que le produit fonctionne, et nous le disons clairement.",
         "Écrivez à {email} et nous supprimons votre compte et votre espace de travail dans un délai de 30 jours."
       ],
       "sections": [
@@ -80,10 +80,10 @@
           "blocks": [
             "Contivo fonctionne sur l’infrastructure d’autres entreprises. Chacune ne reçoit que ce dont sa partie du travail a besoin :",
             [
-              "OpenAI et Google (Gemini) : le contenu de votre site, votre mémoire de marque et vos instructions, pour analyser, planifier et rédiger. Ce qu’ils font des données transmises par API est régi par leurs conditions d’utilisation de l’API.",
+              "OpenAI, Anthropic (Claude) et Google (Gemini) : le contenu de votre site, votre mémoire de marque et vos instructions, pour analyser, planifier et rédiger. Si l’un d’eux est indisponible, la même requête peut passer à un autre. Ce qu’ils font des données transmises par API est régi par leurs conditions d’API.",
               "DataForSEO : des mots-clés et des noms de domaine, pour obtenir les volumes de recherche et les pages de résultats. Aucun renseignement personnel.",
               "LinkedIn et X : les publications que vous publiez, et uniquement une fois le compte connecté.",
-              "Vercel, Railway et Neon : l’hébergement et la base de données, où tout ce qui précède est stocké.",
+              "Railway et Neon : l’hébergement et la base de données, où tout ce qui précède est stocké.",
               "Sentry : les rapports d’erreur.",
               "Stripe : les paiements, une fois la facturation en place."
             ],
@@ -155,7 +155,7 @@
       "summary": [
         "Ce que vous apportez et ce que Contivo rédige pour vous vous appartiennent, l’un comme l’autre.",
         "L’IA peut se tromper. Le contrôle qualité intercepte beaucoup d’erreurs, mais vous êtes responsable de ce qui est publié sous votre nom, y compris ce que publie le pilote automatique.",
-        "Contivo est en accès anticipé et gratuit pour l’instant. Lorsque la facturation commencera, vous pourrez résilier à tout moment.",
+        "Contivo est en accès anticipé. Les nouveaux comptes sont gratuits pour l’instant, et certains utilisateurs de l’accès anticipé ont payé pour une période déterminée. Lorsque la facturation commencera dans l’application, vous pourrez résilier à tout moment.",
         "Dans les 14 jours suivant un paiement, il vous suffit de le demander pour être remboursé intégralement. Sans questions."
       ],
       "sections": [
@@ -172,7 +172,8 @@
           "title": "Accès anticipé",
           "blocks": [
             "Contivo est en accès anticipé. Les fonctionnalités vont évoluer, certaines seront ajoutées et d’autres retirées, et il y aura des interruptions de service. Pour l’instant, nous ne prenons aucun engagement de disponibilité.",
-            "Tant que la facturation n’est pas en place, l’utilisation de Contivo est gratuite. Avant de commencer à facturer, nous vous indiquerons ce que cela coûte, et rien ne sera facturé sans votre accord."
+            "Les nouveaux comptes sont gratuits tant que la facturation n’est pas en place dans l’application. Avant de commencer à facturer dans l’application, nous vous indiquerons ce que cela coûte, et rien ne sera facturé sans votre accord.",
+            "Certains utilisateurs de l’accès anticipé ont payé un montant unique de 49 dollars américains pour trois mois d’accès anticipé, convenu directement avec nous et non par l’application."
           ]
         },
         {
@@ -225,7 +226,7 @@
           "title": "Paiement et remboursements",
           "blocks": [
             "Lorsque la facturation sera en place, les prix applicables seront ceux affichés sur la page Tarifs au moment de votre abonnement. Les abonnements se renouvellent à chaque période jusqu’à leur résiliation. La résiliation empêche le renouvellement suivant, et votre formule reste active jusqu’à la fin de la période payée.",
-            "Dans les 14 jours suivant tout paiement, écrivez à {email} et nous remboursons ce paiement intégralement. Nous ne vous demanderons pas pourquoi.",
+            "Dans les 14 jours suivant tout paiement, écrivez à {email} et nous remboursons ce paiement intégralement. Nous ne vous demanderons pas pourquoi. Cela comprend les paiements d’accès anticipé convenus directement avec nous.",
             "Si nous modifions un prix, nous vous en informons au moins 30 jours avant qu’il ne s’applique à vous. Les taxes sont ajoutées lorsque la loi l’exige."
           ]
         },
