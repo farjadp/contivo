@@ -1,0 +1,48 @@
+{
+  "instant": {
+    "meta": { "title": "Contenido instantáneo — Contivo" },
+    "title": "Contenido instantáneo",
+    "subtitle": "Escribe un tema y elige un canal. Obtén contenido listo para publicar en segundos.",
+    "form": {
+      "channel": "Canal",
+      "topic": "Tema",
+      "topicPlaceholder": "p. ej., Por qué los fundadores B2B deberían apostar por el liderazgo de opinión antes de contratar un equipo de marketing",
+      "tone": "Tono",
+      "generating": "Generando…",
+      "generate": "Generar contenido",
+      "unexpectedError": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "channels": {
+      "linkedin": "Post",
+      "twitter": "Hilo",
+      "instagram": "Pie de foto",
+      "email": "Borrador",
+      "blog": "Esquema"
+    },
+    "channelNames": {
+      "email": "Email",
+      "blog": "Blog"
+    },
+    "tones": {
+      "professional": "Profesional",
+      "friendly": "Cercano",
+      "bold": "Audaz",
+      "educational": "Didáctico",
+      "persuasive": "Persuasivo"
+    },
+    "result": {
+      "linkedin": "Post de LinkedIn",
+      "twitter": "Hilo de X",
+      "instagram": "Pie de foto de Instagram",
+      "email": "Borrador de email",
+      "blog": "Esquema de blog",
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "new": "Nuevo",
+      "regenerate": "Generar otra vez",
+      "topicLabel": "Tema: ",
+      "creditsUsed": "{count, plural, one {# crédito usado} other {# créditos usados}}",
+      "creditsRemaining": "Quedan {count, number}"
+    }
+  }
+}

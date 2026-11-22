@@ -16,7 +16,9 @@
     "label": "زبان",
     "en": "English",
     "fa": "فارسی",
-    "it": "Italiano"
+    "it": "Italiano",
+    "es": "Español",
+    "he": "עברית"
   },
   "intake": {
     "label": "با تنها چیزی که لازم دارد شروع کنید",

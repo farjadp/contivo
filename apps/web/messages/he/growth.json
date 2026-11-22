@@ -1,0 +1,306 @@
+{
+  "growth": {
+    "index": {
+      "metaTitle": "סביבות עבודה",
+      "title": "סביבות עבודה",
+      "subtitle": "סביבות העבודה האסטרטגיות שלכם, מבוססות AI. בכל שורה יש כניסה ישירה לכל מודול פנימי, עם הסבר קצר.",
+      "newWorkspace": "סביבת עבודה חדשה",
+      "rowHint": "כל סביבת עבודה מוצגת כשורה אחת. מתוך השורה אפשר להיכנס ישר לכל אחת מהלשוניות שלה.",
+      "empty": {
+        "title": "עדיין אין סביבות עבודה",
+        "body": "צרו את סביבת העבודה הראשונה שלכם. ספרו לנו על המותג, ונבנה לכם אסטרטגיית תוכן מותאמת תוך שניות.",
+        "cta": "יצירת סביבת עבודה"
+      },
+      "statusActive": "פעילה",
+      "statusDraft": "טיוטה",
+      "noUrl": "אין כתובת",
+      "statCompetitors": "מתחרים",
+      "statContentItems": "פריטי תוכן",
+      "industry": "תחום:",
+      "openWorkspace": "פתיחת סביבת העבודה",
+      "openStrategy": "פתיחת האסטרטגיה",
+      "cards": {
+        "pipelineTitle": "צנרת התוכן",
+        "pipelineDesc": "פריטי תוכן במעקב לתכנון, לכתיבה ולביצוע: {count, number}.",
+        "ideationTitle": "תחנת הרעיונות",
+        "ideationDesc": "יוצרים זוויות לקמפיינים והופכים רעיונות לתוכן מוכן לפרסום, מהר.",
+        "strategyTitle": "זיכרון המותג",
+        "strategyDesc": "עמודי תוכן שנאספו מהקול ומהמיצוב של האתר: {count, number}.",
+        "matricesTitle": "מטריצות שוק",
+        "matricesDesc": "תרשימים תחרותיים שנוצרו למיצוב ולבידול: {count, number}.",
+        "keywordsTitle": "מילות מפתח של מתחרים",
+        "keywordsDesc": "מתחרים שנותחו לאשכולות מילות מפתח ולפערים באסטרטגיית התוכן: {count, number}.",
+        "offeringsTitle": "מוצרים ושירותים",
+        "offeringsDesc": "הצעות של הלקוח שמופו להשוואה מול ההיצע בשוק: {count, number}."
+      }
+    },
+    "new": {
+      "back": "חזרה",
+      "titleTop": "בניית",
+      "titleAccent": "סביבת עבודה",
+      "lead": "הזינו את הדומיין שלכם. נסרוק את המותג באופן אוטומטי, נחלץ את המסרים ונבנה את אסטרטגיית התוכן.",
+      "systemInit": "הפעלת המערכת",
+      "nameLabel": "<num>01</num> — שם החברה",
+      "namePlaceholder": "Acme Corp",
+      "urlLabel": "<num>02</num> — הדומיין הראשי",
+      "urlPlaceholder": "https://acme.com",
+      "submit": "ניתוח האתר",
+      "submitting": "מאתחל...",
+      "note": "לפני שההגדרות יישמרו, תוכלו לבדוק ולשנות את כל המידע שחולץ."
+    },
+    "analyzing": {
+      "processing": "בעיבוד — המערכת פעילה",
+      "titleTop": "מנתחים את",
+      "titleAccent": "האתר",
+      "lead": "מנוע המודיעין של <brand>Contivo</brand> קורא עכשיו את הדפים שלכם. זה לוקח בדרך כלל 10–30 שניות.",
+      "doNotClose": "לא לסגור את החלון",
+      "phase": "שלב 0{n, number}",
+      "running": "רץ...",
+      "complete": "הושלם",
+      "steps": {
+        "connect": "מתחברים לאתר שלכם",
+        "read": "קוראים את הדפים המרכזיים",
+        "understand": "מבינים את המותג ואת קהל היעד",
+        "build": "בונים את זיכרון המותג"
+      },
+      "error": {
+        "eyebrow": "הניתוח נעצר",
+        "titleTop": "לא הצלחנו לקרוא",
+        "titleAccent": "את האתר שלכם",
+        "threw": "משהו השתבש בניתוח האתר. כדאי לנסות שוב.",
+        "failed": "לא הצלחנו לנתח את האתר. כדאי לנסות שוב.",
+        "retry": "ניסיון נוסף",
+        "back": "חזרה לסביבות העבודה"
+      }
+    },
+    "workspace": {
+      "metaTitle": "לוח הבקרה של סביבת העבודה",
+      "warningsTitle": "ההגדרה הסתיימה עם בעיות",
+      "back": "סביבות עבודה",
+      "autopilotOn": "טייס אוטומטי פעיל · {posts, number} בשבוע",
+      "autopilotOff": "הפעלת טייס אוטומטי",
+      "ideateByHand": "רעיונות ידניים",
+      "statCompetitors": "מתחרים",
+      "statContent": "תוכן",
+      "statDiscoveryRuns": "חיפושי מתחרים",
+      "statDiscoveryValue": "{used, number} / {total, number}",
+      "statAiCalls": "קריאות AI",
+      "statAiTokens": "טוקנים של AI",
+      "statEstCost": "עלות משוערת",
+      "trackedNote": "רק מודולים במעקב",
+      "tabTitleGated": "{helper} — {gate}",
+      "tabs": {
+        "strategyLabel": "זיכרון המותג",
+        "strategyHelper": "{count, number} נכסים",
+        "matricesLabel": "מטריצות שוק",
+        "matricesHelper": "{count, number} תרשימים",
+        "keywordsLabel": "מילות מפתח של מתחרים",
+        "keywordsHelper": "{count, number} נותחו",
+        "narrativeLabel": "נרטיב",
+        "narrativeHelper": "{count, number} קווי סיפור",
+        "offeringsLabel": "מוצרים ושירותים",
+        "offeringsHelper": "{count, number} הצעות של הלקוח",
+        "seoLabel": "מודיעין SEO",
+        "seoHelper": "{count, number} הזדמנויות",
+        "ideationLabel": "תחנת הרעיונות",
+        "ideationHelper": "רעיונות וטיוטות AI",
+        "pipelineLabel": "צנרת התוכן",
+        "pipelineHelper": "{count, number} פריטים",
+        "calendarLabel": "לוח הפרסומים",
+        "calendarHelper": "תוכן מתוזמן",
+        "autopilotLabel": "טייס אוטומטי",
+        "autopilotHelperOn": "פעיל · {posts, number} בשבוע",
+        "autopilotHelperOff": "פרסום בלי מגע יד",
+        "reportsLabel": "דוחות",
+        "reportsHelper": "נותרו {count, number} החודש",
+        "progressLabel": "דוח התפתחות",
+        "progressHelper": "{before} → {now}"
+      },
+      "warnings": {
+        "competitorDiscoveryEmpty": "חיפוש המתחרים חזר ריק — ספק ה-AI לא היה זמין. אפשר לנסות שוב ממטריצות השוק."
+      },
+      "loop": {
+        "label": "שלבי סביבת העבודה",
+        "tabsLabel": "חלקי השלב",
+        "state": {
+          "done": "הושלם",
+          "next": "הבא בתור",
+          "open": "פתוח",
+          "locked": "נעול"
+        },
+        "know": {
+          "name": "להכיר",
+          "sub": "מותג והיצע"
+        },
+        "watch": {
+          "name": "לעקוב",
+          "sub": "שוק"
+        },
+        "think": {
+          "name": "לחשוב",
+          "sub": "מיצוב ורעיונות"
+        },
+        "make": {
+          "name": "ליצור",
+          "sub": "צנרת"
+        },
+        "ship": {
+          "name": "לפרסם",
+          "sub": "לוח שנה וטייס אוטומטי"
+        },
+        "learn": {
+          "name": "ללמוד",
+          "sub": "דוחות"
+        }
+      }
+    },
+    "competitors": {
+      "loading": "טוען מתחרים…",
+      "loadFailed": "לא הצלחנו לטעון את המתחרים שלכם.",
+      "retry": "ניסיון נוסף",
+      "newTab": "(נפתח בלשונית חדשה)",
+      "noDomain": "אין אתר",
+      "market": {
+        "searchingIn": "אזור החיפוש: {country} · שפה: {language}",
+        "everywhere": "כל המדינות",
+        "change": "שינוי",
+        "countryLabel": "מדינה",
+        "languageLabel": "שפת החיפוש",
+        "save": "שמירה",
+        "cancel": "ביטול",
+        "saveFailed": "לא הצלחנו לשמור את השוק.",
+        "lockedWhileRunning": "אפשר יהיה לשנות מדינה ושפה כשהחיפוש הנוכחי יסתיים."
+      },
+      "run": {
+        "find": "חיפוש מתחרים",
+        "quota": "נותרו {remaining, number} מתוך {max, number} חיפושים",
+        "quotaSpent": "{max, plural, =1 {ניצלתם את החיפוש היחיד של סביבת העבודה הזו.} other {ניצלתם את כל # החיפושים של סביבת העבודה הזו.}}",
+        "onlyDoneCounts": "חיפוש נספר רק כשהוא מוצא משהו.",
+        "startFailed": "לא הצלחנו להתחיל את החיפוש.",
+        "starting": "מכינים את החיפוש",
+        "leaveNote": "לא צריך להישאר בדף הזה. החיפוש ממשיך לרוץ, והתוצאות יחכו לכם כשתחזרו.",
+        "stages": {
+          "QUERIES": "כותבים שאילתות חיפוש",
+          "SEARCH": "מחפשים ברשת",
+          "ENRICH": "קוראים את האתר של כל מועמד",
+          "JUDGE": "בודקים כל אחד מול הראיות שלו",
+          "SAVE": "שומרים את התוצאות"
+        },
+        "stageDone": "הושלם",
+        "stageCurrent": "בתהליך",
+        "done": "{count, plural, one {נמצא מתחרה סביר אחד.} other {נמצאו # מתחרים סבירים.}} בדקו כל אחד ואת הראיות שלו למטה.",
+        "skippedSites": "{count, plural, one {הזמן נגמר לפני שהספקנו לקרוא אתר אחד, ולכן הוא לא בתוצאות.} other {הזמן נגמר לפני שהספקנו לקרוא # אתרים, ולכן הם לא בתוצאות.}}",
+        "emptyTitle": "הפעם לא נמצאו מתחרים",
+        "emptyDetail": "הרצנו {count, plural, one {שאילתה אחת} other {# שאילתות}} בשפה: {language}, באזור: {country}, אבל לאף אחת מהתוצאות לא היו מספיק ראיות.",
+        "emptyDetailNoCount": "חיפשנו בשפה: {language}, באזור: {country}, אבל לאף אחת מהתוצאות לא היו מספיק ראיות.",
+        "notCharged": "החיפוש הזה לא נספר במכסה שלכם.",
+        "nextStepsIntro": "לפני החיפוש הבא, אפשר לעשות אחד משני דברים:",
+        "nextChangeMarket": "לשנות את המדינה או את השפה",
+        "nextAddManual": "להוסיף מתחרה שאתם כבר מכירים",
+        "nextAddManualHint": "החיפוש הבא ישתמש בו כנקודת ייחוס.",
+        "failedTitle": "החיפוש לא הסתיים",
+        "failedNotCharged": "הוא לא נספר במכסה שלכם, אז אפשר לנסות שוב.",
+        "failedReason": {
+          "timedOut": "החיפוש לקח יותר מדי זמן והופסק.",
+          "dispatch": "החיפוש לא התחיל בגלל תקלה אצלנו.",
+          "judgeOutage": "השירות שבודק כל חברה מול הראיות שלה לא היה זמין, כך שלא ניתן היה לבדוק דבר. הבעיה לא בשוק שבחרתם.",
+          "searchUnavailable": "חיפוש הרשת שמאתר מתחרים לא היה זמין, כך שלא נמצא אף אחד. הבעיה לא בשוק שבחרתם.",
+          "rateLimited": "שירות ה-AI מקבל כרגע יותר מדי בקשות. חכו כמה דקות ונסו שוב.",
+          "aiUnavailable": "שירות ה-AI לא זמין כרגע. קיבלנו התראה ואנחנו מטפלים בזה. העבודה שלכם שמורה.",
+          "generic": "משהו השתבש במערכת שלנו."
+        },
+        "pollStopped": "הדף הפסיק לבדוק את מצב החיפוש. טענו אותו מחדש כדי לראות איפה הוא עומד.",
+        "queriesTitle": "שאילתות חיפוש"
+      },
+      "queue": {
+        "title": "ממתינים לבדיקה שלכם",
+        "empty": "אין כרגע מה לבדוק. מתחרים שחיפוש ימצא יופיעו כאן.",
+        "accept": "הוספה למתחרים",
+        "reject": "הנחה בצד",
+        "typeLabel": "סוג",
+        "why": "למה הוא הוצע?",
+        "queries": "החיפושים שמצאו אותו",
+        "sources": "דפים שמזכירים אותו",
+        "site": "מה האתר שלו אומר",
+        "features": "יכולות עיקריות",
+        "sitePages": "הדפים שקראנו",
+        "noEvidence": "לא נשמרו ראיות להצעה הזו.",
+        "initialGuessBadge": "ניחוש ראשוני, בלי ראיות",
+        "initialGuessNote": "השם הזה הוצע בשלב AI מוקדם יותר, על סמך תיאור העסק שלכם, ולא נמצא בחיפוש ברשת. אין לו אף אחת מהראיות שחיפושים חדשים אוספים. כדאי להציץ באתר שלו בעצמכם לפני שמוסיפים אותו.",
+        "decisionFailed": "זה לא נשמר. כדאי לנסות שוב.",
+        "typeSaveFailed": "הסוג לא נשמר. כדאי לנסות שוב."
+      },
+      "basis": {
+        "unconfirmed": "מבוסס על מתחרים שלא אושרו. כשהניתוח נוצר עוד לא אישרתם אף מתחרה, ולכן הוא השתמש בחברות שכמה חיפושים נפרדים מצאו ודירגו כמתחרים סבירים. בדקו אותן באזור המתחרים, ואז צרו את הניתוח מחדש.",
+        "legacy": "הניתוח הזה קודם לתיעוד שלנו על אילו מתחרים הוא נבנה. אם אתם רוצים להיות בטוחים שהוא מבוסס על המתחרים שאישרתם, צרו אותו מחדש."
+      },
+      "confidence": {
+        "high": "ביטחון גבוה",
+        "medium": "ביטחון בינוני",
+        "low": "ביטחון נמוך",
+        "unknown": "לא הוערך"
+      },
+      "labels": {
+        "SEO": "מתחרה בתוצאות החיפוש",
+        "BUSINESS": "מתחרה על לקוחות"
+      },
+      "types": {
+        "DIRECT": "ישיר",
+        "INDIRECT": "עקיף",
+        "ASPIRATIONAL": "שאפתני"
+      },
+      "undo": {
+        "accepted": "<b>{name}</b> נוסף לרשימת המתחרים שלכם.",
+        "rejected": "<b>{name}</b> הונח בצד ולא יוצע שוב.",
+        "reasonPrompt": "אם תרצו, ספרו למה, והחיפוש הבא יציע פחות חברות כאלה:",
+        "reasonSaved": "הסיבה נשמרה.",
+        "undo": "ביטול",
+        "dismiss": "סגירה",
+        "undoFailed": "לא הצלחנו לבטל את הפעולה. כדאי לנסות שוב.",
+        "removed": "<b>{name}</b> הוסר מהרשימה שלכם ולא יוצע שוב."
+      },
+      "reasons": {
+        "DIFFERENT_MARKET": "שוק אחר",
+        "TOO_BIG": "גדול מדי",
+        "DIFFERENT_PRODUCT": "מוצר אחר",
+        "NOT_A_COMPANY": "לא חברה"
+      },
+      "list": {
+        "title": "המתחרים שלכם",
+        "empty": "עדיין אין מתחרים ברשימה שלכם. הוסיפו מתוך ההצעות, או הזינו מתחרה שאתם מכירים.",
+        "addedByYou": "נוסף על ידיכם",
+        "remove": "הסרה מהרשימה",
+        "removeFailed": "לא הצלחנו להסיר אותו מהרשימה. כדאי לנסות שוב.",
+        "setAside": "הונח בצד",
+        "backToReview": "החזרה לבדיקה"
+      },
+      "add": {
+        "title": "הוספת מתחרה שאתם מכירים",
+        "hint": "הזינו את כתובת האתר שלו. נקרא את האתר ונבדוק כמה הוא קרוב לעסק שלכם. מה שלא תהיה התוצאה, המתחרה יתווסף לרשימה.",
+        "placeholder": "competitor.com",
+        "button": "הוספה",
+        "added": "<b>{name}</b> נוסף.",
+        "warning": "שימו לב:",
+        "failed": "לא הצלחנו להוסיף את המתחרה הזה."
+      },
+      "history": {
+        "title": "חיפושים קודמים",
+        "empty": "עדיין אין חיפושים.",
+        "found": "{count, number} נמצאו",
+        "notCharged": "לא נספר",
+        "legacy": "חיפוש ישן",
+        "status": {
+          "PENDING": "מתחיל",
+          "RUNNING": "רץ",
+          "DONE": "הסתיים",
+          "EMPTY": "לא נמצא דבר",
+          "FAILED": "לא הסתיים"
+        },
+        "accepted": "{count, number} אושרו",
+        "queries": "{count, plural, one {שאילתה אחת} other {# שאילתות}}",
+        "market": "{country}, {language}"
+      },
+      "signedOut": "התנתקתם מהמערכת. התחברו שוב כדי לראות את המתחרים שלכם."
+    }
+  }
+}

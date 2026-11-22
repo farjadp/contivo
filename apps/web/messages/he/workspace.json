@@ -1,0 +1,93 @@
+{
+  "journey": {
+    "steps": {
+      "brand": {
+        "title": "בניית זיכרון המותג",
+        "why": "כל מה ש־Contivo כותבת נשען על זה. בלעדיו אין קול שאפשר לכתוב בו.",
+        "action": "בדיקה או סריקה מחדש של זיכרון המותג",
+        "detailDone": "חולץ מהאתר שלך",
+        "detailTodo": "עדיין לא חולץ"
+      },
+      "market": {
+        "title": "מיפוי השוק",
+        "why": "מאשרים את המתחרים שהם באמת שלך, ואז יוצרים את מפות המיצוב. הרעיונות נבנים מהפערים שמתגלים בהן.",
+        "actionDiscover": "לגלות ולאשר לפחות 2 מתחרים",
+        "actionCharts": "ליצור את מטריצות המיצוב",
+        "actionRerunCharts": "להריץ מחדש את המפות על המתחרים שאישרת",
+        "detailDone": "{charts, number} מפות · {competitors, number} מתחרים אושרו",
+        "detailPartial": "{accepted, number} מתוך {total, number} מתחרים אושרו · עדיין אין מפות",
+        "detailNone": "עדיין לא התגלו מתחרים"
+      },
+      "keywords": {
+        "title": "ניתוח מילות המפתח של המתחרים",
+        "why": "מראה אילו נושאים המתחרים מחזיקים ואילו הם משאירים פתוחים. מכאן התוכן מקבל את הזווית שלו.",
+        "action": "הרצת ניתוח מילות מפתח",
+        "detailDone": "{count, number} מתחרים נותחו",
+        "detailTodo": "עדיין לא נותח"
+      },
+      "narrative": {
+        "title": "להחליט על מה עומדים",
+        "why": "שלושה או ארבעה טיעונים שכל פוסט צריך לקדם, כדי שהתוכן יתחבר לתמונה אחת במקום ארבעים פוסטים בלי קשר. נכתב על בסיס התובנות שלמעלה.",
+        "action": "ניסוח הנרטיב",
+        "detailDone": "{count, number} קווי עלילה",
+        "detailTodo": "עדיין אין עמדה"
+      },
+      "channel": {
+        "title": "חיבור ערוץ לפרסום",
+        "why": "חשבון ברשת חברתית או האתר שלך. בלי ערוץ, לטיוטות אין לאן ללכת.",
+        "action": "חיבור חשבון או הוספת אתר",
+        "detailDone": "מחובר",
+        "detailNamed": "{name}",
+        "detailTodo": "שום דבר לא מחובר"
+      },
+      "autopilot": {
+        "title": "הפעלת הטייס האוטומטי",
+        "why": "מכאן Contivo מעלה רעיונות, כותבת טיוטות, בודקת איכות ומפרסמת לפי לוח הזמנים שלך, בלי שצריך לבקש.",
+        "actionReview": "בדיקת המדיניות",
+        "actionEnable": "הפעלה ושמירת המדיניות",
+        "detailOn": "פועל",
+        "detailOff": "כבוי"
+      }
+    },
+    "blockers": {
+      "brandMemory": "זיכרון המותג",
+      "acceptedCompetitors": "מתחרים מאושרים",
+      "marketMap": "מפת השוק",
+      "connectedChannel": "ערוץ מחובר",
+      "narrative": "נרטיב לקדם",
+      "intelligenceSteps": "שלבי המודיעין שלמעלה"
+    },
+    "gates": {
+      "acceptCompetitors": "קודם צריך לאשר מתחרים",
+      "matricesAndKeywords": "דורש מטריצות + מילות מפתח",
+      "marketMap": "דורש את מפת השוק",
+      "narrative": "דורש נרטיב",
+      "fullIntelligence": "דורש מודיעין מלא"
+    }
+  },
+  "journeyGuide": {
+    "complete": "ההגדרה הושלמה — המותג, השוק, מילות המפתח, הערוץ והטייס האוטומטי מוכנים.",
+    "whatNow": "מה עכשיו?",
+    "youAreHere": "המיקום שלך:",
+    "needs": "דורש {what}",
+    "doneHeadline": "ההגדרה הושלמה.",
+    "doneRunning": "הטייס האוטומטי פועל. {scheduled, plural, one {פוסט אחד} two {שני פוסטים} other {# פוסטים}} בתור, {published, number} פורסמו עד עכשיו. כרגע לא נדרש ממך כלום — אפשר לבדוק בהיסטוריית ההרצות של הטייס האוטומטי מה הוא החליט.",
+    "doneIdle": "הכול מחובר ומנותח. אפשר להעלות רעיונות ידנית, או להפעיל את הטייס האוטומטי ולתת לו לרוץ בלעדיך.",
+    "nextHeadline": "השלב הבא: {step}",
+    "nextBody": "{why} כרגע: {detail}.",
+    "gateBlocked": "השלב הזה עדיין לא מוכן — {reason}.",
+    "gateConsequence": "הרצה עכשיו לא תניב שום דבר מועיל.",
+    "setup": "הגדרה",
+    "explainStep": "הסבר על השלב",
+    "dismiss": "סגירה",
+    "writtenForBrand": "נכתב עבור המותג הזה",
+    "guideLabel": "מדריך"
+  },
+  "connectionHealth": {
+    "expiredTitle": "צריך להתחבר מחדש ל-<bdi>LinkedIn</bdi>",
+    "expiredBody": "פג תוקף ההתחברות של <bdi>{account}</bdi>, ולכן פוסטים ל-<bdi>LinkedIn</bdi> ייכשלו עד שתתחברו מחדש. התחברות ל-<bdi>LinkedIn</bdi> תקפה ל-{period, number} ימים.",
+    "expiringTitle": "ההתחברות שלכם ל-<bdi>LinkedIn</bdi> תפוג {days, plural, one {בעוד יום} two {בעוד יומיים} other {בעוד # ימים}}",
+    "expiringBody": "כדאי לחבר מחדש את <bdi>{account}</bdi> עכשיו כדי שהפוסטים המתוזמנים ימשיכו להתפרסם. התחברות ל-<bdi>LinkedIn</bdi> תקפה ל-{period, number} ימים.",
+    "cta": "התחברות מחדש"
+  }
+}

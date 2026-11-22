@@ -34,12 +34,12 @@ export function SiteNav() {
           </bdi>
         </Link>
 
-        <nav className="hidden items-center gap-9 md:flex">
+        <nav className="hidden items-center gap-6 lg:flex xl:gap-9">
           {LINKS.map((l) => (
             <Link
               key={l.key}
               href={l.href}
-              className="text-[14px] text-moss-muted underline decoration-transparent underline-offset-[7px] transition-colors duration-200 hover:text-moss hover:decoration-saffron"
+              className="whitespace-nowrap text-[14px] text-moss-muted underline decoration-transparent underline-offset-[7px] transition-colors duration-200 hover:text-moss hover:decoration-saffron"
             >
               {t(l.key)}
             </Link>
@@ -48,15 +48,17 @@ export function SiteNav() {
 
         <div className="flex items-center gap-4 sm:gap-5">
           <LocaleSwitcher />
+          {/* Hidden on phones, where it pushed the header past the screen in
+              Spanish; the sign-up page links to sign-in. */}
           <Link
             href="/sign-in"
-            className="text-[14px] text-moss-muted transition-colors hover:text-moss"
+            className="hidden whitespace-nowrap text-[14px] text-moss-muted transition-colors hover:text-moss sm:inline"
           >
             {t('signIn')}
           </Link>
           <Link
             href="/sign-up"
-            className="inline-flex h-11 items-center rounded-lg bg-moss px-5 text-[14px] font-semibold text-chalk transition-colors duration-200 hover:bg-moss-700"
+            className="inline-flex h-11 items-center whitespace-nowrap rounded-lg bg-moss px-5 text-[14px] font-semibold text-chalk transition-colors duration-200 hover:bg-moss-700"
           >
             {t('startFree')}
           </Link>

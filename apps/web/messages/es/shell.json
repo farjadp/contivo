@@ -1,0 +1,28 @@
+{
+  "shell": {
+    "nav": {
+      "overview": "Hoy",
+      "growth": "Workspaces",
+      "connections": "Conexiones",
+      "instant": "Contenido instantáneo",
+      "settings": "Configuración"
+    },
+    "signOut": "Cerrar sesión",
+    "header": {
+      "signIn": "Iniciar sesión",
+      "signUp": "Registrarse"
+    },
+    "credits": {
+      "label": "{count, number} créditos"
+    },
+    "navLabel": "Principal",
+    "account": "Cuenta",
+    "notFound": {
+      "eyebrow": "Error {code, number}",
+      "title": "Esta página no está aquí",
+      "body": "Puede que el enlace sea antiguo o que la publicación se haya movido o nunca se publicara.",
+      "home": "Volver al inicio",
+      "blog": "Leer el blog"
+    }
+  }
+}

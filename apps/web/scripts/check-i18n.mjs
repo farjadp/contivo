@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const LOCALES = ['en', 'fa', 'it'];
+const LOCALES = ['en', 'fa', 'it', 'es', 'he'];
 
 /** The namespace list, read from the source of truth rather than duplicated. */
 function namespaces() {

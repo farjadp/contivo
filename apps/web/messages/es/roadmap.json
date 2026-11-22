@@ -1,0 +1,103 @@
+{
+  "roadmap": {
+    "meta": {
+      "title": "Hoja de ruta de Contivo: lo que se está construyendo y lo que ya salió",
+      "description": "Lo que Contivo construye ahora, después y más adelante, sin fechas prometidas, y una lista fechada de lo que ya salió."
+    },
+    "eyebrow": "Hoja de ruta",
+    "headline": "Lo que viene, en orden. <accent>No</accent> por fecha.",
+    "intro": "El orden es un plan; una fecha sería una promesa que podríamos romper. Cuando algo sale, pasa a la lista de abajo, con el día en que entró.",
+    "horizons": {
+      "now": {
+        "title": "Ahora",
+        "body": "En construcción."
+      },
+      "next": {
+        "title": "Después",
+        "body": "Diseñado y el siguiente en construirse."
+      },
+      "later": {
+        "title": "Más adelante",
+        "body": "Planificado, sin empezar."
+      }
+    },
+    "items": {
+      "channels": {
+        "title": "X, Telegram, WordPress y Threads",
+        "body": "El núcleo de publicación que comparten salió el 22 de noviembre. Cada canal se activa solo después de que una publicación real haya salido por él."
+      },
+      "billing": {
+        "title": "Planes de pago",
+        "body": "Founder, Growth y Agency, con los precios de la página de precios. Hasta que empiece la facturación, las cuentas nuevas son gratuitas."
+      },
+      "monitoring": {
+        "title": "Seguimiento semanal de la competencia",
+        "body": "Una relectura semanal de cada competidor confirmado y una lista de lo que cambió en su web, sus precios o su posicionamiento."
+      },
+      "imageQuality": {
+        "title": "Elegir la calidad de imagen",
+        "body": "Rápida, estándar o HD por imagen, para que una imagen desechable y una imagen principal no cuesten lo mismo."
+      },
+      "imageTemplate": {
+        "title": "Tu marca en las imágenes",
+        "body": "Titular y logotipo dibujados sobre la imagen con tus colores y una tipografía real, para que el texto salga bien, también en persa."
+      },
+      "video": {
+        "title": "Guiones de vídeo y vídeos con plantilla",
+        "body": "Guiones que puedes grabar y vídeos cortos hechos sin cámara."
+      },
+      "agency": {
+        "title": "Informes de marca blanca y enlaces para clientes",
+        "body": "El informe de estrategia con la marca propia de una agencia y un enlace que un cliente puede abrir sin cuenta."
+      },
+      "networks": {
+        "title": "Instagram, Facebook y TikTok",
+        "body": "Cada una necesita antes la revisión de la app por parte de su plataforma, así que los plazos dependen en parte de ellas."
+      },
+      "languages": {
+        "title": "Más idiomas de contenido",
+        "body": "Escribir en idiomas además del inglés y el persa."
+      }
+    },
+    "note": "El orden puede cambiar cuando los clientes nos dicen que algo importa más. Lo que descartamos se quita de esta página, no se deja ahí envejeciendo.",
+    "shippedTitle": "Novedades recientes",
+    "shippedIntro": "Cambios que un cliente notaría, con el día en que cada uno entró en el producto.",
+    "shipped": {
+      "ownPost": {
+        "title": "Escribe tu propia publicación y edita una ya publicada",
+        "body": "Añade al pipeline una publicación con tus propias palabras y corrige un artículo publicado sin moverlo de su sitio."
+      },
+      "failover": {
+        "title": "Otro proveedor de IA toma el relevo",
+        "body": "Si un proveedor no funciona, el siguiente se encarga del trabajo, y el cambio queda registrado."
+      },
+      "security": {
+        "title": "Correcciones de seguridad en la publicación y en las conexiones de sitios",
+        "body": "La publicación está vinculada a tu propio workspace, y la dirección de actualización de un sitio no puede apuntar a sistemas internos."
+      },
+      "tokens": {
+        "title": "Cuentas conectadas cifradas",
+        "body": "Los tokens de las cuentas sociales conectadas se guardan cifrados."
+      },
+      "italian": {
+        "title": "Italiano",
+        "body": "Este sitio en italiano."
+      },
+      "discovery": {
+        "title": "Descubrimiento de competidores y gráficos basados en evidencias",
+        "body": "Los competidores se encuentran junto con las evidencias en las que se basó el hallazgo, y cada puntuación de los gráficos muestra su razonamiento."
+      },
+      "report": {
+        "title": "Un nuevo informe de estrategia",
+        "body": "Nuestra plantilla, en la que el modelo solo escribe la prosa y nunca coloca puntos en los gráficos."
+      },
+      "persian": {
+        "title": "Persa",
+        "body": "Todo el producto, y la propia escritura, en persa."
+      }
+    },
+    "closeHeadline": "¿Echas en falta algo que necesitas?",
+    "closeCta": "Cuéntanoslo",
+    "closeFeatures": "Lo que funciona hoy"
+  }
+}

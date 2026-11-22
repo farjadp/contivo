@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "eyebrow": "Resumen",
+    "openWorkspace": "Abrir workspace",
+    "archived": {
+      "title": "Todos los workspaces están archivados",
+      "body": "Crea un workspace nuevo o pide a un administrador que restaure uno.",
+      "cta": "Nuevo workspace"
+    },
+    "journey": {
+      "step": "Paso {order, number} de {total, number} · configuración al {percent, number}%"
+    },
+    "autopilot": {
+      "label": "Autopilot",
+      "on": "Activado",
+      "off": "Desactivado",
+      "running": "{posts, number} posts a la semana en {channels}.",
+      "noChannel": "ningún canal",
+      "notRunning": "Todavía no está en marcha.",
+      "lastRun": "Última ejecución {when}: {status} — {scheduled, number} programados, {skipped, number} omitidos.",
+      "firstRunPending": "Activado: la primera ejecución será en el próximo ciclo.",
+      "needsIntelligence": "Primero crea la capa de inteligencia (Memoria de marca, matrices, keywords): Autopilot no escribe sin ella.",
+      "needsChannel": "Conecta una cuenta social o un sitio web para que tenga dónde publicar.",
+      "ready": "Todo está listo. Actívalo y mantendrá tu semana llena.",
+      "open": "Abrir Autopilot",
+      "setUp": "Configurar Autopilot",
+      "connectChannel": "Conectar un canal"
+    },
+    "actions": {
+      "brandTitle": "Completa los huecos de tu Memoria de marca",
+      "brandDesc": "Contivo todavía conoce poco tu marca. Los borradores serán genéricos hasta que sepa más.",
+      "brandCta": "Revisar Memoria de marca",
+      "marketTitle": "Confirma más competidores",
+      "marketDesc": "Hay menos de tres aceptados. El mapa de mercado los necesita para mostrar dónde estás.",
+      "marketCta": "Buscar competidores",
+      "keywordsTitle": "Convierte los huecos de keywords en ideas",
+      "keywordsDesc": "Hay {count, number} keywords listas para trabajar.",
+      "keywordsCta": "Generar ideas a partir de keywords",
+      "scheduleTitle": "Programa lo que ya está escrito",
+      "scheduleDesc": "{count, plural, one {# borrador espera} other {# borradores esperan}} en el pipeline.",
+      "scheduleCta": "Abrir calendario",
+      "momentumTitle": "Pon algo en el calendario",
+      "momentumDesc": "No hay nada programado para publicarse.",
+      "momentumCta": "Abrir pipeline"
+    },
+    "today": {
+      "headline": "{count, plural, =0 {Nada urgente esta semana.} one {Una acción que vale la pena esta semana.} other {# acciones que valen la pena esta semana.}}",
+      "healthy": "La inteligencia y el pipeline están en buen estado. Deja que Autopilot trabaje o genera ideas a mano.",
+      "setupTag": "Configuración · paso {order, number} de {total, number}",
+      "credits": "{count, number} créditos",
+      "moved": {
+        "title": "Qué ha cambiado",
+        "since": "últimos 7 días",
+        "empty": "No ha cambiado nada en la última semana.",
+        "tagAutopilot": "Autopilot",
+        "tagPublished": "Publicado",
+        "tagCompetitors": "Competidores",
+        "autopilot": "Autopilot se ejecutó {when}: {scheduled, number} programados, {skipped, number} omitidos.",
+        "published": "{count, plural, one {Se publicó # post} other {Se publicaron # posts}} esta semana.",
+        "pending": "{count, plural, one {# competidor espera} other {# competidores esperan}} tu decisión.",
+        "pendingCta": "Revisarlos"
+      },
+      "shipping": {
+        "title": "Publicaciones",
+        "published": "Publicado",
+        "scheduled": "Programado",
+        "today": "hoy",
+        "calendar": "Calendario"
+      },
+      "pipe": {
+        "title": "En el pipeline",
+        "drafting": "En redacción",
+        "ready": "Listo",
+        "scheduled": "Programado",
+        "published": "Publicado"
+      },
+      "loopLabel": "Etapas de configuración"
+    }
+  }
+}

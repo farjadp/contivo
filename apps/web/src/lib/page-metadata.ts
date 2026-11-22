@@ -17,6 +17,8 @@ export function pageAlternates(locale: string, path: string) {
       en: `/en${path}`,
       fa: `/fa${path}`,
       it: `/it${path}`,
+      es: `/es${path}`,
+      he: `/he${path}`,
       'x-default': `/${routing.defaultLocale}${path}`,
     },
   };
