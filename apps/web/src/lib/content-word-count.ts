@@ -1,4 +1,4 @@
-export type WordCountPlatform = 'blog' | 'linkedin' | 'twitter' | 'email' | 'instagram';
+export type WordCountPlatform = 'blog' | 'linkedin' | 'twitter' | 'email' | 'instagram' | 'telegram';
 
 export type WordCountRange = {
   min: number;
@@ -16,6 +16,7 @@ export const WORD_COUNT_PLATFORM_LABELS: Record<WordCountPlatform, string> = {
   twitter: 'Twitter / X',
   email: 'Email',
   instagram: 'Instagram',
+  telegram: 'Telegram',
 };
 
 export const WORD_COUNT_PLATFORMS: WordCountPlatform[] = [
@@ -24,6 +25,7 @@ export const WORD_COUNT_PLATFORMS: WordCountPlatform[] = [
   'twitter',
   'email',
   'instagram',
+  'telegram',
 ];
 
 /**
@@ -41,6 +43,9 @@ export const DEFAULT_CONTENT_WORD_COUNT_LIMITS: ContentWordCountLimits = {
   twitter: { min: 20, max: 280 },
   email: { min: 120, max: 1200 },
   instagram: { min: 60, max: 220 },
+  // A channel post is read on a phone. The API splits anything past ~3,800
+  // characters into several messages, so the ceiling keeps it to one.
+  telegram: { min: 80, max: 450 },
 };
 
 function toInt(value: unknown): number | null {
@@ -97,6 +102,7 @@ export function normalizeWordCountLimits(raw: unknown): ContentWordCountLimits {
  */
 const WORD_COUNT_PLATFORM_RULES: ReadonlyArray<readonly [ReadonlySet<string>, WordCountPlatform]> = [
   [new Set(['blog', 'article', 'articles']), 'blog'],
+  [new Set(['telegram']), 'telegram'],
   [new Set(['x', 'twitter', 'tweet', 'tweets', 'thread', 'threads']), 'twitter'],
   [new Set(['email', 'newsletter']), 'email'],
   [new Set(['instagram', 'insta', 'ig']), 'instagram'],

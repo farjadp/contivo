@@ -166,10 +166,12 @@ export async function disconnectSocialConnection(id: string, workspaceId: string
 
 /**
  * Starts a reconnect. The API marks a broken connection PENDING_REAUTH and
- * says which connect flow restarts it; for OAuth platforms this returns the
- * provider URL — the caller navigates the browser there
- * (`window.location.href = data.url`). The OAuth callback upserts the same
- * row back to CONNECTED.
+ * says which connect flow restarts it:
+ * - `oauth`: this returns the provider URL — the caller navigates the browser
+ *   there (`window.location.href = data.url`). The OAuth callback upserts the
+ *   same row back to CONNECTED.
+ * - `telegram`: `url` is null; the caller opens the Telegram connect panel
+ *   (a new session). Its confirm upserts the same row.
  */
 export async function reconnectSocialConnection(
   id: string,
@@ -177,13 +179,13 @@ export async function reconnectSocialConnection(
 ): Promise<
   SocialActionResult<{
     connection: { id: string; platform: string; status: string };
-    reconnect: { platform: string; flow: 'oauth' | 'unsupported' };
-    url: string;
+    reconnect: { platform: string; flow: 'oauth' | 'telegram' | 'unsupported' };
+    url: string | null;
   }>
 > {
   const result = await apiFetch<{
     connection: { id: string; platform: string; status: string };
-    reconnect: { platform: string; flow: 'oauth' | 'unsupported' };
+    reconnect: { platform: string; flow: 'oauth' | 'telegram' | 'unsupported' };
   }>(`/social/connections/${encodeURIComponent(id)}/reconnect?workspaceId=${encodeURIComponent(workspaceId)}`, {
     method: 'POST',
   });
@@ -191,6 +193,7 @@ export async function reconnectSocialConnection(
   if (!result.data) return { error: result.error, code: result.code };
 
   const { reconnect } = result.data;
+  if (reconnect?.flow === 'telegram') return { data: { ...result.data, url: null } };
   if (reconnect?.flow !== 'oauth') {
     return {
       error: `Reconnecting ${reconnect?.platform ?? 'this account'} is not available here yet.`,

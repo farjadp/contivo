@@ -60,8 +60,8 @@ interface StateContext {
   nonce: string;
 }
 
-/** What a platform callback learned, before it is bound to a workspace. */
-type ExchangedAccount = Omit<CreateSocialConnectionDto, 'workspaceId'>;
+/** What a platform callback learned, before it is bound to a workspace. OAuth always has a token. */
+type ExchangedAccount = Omit<CreateSocialConnectionDto, 'workspaceId' | 'accessToken'> & { accessToken: string };
 
 /** Parked in Redis between the callback and the web confirmation. */
 interface PendingConnect {

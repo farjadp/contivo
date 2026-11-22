@@ -45,7 +45,7 @@ function render(
       locale,
       messages,
       timeZone: 'UTC',
-      children: createElement(Section, { jobs, workspaceId: 'w1', onOpenAccounts: () => {}, onConnectNew: () => {} }),
+      children: createElement(Section, { jobs, workspaceId: 'w1', onOpenAccounts: () => {}, onConnectNew: () => {}, onReconnectTelegram: () => {} }),
     }),
   );
 }

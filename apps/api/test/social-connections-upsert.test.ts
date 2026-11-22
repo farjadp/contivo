@@ -100,10 +100,17 @@ describe('markForReauth', () => {
     assert.equal(prisma.socialConnection.rows[0].status, 'CONNECTED');
   });
 
-  it('a platform with no OAuth flow says so', async () => {
+  it('Telegram reconnects through its own connect-session flow', async () => {
     const prisma = seed('REVOKED');
     prisma.socialConnection.rows[0].platform = 'TELEGRAM';
     const out = await new SocialConnectionsService(prisma as any).markForReauth('c1', 'w1', 'u1');
-    assert.deepEqual(out.reconnect, { platform: 'telegram', flow: 'unsupported' });
+    assert.deepEqual(out.reconnect, { platform: 'telegram', flow: 'telegram' });
+  });
+
+  it('a platform with no connect flow says so', async () => {
+    const prisma = seed('REVOKED');
+    prisma.socialConnection.rows[0].platform = 'THREADS';
+    const out = await new SocialConnectionsService(prisma as any).markForReauth('c1', 'w1', 'u1');
+    assert.deepEqual(out.reconnect, { platform: 'threads', flow: 'unsupported' });
   });
 });

@@ -498,7 +498,8 @@
       "linkedin": "LinkedIn",
       "twitter": "Twitter / X",
       "email": "ایمیل",
-      "instagram": "Instagram"
+      "instagram": "Instagram",
+      "telegram": "تلگرام"
     },
     "finance": {
       "empty": "هنوز پرداختی ثبت نشده است. صورت‌حساب‌ها همین‌که Stripe بفرستد اینجا دیده می‌شوند.",

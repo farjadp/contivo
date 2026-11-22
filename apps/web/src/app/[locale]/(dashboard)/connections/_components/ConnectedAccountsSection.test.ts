@@ -16,7 +16,7 @@ vi.mock('@/app/actions/social', () => ({
 
 const { ConnectedAccountsSection } = await import('./ConnectedAccountsSection');
 
-const account = (platform: string, status: string) => ({
+const account = (platform: string, status: string, meta?: Record<string, unknown>) => ({
   id: `${platform}-${status}`,
   platform,
   accountName: 'Sara Ahmadi',
@@ -25,6 +25,7 @@ const account = (platform: string, status: string) => ({
   isDefault: false,
   lastSyncAt: null,
   createdAt: '2026-11-01T00:00:00.000Z',
+  ...(meta && { meta: { chatType: null, username: null, revokedReason: null, ...meta } }),
 });
 
 function render(accounts: ReturnType<typeof account>[], locale: 'en' | 'fa' = 'en') {
@@ -33,7 +34,7 @@ function render(accounts: ReturnType<typeof account>[], locale: 'en' | 'fa' = 'e
       locale,
       messages: locale === 'en' ? en : fa,
       timeZone: 'UTC',
-      children: createElement(ConnectedAccountsSection, { accounts, workspaceId: 'ws_1', onConnectNew: () => {} }),
+      children: createElement(ConnectedAccountsSection, { accounts, workspaceId: 'ws_1', onConnectNew: () => {}, onReconnectTelegram: () => {} }),
     }),
   );
 }
@@ -69,5 +70,22 @@ describe('ConnectedAccountsSection', () => {
     const html = render([account('X', 'EXPIRED')], 'fa');
     expect(html).toContain('ورود شما به <bdi>X</bdi> منقضی شده است.');
     expect(html).toContain('>اتصال دوباره<');
+  });
+
+  it('shows a Telegram channel by its type and public @username, not its chat id', () => {
+    const html = render([{ ...account('TELEGRAM', 'CONNECTED', { chatType: 'channel', username: 'contivo_news' }), accountIdentifier: '-1001234' }]);
+    expect(html).toContain('Telegram');
+    expect(html).toContain('Channel');
+    expect(html).toContain('href="https://t.me/contivo_news"');
+    expect(html).not.toContain('-1001234');
+  });
+
+  it('explains why a Telegram channel was revoked and offers Reconnect', () => {
+    const removed = render([account('TELEGRAM', 'REVOKED', { chatType: 'channel', revokedReason: 'BOT_REMOVED' })]);
+    expect(removed).toContain('was removed from this channel');
+    expect(removed).toContain('>Reconnect<');
+    const lost = render([account('TELEGRAM', 'REVOKED', { chatType: 'group', revokedReason: 'BOT_RIGHTS_LOST' })], 'fa');
+    expect(lost).toContain('اجازهٔ ارسال پیام');
+    expect(lost).toContain('>اتصال دوباره<');
   });
 });

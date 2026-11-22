@@ -29,6 +29,7 @@ import {
   Get,
   HttpCode,
   Logger,
+  Optional,
   Param,
   Post,
   Query,
@@ -46,6 +47,7 @@ import { verifyHandoffToken } from './connect-handoff';
 import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import { OAUTH_NONCE_COOKIE, OAuthFlowError, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
+import { TelegramConnectService } from './telegram/telegram-connect.service';
 
 /**
  * The nonce cookie lives on the API host: the browser navigates to the API for
@@ -105,6 +107,7 @@ export class SocialOAuthController {
   constructor(
     private readonly oauthService: SocialOAuthService,
     private readonly connections: SocialConnectionsService,
+    @Optional() private readonly telegram?: TelegramConnectService,
   ) {}
 
   /**
@@ -115,8 +118,14 @@ export class SocialOAuthController {
    * platform error page they cannot act on.
    */
   @Get('config')
-  platformConfig() {
-    return { platforms: this.oauthService.configuredPlatforms() };
+  platformConfig(): { platforms: Record<string, boolean> } {
+    return {
+      platforms: {
+        ...this.oauthService.configuredPlatforms(),
+        // Not OAuth, but the Connections page reads one map: false greys it out.
+        telegram: this.telegram?.isConfigured() ?? false,
+      },
+    };
   }
 
   /**

@@ -41,7 +41,9 @@
         "facebookLabel": "Facebook Page",
         "facebookDescription": "Publish posts and link shares to a <bdi>Facebook</bdi> Page you manage.",
         "tiktokLabel": "TikTok",
-        "tiktokDescription": "Publish photo carousel posts and videos to your <bdi>TikTok</bdi> account."
+        "tiktokDescription": "Publish photo carousel posts and videos to your <bdi>TikTok</bdi> account.",
+        "telegramLabel": "Telegram",
+        "telegramDescription": "Post to a <bdi>Telegram</bdi> channel or group you manage."
       },
       "unavailableTitle": "{platform} has no API credentials on this deployment.",
       "unavailableDescription": "Not set up on this deployment — no API credentials yet.",
@@ -52,7 +54,8 @@
       "permissionsTitle": "Permissions requested",
       "securityNote": "Your access token is encrypted and stored securely. It is never exposed to the frontend. You can revoke access at any time.",
       "preparing": "Preparing…",
-      "continueOAuth": "Continue to {platform} OAuth"
+      "continueOAuth": "Continue to {platform} OAuth",
+      "telegramUnavailable": "Not switched on yet."
     },
     "accounts": {
       "title": "Connected Accounts",
@@ -81,12 +84,19 @@
         "revoked": "Access to this <bdi>{platform}</bdi> account was withdrawn. Reconnect to publish to it again.",
         "pendingReauth": "<bdi>{platform}</bdi> needs you to sign in again before <bdi>Contivo</bdi> can publish.",
         "failed": "The connection to <bdi>{platform}</bdi> stopped working. Reconnect to publish to it again.",
-        "unsupported": "This <bdi>{platform}</bdi> connection stopped working, and it cannot be reconnected from this page yet."
+        "unsupported": "This <bdi>{platform}</bdi> connection stopped working, and it cannot be reconnected from this page yet.",
+        "telegramBotRemoved": "The Contivo bot was removed from this channel, so posts to it will fail. Reconnect to add the bot back.",
+        "telegramBotRightsLost": "The Contivo bot lost its right to post in this channel, so posts to it will fail. Reconnect to give the right back."
       },
       "errors": {
         "disconnect": "Could not disconnect this account.",
         "setDefault": "Could not make this the default account.",
         "reconnect": "Could not start the reconnect."
+      },
+      "telegramChatType": {
+        "channel": "Channel",
+        "group": "Group",
+        "supergroup": "Group"
       }
     },
     "rules": {
@@ -196,6 +206,67 @@
       "keyCopySnippet": "Copy snippet",
       "keyStore": "Store the key as <code>CONTIVO_API_KEY</code> on your site — server-side only.",
       "keySinglePost": "Single post: <code>/api/v1/posts/{slug}</code>"
+    },
+    "telegram": {
+      "stepOf": "Step {step, number} of {total, number}",
+      "starting": "Preparing your Telegram link…",
+      "openTitle": "Open the Contivo bot in Telegram",
+      "openBody": "Tap Start in the chat that opens. This page moves to the next step by itself.",
+      "openButton": "Open Telegram",
+      "waitingStart": "Waiting for you to tap Start…",
+      "chooseTitle": "Choose your channel",
+      "chooseBody": "In Telegram, tap “Choose a channel” and pick your channel. Contivo’s bot is added as an admin that can only post messages.",
+      "waitingChoice": "Waiting for your choice in Telegram…",
+      "openAgain": "Open Telegram again",
+      "usernameLink": "My channel is public and the bot is already admin",
+      "usernameTitle": "Connect a public channel",
+      "usernameBody": "Make the Contivo bot an admin with the right to post messages, then enter the channel’s public username.",
+      "usernameLabel": "Channel username",
+      "usernameSubmit": "Find channel",
+      "usernameBack": "Back to choosing in Telegram",
+      "codeTitle": "Enter the code",
+      "codeBody": "Enter the 6-digit code the bot sent you in Telegram.",
+      "codeLabel": "Code",
+      "codeSubmit": "Confirm",
+      "attemptsLeft": "{count, plural, one {# try left.} other {# tries left.}}",
+      "working": "Checking…",
+      "connectedTitle": "Telegram connected",
+      "connectedBody": "Contivo will post to <bdi>{name}</bdi>.",
+      "chatType": {
+        "channel": "Channel",
+        "group": "Group",
+        "supergroup": "Group"
+      },
+      "done": "Done",
+      "expiredTitle": "This link has expired",
+      "expiredBody": "A connect link works for a few minutes only. Start again to get a new one.",
+      "failedTitle": "The connection stopped",
+      "startAgain": "Start again",
+      "retry": "Try again",
+      "errors": {
+        "bot_not_admin": "The Contivo bot cannot post there yet. Make it an admin with the right to post messages, then choose the channel again.",
+        "user_not_admin": "Your Telegram account must be an admin who can post in that channel.",
+        "chat_not_found": "Telegram found no public channel or group with that username, or the bot is not in it.",
+        "not_a_channel_or_group": "That is not a channel or a group. Choose a channel or a group.",
+        "telegram_unavailable": "Telegram did not answer. Try again in a minute.",
+        "too_many_attempts": "The code was entered wrong too many times. Start again to get a new one.",
+        "wrong_code": "That code is not right. Check the latest message from the bot.",
+        "not_pending": "No channel is waiting for a code yet. Choose your channel in Telegram first.",
+        "start_bot_first": "Open Telegram and tap Start in the bot first.",
+        "invalid_username": "Enter the channel’s public username, the one that starts with @.",
+        "session_not_found": "This connect link has expired. Start again.",
+        "telegram_not_configured": "Telegram is not switched on for Contivo yet.",
+        "store_unavailable": "Connecting is unavailable right now. Try again in a minute.",
+        "session_expired": "Your Contivo session has ended. Sign in again.",
+        "forbidden": "You do not have access to this workspace.",
+        "unreachable": "Could not reach the publishing service. Try again in a minute.",
+        "api_error": "Something went wrong on our side. Try again in a minute.",
+        "already_pending": "A code is already on its way to your Telegram. Enter that code here. To connect a different channel, start again.",
+        "session_finished": "This connection attempt is over. Start again to get a new link.",
+        "too_many_lookups": "Too many channel lookups in a short time. Choose the channel in Telegram instead, or try again later.",
+        "too_many_codes": "The bot has already sent three codes for this attempt and will not send more. Start again to get a new link.",
+        "denied": "Someone pressed “This wasn't me” in Telegram, so nothing was connected. If that was you by mistake, start again."
+      }
     }
   }
 }

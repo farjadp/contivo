@@ -45,17 +45,19 @@ interface PublishHistorySectionProps {
   onOpenAccounts: () => void;
   /** Opens the Connect modal (no account behind the job). */
   onConnectNew: () => void;
+  /** Opens the Connect modal on Telegram (Reconnect on a TELEGRAM job's connection). */
+  onReconnectTelegram: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const PLATFORM_LABELS: Record<string, string> = {
-  LINKEDIN: 'LinkedIn', X: 'X', FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram',
+  LINKEDIN: 'LinkedIn', X: 'X', FACEBOOK: 'Facebook', INSTAGRAM: 'Instagram', TELEGRAM: 'Telegram',
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishHistorySectionProps) {
+export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onConnectNew, onReconnectTelegram }: PublishHistorySectionProps) {
   const t = useTranslations('connections.history');
   const format = useFormatter();
   const router = useRouter();
@@ -70,7 +72,10 @@ export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onCon
       delete next[jobId];
       return next;
     });
-    const detail = await startReconnect(connectionId, workspaceId);
+    const detail = await startReconnect(connectionId, workspaceId, undefined, () => {
+      setPending(null);
+      onReconnectTelegram();
+    });
     if (detail) {
       setErrors((prev) => ({ ...prev, [jobId]: detail }));
       setPending(null);

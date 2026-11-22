@@ -4,6 +4,8 @@ import type { ContentChannel } from '@prisma/client';
  * Channels Autopilot can publish to today.
  * Social channels need a connected default SocialConnection; `blog` needs an
  * active SiteConnection and is served by the Content API instead.
+ * `telegram` posts through the Contivo bot to a channel connected on the
+ * Connections page (TelegramAdapter in the API).
  *
  * `instagram` is deliberately absent. Its adapter is a stub whose `publish`
  * returns a failure unconditionally and whose `validateConnection` returns
@@ -17,7 +19,7 @@ import type { ContentChannel } from '@prisma/client';
  * no such value, so no content can be authored for them at all, however well
  * their adapters work.
  */
-export const PUBLISHABLE_CHANNELS: ContentChannel[] = ['linkedin', 'twitter', 'blog'];
+export const PUBLISHABLE_CHANNELS: ContentChannel[] = ['linkedin', 'twitter', 'telegram', 'blog'];
 
 /** Channels published through the Content API rather than a social adapter. */
 export const WEB_CHANNELS: ContentChannel[] = ['blog'];
