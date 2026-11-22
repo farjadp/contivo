@@ -242,39 +242,16 @@
         "headline": "Votre LinkedIn et votre blog, <accent>toujours alimentés</accent>, semaine après semaine.",
         "body": "Donnez votre site à Contivo. Il apprend ce que vous vendez et qui sont vos concurrents, puis rédige des publications pour votre LinkedIn et des articles pour votre propre site, et les publie les jours que vous choisissez. Chacune est vérifiée avant de partir."
       },
-      "week": {
-        "title": "À quoi ressemble une semaine",
-        "facts": {
-          "posts": {
-            "title": "De 1 à 14 publications par semaine",
-            "body": "Vous choisissez combien. Les sept prochains jours restent toujours planifiés."
-          },
-          "channels": {
-            "title": "Votre LinkedIn et votre propre site",
-            "body": "Des publications sur votre profil LinkedIn personnel, des articles sur votre site. X, Telegram, WordPress et Threads arrivent."
-          },
-          "time": {
-            "title": "Aux jours et aux heures que vous choisissez",
-            "body": "Dans votre fuseau horaire, et espacées pour que deux publications sur la même idée ne se suivent jamais."
-          }
-        }
-      },
       "steps": {
         "title": "Comment ça marche",
         "link": "Voir toutes les étapes",
         "s1": {
-          "title": "Il lit votre site",
-          "body": "Ce que vous faites, ce que vous promettez, à qui vous vous adressez et sur quel ton, le tout mis par écrit pour que vous le corrigiez.",
           "alt": "La mémoire de marque d’un vrai espace de travail : résumé de l’activité, proposition de valeur, public et ton."
         },
         "s2": {
-          "title": "Il étudie votre marché",
-          "body": "Des concurrents de votre taille, dont l’existence est vérifiée, placés face à vous, avec les créneaux qu’ils laissent libres.",
           "alt": "Un graphique de positionnement dans un vrai espace de travail, avec la marque placée parmi ses concurrents."
         },
         "s3": {
-          "title": "Il rédige et publie",
-          "body": "Des brouillons dans votre ton, chacun rattaché à un fil narratif et vérifié, puis publiés sur LinkedIn et sur votre site selon le calendrier.",
           "alt": "Le pipeline d’un vrai espace de travail, avec des publications parties sur LinkedIn."
         }
       },

@@ -12,8 +12,7 @@
  * namespaces so this page cannot disagree with those pages.
  */
 
-import { useFormatter, useTranslations } from 'next-intl';
-import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 import { Link } from '@/i18n/navigation';
 
@@ -21,7 +20,8 @@ import { SiteFooter } from '@/components/marketing/site-footer';
 import { ProductReel } from '@/components/marketing/product-reel';
 import { SiteNav } from '@/components/marketing/site-nav';
 import { UrlIntake } from '@/components/marketing/url-intake';
-import { CadenceWeek, Reveal } from '@/components/marketing/home-interactions';
+import { Reveal } from '@/components/marketing/home-interactions';
+import { LoopExplorer } from '@/components/marketing/loop-explorer';
 import { GateDemo, LiveWeek } from '@/components/marketing/hero-live';
 import { PLAN_OFFERS, usd } from '@/lib/plan-catalogue';
 
@@ -43,8 +43,7 @@ export default function HomePage() {
     <div className="theme-chalk min-h-screen bg-chalk font-plex text-moss">
       <SiteNav />
       <Hero />
-      <Week />
-      <Steps />
+      <Loop />
       <NotLikeAi />
       <Reel />
       <ForNotFor />
@@ -92,72 +91,28 @@ function Hero() {
   );
 }
 
-/* ─── What a week looks like ─────────────────────────────────────────────── */
+/* ─── The Loop ───────────────────────────────────────────────────────────── */
 
-const WEEK_FACTS = ['posts', 'channels', 'time'] as const;
-
-function Week() {
-  const t = useTranslations('home.v2.week');
+/**
+ * One section where there were two ("What a week looks like" and "How it
+ * works"): the hero's live week already shows the week, so this shows the
+ * whole loop instead, one stage at a time, each with its own evidence.
+ */
+function Loop() {
+  const t = useTranslations('home.v2.steps');
   return (
     <section className="border-t border-moss bg-chalk-raised">
-      <div className={`${SECTION} grid gap-10 py-12 md:py-20 lg:grid-cols-[minmax(0,1fr)_minmax(0,34rem)] lg:gap-14`}>
-        <Reveal className="flex flex-col gap-6">
+      <div className={`${SECTION} py-12 md:py-20`}>
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className={H2}>{t('title')}</h2>
-          <dl className="border-b border-rule">
-            {WEEK_FACTS.map((k, i) => (
-              <div key={k} className={`border-t py-4 ${i === 0 ? 'border-moss' : 'border-rule'}`}>
-                <dt className="text-[17px] font-semibold">{t(`facts.${k}.title`)}</dt>
-                <dd className="mt-1 text-[15.5px] leading-[1.65] text-moss-muted">{t(`facts.${k}.body`)}</dd>
-              </div>
-            ))}
-          </dl>
-        </Reveal>
-        {/* Tablet and up: on a phone the three facts already say it, and the
-            demo alone was a screen tall. */}
-        <Reveal delay={120} className="max-md:hidden">
-          <CadenceWeek />
+          <Link href="/product" className="text-[15px] font-semibold underline decoration-2 underline-offset-[6px] hover:decoration-saffron">
+            {t('link')}
+          </Link>
+        </div>
+        <Reveal className="mt-8 md:mt-10">
+          <LoopExplorer />
         </Reveal>
       </div>
-    </section>
-  );
-}
-
-/* ─── How it works ───────────────────────────────────────────────────────── */
-
-const STEPS = [
-  { id: 's1', src: '/marketing/brand-memory.webp', w: 1800, h: 1212 },
-  { id: 's2', src: '/marketing/market-map.webp', w: 1800, h: 1074 },
-  { id: 's3', src: '/marketing/generated-post.webp', w: 1400, h: 1114 },
-] as const;
-
-function Steps() {
-  const t = useTranslations('home.v2.steps');
-  const format = useFormatter();
-  return (
-    <section className={`${SECTION} py-12 md:py-24`}>
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <h2 className={H2}>{t('title')}</h2>
-        <Link href="/product" className="text-[15px] font-semibold underline decoration-2 underline-offset-[6px] hover:decoration-saffron">
-          {t('link')}
-        </Link>
-      </div>
-      <ol className="mt-8 grid gap-8 md:grid-cols-3 md:gap-6">
-        {STEPS.map((s, i) => (
-          <li key={s.id}>
-            <Reveal delay={i * 100} className="flex h-full flex-col gap-3 md:gap-4">
-              {/* Phones crop the captures shorter. */}
-              <div className="overflow-hidden rounded-2xl border border-rule bg-chalk-raised">
-                <Image src={s.src} alt={t(`${s.id}.alt`)} width={s.w} height={s.h} className="aspect-[16/10] h-auto w-full object-cover object-top md:aspect-[4/3]" sizes="(min-width: 768px) 30vw, 92vw" />
-              </div>
-              <p className="font-plexmono text-[13px] text-saffron-ink">
-                <bdi>{format.number(i + 1, { minimumIntegerDigits: 2, useGrouping: false })}</bdi>
-              </p>
-              <h3 className="font-display text-[clamp(1.25rem,2vw,1.55rem)] font-bold leading-snug">{t(`${s.id}.title`)}</h3>
-              <p className="text-[15.5px] leading-[1.65] text-moss-muted">{t(`${s.id}.body`)}</p>
-            </Reveal>
-          </li>
-        ))}
-      </ol>
     </section>
   );
 }

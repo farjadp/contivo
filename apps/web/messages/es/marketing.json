@@ -242,39 +242,16 @@
         "headline": "Tu LinkedIn y tu blog, <accent>siempre activos</accent>, cada semana.",
         "body": "Dale a Contivo tu web. Aprende qué vendes y con quién compites. Después escribe publicaciones para tu LinkedIn y artículos para tu propia web, y los publica los días que tú elijas. Cada uno se revisa antes de salir."
       },
-      "week": {
-        "title": "Así es una semana",
-        "facts": {
-          "posts": {
-            "title": "De 1 a 14 publicaciones por semana",
-            "body": "Tú eliges cuántas. Siempre deja planificados los próximos siete días."
-          },
-          "channels": {
-            "title": "Tu LinkedIn y tu propia web",
-            "body": "Publicaciones en tu perfil personal de LinkedIn, artículos en tu web. X, Telegram, WordPress y Threads están en camino."
-          },
-          "time": {
-            "title": "Los días y a las horas que elijas",
-            "body": "En tu zona horaria, y repartidas para que dos publicaciones sobre la misma idea nunca salgan una detrás de otra."
-          }
-        }
-      },
       "steps": {
         "title": "Cómo funciona",
         "link": "Ver todos los pasos",
         "s1": {
-          "title": "Lee tu web",
-          "body": "Qué haces, qué prometes, para quién es y cómo hablas, puesto por escrito para que lo corrijas.",
           "alt": "Memoria de marca en un workspace real: resumen del negocio, propuesta de valor, público y tono."
         },
         "s2": {
-          "title": "Investiga tu mercado",
-          "body": "Competidores de tu tamaño, comprobados uno a uno y situados junto a ti en un gráfico, con los huecos que dejan libres.",
           "alt": "Un gráfico de posicionamiento en un workspace real, con la marca situada entre sus competidores."
         },
         "s3": {
-          "title": "Escribe y publica",
-          "body": "Borradores con tu voz, cada uno ligado a una línea narrativa y revisado, que salen en LinkedIn y en tu web según el calendario.",
           "alt": "El pipeline de un workspace real, con publicaciones en LinkedIn."
         }
       },

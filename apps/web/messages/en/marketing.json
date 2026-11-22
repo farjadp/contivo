@@ -242,39 +242,16 @@
         "headline": "Your LinkedIn and your blog, <accent>kept busy</accent> every week.",
         "body": "Give Contivo your website. It learns what you sell and who you compete with, then writes posts for your LinkedIn and articles for your own site, and publishes them on the days you choose. Each one is checked before it goes out."
       },
-      "week": {
-        "title": "What a week looks like",
-        "facts": {
-          "posts": {
-            "title": "1 to 14 posts a week",
-            "body": "You choose how many. It keeps the next seven days planned."
-          },
-          "channels": {
-            "title": "Your LinkedIn and your own site",
-            "body": "Posts on your personal LinkedIn profile, articles on your website. X, Telegram, WordPress and Threads are on the way."
-          },
-          "time": {
-            "title": "On the days and hours you pick",
-            "body": "In your time zone, spread out so two posts on the same idea never land back to back."
-          }
-        }
-      },
       "steps": {
         "title": "How it works",
         "link": "See every step",
         "s1": {
-          "title": "It reads your site",
-          "body": "What you do, what you promise, who it's for and how you sound, written back for you to correct.",
           "alt": "Brand memory in a real workspace: business summary, value proposition, audience and tone."
         },
         "s2": {
-          "title": "It researches your market",
-          "body": "Competitors your size, checked to exist and plotted against you, with the gaps they leave open.",
           "alt": "A positioning chart in a real workspace, with the brand plotted among its competitors."
         },
         "s3": {
-          "title": "It writes and publishes",
-          "body": "Drafts in your voice, each tied to a storyline and checked, then posted to LinkedIn and your site on schedule.",
           "alt": "The pipeline of a real workspace, with posts published to LinkedIn."
         }
       },
