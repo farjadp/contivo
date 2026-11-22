@@ -71,7 +71,8 @@ export function newTxId(): string {
 
 export async function sealTx(tx: Omit<OAuthTx, 'jti' | 'exp'> & { jti?: string; exp?: number }): Promise<string> {
   const exp = tx.exp ?? Math.floor(Date.now() / 1000) + TX_TTL_SECONDS;
-  const { exp: _e, ...claims } = tx;
+  const claims: Partial<typeof tx> = { ...tx };
+  delete claims.exp;
   return new EncryptJWT({ ...claims })
     .setProtectedHeader({ alg: 'dir', enc: 'A256GCM', typ: TX_TYP })
     .setAudience(TX_AUDIENCE)

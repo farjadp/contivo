@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars -- typed mock signatures keep call-arg inference */
 import { exportJWK, generateKeyPair, SignJWT, type JWK } from 'jose';
 import { NextRequest } from 'next/server';
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
