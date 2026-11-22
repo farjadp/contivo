@@ -345,6 +345,18 @@
         "save": "ذخیرهٔ پست",
         "saving": "در حال ذخیره…",
         "close": "بستن"
+      },
+      "outcome": {
+        "published": "منتشر شد",
+        "publishedOn": "در <bdi>{platform}</bdi> منتشر شد",
+        "viewPost": "دیدن پست",
+        "noLink": "پلتفرم پیوندی به پست برنگرداند.",
+        "failed": "منتشر نشد",
+        "failedOn": "در <bdi>{platform}</bdi> منتشر نشد",
+        "reasonLabel": "علت:",
+        "noReason": "علتی ثبت نشده است.",
+        "reconnect": "اتصال دوباره در بخش اتصال‌ها",
+        "connect": "رفتن به بخش اتصال‌ها"
       }
     },
     "calendar": {

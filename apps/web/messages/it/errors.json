@@ -96,6 +96,37 @@
       "tooLong": "Questa password è troppo lunga. Resta sotto i 200 caratteri.",
       "tooCommon": "Questa password compare negli elenchi che gli attaccanti provano per primi. Scegline un'altra.",
       "containsEmail": "Non usare il tuo indirizzo email nella password."
+    },
+    "socialAction": {
+      "session_expired": "La sessione è scaduta. Accedi di nuovo e riprova.",
+      "forbidden": "Non hai accesso a questo workspace.",
+      "not_found": "Questo elemento non esiste più. Aggiorna la pagina.",
+      "conflict": "È stato modificato altrove. Aggiorna la pagina e riprova.",
+      "rejected": "La richiesta è stata rifiutata.",
+      "unreachable": "Il servizio di pubblicazione non è raggiungibile. Riprova tra un minuto.",
+      "api_error": "Il servizio di pubblicazione ha avuto un problema. Riprova tra un minuto.",
+      "reconnect_unsupported": "Questo account non si può ancora ricollegare da qui.",
+      "refusal": {
+        "JOB_NOT_FOUND": "Questo job di pubblicazione non esiste più. Aggiorna la pagina.",
+        "NOT_RETRYABLE_STATUS": "Si può riprovare solo un post non riuscito. Aggiorna la pagina.",
+        "RETRY_LIMIT": "Questo post ha esaurito i tentativi. Annullalo e mandalo di nuovo in pubblicazione.",
+        "NO_CONTENT_ITEM": "Il post di questo job non esiste più, quindi non c'è nulla da ripubblicare.",
+        "EMPTY_CONTENT": "Questo post non ha testo da pubblicare. Completa prima il testo.",
+        "ALREADY_RETRYING": "Un nuovo tentativo per questo post è già in coda.",
+        "ALREADY_PUBLISHED": "Questo post è già pubblicato e non si può più annullare."
+      }
+    },
+    "publishFailure": {
+      "CONNECTION_EXPIRED": "Il collegamento a questo account è scaduto.",
+      "CONNECTION_REVOKED": "L'accesso a questo account è stato revocato.",
+      "NO_CONNECTION": "Nessun account collegato per questo canale.",
+      "NO_SITE": "Nessun sito collegato su cui pubblicare questo post.",
+      "NO_PUBLISHER": "Contivo non può ancora pubblicare su questo canale.",
+      "INVALID_CONTENT": "La piattaforma non ha accettato il post così com'è.",
+      "RATE_LIMITED": "La piattaforma ha limitato le richieste e anche l'ultimo tentativo è stato bloccato.",
+      "CREDITS_EXHAUSTED": "I crediti di pubblicazione su questa piattaforma sono esauriti.",
+      "UNREACHABLE": "La piattaforma non era raggiungibile, nemmeno dopo i tentativi.",
+      "PLATFORM_ERROR": "La piattaforma ha rifiutato il post."
     }
   }
 }

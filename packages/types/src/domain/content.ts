@@ -8,6 +8,8 @@ export const ContentChannel = z.enum([
   'instagram',
   'email',
   'blog',
+  'telegram',
+  'threads',
 ]);
 export type ContentChannel = z.infer<typeof ContentChannel>;
 

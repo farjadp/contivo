@@ -50,6 +50,7 @@ import {
   generateDraftForItem,
   generateDraftPreviewCore,
   ideateForWorkspace,
+  resolveChannelFromFormat,
   saveIdeaToPipelineCore,
 } from './content-engine';
 
@@ -94,6 +95,29 @@ describe('saveIdeaToPipelineCore', () => {
       workspaceId: WORKSPACE,
       status: 'DRAFT',
     });
+  });
+});
+
+describe('resolveChannelFromFormat', () => {
+  // The old rule was format.includes('x'): any word with an x went to X.
+  it.each([
+    ['checklist', 'linkedin'],
+    ['explainer', 'linkedin'],
+    ['Text post', 'linkedin'],
+    ['LinkedIn carousel', 'linkedin'],
+    ['x thread', 'twitter'],
+    ['X post', 'twitter'],
+    ['twitter', 'twitter'],
+    ['Tweet', 'twitter'],
+    ['Twitter/X thread', 'twitter'],
+    ['blog article', 'blog'],
+    ['Long-form article', 'blog'],
+    ['Email newsletter', 'email'],
+    ['instagram caption', 'instagram'],
+    ['', 'linkedin'],
+    [undefined, 'linkedin'],
+  ])('%s → %s', (format, channel) => {
+    expect(resolveChannelFromFormat(format)).toBe(channel);
   });
 });
 

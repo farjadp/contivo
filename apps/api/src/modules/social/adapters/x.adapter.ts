@@ -13,14 +13,25 @@
  *       this adapter. Never log or expose the accessToken.
  */
 
-import { SocialPlatform } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
 import { validateX } from '../validators/platform-validator';
 
 import {
+  describeFetchError,
+  failedPublishFromError,
+  failedPublishResult,
+  healthFromFetchError,
+  healthFromStatus,
+  platformTimeout,
+} from './http-health';
+import {
   SocialAdapter,
   AdapterConnection,
+  ConnectionHealth,
+  CredentialKind,
+  RefreshResult,
   PublishPayload,
   PublishResult,
   ValidationResult,
@@ -30,21 +41,80 @@ import {
 @Injectable()
 export class XAdapter implements SocialAdapter {
   readonly platform: SocialPlatform = 'X';
+  readonly credential: CredentialKind = 'stored_token';
   private readonly logger = new Logger(XAdapter.name);
 
   private readonly API_BASE = 'https://api.twitter.com/2';
+  private readonly TOKEN_URL = 'https://api.x.com/2/oauth2/token';
 
   // ─── Interface implementation ──────────────────────────────────────────────
 
-  async validateConnection(connection: AdapterConnection): Promise<boolean> {
+  async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       const res = await fetch(`${this.API_BASE}/users/me`, {
+        signal: platformTimeout(),
         headers: { Authorization: `Bearer ${connection.accessToken}` },
       });
-      return res.ok;
+      return healthFromStatus(res.status, 'X', res.headers.get('retry-after'));
     } catch (err) {
-      this.logger.warn(`X connection validation failed: ${this.normalizeError(err)}`);
-      return false;
+      const health = healthFromFetchError(err, 'X');
+      this.logger.warn(`X connection check failed (transient): ${!health.ok ? health.detail : ''}`);
+      return health;
+    }
+  }
+
+  /**
+   * OAuth 2.0 refresh grant. Access tokens last 2 h; the refresh token comes
+   * with `offline.access` and may rotate, so the caller persists both.
+   * Client auth is Basic client_id:client_secret, as in the code exchange
+   * (social-oauth.service.ts xCallback).
+   */
+  async refreshToken(connection: AdapterConnection): Promise<RefreshResult> {
+    const clientId = process.env.TWITTER_CLIENT_ID?.trim();
+    const clientSecret = process.env.TWITTER_CLIENT_SECRET?.trim();
+    if (!clientId || !clientSecret) {
+      // Our configuration, not the user's token: do not mark the account expired.
+      return { ok: false, reason: 'transient', detail: 'X client credentials are not configured on the API.' };
+    }
+    if (!connection.refreshToken) {
+      return { ok: false, reason: 'expired', detail: 'X connection has no refresh token. Reconnect the account.' };
+    }
+
+    try {
+      const res = await fetch(this.TOKEN_URL, {
+        signal: platformTimeout(),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: connection.refreshToken,
+          client_id: clientId,
+        }).toString(),
+      });
+
+      if (res.status === 400 || res.status === 401) {
+        const body = (await res.text()).slice(0, 200);
+        return { ok: false, reason: 'expired', detail: `X refused the refresh token (${res.status}): ${body}` };
+      }
+      if (!res.ok) {
+        return { ok: false, reason: 'transient', detail: `X token endpoint returned ${res.status}.` };
+      }
+
+      const data = (await res.json()) as { access_token?: string; refresh_token?: string; expires_in?: number };
+      if (!data.access_token) {
+        return { ok: false, reason: 'transient', detail: 'X token endpoint returned no access_token.' };
+      }
+      return {
+        ok: true,
+        accessToken: data.access_token,
+        refreshToken: data.refresh_token,
+        expiresAt: data.expires_in ? new Date(Date.now() + data.expires_in * 1000) : undefined,
+      };
+    } catch (err) {
+      return { ok: false, reason: 'transient', detail: `X token endpoint unreachable: ${describeFetchError(err)}` };
     }
   }
 
@@ -69,6 +139,8 @@ export class XAdapter implements SocialAdapter {
       }
 
       const res = await fetch(`${this.API_BASE}/tweets`, {
+
+        signal: platformTimeout(),
         method: 'POST',
         headers: {
           Authorization: `Bearer ${connection.accessToken}`,
@@ -79,10 +151,11 @@ export class XAdapter implements SocialAdapter {
 
       if (!res.ok) {
         const errBody = await res.text();
-        return {
-          success: false,
-          error: this.normalizeError({ status: res.status, body: errBody }),
-        };
+        return failedPublishResult(
+          res.status,
+          this.normalizeError({ status: res.status, body: errBody }),
+          res.headers.get('retry-after'),
+        );
       }
 
       const data = (await res.json()) as { data?: { id?: string } };
@@ -95,7 +168,7 @@ export class XAdapter implements SocialAdapter {
 
       return { success: true, externalPostId: tweetId, externalPostUrl };
     } catch (err) {
-      return { success: false, error: this.normalizeError(err) };
+      return failedPublishFromError(err, 'X');
     }
   }
 

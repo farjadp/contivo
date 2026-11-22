@@ -15,11 +15,15 @@
  * calls the same SocialPublishService.
  */
 
+import { formatFailure, type PublishFailureCode } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
+
 import { PrismaService } from '../../common/prisma/prisma.service';
 
+import { channelToPlatform } from './platforms';
+import { buildPublishPayload } from './publish-payload';
 import { SocialPublishService } from './social-publish.service';
 
 @Injectable()
@@ -48,11 +52,14 @@ export class SocialSchedulerService {
     try {
       const now = new Date();
 
-      // Find all content items due for publishing
-      const dueItems = await (this.prisma as any).contentItem.findMany({
+      // Find all content items due for publishing. `blog` is excluded: the
+      // web Content-API publisher owns it, and reading it here every minute
+      // only produced noise.
+      const dueItems = await this.prisma.contentItem.findMany({
         where: {
           status:          'SCHEDULED',
           scheduledAtUtc:  { lte: now },
+          channel:         { not: 'blog' },
         },
         select: {
           id:          true,
@@ -61,6 +68,7 @@ export class SocialSchedulerService {
           channel:     true,
           topic:       true,
           content:     true,
+          slug:        true,
         },
       });
 
@@ -82,21 +90,39 @@ export class SocialSchedulerService {
 
   private async publishItem(item: {
     id: string;
-    workspaceId: string;
+    workspaceId: string | null;
     userId: string;
     channel: string;
     topic: string;
     content: string | null;
+    slug: string | null;
   }) {
-    // Map content item channel to social platform
-    const platform = this.channelToPlatform(item.channel);
+    if (item.channel === 'blog') return; // web publisher's job
+
+    const platform = channelToPlatform(item.channel);
     if (!platform) {
-      this.logger.warn(`Scheduler: no platform mapping for channel=${item.channel}, skipping item=${item.id}`);
+      // No social publisher for this channel (email today). Park it once with a
+      // reason; leaving it SCHEDULED re-read it every minute forever.
+      await this.failItem(item.id, 'NO_PUBLISHER', `No publisher for channel ${item.channel}`);
+      this.logger.warn(`Scheduler: no publisher for channel=${item.channel}, item=${item.id} marked FAILED`);
+      return;
+    }
+
+    if (!item.workspaceId) {
+      await this.failItem(item.id, 'NO_CONNECTION', 'Content item has no workspace, so no connection can publish it.');
+      return;
+    }
+
+    let payload;
+    try {
+      payload = buildPublishPayload(item);
+    } catch (err) {
+      await this.failItem(item.id, 'INVALID_CONTENT', (err as Error).message);
       return;
     }
 
     // Find the default connected account for this platform in the workspace
-    const connection = await (this.prisma as any).socialConnection.findFirst({
+    const connection = await this.prisma.socialConnection.findFirst({
       where: {
         workspaceId: item.workspaceId,
         platform,
@@ -110,32 +136,28 @@ export class SocialSchedulerService {
       this.logger.warn(
         `Scheduler: no default ${platform} connection for workspace=${item.workspaceId}, skipping item=${item.id}`,
       );
-      // Mark as failed so it doesn't keep looping
-      await (this.prisma as any).contentItem.update({
-        where: { id: item.id },
-        data: {
-          status:       'FAILED',
-          failedReason: `No default ${platform} connection found. Please connect your account in the Connections page.`,
-        },
-      });
+      await this.failItem(
+        item.id,
+        'NO_CONNECTION',
+        `No default ${platform} connection found. Please connect your account in the Connections page.`,
+      );
       return;
     }
 
-    // Mark item as PUBLISHING to prevent duplicate processing
-    await (this.prisma as any).contentItem.update({
-      where: { id: item.id },
+    // Claim the item (SCHEDULED → PUBLISHING) so an overlapping run cannot take it too.
+    const { count } = await this.prisma.contentItem.updateMany({
+      where: { id: item.id, status: 'SCHEDULED' },
       data: { status: 'PUBLISHING' },
     });
+    if (count === 0) return;
 
     try {
-      // Create a publish job and fire it — flat DTO fields match CreatePublishJobDto
       const job = await this.publishService.createJob({
         workspaceId:        item.workspaceId,
         socialConnectionId: connection.id,
         contentItemId:      item.id,
-        platform:           platform as any,
-        body:               item.content ?? item.topic,
-        hashtags:           [],
+        platform,
+        ...payload,
       }, item.userId);
 
       this.logger.log(
@@ -143,31 +165,25 @@ export class SocialSchedulerService {
       );
     } catch (err) {
       this.logger.error(`Scheduler: failed to create job for item=${item.id}: ${(err as Error).message}`);
-
-      // Revert item status so operator can retry
-      await (this.prisma as any).contentItem.update({
+      // createJob refusals carry { code } (NO_PUBLISHER / INVALID_CONTENT / NO_CONNECTION).
+      const response = (err as { getResponse?: () => unknown }).getResponse?.() as
+        | { code?: PublishFailureCode; message?: string }
+        | undefined;
+      await this.prisma.contentItem.update({
         where: { id: item.id },
         data: {
-          status:       'FAILED',
-          failedReason: (err as Error).message,
+          status: 'FAILED',
+          failedReason: formatFailure(response?.code ?? 'PLATFORM_ERROR', response?.message ?? (err as Error).message),
         },
       });
     }
   }
 
-  /** Maps content pipeline channel names to social platform enum values. */
-  private channelToPlatform(channel: string): string | null {
-    // The ContentChannel enum is lower-case ('linkedin', 'twitter', ...).
-    // This map used to be keyed on upper-case only, so every lookup returned
-    // null and no scheduled post was ever published. Normalise first.
-    const map: Record<string, string> = {
-      linkedin:  'LINKEDIN',
-      twitter:   'X',
-      x:         'X',
-      facebook:  'FACEBOOK',
-      instagram: 'INSTAGRAM',
-      tiktok:    'TIKTOK',
-    };
-    return map[String(channel ?? '').trim().toLowerCase()] ?? null;
+  /** SCHEDULED → FAILED with a coded reason, once. */
+  private async failItem(id: string, code: PublishFailureCode, reason: string) {
+    await this.prisma.contentItem.updateMany({
+      where: { id, status: 'SCHEDULED' },
+      data:  { status: 'FAILED', failedReason: formatFailure(code, reason) },
+    });
   }
 }

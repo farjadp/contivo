@@ -32,6 +32,7 @@ import { SocialOAuthService } from './social-oauth.service';
 import { SocialPublishController } from './social-publish.controller';
 import { SocialPublishService } from './social-publish.service';
 import { SocialSchedulerService } from './social-scheduler.service';
+import { LOCK_STORE, RedisLockStore, TokenRefreshService } from './token-refresh.service';
 
 @Module({
   imports: [PrismaModule, JobsModule],
@@ -46,6 +47,9 @@ import { SocialSchedulerService } from './social-scheduler.service';
     SocialPublishService,
     SocialOAuthService,
     SocialSchedulerService,
+    TokenRefreshService,
+    // Per-connection refresh lock on the same Redis BullMQ uses.
+    { provide: LOCK_STORE, useFactory: () => new RedisLockStore(redisConnection) },
     // Single-use OAuth nonces and parked connections (Redis, same as BullMQ).
     { provide: OAUTH_STORE, useFactory: () => redisOAuthStore(redisConnection) },
 

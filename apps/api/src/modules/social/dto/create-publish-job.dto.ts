@@ -18,6 +18,11 @@ export interface CreatePublishJobDto {
   linkUrl?: string;
   /** Optional hashtags — without the # prefix */
   hashtags?: string[];
+  /** ContentItem.topic, for channels that take a title. */
+  title?: string;
+  /** ContentItem.slug, when assigned. */
+  slug?: string;
+  format?: 'markdown';
   /** ISO-8601 UTC datetime string. Omit for immediate / manual publish. */
   scheduledAtUtc?: string;
   timezone?: string;

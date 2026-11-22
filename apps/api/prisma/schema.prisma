@@ -633,6 +633,9 @@ model SocialConnection {
   encryptedAccessTokenRef  String?
   encryptedRefreshTokenRef String?
   scopesJson               Json?
+  /// Non-secret per-connection settings only (e.g. Telegram chatType, Threads
+  /// lastRefreshedAt). Secrets go in the encrypted token columns, never here.
+  metaJson                 Json?
   status                   SocialConnectionStatus @default(CONNECTED)
   isDefault                Boolean                @default(false)
   tokenExpiresAt           DateTime?
@@ -849,6 +852,8 @@ enum ContentChannel {
   instagram
   email
   blog
+  telegram
+  threads
 }
 
 enum ContentTone {
@@ -916,6 +921,8 @@ enum SocialPlatform {
   FACEBOOK
   INSTAGRAM
   TIKTOK
+  TELEGRAM
+  THREADS
 }
 
 enum SocialConnectionStatus {

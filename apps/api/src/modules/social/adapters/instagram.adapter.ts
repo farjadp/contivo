@@ -19,8 +19,8 @@
  * API reference: https://developers.facebook.com/docs/instagram-api/guides/content-publishing
  */
 
-import { SocialPlatform } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
 import { validateInstagram } from '../validators/platform-validator';
 
@@ -30,6 +30,8 @@ import {
   PublishPayload,
   PublishResult,
   ValidationResult,
+  ConnectionHealth,
+  CredentialKind,
 } from './social-adapter.interface';
 
 
@@ -41,11 +43,13 @@ const PHASE2_ERROR =
 @Injectable()
 export class InstagramAdapter implements SocialAdapter {
   readonly platform: SocialPlatform = 'INSTAGRAM';
+  readonly credential: CredentialKind = 'stored_token';
   private readonly logger = new Logger(InstagramAdapter.name);
 
-  async validateConnection(_connection: AdapterConnection): Promise<boolean> {
+  async validateConnection(_connection: AdapterConnection): Promise<ConnectionHealth> {
     this.logger.warn('Instagram adapter is a Phase 2 stub — validateConnection rejected.');
-    return false;
+    // Not a token problem: never change the connection status for it.
+    return { ok: false, reason: 'transient', detail: PHASE2_ERROR };
   }
 
   validatePayload(payload: PublishPayload): ValidationResult {

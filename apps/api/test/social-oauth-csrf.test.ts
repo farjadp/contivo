@@ -116,7 +116,7 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
     prisma = fakePrisma();
     const connections = new SocialConnectionsService(prisma as never);
     store = memoryOAuthStore();
-    const oauth = new SocialOAuthService(connections, prisma as never, store);
+    const oauth = new SocialOAuthService(connections, store);
     ctrl = new SocialOAuthController(oauth, connections);
   });
 
@@ -224,13 +224,38 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
   });
 
   it('store unavailable fails closed with oauth_unavailable, before any code exchange', async () => {
-    store.claimOnce = async () => { throw new Error('ECONNREFUSED redis:6379'); };
     const browser = fakeRes();
     const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
       createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
+    store.claimOnce = async () => { throw new Error('ECONNREFUSED redis:6379'); };
     const out = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), reqWithCookie(browser.jar) as never, fakeRes() as never);
     assert.equal(out.url, 'https://web.test/connections?error=oauth_unavailable');
     assert.equal(tokenExchanges, 0);
+  });
+
+  it('a connect link (handoff token) starts one flow; reopening it is refused', async () => {
+    const link = createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' });
+    await ctrl.initiateOAuth('linkedin', '', navReq() as never, fakeRes() as never, link);
+    await assert.rejects(
+      ctrl.initiateOAuth('linkedin', '', navReq() as never, fakeRes() as never, link),
+      (e: any) => e?.status === 401,
+    );
+    // Two links minted in the same millisecond are still two links.
+    const now = Date.now();
+    const a = createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }, now);
+    const b = createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }, now);
+    assert.notEqual(a, b);
+  });
+
+  it('/connect fails closed when the store is unavailable (no cookie, no redirect)', async () => {
+    store.claimOnce = async () => { throw new Error('ECONNREFUSED redis:6379'); };
+    const browser = fakeRes();
+    await assert.rejects(
+      ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
+        createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' })),
+      (e: any) => e?.status === 503,
+    );
+    assert.equal(browser.jar[OAUTH_NONCE_COOKIE], undefined);
   });
 
   it('Secure is off on plain http (local dev) so the cookie still works there', async () => {

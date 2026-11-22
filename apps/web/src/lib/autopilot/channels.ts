@@ -28,15 +28,13 @@ export const CHANNEL_LABELS: Record<string, string> = {
   instagram: 'Instagram',
   blog: 'Blog',
   email: 'Email',
+  telegram: 'Telegram',
+  threads: 'Threads',
 };
 
 /*
-  Kept complete on purpose, including instagram: a ContentItem written by
-  Instant Content can still carry that channel, and this map is what turns a
-  stored channel into a platform name for display.
+  The one channel → platform table lives in @contivo/types (shared with the
+  API scheduler), so a new channel cannot be half-added. `null` means the
+  channel is not published through a SocialConnection (blog, email).
 */
-export const CHANNEL_TO_PLATFORM: Partial<Record<ContentChannel, string>> = {
-  linkedin: 'LINKEDIN',
-  twitter: 'X',
-  instagram: 'INSTAGRAM',
-};
+export { CHANNEL_TO_PLATFORM } from '@contivo/types';

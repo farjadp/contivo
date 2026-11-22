@@ -2,7 +2,8 @@
  * PublishQueueSection.tsx
  *
  * Shows scheduled and pending publish jobs for the workspace.
- * Allows retrying failed jobs and cancelling queued ones.
+ * Allows retrying failed jobs and cancelling queued ones. A job that failed
+ * because of its account gets Reconnect / Connect beside Retry.
  *
  * Data is passed as props from the parent server component.
  */
@@ -12,7 +13,14 @@
 import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { RotateCcw, X, Clock, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
-import { retryPublishJob, cancelPublishJob } from '@/app/actions/social';
+import { useRouter } from '@/i18n/navigation';
+import { retryPublishJob, cancelPublishJob, type SocialActionResult } from '@/app/actions/social';
+import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
+import { FailureReason } from '@/components/publishing/FailureReason';
+import { JobFixButton } from '@/components/publishing/JobFixButton';
+import { jobFixAction } from '@/lib/publish-outcome';
+import { socialActionDetail, type SocialActionDetail } from '@/lib/social-action-error';
+import { startReconnect } from '@/lib/start-reconnect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,11 +34,19 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  socialConnectionId: string | null;
+  connectionStatus: string | null;
 }
+
+type JobAction = 'retry' | 'cancel' | 'reconnect';
 
 interface PublishQueueSectionProps {
   jobs: PublishJob[];
   workspaceId: string;
+  /** Opens the Connected accounts tab (a reconnect that cannot start from the row). */
+  onOpenAccounts: () => void;
+  /** Opens the Connect modal (no account behind the job). */
+  onConnectNew: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -53,27 +69,63 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionProps) {
+export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishQueueSectionProps) {
   const t = useTranslations('connections.queue');
   const format = useFormatter();
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, { action: JobAction; detail: SocialActionDetail | null }>>({});
 
   // Show active jobs (not published / cancelled / revoked)
   const activeJobs = jobs.filter(
     (j) => !['PUBLISHED', 'CANCELLED'].includes(j.status),
   );
 
-  const handleRetry = async (id: string) => {
-    setLoading(`retry-${id}`);
-    await retryPublishJob(id, workspaceId);
-    setLoading(null);
+  /** Pending state, inline `{error}`, and a server refresh on success. */
+  const run = async (
+    action: JobAction,
+    id: string,
+    call: () => Promise<Pick<SocialActionResult<unknown>, 'error' | 'code' | 'reason'> | undefined>,
+  ) => {
+    setLoading(`${action}-${id}`);
+    setErrors(({ [id]: _cleared, ...rest }) => rest);
+    try {
+      const result = await call();
+      const detail = result ? socialActionDetail(result) : null;
+      if (detail) {
+        setErrors((prev) => ({ ...prev, [id]: { action, detail } }));
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        [id]: { action, detail: err instanceof Error && err.message ? { kind: 'raw', text: err.message } : null },
+      }));
+    } finally {
+      setLoading(null);
+    }
   };
 
-  const handleCancel = async (id: string) => {
+  const handleRetry = (id: string) => {
+    void run('retry', id, () => retryPublishJob(id, workspaceId));
+  };
+
+  /** Leaves the spinner on when it navigates to the provider sign-in. */
+  const handleReconnect = async (jobId: string, connectionId: string) => {
+    setLoading(`reconnect-${jobId}`);
+    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    const detail = await startReconnect(connectionId, workspaceId);
+    if (detail) {
+      setErrors((prev) => ({ ...prev, [jobId]: { action: 'reconnect', detail } }));
+      setLoading(null);
+      router.refresh();
+    }
+  };
+
+  const handleCancel = (id: string) => {
     if (!confirm(t('cancelConfirm'))) return;
-    setLoading(`cancel-${id}`);
-    await cancelPublishJob(id, workspaceId);
-    setLoading(null);
+    void run('cancel', id, () => cancelPublishJob(id, workspaceId));
   };
 
   return (
@@ -107,10 +159,12 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
               {activeJobs.map((job) => {
                 const config = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.DRAFT;
                 const StatusIcon = config.Icon;
-                const isJobLoading = loading?.endsWith(job.id);
+                const isJobLoading = loading?.endsWith(job.id) ?? false;
+                const error = errors[job.id];
+                const fix = jobFixAction(job);
 
                 return (
-                  <tr key={job.id} className="hover:bg-chalk/50 transition-colors">
+                  <tr key={job.id} aria-busy={isJobLoading} className="hover:bg-chalk/50 transition-colors">
                     <td className="py-3 pe-4 font-semibold text-moss">
                       {PLATFORM_LABELS[job.platform] ?? job.platform}
                     </td>
@@ -138,32 +192,56 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                       ) : '—'}
                     </td>
                     <td className="py-3">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         {job.status === 'FAILED' && (
                           <button
+                            type="button"
                             onClick={() => handleRetry(job.id)}
                             disabled={isJobLoading}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline disabled:opacity-50"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            {loading === `retry-${job.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
                             {t('retry')}
                           </button>
                         )}
+                        {fix && (
+                          <JobFixButton
+                            fix={fix}
+                            pending={loading === `reconnect-${job.id}`}
+                            disabled={isJobLoading}
+                            labels={{ reconnect: t('reconnect'), connect: t('connect') }}
+                            onReconnect={(connectionId) => void handleReconnect(job.id, connectionId)}
+                            onOpenAccounts={onOpenAccounts}
+                            onConnectNew={onConnectNew}
+                          />
+                        )}
                         {!['PUBLISHING', 'PUBLISHED'].includes(job.status) && (
                           <button
+                            type="button"
                             onClick={() => handleCancel(job.id)}
                             disabled={isJobLoading}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:underline disabled:opacity-50"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            {loading === `cancel-${job.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <X className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
                             {t('cancel')}
                           </button>
                         )}
                       </div>
-                      {job.lastError && (
-                        <p className="text-[10px] text-red-500 mt-1 max-w-[200px] truncate" title={job.lastError}>
-                          {job.lastError}
-                        </p>
+                      <FailureReason reason={job.lastError} className="mt-1 max-w-[260px] text-[11px] text-red-600" />
+                      {error && (
+                        <ActionErrorAlert
+                          className="mt-2 max-w-[260px] text-[11px]"
+                          headline={t(`errors.${error.action}`)}
+                          detail={error.detail}
+                        />
                       )}
                     </td>
                   </tr>

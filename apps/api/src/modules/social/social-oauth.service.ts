@@ -35,15 +35,17 @@ import {
   ForbiddenException,
   GoneException,
   Inject,
+  ServiceUnavailableException,
+  UnauthorizedException,
   Injectable,
   Logger,
 } from '@nestjs/common';
 
-import { PrismaService } from '../../common/prisma/prisma.service';
-
+import { HANDOFF_TTL_MS } from './connect-handoff';
 import type { CreateSocialConnectionDto } from './dto/create-social-connection.dto';
 import { getOAuthStateSecret } from './oauth-state-secret';
 import { OAUTH_STORE, type OAuthStore } from './oauth-store';
+import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import * as tokenCrypto from './token-crypto';
 
@@ -77,6 +79,8 @@ interface PendingConnect {
 
 const pendingKey = (ticket: string) => `social:oauth-pending:${ticket}`;
 const nonceKey = (nonce: string) => `social:oauth-state:${nonce}`;
+const handoffKey = (token: string) =>
+  `social:oauth-handoff:${crypto.createHash('sha256').update(token).digest('base64url')}`;
 
 /** Every platform call in the connect flow gives up after this long. */
 const PLATFORM_TIMEOUT_MS = 10_000;
@@ -101,7 +105,8 @@ export class OAuthFlowError extends BadRequestException {
 
 // ─── Platform config helper ───────────────────────────────────────────────────
 
-type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
 
 @Injectable()
 export class SocialOAuthService {
@@ -109,7 +114,6 @@ export class SocialOAuthService {
 
   constructor(
     private readonly connections: SocialConnectionsService,
-    private readonly prisma: PrismaService,
     @Inject(OAUTH_STORE) private readonly store: OAuthStore,
   ) {
     // Fail at boot, not on the first connect attempt.
@@ -143,6 +147,24 @@ export class SocialOAuthService {
     return Object.fromEntries(
       platforms.map((p) => [p, this.missingConfig(p).length === 0]),
     ) as Record<Platform, boolean>;
+  }
+
+  /**
+   * A connect link (web handoff token) starts one flow. A leaked or replayed
+   * link is refused for its whole lifetime. Keyed on sha256(token), so the
+   * token itself is never stored. Fails closed when the store is down.
+   */
+  async claimHandoff(token: string): Promise<void> {
+    let first: boolean;
+    try {
+      first = await this.store.claimOnce(handoffKey(token), HANDOFF_TTL_MS + 60_000);
+    } catch (err) {
+      this.logger.error(`OAuth connect blocked: store unavailable (${capped((err as Error).message)})`);
+      throw new ServiceUnavailableException('Connecting is unavailable right now. Try again in a minute.');
+    }
+    if (!first) {
+      throw new UnauthorizedException('This connect link was already used. Reopen the Connections page and try again.');
+    }
   }
 
   /**
@@ -271,36 +293,16 @@ export class SocialOAuthService {
       const refreshToken = encRefresh ? tokenCrypto.decryptToken(encRefresh) : undefined;
       const expires = tokenExpiresAt ? new Date(tokenExpiresAt) : undefined;
 
-      // Reconnecting the same account updates its row instead of duplicating it.
-      const existing = await this.prisma.socialConnection.findFirst({
-        where: {
-          workspaceId: pending.workspaceId,
-          platform: rest.platform as any,
-          accountIdentifier: rest.accountIdentifier,
-        },
-        select: { id: true },
+      // One upsert path: SocialConnectionsService.create() upserts on
+      // (workspaceId, platform, accountIdentifier), so a reconnect keeps the
+      // row id (publish history stays attached) instead of duplicating it.
+      await this.connections.create({
+        ...rest,
+        workspaceId: pending.workspaceId,
+        accessToken,
+        refreshToken,
+        tokenExpiresAt: expires,
       });
-      if (existing) {
-        await this.prisma.socialConnection.update({
-          where: { id: existing.id },
-          data: {
-            accountName: rest.accountName,
-            encryptedAccessTokenRef: this.connections.encryptToken(accessToken),
-            encryptedRefreshTokenRef: refreshToken ? this.connections.encryptToken(refreshToken) : null,
-            scopesJson: rest.scopes ?? [],
-            status: 'CONNECTED',
-            ...(expires && { tokenExpiresAt: expires }),
-          },
-        });
-      } else {
-        await this.connections.create({
-          ...rest,
-          workspaceId: pending.workspaceId,
-          accessToken,
-          refreshToken,
-          tokenExpiresAt: expires,
-        });
-      }
     }
 
     this.logger.log(

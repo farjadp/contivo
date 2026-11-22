@@ -8,8 +8,10 @@
  * They must never appear in any response body or log.
  */
 
-/** Supported social platforms for connection management. */
-export type SocialPlatformDto = 'LINKEDIN' | 'X' | 'FACEBOOK' | 'INSTAGRAM' | 'TIKTOK';
+import type { SocialPlatform } from '@prisma/client';
+
+/** Platform keys come from the Prisma enum — no local copy of the list. */
+export type SocialPlatformDto = SocialPlatform;
 
 export interface CreateSocialConnectionDto {
   workspaceId: string;

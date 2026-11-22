@@ -74,6 +74,19 @@
         "failed": "Errore",
         "revoked": "Revocato",
         "pendingReauth": "Serve nuovo accesso"
+      },
+      "reconnecting": "Apertura dell'accesso…",
+      "statusHint": {
+        "expired": "L'accesso a <bdi>{platform}</bdi> è scaduto. Le pubblicazioni su questo account non riusciranno finché non lo ricolleghi.",
+        "revoked": "L'accesso a questo account <bdi>{platform}</bdi> è stato revocato. Ricollegalo per tornare a pubblicare.",
+        "pendingReauth": "<bdi>{platform}</bdi> chiede di accedere di nuovo prima che <bdi>Contivo</bdi> possa pubblicare.",
+        "failed": "Il collegamento con <bdi>{platform}</bdi> non funziona più. Ricollegalo per tornare a pubblicare.",
+        "unsupported": "Questo collegamento <bdi>{platform}</bdi> non funziona più e per ora non si può ricollegare da questa pagina."
+      },
+      "errors": {
+        "disconnect": "Non è stato possibile scollegare questo account.",
+        "setDefault": "Non è stato possibile impostare questo account come predefinito.",
+        "reconnect": "Non è stato possibile avviare il ricollegamento."
       }
     },
     "rules": {
@@ -110,7 +123,14 @@
         "published": "Pubblicato",
         "failed": "Non riuscito",
         "cancelled": "Annullato"
-      }
+      },
+      "errors": {
+        "retry": "Non è stato possibile riprovare questo post.",
+        "cancel": "Non è stato possibile annullare questo post.",
+        "reconnect": "Non è stato possibile avviare il ricollegamento."
+      },
+      "reconnect": "Ricollega account",
+      "connect": "Collega un account"
     },
     "history": {
       "title": "Cronologia pubblicazioni",
@@ -125,6 +145,12 @@
         "published": "Pubblicato",
         "cancelled": "Annullato",
         "failed": "Non riuscito"
+      },
+      "reconnect": "Ricollega account",
+      "failureReason": "Motivo:",
+      "connect": "Collega un account",
+      "errors": {
+        "reconnect": "Non è stato possibile avviare il ricollegamento."
       }
     },
     "sites": {

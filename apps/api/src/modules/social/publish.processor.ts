@@ -5,8 +5,8 @@ import { PrismaService } from '../../common/prisma/prisma.service';
 import { redisConnection } from '../jobs/bull-board.provider';
 import { QUEUES, BaseJobPayload } from '../jobs/jobs.constants';
 
+import { publishBackoff, runPublishJob } from './publish-job-runner';
 import { SocialPublishService } from './social-publish.service';
-
 
 @Injectable()
 export class PublishProcessor implements OnModuleInit, OnModuleDestroy {
@@ -23,42 +23,26 @@ export class PublishProcessor implements OnModuleInit, OnModuleDestroy {
       QUEUES.PUBLISH,
       async (job: Job<BaseJobPayload>) => {
         const traceId = job.data.traceId || job.data.jobRecordId;
-        this.logger.log(`[TraceID: ${traceId}] Started publish job for ${job.data.jobRecordId} (User: ${job.data.userId})`);
-        
-        // 1. Fetch job record from DB
-        const record = await this.prisma.socialPublishJob.findUnique({
-          where: { id: job.data.jobRecordId },
-        });
-
-        if (!record) {
-          this.logger.error(`[TraceID: ${traceId}] Publish job record ${job.data.jobRecordId} not found.`);
-          throw new Error('Publish job record not found in DB');
-        }
-
-        if (record.status === 'PUBLISHED') {
-          this.logger.log(`[TraceID: ${traceId}] Publish job ${job.data.jobRecordId} is already PUBLISHED. Skipping.`);
-          return { success: true, skipped: true };
-        }
-
-        // 2. Call the publish service
-        try {
-          // payload should be passed down via metadata
-          const payload = job.data.metadata || { body: '' };
-          await this.publishService.processJobAsync(record.id, record.socialConnectionId, record.platform as any, payload);
-          this.logger.log(`[TraceID: ${traceId}] Succeeded publish job ${job.data.jobRecordId}`);
-          return { success: true };
-        } catch (error) {
-          const errMsg = error instanceof Error ? error.message : String(error);
-          this.logger.error(`[TraceID: ${traceId}] Failed publish job ${job.data.jobRecordId}: ${errMsg}`);
-          throw error;
-        }
+        const attempts = job.opts.attempts ?? 1;
+        this.logger.log(
+          `[TraceID: ${traceId}] Publish job ${job.data.jobRecordId} attempt ${job.attemptsMade + 1}/${attempts} (bull id ${job.id})`,
+        );
+        const result = await runPublishJob(job, { prisma: this.prisma, publishService: this.publishService });
+        this.logger.log(`[TraceID: ${traceId}] Publish job ${job.data.jobRecordId} done: ${JSON.stringify(result)}`);
+        return result;
       },
-      { connection: redisConnection },
+      {
+        connection: redisConnection,
+        // Used by the 'publish' backoff type set in JobsService.enqueuePublish.
+        settings: { backoffStrategy: publishBackoff },
+      },
     );
 
     this.worker.on('failed', (job, err) => {
       const traceId = job?.data?.traceId || job?.data?.jobRecordId || 'unknown';
-      this.logger.error(`[TraceID: ${traceId}] BullMQ Job ${job?.id} failed with error: ${err.message}`);
+      this.logger.error(
+        `[TraceID: ${traceId}] BullMQ job ${job?.id} attemptsMade=${job?.attemptsMade} failed: ${err.message}`,
+      );
     });
   }
 

@@ -43,6 +43,7 @@ import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.
 import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
+import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import { OAUTH_NONCE_COOKIE, OAuthFlowError, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
 
@@ -94,7 +95,8 @@ export function readCookie(req: Pick<Request, 'headers'>, name: string): string 
   return undefined;
 }
 
-type Platform = 'linkedin' | 'x' | 'facebook' | 'tiktok';
+// OAuth platforms come from platforms.ts (typed against the Prisma enum).
+type Platform = OAuthPlatform;
 
 @Controller('social/oauth')
 export class SocialOAuthController {
@@ -145,6 +147,7 @@ export class SocialOAuthController {
       throw new UnauthorizedException('Connect link does not match the requested workspace.');
     }
     await this.connections.validateWorkspaceAccess(targetWorkspaceId, handoff.userId);
+    await this.oauthService.claimHandoff(handoffToken!);
 
     const { url, nonce } = this.oauthService.startAuth(platform, targetWorkspaceId, handoff.userId);
     res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...nonceCookieOpts(req), maxAge: STATE_TTL_MS });

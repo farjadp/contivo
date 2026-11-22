@@ -34,13 +34,20 @@ export class JobsService {
     });
   }
 
-  async enqueuePublish(payload: BaseJobPayload, delayMs = 0) {
-    this.logger.log(`Enqueueing publish job for ${payload.jobRecordId}`);
+  /**
+   * `opts.jobId` overrides the BullMQ id. A retry of the same publish record
+   * must pass a new one: BullMQ ignores add() for an id already in Redis.
+   * Backoff type 'publish' is resolved by the worker's backoffStrategy
+   * (publish-job-runner.ts: Retry-After, else 2 s / 4 s / 8 s).
+   */
+  async enqueuePublish(payload: BaseJobPayload, delayMs = 0, opts: { jobId?: string } = {}) {
+    const jobId = opts.jobId ?? payload.jobRecordId;
+    this.logger.log(`Enqueueing publish job for ${payload.jobRecordId} (bull id ${jobId})`);
     return this.publishQueue.add('publish', payload, {
-      jobId: payload.jobRecordId,
+      jobId,
       delay: delayMs,
       attempts: 3,
-      backoff: { type: 'exponential', delay: 2000 },
+      backoff: { type: 'publish' },
     });
   }
 

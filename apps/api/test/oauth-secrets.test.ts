@@ -56,7 +56,7 @@ describe('OAUTH_STATE_SECRET', () => {
   });
 
   it('OAuth state built by the API verifies on the API, and tamper fails', () => {
-    const svc = new SocialOAuthService({} as never, {} as never, {} as never) as unknown as {
+    const svc = new SocialOAuthService({} as never, {} as never) as unknown as {
       buildState(ctx: Record<string, string>, extra?: Record<string, string>): string;
       verifyState(s: string): Record<string, unknown>;
     };
@@ -77,7 +77,7 @@ describe('OAUTH_STATE_SECRET', () => {
 
   it('services refuse to construct without their secrets (startup check)', () => {
     delete process.env.OAUTH_STATE_SECRET;
-    assert.throws(() => new SocialOAuthService({} as never, {} as never, {} as never), /OAUTH_STATE_SECRET/);
+    assert.throws(() => new SocialOAuthService({} as never, {} as never), /OAUTH_STATE_SECRET/);
     delete process.env.SOCIAL_TOKEN_SECRET;
     assert.throws(() => new SocialConnectionsService({} as never), /SOCIAL_TOKEN_SECRET/);
   });

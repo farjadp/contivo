@@ -22,6 +22,7 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
+import type { SocialConnectionStatus, SocialPlatform } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
@@ -29,7 +30,16 @@ import {
   CreateSocialConnectionDto,
   UpdateSocialConnectionDto,
 } from './dto/create-social-connection.dto';
+import { isOAuthPlatform } from './platforms';
 import * as tokenCrypto from './token-crypto';
+
+/** What the web needs to restart a connect flow for a connection. */
+export interface ReconnectInstruction {
+  /** Lower-case platform key, as getSocialConnectUrl() expects. */
+  platform: string;
+  /** `oauth`: call getSocialConnectUrl(platform, workspaceId) and navigate. */
+  flow: 'oauth' | 'unsupported';
+}
 
 @Injectable()
 export class SocialConnectionsService {
@@ -53,13 +63,20 @@ export class SocialConnectionsService {
     });
   }
 
-  /** Creates and persists a new connection with encrypted token refs. */
+  /**
+   * Saves a connection with encrypted token refs.
+   *
+   * Upserts on (workspaceId, platform, accountIdentifier): reconnecting the
+   * same account updates its row (same id, so publish history stays attached)
+   * instead of leaving the old one behind. Done in code, not with a unique
+   * index, until existing duplicates have been checked and merged.
+   */
   async create(dto: CreateSocialConnectionDto, userId?: string) {
     if (userId) await this.validateWorkspaceAccess(dto.workspaceId, userId);
 
     // If this connection is set as default, unset all others for the platform
     if (dto.isDefault) {
-      await this.clearDefaultForPlatform(dto.workspaceId, dto.platform as any);
+      await this.clearDefaultForPlatform(dto.workspaceId, dto.platform);
     }
 
     const encryptedAccessTokenRef  = this.encryptToken(dto.accessToken);
@@ -67,24 +84,46 @@ export class SocialConnectionsService {
       ? this.encryptToken(dto.refreshToken)
       : null;
 
-    const connection = await this.prisma.socialConnection.create({
-      data: {
-        workspaceId:              dto.workspaceId,
-        platform:                 dto.platform as any,
-        accountName:              dto.accountName,
-        accountIdentifier:        dto.accountIdentifier,
-        encryptedAccessTokenRef,
-        encryptedRefreshTokenRef,
-        scopesJson:               dto.scopes ?? [],
-        status:                   'CONNECTED',
-        isDefault:                dto.isDefault ?? false,
-        ...(dto.tokenExpiresAt && { tokenExpiresAt: dto.tokenExpiresAt }),
+    const existing = await this.prisma.socialConnection.findFirst({
+      where: {
+        workspaceId:       dto.workspaceId,
+        platform:          dto.platform,
+        accountIdentifier: dto.accountIdentifier,
       },
-      select: this.safeSelect(),
+      orderBy: { updatedAt: 'desc' },
+      select: { id: true },
     });
 
+    const fields = {
+      accountName:              dto.accountName,
+      encryptedAccessTokenRef,
+      // A reconnect without a refresh token / expiry must not keep stale ones.
+      encryptedRefreshTokenRef,
+      tokenExpiresAt:           dto.tokenExpiresAt ?? null,
+      scopesJson:               dto.scopes ?? [],
+      status:                   'CONNECTED' as const,
+      isDefault:                dto.isDefault ?? false,
+      lastSyncAt:               new Date(),
+    };
+
+    const connection = existing
+      ? await this.prisma.socialConnection.update({
+          where: { id: existing.id },
+          data: fields,
+          select: this.safeSelect(),
+        })
+      : await this.prisma.socialConnection.create({
+          data: {
+            workspaceId:       dto.workspaceId,
+            platform:          dto.platform,
+            accountIdentifier: dto.accountIdentifier,
+            ...fields,
+          },
+          select: this.safeSelect(),
+        });
+
     this.logger.log(
-      `Social connection created: workspace=${dto.workspaceId} platform=${dto.platform} account=${dto.accountName}`,
+      `Social connection ${existing ? 'reconnected' : 'created'}: workspace=${dto.workspaceId} platform=${dto.platform} account=${dto.accountName}`,
     );
 
     return connection;
@@ -98,7 +137,7 @@ export class SocialConnectionsService {
     if (dto.isDefault) {
       const conn = await this.prisma.socialConnection.findUnique({ where: { id } });
       if (conn) {
-        await this.clearDefaultForPlatform(workspaceId, conn.platform as any);
+        await this.clearDefaultForPlatform(workspaceId, conn.platform);
       }
     }
 
@@ -115,29 +154,70 @@ export class SocialConnectionsService {
   /** Soft-disconnects a connection by marking status = REVOKED and clearing tokens. */
   async disconnect(id: string, workspaceId: string, userId: string) {
     await this.validateWorkspaceAccess(workspaceId, userId);
-    await this.findOrThrow(id, workspaceId);
+    const { isDefault: wasDefault, platform } = await this.findOrThrow(id, workspaceId);
 
+    // A REVOKED row must not stay the default: the scheduler only publishes
+    // through a CONNECTED default, so the platform would silently stop.
     await this.prisma.socialConnection.update({
       where: { id },
       data: {
-        status: 'REVOKED' as any,
+        status: 'REVOKED',
+        isDefault: false,
         encryptedAccessTokenRef:  null,
         encryptedRefreshTokenRef: null,
       },
     });
 
+    if (wasDefault) await this.promoteOldestConnected(workspaceId, platform);
+
     this.logger.log(`Social connection disconnected: id=${id} workspace=${workspaceId}`);
   }
 
-  /** Marks connection as PENDING_REAUTH so the front-end can trigger OAuth again. */
+  /**
+   * Starts a reconnect. Returns the connection and what the web must do next:
+   * for `flow: 'oauth'`, call getSocialConnectUrl(reconnect.platform,
+   * workspaceId) and navigate there; the OAuth callback upserts this row back
+   * to CONNECTED.
+   *
+   * A CONNECTED row is left CONNECTED: if the user abandons the OAuth page, a
+   * working account must not stop publishing. Broken rows move to
+   * PENDING_REAUTH so the UI can show "reconnect in progress".
+   */
   async markForReauth(id: string, workspaceId: string, userId: string) {
     await this.validateWorkspaceAccess(workspaceId, userId);
-    await this.findOrThrow(id, workspaceId);
-    return this.prisma.socialConnection.update({
-      where: { id },
-      data: { status: 'PENDING_REAUTH' as any },
-      select: this.safeSelect(),
-    });
+    const conn = await this.findOrThrow(id, workspaceId);
+
+    const connection = conn.status === 'CONNECTED'
+      ? await this.prisma.socialConnection.findUnique({ where: { id }, select: this.safeSelect() })
+      : await this.prisma.socialConnection.update({
+          where: { id },
+          data: { status: 'PENDING_REAUTH' },
+          select: this.safeSelect(),
+        });
+
+    const platform = String(conn.platform).toLowerCase();
+    const reconnect: ReconnectInstruction = {
+      platform,
+      flow: isOAuthPlatform(platform) ? 'oauth' : 'unsupported',
+    };
+    return { connection, reconnect };
+  }
+
+  /**
+   * Records that a connection can no longer publish (EXPIRED / REVOKED).
+   * Only moves a CONNECTED row, so a more specific earlier status survives.
+   * Never throws: a failed status write must not mask the publish failure.
+   */
+  async markUnusable(id: string, status: Extract<SocialConnectionStatus, 'EXPIRED' | 'REVOKED'>, reason: string) {
+    try {
+      const { count } = await this.prisma.socialConnection.updateMany({
+        where: { id, status: 'CONNECTED' },
+        data:  { status },
+      });
+      if (count > 0) this.logger.warn(`Marked connection ${id} ${status}: ${reason}`);
+    } catch (err) {
+      this.logger.error(`Could not mark connection ${id} ${status}: ${(err as Error).message}`);
+    }
   }
 
   /**
@@ -194,7 +274,29 @@ export class SocialConnectionsService {
     return conn;
   }
 
-  private async clearDefaultForPlatform(workspaceId: string, platform: any) {
+  /**
+   * After the default is disconnected: the oldest CONNECTED account of the
+   * same platform becomes default (oldest = the one the user has relied on
+   * longest; a deterministic choice the user can change with Make default).
+   * Does nothing when another default already exists or none is connected.
+   */
+  private async promoteOldestConnected(workspaceId: string, platform: SocialPlatform) {
+    const hasDefault = await this.prisma.socialConnection.findFirst({
+      where: { workspaceId, platform, status: 'CONNECTED', isDefault: true },
+      select: { id: true },
+    });
+    if (hasDefault) return;
+    const next = await this.prisma.socialConnection.findFirst({
+      where: { workspaceId, platform, status: 'CONNECTED' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true },
+    });
+    if (!next) return;
+    await this.prisma.socialConnection.update({ where: { id: next.id }, data: { isDefault: true } });
+    this.logger.log(`Default ${platform} connection moved to ${next.id} after a disconnect in workspace=${workspaceId}`);
+  }
+
+  private async clearDefaultForPlatform(workspaceId: string, platform: SocialPlatform) {
     await this.prisma.socialConnection.updateMany({
       where: { workspaceId, platform, isDefault: true },
       data: { isDefault: false },

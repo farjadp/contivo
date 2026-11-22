@@ -17,6 +17,8 @@ import {
 } from '@/lib/content-word-count';
 import { normalizeSlugInput, POST_TITLE_MAX } from '@/lib/content-slug';
 import { WritePostPanel, ownPostErrorField, ownPostErrorMessage } from './WritePostPanel';
+import { PublishOutcomeNotice } from './PublishOutcomeNotice';
+import { resolvePublishOutcome, type LatestPublishJob } from '@/lib/publish-outcome';
 
 type SourceFileState = {
   name: string;
@@ -128,11 +130,14 @@ async function extractTextFromFile(file: File): Promise<string> {
 export function PipelineTab({
   workspace,
   items,
+  latestPublishJobs = {},
   wordCountLimits,
   defaultScheduleDelayHours,
 }: {
   workspace: any;
   items: any[];
+  /** Newest social publish job per content item id (read in the server page). */
+  latestPublishJobs?: Record<string, LatestPublishJob>;
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
 }) {
@@ -213,6 +218,7 @@ export function PipelineTab({
             <PipelineItemCard
               key={item.id}
               item={item}
+              latestPublishJob={latestPublishJobs[item.id] ?? null}
               workspace={workspace}
               wordCountLimits={wordCountLimits}
               defaultScheduleDelayHours={defaultScheduleDelayHours}
@@ -225,11 +231,13 @@ export function PipelineTab({
 
 function PipelineItemCard({
   item,
+  latestPublishJob,
   workspace,
   wordCountLimits,
   defaultScheduleDelayHours,
 }: {
   item: any;
+  latestPublishJob: LatestPublishJob | null;
   workspace: any;
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
@@ -296,6 +304,8 @@ function PipelineItemCard({
     setPublishTime(toTimeInputValue(base));
     setHasCustomSchedule(false);
   }, [currentItem.id, currentItem.scheduledAtUtc, defaultScheduleDelayHours]);
+
+  const publishOutcome = resolvePublishOutcome(currentItem, latestPublishJob);
 
   const isSlugLocked =
     Boolean(currentItem.publishedAtUtc) || ['PUBLISHED', 'PUBLISHING'].includes(currentItem.status);
@@ -540,6 +550,8 @@ function PipelineItemCard({
             ${currentItem.status === 'GENERATED' ? 'bg-chalk-sunk text-moss-700' 
             : currentItem.status === 'SCHEDULED' ? 'bg-chalk-sunk text-moss-700'
             : currentItem.status === 'READY' ? 'bg-chalk-sunk text-rival'
+            : currentItem.status === 'PUBLISHED' ? 'bg-green-50 text-green-700'
+            : currentItem.status === 'FAILED' ? 'bg-red-50 text-red-700'
             : 'bg-amber-50 text-amber-600'}`}>
             {statusLabel(t, currentItem.status)}
           </div>
@@ -560,6 +572,10 @@ function PipelineItemCard({
            {t('pipeline.wordsTarget', { count: normalizedTargetWordCount })}
          </span>
        </div>
+
+       {publishOutcome ? (
+         <PublishOutcomeNotice outcome={publishOutcome} workspaceId={workspace.id} />
+       ) : null}
 
        {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
           <div className="mb-4 rounded-xl border border-rule bg-chalk-sunk/70 p-3">

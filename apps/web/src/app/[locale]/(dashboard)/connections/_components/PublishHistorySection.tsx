@@ -2,15 +2,25 @@
  * PublishHistorySection.tsx
  *
  * Shows the history of published and cancelled social posts for the workspace.
- * Read-only — no actions except viewing external post links.
+ * Read-only apart from viewing external post links and, on a job that failed
+ * because of its account, Reconnect / Connect.
  *
  * Data is passed as props from the parent server component.
  */
 
 'use client';
 
+import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { ExternalLink, CheckCircle, XCircle, X } from 'lucide-react';
+
+import { useRouter } from '@/i18n/navigation';
+import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
+import { FailureReason } from '@/components/publishing/FailureReason';
+import { JobFixButton } from '@/components/publishing/JobFixButton';
+import { jobFixAction, safePostUrl } from '@/lib/publish-outcome';
+import type { SocialActionDetail } from '@/lib/social-action-error';
+import { startReconnect } from '@/lib/start-reconnect';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,10 +34,17 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  socialConnectionId: string | null;
+  connectionStatus: string | null;
 }
 
 interface PublishHistorySectionProps {
   jobs: PublishJob[];
+  workspaceId: string;
+  /** Opens the Connected accounts tab (a reconnect that cannot start from the row). */
+  onOpenAccounts: () => void;
+  /** Opens the Connect modal (no account behind the job). */
+  onConnectNew: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -38,9 +55,24 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
+export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onConnectNew }: PublishHistorySectionProps) {
   const t = useTranslations('connections.history');
   const format = useFormatter();
+  const router = useRouter();
+  const [pending, setPending] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, SocialActionDetail>>({});
+
+  /** Leaves the spinner on when it navigates to the provider sign-in. */
+  const handleReconnect = async (jobId: string, connectionId: string) => {
+    setPending(jobId);
+    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    const detail = await startReconnect(connectionId, workspaceId);
+    if (detail) {
+      setErrors((prev) => ({ ...prev, [jobId]: detail }));
+      setPending(null);
+      router.refresh();
+    }
+  };
 
   // Show only terminal-state jobs
   const historyJobs = jobs
@@ -67,12 +99,17 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
           {historyJobs.map((job) => {
             const isPublished = job.status === 'PUBLISHED';
             const isCancelled = job.status === 'CANCELLED';
+            const isFailed = !isPublished && !isCancelled;
+            const postUrl = isPublished ? safePostUrl(job.externalPostUrl) : null;
+            const fix = jobFixAction(job);
+            const error = errors[job.id];
 
             return (
               <div
                 key={job.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm"
+                className="rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm"
               >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 {/* Left: platform + time */}
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -132,9 +169,9 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                     </span>
                   )}
 
-                  {isPublished && job.externalPostUrl && (
+                  {postUrl && (
                     <a
-                      href={job.externalPostUrl}
+                      href={postUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline"
@@ -146,15 +183,24 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                     </a>
                   )}
 
-                  {!isPublished && !isCancelled && job.lastError && (
-                    <span
-                      className="text-xs text-red-400 max-w-[200px] truncate"
-                      title={job.lastError}
-                    >
-                      {job.lastError}
-                    </span>
+                  {fix && (
+                    <JobFixButton
+                      fix={fix}
+                      pending={pending === job.id}
+                      labels={{ reconnect: t('reconnect'), connect: t('connect') }}
+                      onReconnect={(connectionId) => void handleReconnect(job.id, connectionId)}
+                      onOpenAccounts={onOpenAccounts}
+                      onConnectNew={onConnectNew}
+                    />
                   )}
                 </div>
+              </div>
+
+              {/* The full reason: it is the only thing that tells the user what to fix. */}
+              {isFailed && (
+                <FailureReason reason={job.lastError} label={t('failureReason')} className="mt-3 text-red-700" />
+              )}
+              {error && <ActionErrorAlert className="mt-3" headline={t('errors.reconnect')} detail={error} />}
               </div>
             );
           })}

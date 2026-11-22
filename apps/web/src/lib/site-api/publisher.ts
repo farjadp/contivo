@@ -10,6 +10,8 @@
  * from /api/v1/posts, so we never push content anywhere.
  */
 
+import { formatFailure } from '@contivo/types';
+
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
 
@@ -82,7 +84,10 @@ async function publishItem(item: {
         where: { id: item.id },
         data: {
           status: 'FAILED',
-          failedReason: 'No active site connection for this workspace. Add one on the Connections page.',
+          failedReason: formatFailure(
+            'NO_SITE',
+            'No active site connection for this workspace. Add one on the Connections page.',
+          ),
         },
       });
       return { ...base, slug: null, published: false, revalidated: null, error: 'no_site_connection' };

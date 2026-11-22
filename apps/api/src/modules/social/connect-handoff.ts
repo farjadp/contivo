@@ -18,7 +18,7 @@ import * as crypto from 'crypto';
 
 import { getOAuthStateSecret } from './oauth-state-secret';
 
-const TTL_MS = 5 * 60 * 1000; // 5 minutes: long enough to click, short enough to be useless if leaked
+export const HANDOFF_TTL_MS = 5 * 60 * 1000; // 5 minutes: long enough to click, short enough to be useless if leaked
 
 export type HandoffPayload = { userId: string; workspaceId: string };
 
@@ -29,7 +29,9 @@ function sign(body: string): string {
 /** Mints `<base64url(json)>.<hmac>`. Used by the web app. */
 export function createHandoffToken(payload: HandoffPayload, now = Date.now()): string {
   const body = Buffer.from(
-    JSON.stringify({ ...payload, exp: now + TTL_MS }),
+    // `n` makes every link distinct, so single-use (see claimHandoff) never
+    // refuses a second link minted in the same millisecond.
+    JSON.stringify({ ...payload, exp: now + HANDOFF_TTL_MS, n: crypto.randomBytes(9).toString('base64url') }),
     'utf8',
   ).toString('base64url');
   return `${body}.${sign(body)}`;

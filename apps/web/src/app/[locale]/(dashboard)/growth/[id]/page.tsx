@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { getSession } from '@/lib/auth';
 import { getWorkspaceArchiveState } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
+import { getLatestPublishJobsByContentItem } from '@/lib/social-data';
 import { matricesTokenUsage as matricesTokenUsageFor } from '@/lib/matrices/token-usage';
 import { notFound } from 'next/navigation';
 import { redirect, Link } from '@/i18n/navigation';
@@ -174,6 +175,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     defaultScheduleDelayHours,
     workspaceActivityLogs,
     seoIntelligence,
+    latestPublishJobs,
   ] = await Promise.all([
     getWorkspaceDiscoveryStats(session.userId as string, workspace.id),
     listWorkspaceDiscoveryArchive(session.userId as string, workspace.id, 10),
@@ -212,6 +214,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       }
       return { domainGroups: byDomain, domainScans, keywordOpportunities, serpAnalyses };
     })(),
+    // Pipeline: where each post landed, or why it did not.
+    getLatestPublishJobsByContentItem(workspace.id),
   ]);
 
   const MONTHLY_LIMIT = 5;
@@ -707,6 +711,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
           <PipelineTab
             workspace={workspace}
             items={workspace.contentItems}
+            latestPublishJobs={latestPublishJobs}
             wordCountLimits={wordCountLimits}
             defaultScheduleDelayHours={defaultScheduleDelayHours}
           />

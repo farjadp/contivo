@@ -14,41 +14,45 @@
  *       this adapter. Never log or expose the accessToken.
  */
 
-import { SocialPlatform } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
+import type { SocialPlatform } from '@prisma/client';
 
 import { validateFacebook } from '../validators/platform-validator';
 
+import { healthFromFetchError, healthFromStatus } from './http-health';
 import {
   SocialAdapter,
   AdapterConnection,
   PublishPayload,
   PublishResult,
   ValidationResult,
+  ConnectionHealth,
+  CredentialKind,
 } from './social-adapter.interface';
 
 
 @Injectable()
 export class FacebookAdapter implements SocialAdapter {
   readonly platform: SocialPlatform = 'FACEBOOK';
+  readonly credential: CredentialKind = 'stored_token';
   private readonly logger = new Logger(FacebookAdapter.name);
 
   private readonly GRAPH_BASE = 'https://graph.facebook.com/v19.0';
 
   // ─── Interface implementation ──────────────────────────────────────────────
 
-  async validateConnection(connection: AdapterConnection): Promise<boolean> {
+  async validateConnection(connection: AdapterConnection): Promise<ConnectionHealth> {
     try {
       // Verify the page token by fetching page metadata
       const url = new URL(`${this.GRAPH_BASE}/${connection.accountIdentifier}`);
       url.searchParams.set('fields', 'id,name');
-      url.searchParams.set('access_token', connection.accessToken);
+      url.searchParams.set('access_token', connection.accessToken ?? '');
 
       const res = await fetch(url.toString());
-      return res.ok;
+      return healthFromStatus(res.status, 'Facebook', res.headers.get('retry-after'));
     } catch (err) {
-      this.logger.warn(`Facebook connection validation failed: ${this.normalizeError(err)}`);
-      return false;
+      this.logger.warn(`Facebook connection check failed (transient): ${this.normalizeError(err)}`);
+      return healthFromFetchError(err, 'Facebook');
     }
   }
 
@@ -71,7 +75,7 @@ export class FacebookAdapter implements SocialAdapter {
 
       const formData = new URLSearchParams();
       formData.set('message', message);
-      formData.set('access_token', connection.accessToken);
+      formData.set('access_token', connection.accessToken ?? '');
       if (payload.linkUrl) formData.set('link', payload.linkUrl);
 
       const res = await fetch(feedUrl, {
