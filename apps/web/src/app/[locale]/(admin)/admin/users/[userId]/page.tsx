@@ -202,7 +202,7 @@ export default async function AdminUserDetailPage({ params }: Props) {
                 <div key={entry.id} className="rounded-xl border border-rule bg-chalk p-3">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm font-bold text-moss">{entry.feature}</p>
-                    <p className="text-xs font-semibold text-moss-muted">{fmt.usd(Number(entry.estimatedCostUsd))}</p>
+                    <p className="text-xs font-semibold text-moss-muted">{entry.estimatedCostUsd != null ? fmt.usd(Number(entry.estimatedCostUsd)) : '—'}</p>
                   </div>
                   <p className="mt-1 text-xs text-moss-muted">
                     {/* The model name is a provider identifier and stays Latin. */}

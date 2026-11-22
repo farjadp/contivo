@@ -115,7 +115,7 @@ export default async function AdminContentDetailPage({ params }: Props) {
         <MetricCard label={t('contentDetail.creditsCost')} value={fmt.number(contentItem.creditsCost)} />
         <MetricCard
           label={t('contentDetail.aiCost')}
-          value={fmt.usd(Number(aiUsage?.estimatedCostUsd ?? 0))}
+          value={aiUsage?.estimatedCostUsd != null ? fmt.usd(Number(aiUsage.estimatedCostUsd)) : '—'}
           helper={aiUsage ? t('units.tokens', { value: fmt.number(aiUsage.totalTokens) }) : t('contentDetail.noAiUsageLog')}
         />
       </div>
