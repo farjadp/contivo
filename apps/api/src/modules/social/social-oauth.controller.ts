@@ -44,7 +44,7 @@ import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
 import { SocialConnectionsService } from './social-connections.service';
-import { OAUTH_NONCE_COOKIE, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
+import { OAUTH_NONCE_COOKIE, OAuthFlowError, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
 
 /**
  * The nonce cookie lives on the API host: the browser navigates to the API for
@@ -52,12 +52,31 @@ import { OAUTH_NONCE_COOKIE, SocialOAuthService, STATE_TTL_MS } from './social-o
  * /callback (cookie read). SameSite=Lax is sent on that top-level GET
  * redirect from the provider; Strict would not be.
  */
-const NONCE_COOKIE_OPTS = {
+const NONCE_COOKIE_BASE = {
   httpOnly: true,
   sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
   path: '/api/v1/social/oauth',
 };
+
+/**
+ * Secure follows the request scheme, not NODE_ENV: a deployment whose
+ * NODE_ENV is anything but "production" would otherwise send the nonce over
+ * plain HTTP. Railway terminates TLS, so the scheme arrives as
+ * X-Forwarded-Proto.
+ */
+export function isHttpsRequest(req: Pick<Request, 'headers'> & { secure?: boolean }): boolean {
+  if (req.secure) return true;
+  const proto = req.headers?.['x-forwarded-proto'];
+  const first = (Array.isArray(proto) ? proto[0] : proto)?.split(',')[0]?.trim().toLowerCase();
+  return first === 'https';
+}
+
+const nonceCookieOpts = (req: Pick<Request, 'headers'> & { secure?: boolean }) => ({
+  ...NONCE_COOKIE_BASE,
+  secure: isHttpsRequest(req),
+});
+
+const webUrl = () => process.env.WEB_APP_URL ?? 'http://localhost:3000';
 
 export function readCookie(req: Pick<Request, 'headers'>, name: string): string | undefined {
   const header = req.headers?.cookie;
@@ -112,6 +131,7 @@ export class SocialOAuthController {
   async initiateOAuth(
     @Param('platform') platform: Platform,
     @Query('workspaceId') workspaceId: string,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Query('t') handoffToken?: string,
   ) {
@@ -127,7 +147,7 @@ export class SocialOAuthController {
     await this.connections.validateWorkspaceAccess(targetWorkspaceId, handoff.userId);
 
     const { url, nonce } = this.oauthService.startAuth(platform, targetWorkspaceId, handoff.userId);
-    res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...NONCE_COOKIE_OPTS, maxAge: STATE_TTL_MS });
+    res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...nonceCookieOpts(req), maxAge: STATE_TTL_MS });
     this.logger.log(`OAuth initiated: ${platform} workspace=${targetWorkspaceId}`);
     return { url, statusCode: 302 };
   }
@@ -156,16 +176,23 @@ export class SocialOAuthController {
   ) {
     const cookieNonce = readCookie(req, OAUTH_NONCE_COOKIE);
     // Single use either way: success, denial or failure ends this attempt.
-    res.clearCookie(OAUTH_NONCE_COOKIE, NONCE_COOKIE_OPTS);
+    res.clearCookie(OAUTH_NONCE_COOKIE, nonceCookieOpts(req));
 
     if (error) {
-      this.logger.warn(`OAuth denied: ${platform} error=${error}`);
-      const webUrl = process.env.WEB_APP_URL ?? 'http://localhost:3000';
-      return { url: `${webUrl}/connections?error=${encodeURIComponent(error)}`, statusCode: 302 };
+      this.logger.warn(`OAuth denied: ${platform} error=${String(error).slice(0, 100)}`);
+      return { url: `${webUrl()}/connections?error=oauth_denied`, statusCode: 302 };
     }
 
-    const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce);
-    return { url: redirectUrl, statusCode: 302 };
+    // Failures go back to the web app as a short code. The raw message
+    // (state decrypt errors, platform error bodies) stays in our logs.
+    try {
+      const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce);
+      return { url: redirectUrl, statusCode: 302 };
+    } catch (err) {
+      const code = err instanceof OAuthFlowError ? err.code : 'oauth_failed';
+      this.logger.warn(`OAuth callback failed: ${platform} code=${code} ${(err as Error).message}`);
+      return { url: `${webUrl()}/connections?error=${code}`, statusCode: 302 };
+    }
   }
 
   /**

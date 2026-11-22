@@ -60,14 +60,19 @@ function fakePrisma() {
 /** Minimal Express response: records cookies like a browser jar would. */
 function fakeRes() {
   const jar: Record<string, string> = {};
+  const opts: Record<string, any> = {};
   return {
     jar,
-    cookie: (name: string, value: string) => { jar[name] = value; },
+    opts,
+    cookie: (name: string, value: string, o: any) => { jar[name] = value; opts[name] = o; },
     clearCookie: (name: string) => { delete jar[name]; },
   };
 }
+/** Railway terminates TLS: the API sees http + X-Forwarded-Proto: https. */
+const navReq = () => ({ headers: { 'x-forwarded-proto': 'https' } });
 const reqWithCookie = (jar: Record<string, string>) => ({
   headers: {
+    'x-forwarded-proto': 'https',
     cookie: Object.entries(jar).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('; '),
   },
 });
@@ -80,6 +85,7 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
   let prisma: ReturnType<typeof fakePrisma>;
   let ctrl: SocialOAuthController;
   let tokenExchanges: number;
+  let store: ReturnType<typeof memoryOAuthStore>;
   const realFetch = globalThis.fetch;
 
   beforeEach(() => {
@@ -109,7 +115,8 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
 
     prisma = fakePrisma();
     const connections = new SocialConnectionsService(prisma as never);
-    const oauth = new SocialOAuthService(connections, prisma as never, memoryOAuthStore());
+    store = memoryOAuthStore();
+    const oauth = new SocialOAuthService(connections, prisma as never, store);
     ctrl = new SocialOAuthController(oauth, connections);
   });
 
@@ -124,7 +131,7 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
   /** Victim's browser opens the link, approves, and lands back on the web app. */
   async function victimOpensLink(handoff: string) {
     const browser = fakeRes();
-    const start = await ctrl.initiateOAuth('linkedin', '', browser as never, handoff);
+    const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never, handoff);
     const back = await ctrl.handleCallback(
       'linkedin', 'code-1', stateOf(start.url), reqWithCookie(browser.jar) as never, fakeRes() as never,
     );
@@ -167,32 +174,69 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
 
   it('callback without the nonce cookie, or with a wrong one, is refused before any code exchange', async () => {
     const browser = fakeRes();
-    const start = await ctrl.initiateOAuth('linkedin', '', browser as never,
+    const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
       createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
     assert.ok(browser.jar[OAUTH_NONCE_COOKIE], '/connect sets the nonce cookie');
 
-    await assert.rejects(
-      ctrl.handleCallback('linkedin', 'c', stateOf(start.url), reqWithCookie({}) as never, fakeRes() as never),
-      (e: any) => e?.status === 400,
-    );
-    await assert.rejects(
-      ctrl.handleCallback('linkedin', 'c', stateOf(start.url),
-        reqWithCookie({ [OAUTH_NONCE_COOKIE]: 'not-the-nonce' }) as never, fakeRes() as never),
-      (e: any) => e?.status === 400,
-    );
+    assert.equal(browser.opts[OAUTH_NONCE_COOKIE].secure, true, 'Secure follows X-Forwarded-Proto, not NODE_ENV');
+    assert.equal(browser.opts[OAUTH_NONCE_COOKIE].httpOnly, true);
+
+    const noCookie = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), reqWithCookie({}) as never, fakeRes() as never);
+    assert.equal(noCookie.url, 'https://web.test/connections?error=oauth_browser');
+    const wrong = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url),
+      reqWithCookie({ [OAUTH_NONCE_COOKIE]: 'not-the-nonce' }) as never, fakeRes() as never);
+    assert.equal(wrong.url, 'https://web.test/connections?error=oauth_browser');
     assert.equal(tokenExchanges, 0);
   });
 
   it('a replayed callback (same state and cookie) is refused', async () => {
     const browser = fakeRes();
-    const start = await ctrl.initiateOAuth('linkedin', '', browser as never,
+    const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
       createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
     const req = reqWithCookie({ ...browser.jar });
     await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), req as never, fakeRes() as never);
-    await assert.rejects(
-      ctrl.handleCallback('linkedin', 'c', stateOf(start.url), req as never, fakeRes() as never),
-      (e: any) => e?.status === 400,
-    );
+    const again = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), req as never, fakeRes() as never);
+    assert.equal(again.url, 'https://web.test/connections?error=oauth_replayed');
     assert.equal(tokenExchanges, 1);
+  });
+
+  it('a missing or garbage state redirects with a code and leaks no internals', async () => {
+    for (const bad of [undefined, 'garbage']) {
+      const out = await ctrl.handleCallback('linkedin', 'c', bad as never, reqWithCookie({}) as never, fakeRes() as never);
+      assert.equal(out.url, 'https://web.test/connections?error=oauth_state');
+    }
+  });
+
+  it('a platform denial redirects with a fixed code, not the provider text', async () => {
+    const out = await ctrl.handleCallback('linkedin', '', '', reqWithCookie({}) as never, fakeRes() as never,
+      '<script>x</script>' as never);
+    assert.equal(out.url, 'https://web.test/connections?error=oauth_denied');
+  });
+
+  it('token exchange failure redirects with oauth_exchange; the body never reaches the browser', async () => {
+    globalThis.fetch = (async () => new Response('secret-ish platform body '.repeat(50), { status: 401 })) as typeof fetch;
+    const browser = fakeRes();
+    const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
+      createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
+    const out = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), reqWithCookie(browser.jar) as never, fakeRes() as never);
+    assert.equal(out.url, 'https://web.test/connections?error=oauth_exchange');
+    assert.equal(prisma.conns.length, 0);
+  });
+
+  it('store unavailable fails closed with oauth_unavailable, before any code exchange', async () => {
+    store.claimOnce = async () => { throw new Error('ECONNREFUSED redis:6379'); };
+    const browser = fakeRes();
+    const start = await ctrl.initiateOAuth('linkedin', '', navReq() as never, browser as never,
+      createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
+    const out = await ctrl.handleCallback('linkedin', 'c', stateOf(start.url), reqWithCookie(browser.jar) as never, fakeRes() as never);
+    assert.equal(out.url, 'https://web.test/connections?error=oauth_unavailable');
+    assert.equal(tokenExchanges, 0);
+  });
+
+  it('Secure is off on plain http (local dev) so the cookie still works there', async () => {
+    const browser = fakeRes();
+    await ctrl.initiateOAuth('linkedin', '', { headers: {} } as never, browser as never,
+      createHandoffToken({ userId: VICTIM, workspaceId: 'ws-victim' }));
+    assert.equal(browser.opts[OAUTH_NONCE_COOKIE].secure, false);
   });
 });
