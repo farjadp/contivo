@@ -10,6 +10,7 @@
 
 'use server';
 
+import { isPublishJobRefusal, type PublishJobRefusal } from '@contivo/types';
 import { revalidatePath } from 'next/cache';
 
 import { actionError } from '@/lib/action-errors';
@@ -41,7 +42,17 @@ export type SocialActionErrorCode =
   | 'api_error'
   | 'reconnect_unsupported';
 
-export type SocialActionResult<T> = { data?: T; error?: string; code?: SocialActionErrorCode };
+/**
+ * `reason`: why the API refused a Retry / Cancel (`{ message, reason }` body),
+ * when it said and the value is one we know. The UI localises on it; `error`
+ * stays the English fallback.
+ */
+export type SocialActionResult<T> = {
+  data?: T;
+  error?: string;
+  code?: SocialActionErrorCode;
+  reason?: PublishJobRefusal;
+};
 
 /** Nest error bodies: message is a string, a string[], or { message, errors[] }. */
 function readApiMessage(body: unknown): string | null {
@@ -96,7 +107,12 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<Soc
     }
     const code: SocialActionErrorCode =
       res.status === 404 ? 'not_found' : res.status === 409 ? 'conflict' : 'rejected';
-    return { error: apiMessage ?? `The request was rejected (${res.status}).`, code };
+    const reason = (body as { reason?: unknown } | null)?.reason;
+    return {
+      error: apiMessage ?? `The request was rejected (${res.status}).`,
+      code,
+      ...(isPublishJobRefusal(reason) ? { reason } : {}),
+    };
   }
 
   try {

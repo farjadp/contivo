@@ -105,7 +105,16 @@
       "rejected": "La richiesta è stata rifiutata.",
       "unreachable": "Il servizio di pubblicazione non è raggiungibile. Riprova tra un minuto.",
       "api_error": "Il servizio di pubblicazione ha avuto un problema. Riprova tra un minuto.",
-      "reconnect_unsupported": "Questo account non si può ancora ricollegare da qui."
+      "reconnect_unsupported": "Questo account non si può ancora ricollegare da qui.",
+      "refusal": {
+        "JOB_NOT_FOUND": "Questo job di pubblicazione non esiste più. Aggiorna la pagina.",
+        "NOT_RETRYABLE_STATUS": "Si può riprovare solo un post non riuscito. Aggiorna la pagina.",
+        "RETRY_LIMIT": "Questo post ha esaurito i tentativi. Annullalo e mandalo di nuovo in pubblicazione.",
+        "NO_CONTENT_ITEM": "Il post di questo job non esiste più, quindi non c'è nulla da ripubblicare.",
+        "EMPTY_CONTENT": "Questo post non ha testo da pubblicare. Completa prima il testo.",
+        "ALREADY_RETRYING": "Un nuovo tentativo per questo post è già in coda.",
+        "ALREADY_PUBLISHED": "Questo post è già pubblicato e non si può più annullare."
+      }
     },
     "publishFailure": {
       "CONNECTION_EXPIRED": "Il collegamento a questo account è scaduto.",

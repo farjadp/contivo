@@ -26,4 +26,14 @@ describe('socialActionDetail', () => {
     expect(socialActionDetail({ error: 'Something odd' })).toEqual({ kind: 'raw', text: 'Something odd' });
     expect(socialActionDetail({ code: 'rejected' })).toEqual({ kind: 'message', key: 'rejected' });
   });
+
+  it('a refusal reason is localised instead of the raw API text', () => {
+    expect(
+      socialActionDetail({ error: 'Job cmwr… has exceeded the maximum retry count (5).', code: 'rejected', reason: 'RETRY_LIMIT' }),
+    ).toEqual({ kind: 'message', key: 'refusal.RETRY_LIMIT' });
+    expect(socialActionDetail({ error: 'x', code: 'not_found', reason: 'JOB_NOT_FOUND' })).toEqual({
+      kind: 'message',
+      key: 'refusal.JOB_NOT_FOUND',
+    });
+  });
 });

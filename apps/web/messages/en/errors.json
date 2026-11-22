@@ -105,7 +105,16 @@
       "rejected": "The request was rejected.",
       "unreachable": "The publishing service could not be reached. Try again in a minute.",
       "api_error": "The publishing service had a problem. Try again in a minute.",
-      "reconnect_unsupported": "This account cannot be reconnected from here yet."
+      "reconnect_unsupported": "This account cannot be reconnected from here yet.",
+      "refusal": {
+        "JOB_NOT_FOUND": "This publish job no longer exists. Refresh the page.",
+        "NOT_RETRYABLE_STATUS": "Only a failed post can be retried. Refresh the page.",
+        "RETRY_LIMIT": "This post has used all its retries. Cancel it and send it to publish again.",
+        "NO_CONTENT_ITEM": "The post for this job is gone, so there is nothing to publish again.",
+        "EMPTY_CONTENT": "This post has no text to publish. Finish the text first.",
+        "ALREADY_RETRYING": "A retry for this post is already queued.",
+        "ALREADY_PUBLISHED": "This post is already published, so it can no longer be cancelled."
+      }
     },
     "publishFailure": {
       "CONNECTION_EXPIRED": "The connection to this account has expired.",

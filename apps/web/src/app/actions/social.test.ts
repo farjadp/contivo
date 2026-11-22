@@ -110,3 +110,26 @@ describe('reconnectSocialConnection', () => {
     expect(result.error).toBeTruthy();
   });
 });
+
+describe('refusal reasons from the API', () => {
+  it('a known reason is passed through beside the code', async () => {
+    reply(400, { message: 'This job has used all 5 retries. Cancel it and publish the post again.', reason: 'RETRY_LIMIT' });
+    const result = await retryPublishJob('j1', 'w1');
+    expect(result.code).toBe('rejected');
+    expect(result.reason).toBe('RETRY_LIMIT');
+  });
+
+  it('404 and 409 keep their reason too', async () => {
+    reply(404, { message: 'This publish job was not found.', reason: 'JOB_NOT_FOUND' });
+    expect(await cancelPublishJob('j1', 'w1')).toMatchObject({ code: 'not_found', reason: 'JOB_NOT_FOUND' });
+    reply(409, { message: 'This job is already being retried.', reason: 'ALREADY_RETRYING' });
+    expect(await retryPublishJob('j1', 'w1')).toMatchObject({ code: 'conflict', reason: 'ALREADY_RETRYING' });
+  });
+
+  it('an unknown reason is dropped, the raw message stays as fallback', async () => {
+    reply(400, { message: 'Something new', reason: 'MADE_UP' });
+    const result = await retryPublishJob('j1', 'w1');
+    expect(result.reason).toBeUndefined();
+    expect(result.error).toBe('Something new');
+  });
+});
