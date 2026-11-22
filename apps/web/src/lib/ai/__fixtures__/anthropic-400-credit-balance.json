@@ -1,11 +1,12 @@
 {
-  "source": "documented shape (spec 2026-11-22 §2 and the CTO brief: 400 invalid_request_error 'credit balance is too low'); NOT recorded — no Anthropic account/key exists locally",
+  "source": "COMMUNITY body: https://github.com/anthropics/anthropic-sdk-typescript/issues/618 (raw HTTP repro, 17 Sep 2026), quoted in .claude/agent-org/work/data/2026-11-22-ai-provider-error-bodies.md §3; not reproduced by us",
   "status": 400,
   "body": {
     "type": "error",
     "error": {
       "type": "invalid_request_error",
       "message": "Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits."
-    }
+    },
+    "request_id": "req_011Cf75wfCXCbniKKrP6wSut"
   }
 }

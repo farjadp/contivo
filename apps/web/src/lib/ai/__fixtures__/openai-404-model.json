@@ -1,9 +1,9 @@
 {
-  "source": "documented shape from OpenAI's error-codes guide (https://platform.openai.com/docs/guides/error-codes); NOT recorded",
+  "source": "recorded LIVE 2026-11-22 01:26 UTC by contivo-mlops-engineer (.claude/agent-org/work/data/2026-11-22-ai-provider-error-bodies.md §2), real local key, x-request-id req_07fd5a01e1464a9e91f167de87674bc3",
   "status": 404,
   "body": {
     "error": {
-      "message": "The model `gpt-9-imaginary` does not exist or you do not have access to it.",
+      "message": "The model `gpt-4.1-nano` has been deprecated, learn more here: https://platform.openai.com/docs/deprecations",
       "type": "invalid_request_error",
       "param": null,
       "code": "model_not_found"

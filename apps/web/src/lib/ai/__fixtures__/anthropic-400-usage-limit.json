@@ -1,0 +1,11 @@
+{
+  "source": "from docs, not recorded: https://platform.claude.com/docs/en/api/rate-limits#setting-your-own-spend-limit (message prefix only; rest of message illustrative)",
+  "status": 400,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "invalid_request_error",
+      "message": "You have reached your specified API usage limits. You will regain access on 2026-12-01 at 00:00 UTC."
+    }
+  }
+}

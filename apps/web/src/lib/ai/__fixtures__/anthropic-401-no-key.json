@@ -1,0 +1,15 @@
+{
+  "source": "recorded LIVE 2026-11-22 01:26 UTC by contivo-mlops-engineer (.claude/agent-org/work/data/2026-11-22-ai-provider-error-bodies.md §3), no x-api-key header",
+  "status": 401,
+  "headers": {
+    "x-should-retry": "false"
+  },
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "authentication_error",
+      "message": "x-api-key header is required"
+    },
+    "request_id": "req_011ChH6XCBVqRa3qxtcXGuA9"
+  }
+}

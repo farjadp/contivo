@@ -107,6 +107,9 @@ function serverClass(status: number): AiErrorClass {
 const OPENAI_BILLING_CODES = new Set([
   'insufficient_quota',
   'credit_balance_exhausted',
+  'organization_spend_limit_exceeded',
+  'project_spend_limit_exceeded',
+  'organization_usage_limit_exceeded',
   'billing_hard_limit_reached',
   'billing_not_active',
   'account_deactivated',
@@ -120,6 +123,8 @@ export function classifyOpenAi(status: number, body: unknown, headers?: Headers 
   const make = (errorClass: AiErrorClass, retryAfterMs?: number) =>
     new AiProviderError({ provider: 'openai', errorClass, status, message, retryAfterMs });
 
+  // OpenAI docs: "Retrying billing, spend, or quota errors won't restore API access."
+  // Match error.code AND error.type; never the message text.
   if (OPENAI_BILLING_CODES.has(type) || OPENAI_BILLING_CODES.has(code)) return make('billing');
   if (status === 429) return make('rate_limit', parseRetryAfter(headers));
   if (status === 401 || status === 403) return make('auth');
@@ -156,6 +161,22 @@ function geminiQuotaIds(details: unknown[]): string[] {
   return ids.filter(Boolean);
 }
 
+/** Newer AI Studio error shape: `{error:{code:"rate_limit_exceeded", message}}` (string code). */
+const GEMINI_STRING_CODES: Record<string, AiErrorClass> = {
+  payment_required: 'billing',
+  quota_exceeded: 'billing',
+  failed_precondition: 'billing',
+  authentication: 'auth',
+  permission_denied: 'auth',
+  model_not_found: 'model_gone',
+  not_found: 'model_gone',
+  rate_limit_exceeded: 'rate_limit',
+  invalid_argument: 'bad_request',
+  service_unavailable: 'overloaded',
+  api_error: 'server',
+  deadline_exceeded: 'timeout',
+};
+
 export function classifyGemini(status: number, body: unknown): AiProviderError {
   const error = asRecord(parseBody(body)?.error);
   const rpcStatus = str(error?.status);
@@ -165,24 +186,33 @@ export function classifyGemini(status: number, body: unknown): AiProviderError {
   const make = (errorClass: AiErrorClass, retryAfterMs?: number) =>
     new AiProviderError({ provider: 'gemini', errorClass, status, message, retryAfterMs });
 
-  if (reasons.includes('API_KEY_INVALID') || /api key not valid|api key expired/i.test(message)) return make('auth');
+  // Recorded: an invalid key is HTTP 400 INVALID_ARGUMENT + API_KEY_INVALID — auth, not our bug.
+  if (reasons.includes('API_KEY_INVALID') || reasons.includes('API_KEY_EXPIRED')) return make('auth');
+
+  // Newer shape with a string code.
+  const stringCode = typeof error?.code === 'string' ? (error.code as string).toLowerCase() : '';
+  if (stringCode && GEMINI_STRING_CODES[stringCode]) return make(GEMINI_STRING_CODES[stringCode], geminiRetryDelayMs(details));
+
+  if (status === 402) return make('billing'); // prepaid credits depleted
 
   if (status === 429 || rpcStatus === 'RESOURCE_EXHAUSTED') {
-    // Gemini sends the same "check your plan and billing details" text for a
-    // per-minute and a per-day limit, so the message cannot tell them apart.
-    // The QuotaFailure quotaId can: PerDay = the plan is used up for the day
-    // (billing); prepaid credit gone = billing; anything else = rate limit.
+    // Gemini sends "check your plan and billing details" for a per-minute
+    // AND a per-day limit, so the message is never used. QuotaFailure.quotaId:
+    // PerDay or -FreeTier (we pay, so a free-tier bucket = billing not linked)
+    // → billing; anything else (PerMinute, or no details) → rate limit.
     const quota = geminiQuotaIds(details).join(' ');
-    if (/PerDay/i.test(quota) || /prepay|prepaid|credits? (?:are|is) (?:depleted|exhausted)/i.test(message)) {
-      return make('billing');
-    }
+    if (/PerDay|FreeTier/i.test(quota)) return make('billing');
     return make('rate_limit', geminiRetryDelayMs(details));
   }
 
-  if ((status === 400 || status === 403) && /billing/i.test(message)) return make('billing');
+  // Disabled billing / free tier unavailable: a config problem waiting never fixes.
+  if (rpcStatus === 'FAILED_PRECONDITION') return make('billing');
+  // 403 is both "no key" (recorded: PERMISSION_DENIED, ACCESS_DENIED) and
+  // "past due" (docs: cites an outstanding balance).
+  if (status === 403 && /outstanding balance|past due|billing/i.test(message)) return make('billing');
   if (status === 401 || status === 403) return make('auth');
   if (status === 404) return make('model_gone');
-  if (status === 408 || status === 504) return make('timeout');
+  if (status === 408 || status === 504 || rpcStatus === 'DEADLINE_EXCEEDED') return make('timeout');
   if (status >= 500) return make(serverClass(status));
   return make('bad_request');
 }
@@ -213,9 +243,12 @@ export function classifyAnthropic(error: unknown): AiProviderError {
     // A monthly spend cap is a 429 that retries cannot fix until access resumes.
     if (error.errorCode === 'enforced_spend_limit_reached') return make('billing', message, status);
     if (error instanceof Anthropic.BadRequestError) {
-      // No class or code exists for "out of credit": it is a 400
-      // invalid_request_error, so the message is the only signal.
-      if (/credit balance is too low/i.test(message)) return make('billing', message, status);
+      // Two billing cases arrive as a 400 invalid_request_error with no code,
+      // so the message prefix is the only signal: $0 credit, and our own
+      // org/workspace spend limit.
+      if (/credit balance is too low|reached your specified (?:workspace )?API usage limits/i.test(message)) {
+        return make('billing', message, status);
+      }
       return make('bad_request', message, status);
     }
     if (error instanceof Anthropic.AuthenticationError || error instanceof Anthropic.PermissionDeniedError) {
@@ -224,10 +257,11 @@ export function classifyAnthropic(error: unknown): AiProviderError {
     if (error instanceof Anthropic.NotFoundError) return make('model_gone', message, status);
     if (error instanceof Anthropic.RateLimitError) return make('rate_limit', message, status, retryAfterMs);
     if (status === 529 || error.type === 'overloaded_error') return make('overloaded', message, status);
+    // A 500 with type timeout_error, and 504, are timeouts.
+    if (status === 408 || status === 504 || error.type === 'timeout_error') return make('timeout', message, status);
     if (error instanceof Anthropic.InternalServerError || (status !== undefined && status >= 500)) {
       return make('server', message, status);
     }
-    if (status === 408 || error.type === 'timeout_error') return make('timeout', message, status);
     return make('bad_request', message, status);
   }
 

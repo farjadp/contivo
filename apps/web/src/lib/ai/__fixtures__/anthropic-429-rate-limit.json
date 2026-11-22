@@ -1,5 +1,5 @@
 {
-  "source": "documented shape from the claude-api skill (shared/error-codes.md, cached 2026-11-03); NOT recorded",
+  "source": "COMMUNITY body (https://github.com/anthropics/claude-code/issues/54839) + retry-after header per docs; not recorded",
   "status": 429,
   "headers": {
     "retry-after": "7"
@@ -8,7 +8,8 @@
     "type": "error",
     "error": {
       "type": "rate_limit_error",
-      "message": "Number of request tokens has exceeded your per-minute rate limit"
-    }
+      "message": "This request would exceed your account's rate limit. Please try again later."
+    },
+    "request_id": "req_011CaYBHTj6A97X17K2kvbsU"
   }
 }

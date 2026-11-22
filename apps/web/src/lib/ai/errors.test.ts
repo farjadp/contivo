@@ -113,6 +113,69 @@ describe('classifyAnthropic', () => {
   });
 });
 
+describe('head-of-data corrections (22 Nov evidence file)', () => {
+  it('A1: Gemini no key (recorded 403 PERMISSION_DENIED) is auth; invalid key (400) is auth', () => {
+    expect(gemini('gemini-403-no-key.json').errorClass).toBe('auth');
+    expect(gemini('gemini-400-invalid-key.json').errorClass).toBe('auth');
+    expect(classifyGemini(403, JSON.stringify({ error: { code: 403, message: 'Your account has an outstanding balance', status: 'PERMISSION_DENIED' } })).errorClass).toBe('billing');
+  });
+
+  it('A2: OpenAI billing on error.code OR error.type, every documented code', () => {
+    for (const code of [
+      'insufficient_quota',
+      'credit_balance_exhausted',
+      'organization_spend_limit_exceeded',
+      'project_spend_limit_exceeded',
+      'organization_usage_limit_exceeded',
+    ]) {
+      expect(classifyOpenAi(429, JSON.stringify({ error: { message: 'x', type: 'requests', code } })).errorClass).toBe('billing');
+    }
+    expect(classifyOpenAi(429, JSON.stringify({ error: { message: 'x', type: 'insufficient_quota', code: 'something_new' } })).errorClass).toBe('billing');
+    // message text alone never makes billing
+    expect(classifyOpenAi(429, JSON.stringify({ error: { message: 'You exceeded your current quota, please check your plan and billing details', code: 'rate_limit_exceeded' } })).errorClass).toBe('rate_limit');
+    expect(openAi('openai-401-no-key.json').errorClass).toBe('auth');
+  });
+
+  it('A3: Anthropic four billing shapes, spend cap is NOT rate_limit, 401 no key is auth', () => {
+    expect(anthropic('anthropic-400-credit-balance.json').errorClass).toBe('billing');
+    expect(anthropic('anthropic-400-usage-limit.json').errorClass).toBe('billing');
+    const cap = anthropic('anthropic-429-spend-cap.json');
+    expect(cap.errorClass).toBe('billing');
+    expect(cap.retryAfterMs).toBeUndefined();
+    expect(anthropic('anthropic-402-billing.json').errorClass).toBe('billing');
+    expect(anthropic('anthropic-401-no-key.json').errorClass).toBe('auth');
+    const ramp = classifyAnthropic(
+      Anthropic.APIError.generate(429, { type: 'error', error: { type: 'rate_limit_error', message: 'slow', details: { error_code: 'ramp_limit_exceeded' } } }, undefined, new Headers({ 'retry-after': '2' })),
+    );
+    expect(ramp.errorClass).toBe('rate_limit');
+    const timeout500 = classifyAnthropic(Anthropic.APIError.generate(500, { type: 'error', error: { type: 'timeout_error', message: 't' } }, undefined, new Headers()));
+    expect(timeout500.errorClass).toBe('timeout');
+  });
+
+  it('A4: Gemini 429 by quotaId only (PerDay/FreeTier billing, PerMinute rate_limit, no details rate_limit)', () => {
+    const msg = 'You exceeded your current quota, please check your plan and billing details.';
+    const quota = (quotaId: string) =>
+      JSON.stringify({ error: { code: 429, message: msg, status: 'RESOURCE_EXHAUSTED', details: [{ '@type': 'type.googleapis.com/google.rpc.QuotaFailure', violations: [{ quotaId }] }] } });
+    expect(classifyGemini(429, quota('GenerateRequestsPerDayPerProjectPerModel')).errorClass).toBe('billing');
+    expect(classifyGemini(429, quota('GenerateContentInputTokensPerModelPerMinute-FreeTier')).errorClass).toBe('billing');
+    expect(classifyGemini(429, quota('GenerateRequestsPerMinutePerProjectPerModel')).errorClass).toBe('rate_limit');
+    expect(classifyGemini(429, JSON.stringify({ error: { code: 429, message: 'Resource has been exhausted (e.g. check quota).', status: 'RESOURCE_EXHAUSTED' } })).errorClass).toBe('rate_limit');
+    // the prepaid-credit text is not a rule any more: 402 is
+    expect(gemini('gemini-402-payment-required.json').errorClass).toBe('billing');
+  });
+
+  it('Gemini newer string-code shape and FAILED_PRECONDITION', () => {
+    expect(classifyGemini(429, JSON.stringify({ error: { code: 'rate_limit_exceeded', message: 'x' } })).errorClass).toBe('rate_limit');
+    expect(classifyGemini(429, JSON.stringify({ error: { code: 'quota_exceeded', message: 'x' } })).errorClass).toBe('billing');
+    expect(classifyGemini(404, JSON.stringify({ error: { code: 'model_not_found', message: 'x' } })).errorClass).toBe('model_gone');
+    expect(classifyGemini(400, JSON.stringify({ error: { code: 400, message: 'billing disabled', status: 'FAILED_PRECONDITION' } })).errorClass).toBe('billing');
+  });
+
+  it('A6: recorded OpenAI 404 model_not_found (gpt-4.1-nano deprecated) is model_gone', () => {
+    expect(openAi('openai-404-model.json').errorClass).toBe('model_gone');
+  });
+});
+
 describe('classifyThrown', () => {
   it('AbortSignal timeout is timeout, anything else network', () => {
     const timeout = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' });
