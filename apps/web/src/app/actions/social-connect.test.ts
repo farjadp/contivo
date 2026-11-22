@@ -5,13 +5,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // without a session, and report the API's "started by another account" as
 // 'foreign' so the page can say nothing was connected.
 
-const { sessionMock, mintMock } = vi.hoisted(() => ({ sessionMock: vi.fn(), mintMock: vi.fn() }));
+const { sessionMock, mintMock, localeMock, findWorkspaceMock } = vi.hoisted(() => ({
+  sessionMock: vi.fn(),
+  mintMock: vi.fn(),
+  localeMock: vi.fn(),
+  findWorkspaceMock: vi.fn(),
+}));
 
-vi.mock('@/lib/db', () => ({ prisma: {} }));
+vi.mock('@/lib/db', () => ({ prisma: { workspace: { findFirst: findWorkspaceMock }, user: { findUnique: vi.fn() } } }));
+vi.mock('next-intl/server', () => ({ getLocale: localeMock }));
 vi.mock('@/lib/auth', () => ({ getSession: sessionMock, mintApiToken: mintMock }));
 vi.mock('@/lib/action-errors', () => ({ actionError: vi.fn(async (key: string) => key) }));
 
-import { finalizeSocialConnect } from './social-connect';
+import { finalizeSocialConnect, getSocialConnectUrl } from './social-connect';
 
 const fetchMock = vi.fn();
 
@@ -63,5 +69,36 @@ describe('finalizeSocialConnect', () => {
     sessionMock.mockResolvedValue(null);
     expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'failed' });
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('getSocialConnectUrl locale (B18)', () => {
+  const savedSecret = process.env.OAUTH_STATE_SECRET;
+  beforeEach(() => {
+    process.env.OAUTH_STATE_SECRET = 'test-only-secret';
+    sessionMock.mockResolvedValue({ userId: 'user-a' });
+    findWorkspaceMock.mockResolvedValue({ id: 'ws-1' });
+  });
+  afterEach(() => {
+    process.env.OAUTH_STATE_SECRET = savedSecret;
+  });
+
+  async function handoffBody(): Promise<Record<string, unknown>> {
+    const result = await getSocialConnectUrl('linkedin', 'ws-1');
+    if (!('url' in result)) throw new Error(result.error);
+    const t = new URL(result.url).searchParams.get('t')!;
+    return JSON.parse(Buffer.from(t.split('.')[0]!, 'base64url').toString('utf8'));
+  }
+
+  it('signs the app locale into the handoff so the return keeps it', async () => {
+    localeMock.mockResolvedValue('fa');
+    expect(await handoffBody()).toMatchObject({ userId: 'user-a', workspaceId: 'ws-1', locale: 'fa' });
+  });
+
+  it('leaves out site-only locales and lookup failures', async () => {
+    localeMock.mockResolvedValue('fr');
+    expect(await handoffBody()).not.toHaveProperty('locale');
+    localeMock.mockRejectedValue(new Error('no request'));
+    expect(await handoffBody()).not.toHaveProperty('locale');
   });
 });

@@ -48,6 +48,7 @@ import type { OAuthPlatform } from './platforms';
 import { SocialConnectionsService } from './social-connections.service';
 import { OAUTH_NONCE_COOKIE, OAuthFlowError, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
 import { TelegramConnectService } from './telegram/telegram-connect.service';
+import { OAUTH_LOCALE_COOKIE, connectionsUrl, isAppLocale } from './web-return';
 
 /**
  * The nonce cookie lives on the API host: the browser navigates to the API for
@@ -78,8 +79,6 @@ const nonceCookieOpts = (req: Pick<Request, 'headers'> & { secure?: boolean }) =
   ...NONCE_COOKIE_BASE,
   secure: isHttpsRequest(req),
 });
-
-const webUrl = () => process.env.WEB_APP_URL ?? 'http://localhost:3000';
 
 export function readCookie(req: Pick<Request, 'headers'>, name: string): string | undefined {
   const header = req.headers?.cookie;
@@ -160,6 +159,12 @@ export class SocialOAuthController {
 
     const { url, nonce } = this.oauthService.startAuth(platform, targetWorkspaceId, handoff.userId);
     res.cookie(OAUTH_NONCE_COOKIE, nonce, { ...nonceCookieOpts(req), maxAge: STATE_TTL_MS });
+    // The return to the web app keeps the language the customer started in (B18).
+    if (handoff.locale) {
+      res.cookie(OAUTH_LOCALE_COOKIE, handoff.locale, { ...nonceCookieOpts(req), maxAge: STATE_TTL_MS });
+    } else {
+      res.clearCookie(OAUTH_LOCALE_COOKIE, nonceCookieOpts(req));
+    }
     this.logger.log(`OAuth initiated: ${platform} workspace=${targetWorkspaceId}`);
     return { url, statusCode: 302 };
   }
@@ -187,23 +192,26 @@ export class SocialOAuthController {
     @Query('error') error?: string,
   ) {
     const cookieNonce = readCookie(req, OAUTH_NONCE_COOKIE);
+    const rawLocale = readCookie(req, OAUTH_LOCALE_COOKIE);
+    const locale = isAppLocale(rawLocale) ? rawLocale : undefined;
     // Single use either way: success, denial or failure ends this attempt.
     res.clearCookie(OAUTH_NONCE_COOKIE, nonceCookieOpts(req));
+    res.clearCookie(OAUTH_LOCALE_COOKIE, nonceCookieOpts(req));
 
     if (error) {
       this.logger.warn(`OAuth denied: ${platform} error=${String(error).slice(0, 100)}`);
-      return { url: `${webUrl()}/connections?error=oauth_denied`, statusCode: 302 };
+      return { url: connectionsUrl({ error: 'oauth_denied' }, locale), statusCode: 302 };
     }
 
     // Failures go back to the web app as a short code. The raw message
     // (state decrypt errors, platform error bodies) stays in our logs.
     try {
-      const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce);
+      const redirectUrl = await this.oauthService.handleCallback(platform, code, state, cookieNonce, locale);
       return { url: redirectUrl, statusCode: 302 };
     } catch (err) {
       const code = err instanceof OAuthFlowError ? err.code : 'oauth_failed';
       this.logger.warn(`OAuth callback failed: ${platform} code=${code} ${(err as Error).message}`);
-      return { url: `${webUrl()}/connections?error=${code}`, statusCode: 302 };
+      return { url: connectionsUrl({ error: code }, locale), statusCode: 302 };
     }
   }
 

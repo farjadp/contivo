@@ -17,10 +17,12 @@
 import * as crypto from 'crypto';
 
 import { getOAuthStateSecret } from './oauth-state-secret';
+import { isAppLocale, type AppLocale } from './web-return';
 
 export const HANDOFF_TTL_MS = 5 * 60 * 1000; // 5 minutes: long enough to click, short enough to be useless if leaked
 
-export type HandoffPayload = { userId: string; workspaceId: string };
+/** `locale`: the web locale the connect started in, so the return keeps it (B18). */
+export type HandoffPayload = { userId: string; workspaceId: string; locale?: AppLocale };
 
 function sign(body: string): string {
   return crypto.createHmac('sha256', getOAuthStateSecret()).update(body).digest('base64url');
@@ -57,7 +59,9 @@ export function verifyHandoffToken(token: string | undefined | null, now = Date.
     const parsed = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
     if (typeof parsed?.exp !== 'number' || parsed.exp < now) return null;
     if (typeof parsed?.userId !== 'string' || typeof parsed?.workspaceId !== 'string') return null;
-    return { userId: parsed.userId, workspaceId: parsed.workspaceId };
+    return isAppLocale(parsed.locale)
+      ? { userId: parsed.userId, workspaceId: parsed.workspaceId, locale: parsed.locale }
+      : { userId: parsed.userId, workspaceId: parsed.workspaceId };
   } catch {
     return null;
   }
