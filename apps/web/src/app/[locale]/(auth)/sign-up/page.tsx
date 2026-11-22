@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useActionState } from 'react';
+import { use, useActionState } from 'react';
 
 import { register } from '@/app/actions/auth';
 import { AuthField, AuthShell, authAccent } from '@/components/marketing/auth-shell';
@@ -9,8 +9,15 @@ import { Link } from '@/i18n/navigation';
 
 const initialState = { error: '' };
 
-export default function SignUpPage() {
+type Props = {
+  searchParams: Promise<{ cohort?: string | string[] }>;
+};
+
+export default function SignUpPage({ searchParams }: Props) {
   const t = useTranslations('auth.signUp');
+  // `?cohort=<tag>` from an invite link; the server keeps it only if allow-listed.
+  const cohortParam = use(searchParams).cohort;
+  const cohort = typeof cohortParam === 'string' ? cohortParam : '';
   const [state, formAction, isPending] = useActionState(register as never, initialState);
 
   return (
@@ -35,6 +42,8 @@ export default function SignUpPage() {
             {state.error}
           </p>
         )}
+
+        {cohort && <input type="hidden" name="cohort" value={cohort} />}
 
         <AuthField
           id="name"

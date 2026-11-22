@@ -1,3 +1,4 @@
+import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { readTokenUsage } from '@/lib/competitors/queries';
 import { sanitizeUpstreamText } from '@/lib/competitors/redact';
 
@@ -71,6 +72,12 @@ export async function callStructured<T>(args: {
     throw new MatrixAiError('Matrix AI returned an unreadable response');
   }
   const tokens = readTokenUsage(body);
+  void recordAiUsage({
+    provider: 'openai',
+    model: resolveResponseModel(body, model),
+    feature: `matrix_${args.name}`,
+    usage: parseOpenAiChatUsage(body),
+  });
 
   const content = (body as { choices?: Array<{ message?: { content?: unknown } }> })?.choices?.[0]?.message?.content;
   if (!content || typeof content !== 'string') {

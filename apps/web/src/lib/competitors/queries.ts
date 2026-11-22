@@ -1,3 +1,5 @@
+import { parseOpenAiChatUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
+
 import { sanitizeUpstreamText } from './redact';
 import type { TargetMarket } from './types';
 
@@ -284,6 +286,12 @@ export async function generateQueries(brief: BrandBrief): Promise<{ queries: str
   }
 
   const data = await res.json();
+  void recordAiUsage({
+    provider: 'openai',
+    model: resolveResponseModel(data, model),
+    feature: 'competitor_queries',
+    usage: parseOpenAiChatUsage(data),
+  });
   const content = data?.choices?.[0]?.message?.content;
   if (!content || typeof content !== 'string') {
     throw new Error('OpenAI query generation returned no content');

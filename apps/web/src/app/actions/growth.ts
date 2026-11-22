@@ -5,6 +5,7 @@ import { getSession } from '@/lib/auth';
 import { redirect } from '@/i18n/navigation';
 import { scrapeUrl, analyzeWebsiteWithGemini, discoverCompetitorsWithGemini } from '@/lib/gemini';
 import { writeActivityLog } from '@/lib/activity-log';
+import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { createWorkspaceProgressBaseline } from '@/lib/workspace-progress';
 import { COMPETITOR_DISCOVERY_WARNING } from '@/lib/workspace-setup-warnings';
 import { getLocale } from 'next-intl/server';
@@ -98,6 +99,12 @@ export type EnrichmentResult = {
  * workspace so the reason survives a page reload.
  */
 export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentResult> {
+  // Attribute this run's model calls (brand analysis, competitors, positioning)
+  // to the workspace, so cost per workspace is complete in ai_usage_logs.
+  return runWithAiContext({}, () => enrichWorkspaceInAiContext(workspaceId));
+}
+
+async function enrichWorkspaceInAiContext(workspaceId: string): Promise<EnrichmentResult> {
   const session = await getSession();
   if (!session) return { ok: false, error: await actionError('notAuthenticated'), warnings: [], competitorsFound: 0 };
 
@@ -117,6 +124,8 @@ export async function enrichWorkspace(workspaceId: string): Promise<EnrichmentRe
       contentLanguage: true,
     },
   });
+  if (workspace) setAiContext({ userId: session.userId as string, workspaceId: workspace.id });
+
   if (!workspace) {
     return { ok: false, error: await actionError('workspaceNotFoundDot'), warnings: [], competitorsFound: 0 };
   }

@@ -20,6 +20,7 @@ import { callerIp, consumeRateLimit, retryAfterLabel } from '@/lib/rate-limit';
 import { redirect } from '@/i18n/navigation';
 import { getLocale } from 'next-intl/server';
 import { actionError } from '@/lib/action-errors';
+import { writeActivityLog } from '@/lib/activity-log';
 
 const MINUTE = 60_000;
 const HOUR = 60 * MINUTE;
@@ -39,6 +40,23 @@ const LOGIN_PER_IP = { limit: 40, windowMs: 15 * MINUTE };
  * harvesting credit grants worth scripting.
  */
 const REGISTER_PER_IP = { limit: 5, windowMs: HOUR };
+
+const COHORT_SHAPE = /^[a-z0-9][a-z0-9-_]{0,39}$/;
+
+/**
+ * The `?cohort=` tag from the sign-up link, kept only if it is well-formed
+ * and on the SIGNUP_COHORTS allowlist (comma-separated, exact match). Anyone
+ * can edit a URL, so an unlisted tag is dropped, never stored; the sign-up
+ * itself goes ahead either way.
+ */
+function allowedCohort(raw: FormDataEntryValue | null): string | null {
+  if (typeof raw !== 'string' || !COHORT_SHAPE.test(raw)) return null;
+  const allowlist = (process.env.SIGNUP_COHORTS ?? '')
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+  return allowlist.includes(raw) ? raw : null;
+}
 
 export async function login(_prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
@@ -91,6 +109,13 @@ export async function login(_prevState: any, formData: FormData) {
     role: user.role, // 'ADMIN' or 'USER'
   });
 
+  // Before the redirect: redirect() throws, so nothing after it runs.
+  await writeActivityLog({
+    userId: user.id,
+    action: 'USER_SIGNED_IN',
+    detail: { locale: await getLocale() },
+  });
+
   if (user.role === 'ADMIN') {
     redirect({ href: '/admin', locale: await getLocale() });
   } else {
@@ -133,6 +158,7 @@ export async function register(_prevState: any, formData: FormData) {
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
+  const cohort = allowedCohort(formData.get('cohort'));
 
   const user = await prisma.user.create({
     data: {
@@ -141,7 +167,14 @@ export async function register(_prevState: any, formData: FormData) {
       passwordHash,
       role: 'USER',
       plan: 'FREE',
+      ...(cohort ? { cohort } : {}),
     },
+  });
+
+  await writeActivityLog({
+    userId: user.id,
+    action: 'USER_SIGNED_UP',
+    detail: { locale: await getLocale(), cohort },
   });
 
   // Nothing outside the admin console ever wrote an ALLOCATION row, so every
