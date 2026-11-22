@@ -161,6 +161,7 @@ const RIGHTS_NONE: TgAdministratorRights = {
 };
 /** The least a channel admin needs to post. Telegram grants the bot exactly this. */
 const RIGHTS_POST: TgAdministratorRights = { ...RIGHTS_NONE, can_post_messages: true };
+const RIGHTS_GROUP_ADMIN: TgAdministratorRights = { ...RIGHTS_NONE, can_manage_chat: true };
 
 const err = (status: HttpStatus, code: string, message: string, extra: Record<string, unknown> = {}) =>
   new HttpException({ statusCode: status, code, message, ...extra }, status);
@@ -487,10 +488,10 @@ export class TelegramConnectService {
           [{ text: telegramText(lang, 'buttonGroup'), request_chat: {
             request_id: session.requestIds.group,
             chat_is_channel: false,
-            // ASSUMED: rights objects with nothing set still require both to be
-            // admins (Telegram lists only chats where the user is admin).
-            user_administrator_rights: RIGHTS_NONE,
-            bot_administrator_rights: RIGHTS_NONE,
+            // Telegram rejects an all-false rights object (ADMIN_RIGHTS_EMPTY,
+            // seen live 22 Nov), so ask for the basic admin right on both sides.
+            user_administrator_rights: RIGHTS_GROUP_ADMIN,
+            bot_administrator_rights: RIGHTS_GROUP_ADMIN,
             request_title: true,
             request_username: true,
           } }],
