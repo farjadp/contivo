@@ -299,14 +299,14 @@
         "publish": "Pubblica"
       },
       "editor": {
-        "eyebrow": "Modifica e programma il post",
+        "eyebrow": "Modifica il post",
         "close": "Chiudi anteprima",
         "draftLabel": "Bozza del contenuto",
         "scheduleTitle": "Programmazione",
         "dateOptional": "Data (facoltativa)",
         "timeOptional": "Ora (facoltativa)",
-        "blankNote": "Lascia vuote data e ora per salvarlo semplicemente come \"Pronto\", oppure compilale per segnare in automatico il post come \"Programmato\".",
-        "save": "Salva modifiche",
+        "blankNote": "Salva lascia il post com’è: cambia solo il testo. Per programmarlo, compila sia la data sia l’ora e scegli Salva e programma.",
+        "save": "Salva",
         "titleLabel": "Titolo",
         "slugLabel": "Slug dell'URL",
         "slugFrozen": "Non cambia dopo la pubblicazione, così l'indirizzo del post resta lo stesso.",
@@ -314,7 +314,10 @@
         "saveFailed": "Le modifiche non sono state salvate. Riprova.",
         "publishedEyebrow": "Modifica post pubblicato",
         "publishedNote": "Salvando, l'articolo online sul tuo sito si aggiorna subito. L'indirizzo resta lo stesso.",
-        "saveLive": "Salva e aggiorna online"
+        "saveLive": "Salva e aggiorna online",
+        "scheduledNote": "Questo post è già programmato. Cambia la data o l’ora per spostarlo; lasciale così per mantenerlo.",
+        "partialNote": "Compila sia la data sia l’ora per programmarlo.",
+        "saveAndSchedule": "Salva e programma"
       },
       "scheduleModal": {
         "title": "Programma contenuto",

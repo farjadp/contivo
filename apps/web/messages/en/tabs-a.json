@@ -299,14 +299,14 @@
         "publish": "Publish"
       },
       "editor": {
-        "eyebrow": "Edit & Schedule Post",
+        "eyebrow": "Edit post",
         "close": "Close preview",
         "draftLabel": "Content Draft",
         "scheduleTitle": "Publishing Schedule",
         "dateOptional": "Date (Optional)",
         "timeOptional": "Time (Optional)",
-        "blankNote": "Leave date and time blank to save simply as \"Ready\", or fill them out to automatically mark this post as \"Scheduled\".",
-        "save": "Save Changes",
+        "blankNote": "Save keeps the post as it is: only the text changes. To schedule it, fill in both the date and the time, then choose Save & schedule.",
+        "save": "Save",
         "titleLabel": "Title",
         "slugLabel": "URL slug",
         "slugFrozen": "Fixed after publishing, so the post's address never changes.",
@@ -314,7 +314,10 @@
         "saveFailed": "Your changes were not saved. Try again.",
         "publishedEyebrow": "Edit published post",
         "publishedNote": "Saving updates the live article on your site right away. Its address stays the same.",
-        "saveLive": "Save and update live"
+        "saveLive": "Save and update live",
+        "scheduledNote": "This post is already scheduled. Change the date or time to move it; leave them as they are to keep it.",
+        "partialNote": "Fill in both the date and the time to schedule it.",
+        "saveAndSchedule": "Save & schedule"
       },
       "scheduleModal": {
         "title": "Schedule Content",
