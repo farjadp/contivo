@@ -100,7 +100,7 @@ Customers never touch BotFather. Customer-owned bots (white label) fit the same 
 Fallback: public channel where the bot was added by hand → paste `@username`, same check.
 
 **Webhook.** `POST /api/v1/social/telegram/webhook`, public, constant-time check of
-`X-Telegram-Bot-Api-Secret-Token`. `allowed_updates: ["message","my_chat_member"]` — never `channel_post`
+`X-Telegram-Bot-Api-Secret-Token`. `allowed_updates: ["message","my_chat_member","callback_query"]` (callback_query = the "This wasn't me" button) — never `channel_post`
 (we do not read customers' channels). Local dev: `TELEGRAM_UPDATES_MODE=polling` uses `getUpdates` instead
 (webhook and getUpdates are mutually exclusive [P]).
 

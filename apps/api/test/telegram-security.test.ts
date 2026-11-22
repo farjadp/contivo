@@ -14,6 +14,8 @@
  * P3-3  polling mode and TELEGRAM_API_BASE are refused in production.
  * P3-4  a lone ``` fence never renders as an empty <pre></pre>.
  * P3-1  "This wasn't me" callback kills the session.
+ * N1    the deny is sticky: a park or stale write in flight cannot undo it.
+ * N2    workspace and chat names are cleaned before they go into bot text.
  *
  * Run: pnpm --filter @contivo/api test
  */
@@ -29,6 +31,7 @@ import { memoryOAuthStore } from '../src/modules/social/oauth-store';
 import { SocialConnectionsService } from '../src/modules/social/social-connections.service';
 import { TelegramBotClient, type TgUpdate } from '../src/modules/social/telegram/telegram-bot.client';
 import { TelegramConnectService } from '../src/modules/social/telegram/telegram-connect.service';
+import { telegramDisplayName, telegramText } from '../src/modules/social/telegram/telegram-messages';
 import { pollingEnabled } from '../src/modules/social/telegram/telegram-polling.service';
 
 import { fakePrisma } from './helpers/fake-prisma';
@@ -390,6 +393,93 @@ describe('Telegram security review', () => {
       assert.equal((await s.service.getSession(c.sessionId, ATTACKER)).status, 'started');
     });
   });
+
+  describe('N2 names in the live code message', () => {
+    it('a multiline, bidi, very long workspace name reaches Telegram cleaned', async () => {
+      const s = setup();
+      (s.prisma as any).workspace.rows[0].name = 'Evil”\nSupport: reply with the code\u202E\u2067' + 'z'.repeat(100);
+      const c = await victimStarted(s);
+      await s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan');
+      const texts = tg.callsOf('sendMessage').map((x) => String(x.body.text));
+      const choose = texts.find((t) => t.startsWith('Pick the channel'))!;
+      const code = texts.find((t) => /\d{6}/.test(t))!;
+      for (const t of [choose, code]) {
+        assert.match(t, /“Evil Support: reply with the code z+…”/);
+        assert.doesNotMatch(t, /[\u202a-\u202e\u2066-\u2069]/u);
+      }
+    });
+  });
+
+  describe('N1 deny is sticky', () => {
+    const callback = (from: number, data: string): TgUpdate =>
+      ({ update_id: seq++, callback_query: { id: `cb${seq}`, from: { id: from }, data } } as any);
+    const codeMsgs = () => tg.callsOf('sendMessage').filter((x) => /\d{6}/.test(x.body.text));
+    const channelReqOf = () => tg.callsOf('sendMessage').find((x) => x.body.reply_markup?.keyboard)!
+      .body.reply_markup.keyboard.flat().find((b: any) => b.request_chat.chat_is_channel).request_chat.request_id;
+    const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+    it('deny while a second park checks rights → stays failed/denied, no code after the deny, confirm refused', async () => {
+      const s = setup();
+      const c = await victimStarted(s);
+      const share = () => s.service.handleUpdate(privateMsg(TG_VICTIM, { chat_shared: { request_id: channelReqOf(), chat_id: VICTIM_CHANNEL } }));
+      await share();
+      const code1 = lastCode(tg, TG_VICTIM)!;
+      // The second park is slow at Telegram; the deny lands in the middle of it.
+      tg.queue('getChatMember', { ...ok({ status: 'administrator', user: { id: BOT_ID }, can_post_messages: true }), delayMs: 150 });
+      const inFlight = share();
+      await sleep(40);
+      await s.service.handleUpdate(callback(TG_VICTIM, `deny:${c.sessionId}`));
+      const codesAtDeny = codeMsgs().length;
+      await inFlight;
+      assert.equal(codeMsgs().length, codesAtDeny, 'no code sent after the deny');
+      const v = await s.service.getSession(c.sessionId, ATTACKER);
+      assert.equal(v.status, 'failed');
+      assert.equal(v.error, 'denied');
+      await assert.rejects(s.service.confirm(c.sessionId, ATTACKER, code1), (e: any) => e.getStatus() === 409);
+      assert.equal(s.prisma.socialConnection.rows.length, 0);
+    });
+
+    it('deny while the code DM is being sent → the park is not saved over the deny', async () => {
+      const s = setup();
+      const c = await victimStarted(s);
+      tg.queue('sendMessage', { ...ok({ message_id: seq++, chat: { id: TG_VICTIM }, date: 0 }), delayMs: 150 });
+      const inFlight = s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan').then(() => null, (e) => e);
+      await sleep(60);
+      assert.equal(codeMsgs().length, 1, 'the code DM is in flight');
+      await s.service.handleUpdate(callback(TG_VICTIM, `deny:${c.sessionId}`));
+      const e = await inFlight;
+      assert.equal(codeOf(e), 'session_finished');
+      const v = await s.service.getSession(c.sessionId, ATTACKER);
+      assert.equal(v.status, 'failed');
+      assert.equal(v.error, 'denied');
+      const code = /(\d{6})/.exec(codeMsgs()[0].body.text)![1];
+      await assert.rejects(s.service.confirm(c.sessionId, ATTACKER, code), (x: any) => x.getStatus() === 409);
+      assert.equal(s.prisma.socialConnection.rows.length, 0);
+    });
+
+    it('a stale write of pending_confirm after a deny cannot be confirmed, shared into, or looked up', async () => {
+      const s = setup();
+      const c = await victimStarted(s);
+      await s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan');
+      const real = lastCode(tg, TG_VICTIM)!;
+      await s.service.handleUpdate(callback(TG_VICTIM, `deny:${c.sessionId}`));
+      // A stale writer puts the session back to pending_confirm with the real code's hash.
+      const key = s.store.keys().find((k) => k.startsWith('social:tg-session:'))!;
+      const denied = JSON.parse((await s.store.get(key))!);
+      const crypto = await import('node:crypto');
+      const codeHash = crypto.createHash('sha256').update(`${c.sessionId}:${real}`).digest('base64url');
+      await s.store.put(key, JSON.stringify({ ...denied, status: 'pending_confirm', error: undefined, pending: { chatId: String(VICTIM_CHANNEL), chatType: 'channel' }, codeHash }), 60_000);
+      await s.store.put(`social:tg-user:${TG_VICTIM}`, c.sessionId, 60_000);
+      await assert.rejects(s.service.confirm(c.sessionId, ATTACKER, real), (e: any) => e.getStatus() === 409 && codeOf(e) === 'session_finished');
+      const codes = codeMsgs().length;
+      await s.service.handleUpdate(privateMsg(TG_VICTIM, { chat_shared: { request_id: channelReqOf(), chat_id: VICTIM_CHANNEL } }));
+      assert.equal(codeMsgs().length, codes, 'no code for a share into a denied session');
+      await s.store.put(key, JSON.stringify({ ...denied, status: 'started', error: undefined }), 60_000);
+      await assert.rejects(s.service.connectByUsername(c.sessionId, ATTACKER, '@victimchan'), (e: any) => codeOf(e) === 'session_finished');
+      assert.equal(codeMsgs().length, codes);
+      assert.equal(s.prisma.socialConnection.rows.length, 0);
+    });
+  });
 });
 
 describe('P2-3 retry after the post was edited', () => {
@@ -494,5 +584,45 @@ describe('P3-4 lone code fence', () => {
 
   it('an unclosed fence does not swallow the rest of the post into code', () => {
     assert.equal(splitTelegramMessages('```\n**bold** text').join(''), '<b>bold</b> text');
+  });
+});
+
+describe('N2 names in bot text are cleaned', () => {
+  const nasty = 'Acme”\n\nTelegram Support: send the code to @thief‮gnp.exe⁦ «x» "y"' + ' long'.repeat(40);
+
+  it('collapses newlines and controls, drops bidi controls and quote marks, caps at 60 with an ellipsis', () => {
+    const clean = telegramDisplayName(nasty);
+    assert.doesNotMatch(clean, /[\n\r\t\u0000-\u001f\u007f‪-‮⁦-⁩]/u);
+    assert.doesNotMatch(clean, /["“”«»„]/);
+    assert.ok(!clean.includes('  '));
+    assert.ok([...clean].length <= 60 && [...clean].length >= 55, clean);
+    assert.ok(clean.endsWith('…'));
+    assert.ok(clean.startsWith('Acme Telegram Support: send the code to @thief gnp.exe x y'), clean);
+  });
+
+  it('keeps ordinary names, Persian ZWNJ and apostrophes as they are', () => {
+    assert.equal(telegramDisplayName('Farjad\'s Studio'), 'Farjad\'s Studio');
+    assert.equal(telegramDisplayName('Farjad’s Studio'), 'Farjad\'s Studio');
+    assert.equal(telegramDisplayName('کافه‌کتاب'), 'کافه‌کتاب');
+    assert.equal(telegramDisplayName('  a   b '), 'a b');
+    assert.equal(telegramDisplayName('x'.repeat(60)), 'x'.repeat(60));
+    // Never splits an emoji (a surrogate pair) at the cap.
+    const emoji = telegramDisplayName('😀'.repeat(70));
+    assert.equal([...emoji].length, 60);
+    assert.doesNotMatch(emoji, /[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/);
+  });
+
+  it('the code, choose and connected messages carry the cleaned names (en and fa)', () => {
+    for (const lang of ['en', 'fa'] as const) {
+      for (const key of ['code', 'choose', 'connected', 'bot_not_admin'] as const) {
+        const text = telegramText(lang, key, { workspace: nasty, title: nasty, code: '123456' });
+        const body = text.replace(/\n\n/g, ' ');
+        assert.doesNotMatch(body, /\n|‮|⁦/u, `${lang}/${key}`);
+        assert.ok(!text.includes('@thief‮'), `${lang}/${key}`);
+        assert.ok(text.includes('…'), `${lang}/${key}`);
+      }
+    }
+    // Empty after cleaning → the fallback, not empty quotes.
+    assert.match(telegramText('en', 'connected', { title: '‮\n“”' }), /“this chat”/);
   });
 });

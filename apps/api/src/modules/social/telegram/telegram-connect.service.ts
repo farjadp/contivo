@@ -47,7 +47,13 @@
  * (my_chat_member → getChatMember; migrate → getChat on the old id), so a
  * forged update cannot revoke or move a connection.
  *
- * Privacy: allowed_updates is message + my_chat_member only; messages outside
+ * "This wasn't me" is sticky: onDeny also claims a tombstone key
+ * (social:tg-denied:<session>) for the session's remaining life. A park, share,
+ * lookup or confirm already in flight checks it before it sends a code or
+ * saves, and save() never writes a denied session back to life.
+ *
+ * Privacy: allowed_updates is message + my_chat_member + callback_query (the
+ * "This wasn't me" button, its data is only the session id); messages outside
  * the bot's private chat are ignored except the group→supergroup migration
  * notice. No message text is stored.
  */
@@ -144,6 +150,7 @@ const attemptsKey = (sessionId: string) => `social:tg-attempts:${sessionId}`;
 const parksKey = (sessionId: string) => `social:tg-parks:${sessionId}`;
 const lookupsKey = (sessionId: string) => `social:tg-lookups:${sessionId}`;
 const userLookupsKey = (userId: string) => `social:tg-user-lookups:${userId}`;
+const deniedKey = (sessionId: string) => `social:tg-denied:${sessionId}`;
 const DENY_PREFIX = 'deny:';
 
 const RIGHTS_NONE: TgAdministratorRights = {
@@ -262,6 +269,8 @@ export class TelegramConnectService {
 
   async getSession(id: string, userId: string): Promise<TelegramSessionView> {
     const session = await this.ownSession(id, userId);
+    // A park that lost the race to a deny is shown (and rewritten) as denied.
+    if (session.status !== 'connected' && session.error !== 'denied' && (await this.isDenied(session))) await this.save(session);
     return this.view(session, await this.attemptsUsed(session));
   }
 
@@ -269,6 +278,8 @@ export class TelegramConnectService {
     const session = await this.ownSession(id, userId);
     // The counter, not the session JSON, decides: a stale write cannot revive a dead session.
     if ((await this.attemptsUsed(session)) >= TG_CONFIRM_MAX_ATTEMPTS) return this.tooManyAttempts(session);
+    // The deny tombstone, not the session JSON: a stale park cannot bring back a denied session.
+    if (await this.isDenied(session)) throw this.sessionFinished('denied');
     if (session.status !== 'pending_confirm' || !session.pending || !session.codeHash) {
       throw err(HttpStatus.CONFLICT, 'not_pending', 'There is no chat waiting for confirmation in this session.', { status: session.status });
     }
@@ -293,6 +304,8 @@ export class TelegramConnectService {
       throw err(HttpStatus.SERVICE_UNAVAILABLE, 'telegram_unavailable', 'Telegram could not be reached. Try again in a minute.');
     }
     if (!memberCanPost(member.result, pending.chatType)) return this.backToStarted(session, 'bot_not_admin');
+    // "This wasn't me" may have landed while Telegram was being asked.
+    if (await this.isDenied(session)) throw this.sessionFinished('denied');
 
     const hasDefault = await this.prisma.socialConnection.findFirst({
       where: { workspaceId: session.workspaceId, platform: 'TELEGRAM', status: 'CONNECTED', isDefault: true, accountIdentifier: { not: pending.chatId } },
@@ -346,6 +359,7 @@ export class TelegramConnectService {
   /** Fallback for a public channel/group: the user names it instead of picking it in Telegram. */
   async connectByUsername(id: string, userId: string, input: string): Promise<TelegramSessionView> {
     const session = await this.ownSession(id, userId);
+    if (await this.isDenied(session)) throw this.sessionFinished('denied');
     if (session.status === 'pending_confirm') {
       // A new park would send the Telegram user another code; one pending code at a time.
       throw err(HttpStatus.CONFLICT, 'already_pending', 'A chat is already waiting for its code. Enter the code from the bot, or start again.');
@@ -382,7 +396,7 @@ export class TelegramConnectService {
     // notify=false: the web user typed this name, so failures go to the web, never to the Telegram user's DM.
     const problem = await this.verifyAndPark(session, chat.result, { notify: false });
     if (problem === 'too_many_codes') throw err(HttpStatus.TOO_MANY_REQUESTS, problem, 'Too many codes were sent in this connection attempt. Start again.');
-    if (problem === 'denied') throw err(HttpStatus.CONFLICT, 'session_finished', 'This Telegram connection attempt is over. Start again.');
+    if (problem === 'denied') throw this.sessionFinished('denied');
     if (problem === 'too_many_attempts') throw err(HttpStatus.TOO_MANY_REQUESTS, problem, this.problemMessage(problem));
     if (problem) throw err(HttpStatus.CONFLICT, problem, this.problemMessage(problem));
     return this.view(session, await this.attemptsUsed(session));
@@ -436,6 +450,12 @@ export class TelegramConnectService {
     });
     if (!session || session.telegramUserId !== callback.from.id || session.status === 'connected' || session.status === 'failed') {
       return answer();
+    }
+    // The tombstone first: whatever is in flight sees it, even if the save below is overwritten.
+    try {
+      await this.store.claimOnce(deniedKey(session.id), this.ttlLeft(session));
+    } catch (e) {
+      this.logger.error(`Telegram deny tombstone not written: ${(e as Error).message}`);
     }
     session.status = 'failed';
     session.error = 'denied';
@@ -513,6 +533,7 @@ export class TelegramConnectService {
     if (session.status !== 'started' && session.status !== 'pending_confirm') return;
     const { channel, group } = session.requestIds;
     if (shared.request_id !== channel && shared.request_id !== group) return;
+    if (await this.isDenied(session)) return;
 
     const chat = await this.client.getChat(shared.chat_id);
     const info: TgChat = chat.ok
@@ -562,6 +583,8 @@ export class TelegramConnectService {
     // and offers "This wasn't me" (one reply_markup per message: the inline button
     // replaces remove_keyboard; the request_chat keyboard is one_time and folds itself).
     const workspace = await this.prisma.workspace.findUnique({ where: { id: session.workspaceId }, select: { name: true } });
+    // "This wasn't me" may have landed while Telegram was being asked: no code after a deny.
+    if (await this.isDenied(session)) return 'denied';
     const sent = await this.client.sendMessage({
       chat_id: telegramUserId,
       text: telegramText(lang, 'code', {
@@ -576,6 +599,8 @@ export class TelegramConnectService {
       this.logger.warn(`Telegram code message failed: ${sent.description}`);
       return this.fail(session, 'telegram_unavailable', chat.title, false);
     }
+    // …or while the code was on its way: never save pending_confirm over the deny.
+    if (await this.isDenied(session)) return 'denied';
 
     session.status = 'pending_confirm';
     session.pending = {
@@ -728,8 +753,33 @@ export class TelegramConnectService {
     return Math.max(1000, new Date(session.expiresAt).getTime() - Date.now());
   }
 
+  /**
+   * Writes the session. A denied session (tombstone) is always written as
+   * failed/denied, whatever the caller had in memory, unless it is already
+   * connected (a confirm that won the race; the deny refused it).
+   */
   private async save(session: SessionRecord) {
+    if (session.status !== 'connected' && !(session.status === 'failed' && session.error === 'denied') && (await this.isDenied(session))) {
+      session.status = 'failed';
+      session.error = 'denied';
+      session.pending = undefined;
+      session.codeHash = undefined;
+    }
     await this.store.put(sessionKey(session.id), JSON.stringify(session), this.ttlLeft(session));
+  }
+
+  /** True once the Telegram user pressed "This wasn't me". A store failure is a 503, never "not denied". */
+  private async isDenied(session: SessionRecord): Promise<boolean> {
+    try {
+      return (await this.store.get(deniedKey(session.id))) !== null;
+    } catch (e) {
+      this.logger.error(`Telegram connect store unavailable: ${(e as Error).message}`);
+      throw new ServiceUnavailableException({ code: 'store_unavailable', message: 'Connecting is unavailable right now. Try again in a minute.' });
+    }
+  }
+
+  private sessionFinished(error: TelegramSessionError): HttpException {
+    return err(HttpStatus.CONFLICT, 'session_finished', 'This Telegram connection attempt is over. Start again.', { status: 'failed', error });
   }
 
   private async safeDel(key: string) {

@@ -11,7 +11,7 @@
  * Optional: --url https://<other-api>/api/v1/social/telegram/webhook (https only).
  *
  * Reads TELEGRAM_BOT_TOKEN and TELEGRAM_WEBHOOK_SECRET from the env. Calls
- * setWebhook with allowed_updates ["message","my_chat_member"] (never
+ * setWebhook with allowed_updates ["message","my_chat_member","callback_query"] (never
  * channel_post) and drop_pending_updates, then prints getWebhookInfo.
  * Never prints the token or the secret.
  */

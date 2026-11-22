@@ -4,7 +4,7 @@
  * What the Contivo bot says in its private chat, in English and Persian
  * (chosen from the Telegram user's language_code). Sent as plain text, no
  * parse_mode: workspace and chat names are user-controlled and must not be
- * read as markup.
+ * read as markup; telegramDisplayName() also flattens and caps them.
  *
  * Persian is written, not translated (formal-but-human, شما). Digits in the
  * Persian code message are Persian; the API accepts either when it is typed.
@@ -76,6 +76,34 @@ const FA: Record<Key, string> = {
 const FALLBACK_TITLE: Record<TelegramLang, string> = { en: 'this chat', fa: 'این کانال' };
 const FALLBACK_WORKSPACE: Record<TelegramLang, string> = { en: 'Contivo', fa: 'Contivo' };
 
+/** Longest name the bot puts in a message, in characters (code points), ellipsis included. */
+export const TELEGRAM_NAME_MAX = 60;
+
+// Control characters (newlines, tabs, …), line/paragraph separators, and the
+// bidi controls that reorder text (LRM/RLM/ALM, embeddings/overrides, isolates).
+// ZWNJ (U+200C) stays: Persian names need it.
+const CONTROLS = /[\p{Cc}\u2028\u2029\u200e\u200f\u061c\u202a-\u202e\u2066-\u2069]/gu;
+// The marks our templates quote with, and their relatives. A name cannot close the quote.
+const QUOTES = /["“”„‟«»‹›‚‛`]/g;
+
+/**
+ * A workspace or chat name as the bot may show it. Both are user-controlled
+ * (the workspace name by whoever made the session, possibly an attacker): no
+ * line breaks to fake a second paragraph, no bidi tricks, no quote marks to
+ * break out of “…”, at most TELEGRAM_NAME_MAX characters.
+ */
+export function telegramDisplayName(input: string | null | undefined): string {
+  const flat = String(input ?? '')
+    .replace(CONTROLS, ' ')
+    .replace(QUOTES, '')
+    .replace(/[‘’]/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+  const chars = Array.from(flat);
+  if (chars.length <= TELEGRAM_NAME_MAX) return flat;
+  return `${chars.slice(0, TELEGRAM_NAME_MAX - 1).join('').trimEnd()}…`;
+}
+
 const toPersianDigits = (s: string) => s.replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
 
 export function telegramText(lang: TelegramLang | undefined, key: Key, params: Record<string, string> = {}): string {
@@ -83,8 +111,8 @@ export function telegramText(lang: TelegramLang | undefined, key: Key, params: R
   const table = l === 'fa' ? FA : EN;
   const values: Record<string, string> = {
     ...params,
-    title: params.title?.trim() || FALLBACK_TITLE[l],
-    workspace: params.workspace?.trim() || FALLBACK_WORKSPACE[l],
+    title: telegramDisplayName(params.title) || FALLBACK_TITLE[l],
+    workspace: telegramDisplayName(params.workspace) || FALLBACK_WORKSPACE[l],
     ...(params.code && { code: l === 'fa' ? toPersianDigits(params.code) : params.code }),
   };
   return table[key].replace(/\{(\w+)\}/g, (_, name: string) => values[name] ?? '');
