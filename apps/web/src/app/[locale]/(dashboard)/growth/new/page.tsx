@@ -1,10 +1,11 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useEffect, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/navigation';
 import { ArrowLeft, Globe, ArrowRight } from 'lucide-react';
 import { createNewWorkspace } from '@/app/actions/growth';
+import { forgetIntakeSite, readIntakeSite } from '@/lib/intake-site';
 
 const initialState = {
   error: '',
@@ -13,6 +14,11 @@ const initialState = {
 export default function NewWorkspaceUrlFirstPage() {
   const t = useTranslations('growth.new');
   const [state, formAction, pending] = useActionState(createNewWorkspace as any, initialState);
+  // The address typed on the home page hero, carried through sign-up.
+  const [prefill, setPrefill] = useState('');
+  useEffect(() => {
+    setPrefill(readIntakeSite()?.url ?? '');
+  }, []);
 
   return (
     <div className="w-full h-full min-h-[80vh] flex flex-col lg:flex-row bg-chalk-raised text-moss overflow-hidden rounded-[32px] border border-moss/10">
@@ -47,7 +53,7 @@ export default function NewWorkspaceUrlFirstPage() {
 
       {/* Right Column: Form */}
       <div className="w-full lg:w-[55%] p-8 lg:p-12 xl:p-24 flex flex-col justify-center bg-chalk-raised animate-in fade-in zoom-in duration-1000 delay-300 fill-mode-both">
-        <form action={formAction as any} className="w-full max-w-md mx-auto space-y-10">
+        <form action={formAction as any} onSubmit={forgetIntakeSite} className="w-full max-w-md mx-auto space-y-10">
           
           <div className="space-y-4">
              {/* The step number stays inside the sentence rather than being a
@@ -71,9 +77,11 @@ export default function NewWorkspaceUrlFirstPage() {
              <div className="relative">
                <Globe className="absolute start-0 top-1/2 -translate-y-1/2 text-moss/20 h-6 w-6 md:h-8 md:w-8" />
                <input
+                 key={prefill}
                  type="url"
                  name="url"
                  required
+                 defaultValue={prefill}
                  className="w-full bg-transparent border-b-2 border-moss/20 py-4 ps-10 md:ps-12 text-2xl md:text-3xl text-moss placeholder-moss-muted/70 focus:outline-none focus:border-saffron transition-colors rounded-none"
                  placeholder={t('urlPlaceholder')}
                />
