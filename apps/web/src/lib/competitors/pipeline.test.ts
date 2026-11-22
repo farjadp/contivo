@@ -10,7 +10,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // something also produced through vi.hoisted, never an ordinary
 // module-scope `const`.
 // ---------------------------------------------------------------------------
-const { prismaMock, activityLogMock, queriesMock, searchMock, judgeMock, scoringMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, queriesMock, searchMock, judgeMock, scoringMock, aiMock } = vi.hoisted(() => ({
+  aiMock: { hasHealthyProvider: vi.fn((_task: string) => true), runAiTask: vi.fn() },
   prismaMock: {
     discoveryRun: {
       findUnique: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock('./queries', () => queriesMock);
 vi.mock('./search', () => searchMock);
 vi.mock('./judge', () => judgeMock);
 vi.mock('./scoring', () => scoringMock);
+vi.mock('@/lib/ai', () => aiMock);
 
 import {
   buildEvidenceIdMap,
@@ -325,6 +327,7 @@ describe('runDiscoveryPipeline', () => {
     judgeMock.enrichCandidates.mockResolvedValue({ enriched: [], skipped: 0, budgetExceeded: false });
     judgeMock.judgeCandidates.mockResolvedValue({ judged: [], tokens: 20, errors: [], batches: 0, failedBatches: 0 });
     scoringMock.rankAndKeep.mockReturnValue([]);
+    aiMock.hasHealthyProvider.mockReturnValue(true);
 
     prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun());
     prismaMock.discoveryRun.update.mockResolvedValue({});
@@ -777,6 +780,123 @@ describe('runDiscoveryPipeline', () => {
 
     expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED')).toBeUndefined();
     expect(findCallByStatus(prismaMock.discoveryRun.updateMany, 'EMPTY')).toBeDefined();
+  });
+
+  // -------------------------------------------------------------------------
+  // AI failover: pre-flight, AI_UNAVAILABLE, judge identity.
+  // -------------------------------------------------------------------------
+
+  it('pre-flight: fails fast with AI_UNAVAILABLE and spends nothing when the judge chain has no healthy provider', async () => {
+    aiMock.hasHealthyProvider.mockImplementation((task: string) => task !== 'competitor_judge');
+
+    await runDiscoveryPipeline('run1');
+
+    expect(aiMock.hasHealthyProvider).toHaveBeenCalledWith('competitor_judge');
+    expect(queriesMock.generateQueries).not.toHaveBeenCalled();
+    expect(searchMock.harvestFromWebSearch).not.toHaveBeenCalled();
+    expect(judgeMock.judgeCandidates).not.toHaveBeenCalled();
+    expect(aiMock.runAiTask).not.toHaveBeenCalled();
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toBe('AI_UNAVAILABLE: pre-flight: no healthy AI provider for competitor_judge');
+    expect(failedCall!.data.tokensUsed).toBe(0);
+  });
+
+  it('pre-flight also covers the search chain', async () => {
+    aiMock.hasHealthyProvider.mockImplementation((task: string) => task !== 'competitor_web_search');
+
+    await runDiscoveryPipeline('run1');
+
+    expect(queriesMock.generateQueries).not.toHaveBeenCalled();
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toMatch(/^AI_UNAVAILABLE: .*competitor_web_search/);
+  });
+
+  it('passes the run owner and workspace to every AI stage', async () => {
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun({ workspaceId: 'ws1' }));
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [scoredCandidate()], skipped: 0, budgetExceeded: false });
+
+    await runDiscoveryPipeline('run1');
+
+    const ctx = { workspaceId: 'ws1', userId: 'user1' };
+    expect(queriesMock.generateQueries.mock.calls[0][1]).toEqual(ctx);
+    expect(searchMock.harvestFromWebSearch.mock.calls[0][3]).toEqual(ctx);
+    expect(judgeMock.judgeCandidates.mock.calls[0][2]).toEqual(ctx);
+  });
+
+  it('stores AI_UNAVAILABLE (not SEARCH_UNAVAILABLE) when every search failed because no provider could answer', async () => {
+    queriesMock.generateQueries.mockResolvedValue({ queries: ['q1', 'q2'], tokens: 10 });
+    searchMock.harvestFromWebSearch.mockResolvedValue({
+      candidates: [],
+      tokens: null,
+      errors: [
+        'AI_UNAVAILABLE: Search query failed for "q1": all_unavailable (openai:billing:429)',
+        'AI_UNAVAILABLE: Search query failed for "q2": all_unavailable (openai:billing:429)',
+      ],
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toBe('AI_UNAVAILABLE: Search query failed for "q1": all_unavailable (openai:billing:429)');
+  });
+
+  it('stores AI_UNAVAILABLE (not JUDGE_UNAVAILABLE) when every judge batch failed for lack of a provider', async () => {
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [scoredCandidate()], skipped: 0, budgetExceeded: false });
+    judgeMock.judgeCandidates.mockResolvedValue({
+      judged: [],
+      tokens: null,
+      errors: ['AI_UNAVAILABLE: Judge batch failed: all_unavailable (openai:billing:429, anthropic:auth:401)'],
+      batches: 1,
+      failedBatches: 1,
+      judges: [],
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    const failedCall = findCallByStatus(prismaMock.discoveryRun.updateMany, 'FAILED');
+    expect(failedCall!.data.error).toMatch(/^AI_UNAVAILABLE: Judge batch failed/);
+  });
+
+  it('stores the judge provider/model in sourceStats.judge, and the set when batches mixed', async () => {
+    judgeMock.enrichCandidates.mockResolvedValue({ enriched: [scoredCandidate()], skipped: 0, budgetExceeded: false });
+    judgeMock.judgeCandidates.mockResolvedValue({
+      judged: [scoredCandidate({ domain: 'kept.com' })],
+      tokens: 10,
+      errors: [],
+      batches: 1,
+      failedBatches: 0,
+      judges: [{ provider: 'anthropic', model: 'claude-opus-5-5' }],
+    });
+    scoringMock.rankAndKeep.mockReturnValue([scoredCandidate({ domain: 'kept.com' })]);
+
+    await runDiscoveryPipeline('run1');
+
+    let stats = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE')!.data.sourceStats as Record<string, any>;
+    expect(stats.judge).toMatchObject({ judgeProvider: 'anthropic', judgeModel: 'claude-opus-5-5' });
+
+    vi.clearAllMocks();
+    prismaMock.discoveryRun.findUnique.mockResolvedValue(baseRun());
+    prismaMock.discoveryRun.updateMany.mockResolvedValue({ count: 1 });
+    judgeMock.judgeCandidates.mockResolvedValue({
+      judged: [scoredCandidate({ domain: 'kept.com' })],
+      tokens: 10,
+      errors: [],
+      batches: 2,
+      failedBatches: 0,
+      judges: [
+        { provider: 'openai', model: 'gpt-4.1' },
+        { provider: 'anthropic', model: 'claude-opus-5-5' },
+      ],
+    });
+
+    await runDiscoveryPipeline('run1');
+
+    stats = findCallByStatus(prismaMock.discoveryRun.updateMany, 'DONE')!.data.sourceStats as Record<string, any>;
+    expect(stats.judge.judgeProvider).toBeUndefined();
+    expect(stats.judge.judges).toEqual([
+      { provider: 'openai', model: 'gpt-4.1' },
+      { provider: 'anthropic', model: 'claude-opus-5-5' },
+    ]);
   });
 
   it('records a partial judge failure in sourceStats and still finishes with what was judged', async () => {
