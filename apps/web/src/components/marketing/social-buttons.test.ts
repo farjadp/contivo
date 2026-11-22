@@ -106,11 +106,11 @@ describe('OAuthErrorNotice', () => {
     }
   });
 
-  it('email_in_use says to sign in the old way, connect in Settings, or contact us', () => {
+  it('email_in_use says to sign in with email and password, or contact us', () => {
     const { html } = render(createElement(OAuthErrorNotice, { code: 'email_in_use' }));
     expect(html).toContain('An account with this email already exists');
-    expect(html).toContain('sign in the way you did before');
-    expect(html).toContain('connect the provider in Settings');
+    expect(html).toContain('Sign in with your email and password');
+    expect(html).not.toContain('Settings');
     expect(html).toContain('If you did not create it');
     expect(html).toContain('href="/contact"');
   });
