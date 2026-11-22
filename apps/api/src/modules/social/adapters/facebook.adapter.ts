@@ -29,6 +29,7 @@ import {
   ConnectionHealth,
   CredentialKind,
 } from './social-adapter.interface';
+import { markdownToPlainText } from './social-text';
 
 
 @Injectable()
@@ -69,7 +70,9 @@ export class FacebookAdapter implements SocialAdapter {
     try {
       // Append hashtags to message body
       const hashtags = (payload.hashtags ?? []).map((t) => `#${t}`).join(' ');
-      const message = hashtags ? `${payload.body}\n\n${hashtags}` : payload.body;
+      // Facebook shows markdown as typed (B15): publish plain text.
+      const body = markdownToPlainText(payload.body);
+      const message = hashtags ? `${body}\n\n${hashtags}` : body;
 
       const feedUrl = `${this.GRAPH_BASE}/${pageId}/feed`;
 

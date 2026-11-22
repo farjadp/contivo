@@ -37,6 +37,7 @@ import {
   languageInstructions,
   type ContentLanguage,
 } from '@/lib/content-language';
+import { isPlainTextChannel } from '@/lib/social-text';
 
 /** Per attempt (spec §Timeouts): JSON and short prose. */
 const JSON_TIMEOUT_MS = 60_000;
@@ -1097,6 +1098,7 @@ Instructions:
 2. Structure it appropriately for the channel (e.g., shorter for Twitter, formatted with spacing for LinkedIn, longer form for Blog).
 3. Do not include commentary like "Here is the post," just write the post itself.
 4. If it is a social post, include 2-3 relevant hashtags at the end.
+${isPlainTextChannel(channel) ? `Format: ${PLAIN_TEXT_RULE}\n` : ''}
 5. If "Additional Context/Angle" includes USER_NOTES or USER_SOURCE_TEXT, prioritize those user-provided sources.
 6. Do not invent claims that conflict with user-provided sources.
 7. Respect the target word count and keep output inside the allowed word range.
@@ -1125,6 +1127,13 @@ ${
 }
 
 /** Channel-specific shape for one-off generation with no brand profile. */
+/**
+ * LinkedIn, X, Instagram and Threads show markdown as typed (B15). The model
+ * is told so; social-text.ts converts whatever still slips through.
+ */
+const PLAIN_TEXT_RULE =
+  'Write plain text only: this channel shows markdown as literal symbols. No **bold**, *italics*, # headings, or markdown links. Separate paragraphs with a blank line; for a list, start each item on its own line with "• ".';
+
 const INSTANT_CHANNEL_BRIEF: Record<string, string> = {
   linkedin:
     'A LinkedIn post of 150-300 words. Open with a hook line, use short paragraphs separated by blank lines, close with a question or invitation. End with 2-3 relevant hashtags.',
@@ -1176,7 +1185,7 @@ Rules:
 2. Output only the content itself — no preface, no "Here is your post", no commentary.
 3. Do not invent statistics, client names, case studies or first-person anecdotes. If you need an example, frame it as a hypothetical.
 4. Do not use em dashes as a stylistic tic, and avoid stock AI openers like "In today's fast-paced world".
-
+${isPlainTextChannel(channel) ? `5. ${PLAIN_TEXT_RULE}\n` : ''}
 Where the LANGUAGE section above gives its own rules on punctuation, register
 or stock phrases, those win: they are written for that language, and these
 four are written for English.

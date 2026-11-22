@@ -38,6 +38,7 @@ import {
   PublishResult,
   ValidationResult,
 } from './social-adapter.interface';
+import { markdownToPlainText } from './social-text';
 
 
 @Injectable()
@@ -226,7 +227,9 @@ export class LinkedInAdapter implements SocialAdapter {
 
     // Build text body with optional hashtags appended
     const hashtags = (payload.hashtags ?? []).map((t) => `#${t}`).join(' ');
-    const fullBody = hashtags ? `${payload.body}\n\n${hashtags}` : payload.body;
+    // LinkedIn shows markdown as typed (B15): publish plain text.
+    const body = markdownToPlainText(payload.body);
+    const fullBody = hashtags ? `${body}\n\n${hashtags}` : body;
 
     if (assetUrn) {
       // Image post. LinkedIn requires the asset URN registered for this author.

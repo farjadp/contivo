@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const { prismaMock, activityLogMock, frameworkLogMock } = vi.hoisted(() => ({
   prismaMock: {
     workspace: { findUnique: vi.fn() },
-    contentItem: { create: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
+    contentItem: { create: vi.fn(), update: vi.fn(), updateMany: vi.fn(), count: vi.fn(async () => 0), findMany: vi.fn(async () => []), findFirst: vi.fn(async () => null) },
   },
   activityLogMock: vi.fn(),
   frameworkLogMock: vi.fn(),
@@ -290,5 +290,59 @@ describe('LinkedIn idea → preview → pipeline (B6, B7)', () => {
 
     expect(result).toEqual({ error: 'Preview is too long to save.' });
     expect(prismaMock.contentItem.create).not.toHaveBeenCalled();
+  });
+});
+
+// B15: LinkedIn and X show markdown as typed, so social bodies are stored plain.
+describe('social drafts are stored as plain text (B15)', () => {
+  beforeEach(() => {
+    prismaMock.workspace.findUnique.mockResolvedValue({
+      id: WORKSPACE,
+      userId: OWNER,
+      contentLanguage: 'en',
+      brandSummary: { industry: 'Dental clinic' },
+    });
+  });
+
+  it('preview and saved preview drop markdown for LinkedIn', async () => {
+    draftMock.mockResolvedValue('**Hook line.**\n\n- one\n- two\n\n#Tag');
+    const result = await generateDraftPreviewCore({ userId: OWNER, workspaceId: WORKSPACE }, { topic: 'T', channel: 'linkedin' });
+    expect(result).toMatchObject({ preview: 'Hook line.\n\n• one\n• two\n\n#Tag' });
+
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, { topic: 'T', channel: 'linkedin' }, { body: '**Bold** text' });
+    expect(prismaMock.contentItem.create.mock.calls[0][0].data.content).toBe('Bold text');
+  });
+
+  it('a blog preview keeps its markdown', async () => {
+    await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, { topic: 'T', channel: 'blog' }, { body: '## Heading\n\n**Bold**' });
+    expect(prismaMock.contentItem.create.mock.calls[0][0].data.content).toBe('## Heading\n\n**Bold**');
+  });
+});
+
+describe('pipeline generation stores plain text for LinkedIn (B15)', () => {
+  it('generateDraftForItem converts the body before saving', async () => {
+    prismaMock.workspace.findUnique.mockResolvedValue({
+      id: WORKSPACE,
+      userId: OWNER,
+      contentLanguage: 'en',
+      brandSummary: { industry: 'Dental clinic' },
+      audienceInsights: {
+        competitiveMatrices: { charts: [{}] },
+        competitorKeywordsIntel: { competitors: [{ competitor: 'X' }] },
+      },
+      contentItems: [{ id: 'item-1', topic: 'T', channel: 'linkedin', content: '', storylineId: null }],
+    });
+    draftMock.mockResolvedValue('## Why\n\n**Short** answer.');
+    prismaMock.contentItem.update.mockImplementation(async ({ data }: { data: Record<string, unknown> }) => ({
+      id: 'item-1',
+      topic: 'T',
+      channel: 'linkedin',
+      ...data,
+    }));
+
+    await generateDraftForItem({ userId: OWNER, workspaceId: WORKSPACE }, 'item-1');
+
+    expect(prismaMock.contentItem.update).toHaveBeenCalled();
+    expect(prismaMock.contentItem.update.mock.calls[0][0].data.content).toBe('Why\n\nShort answer.');
   });
 });
