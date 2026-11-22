@@ -64,7 +64,10 @@ export async function rescrapeWorkspace(_prevState: any, formData: FormData) {
       workspace.websiteUrl,
       scrapedText,
       asContentLanguage(workspace.contentLanguage),
+      { userId, workspaceId },
     );
+    // Null = the provider chain failed or returned nothing usable. The old
+    // brand memory stays; the attempt is not counted.
     if (!aiResult) {
        await writeActivityLog({
          userId,
