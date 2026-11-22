@@ -18,6 +18,8 @@ import { useTranslations } from 'next-intl';
 import { Sun, Layers, Settings, LogOut, Share2, Zap } from 'lucide-react';
 
 import { logout } from '@/app/actions/auth';
+import { BugReportProvider } from '@/components/bug-report/BugReportProvider';
+import { ReportButton } from '@/components/bug-report/ReportButton';
 import { LocaleSwitcher } from '@/components/marketing/locale-switcher';
 import { rememberWorkspace, workspaceIdFromRoute } from '@/lib/last-workspace';
 import { cn } from '@/lib/utils';
@@ -77,6 +79,14 @@ function BottomLink({
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
+  return (
+    <BugReportProvider>
+      <AppShellFrame>{children}</AppShellFrame>
+    </BugReportProvider>
+  );
+}
+
+function AppShellFrame({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations('shell');
 
@@ -123,6 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="ms-auto flex items-center gap-2">
           {/* The marketing switcher, re-tinted for chalk rather than forked. */}
           <LocaleSwitcher className="me-2" />
+          <ReportButton />
           <Link
             href="/settings"
             aria-label={t('nav.settings')}
