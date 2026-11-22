@@ -195,3 +195,12 @@ Debt register: (1) no email verification → residual squat case (§5), real fix
 3. **Facebook**: keep with the "create only, never auto-link" restriction, or drop Facebook for now (Meta also needs a Live-mode app, privacy URL, deletion URL; the other two are easier)?
 4. **Meta data deletion**: use an "instructions URL" (a section on the Privacy page, no code) now; build a signed-request callback later only if needed. OK?
 5. Sign-in page buttons also create accounts (with fine print). OK?
+
+## 13. Legal review findings (contivo-coo, 22 Nov) — folded in
+
+Wording: `2026-11-22-social-login-legal-wording.md` (English canonical, not legal advice).
+- The Privacy cookies section says "three cookies"; `oauth_tx` and `oauth_pending` (10 min each) make that false, so that section and the meta description are edited in the same PR.
+- No self-service account deletion exists. The `delete-account` section says to write to the contact address (`lib/site-identity.ts`), and the 30-day promise relies on a manual user-row delete (which cascades to `oauth_accounts`). Decision for Farjad: ship with manual deletion, or add self-service first (product ask, separate).
+- Facebook-only users have no verified email, so deletion requests are hard to verify; the copy asks for the provider name and allows one confirmation question.
+- Meta may reject a `#fragment` instructions URL; fallback is a `/delete-account` route rendering the same section.
+- A lawyer should look at lawful basis, accepting Terms by click with no checkbox, age gate and the Facebook-only deletion case before the provider apps go to review. The English Privacy page must be live before any app is submitted.
