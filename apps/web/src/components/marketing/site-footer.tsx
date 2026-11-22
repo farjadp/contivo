@@ -36,6 +36,7 @@ export function SiteFooter() {
         { href: { pathname: '/', hash: 'ship' }, label: t('autopilot') },
         { href: { pathname: '/features' }, label: t('features') },
         { href: { pathname: '/pricing' }, label: t('pricing') },
+        { href: { pathname: '/compare' }, label: t('compare') },
       ],
     },
     {

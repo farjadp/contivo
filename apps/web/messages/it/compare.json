@@ -1,0 +1,234 @@
+{
+  "compare": {
+    "meta": {
+      "title": "Contivo a confronto: strumenti di scrittura AI, scheduler, ChatGPT e agenti",
+      "description": "In cosa Contivo è diverso da strumenti di scrittura AI, scheduler social, piattaforme SEO, assistenti come ChatGPT e agenti AI, e dove è ancora indietro. Dati dalle pagine dei fornitori."
+    },
+    "eyebrow": "Confronto",
+    "headline": "Dove Contivo è diverso, e dove <accent>non lo è</accent>.",
+    "intro": "Confrontato con i cinque tipi di strumenti che una piccola azienda userebbe altrimenti per i contenuti, per categoria e non per marchio. Ogni esempio citato viene dalle pagine del fornitore stesso, lette il {date}.",
+    "uniqueTitle": "Cosa fa che gli altri non fanno",
+    "unique": {
+      "lock": {
+        "title": "Si rifiuta di scrivere per primo",
+        "body": "Le idee restano bloccate finché non esistono la mappa dei concorrenti e i grafici di posizionamento. Nessuno degli strumenti confrontati prevede qualcosa di simile."
+      },
+      "scale": {
+        "title": "Trova i tuoi veri concorrenti",
+        "body": "Aziende della tua dimensione, non i grandi nomi del settore, ciascuna verificata prima di mostrartela. Scheduler e strumenti SEO ti chiedono di indicarli tu, o mostrano solo chi si posiziona per una parola chiave."
+      },
+      "storyline": {
+        "title": "Ogni post porta avanti una narrazione",
+        "body": "Tre o quattro affermazioni che i tuoi contenuti devono far avanzare, ciascuna con un elenco di cose da non affermare mai."
+      },
+      "gate": {
+        "title": "Blocca i fatti inventati",
+        "body": "Un giudice respinge statistiche, studi e storie di clienti inventati, e se nessun modello può revisionare un post, il post non esce. L'unico controllo simile che abbiamo trovato è nel piano Enterprise di uno strumento di scrittura."
+      },
+      "ownSite": {
+        "title": "Pubblica su qualsiasi sito",
+        "body": "Il tuo sito legge i post da un'API in sola lettura, su qualunque tecnologia sia costruito. Uno sviluppatore la collega una volta sola."
+      },
+      "persian": {
+        "title": "Scrive il persiano da persiano",
+        "body": "Non tradotto da una bozza inglese, e verificato su intervalli di parole persiani. L'elenco delle lingue di Jasper non include il persiano."
+      }
+    },
+    "tableTitle": "Fianco a fianco",
+    "capability": "Funzione",
+    "swipe": "Scorri la tabella di lato per vedere tutte le colonne.",
+    "status": {
+      "yes": "Sì",
+      "partial": "In parte",
+      "no": "No",
+      "unlisted": "Non indicato"
+    },
+    "columns": {
+      "contivo": {
+        "name": "Contivo",
+        "examples": "Oggi, in accesso anticipato"
+      },
+      "writers": {
+        "name": "Strumenti di scrittura AI",
+        "examples": "Jasper, Copy.ai, Writesonic, Anyword"
+      },
+      "schedulers": {
+        "name": "Scheduler social",
+        "examples": "Buffer, Hootsuite, Later, Ocoya"
+      },
+      "seo": {
+        "name": "Piattaforme di contenuti SEO",
+        "examples": "Surfer, Semrush Content Toolkit"
+      },
+      "assistants": {
+        "name": "Assistenti AI, a mano",
+        "examples": "ChatGPT, Claude, Gemini"
+      },
+      "agents": {
+        "name": "Agenti AI",
+        "examples": "ChatGPT Work, Manus, Zapier, n8n"
+      }
+    },
+    "rows": {
+      "competitors": {
+        "label": "Trova i concorrenti e verifica che esistano",
+        "contivo": "Della tua dimensione, verificati, poi confermi tu",
+        "writers": "Non indicato",
+        "schedulers": "Li indichi tu; benchmarking in alcuni piani",
+        "seo": "Chi si posiziona per ogni parola chiave",
+        "assistants": "Se lo chiedi, ogni volta, senza verifica",
+        "agents": "Se lo costruisci tu"
+      },
+      "lock": {
+        "label": "Non scrive prima della ricerca",
+        "contivo": "Idee bloccate finché la ricerca non c'è",
+        "writers": "No",
+        "schedulers": "No",
+        "seo": "No",
+        "assistants": "No",
+        "agents": "Solo se lo costruisci tu"
+      },
+      "storyline": {
+        "label": "Una strategia che ogni post deve seguire",
+        "contivo": "Una narrazione con più filoni",
+        "writers": "Strumenti di strategia, senza ordine obbligato",
+        "schedulers": "Pilastri di contenuto, in uno strumento",
+        "seo": "Un brief per articolo",
+        "assistants": "Solo se lo chiedi ogni volta",
+        "agents": "Se lo costruisci tu"
+      },
+      "factGate": {
+        "label": "Ferma statistiche e storie inventate",
+        "contivo": "Un giudice può bloccare; senza revisione, niente pubblicazione",
+        "writers": "Uno strumento, solo piano Enterprise",
+        "schedulers": "Non indicato",
+        "seo": "Controllo antiplagio, non dei fatti",
+        "assistants": "No; controlli tutto tu",
+        "agents": "Le approvazioni riguardano azioni, non affermazioni"
+      },
+      "autopilot": {
+        "label": "Tiene pieno il calendario da solo",
+        "contivo": "1–14 post a settimana, 7 giorni in anticipo",
+        "writers": "Nessuno scheduler indicato",
+        "schedulers": "È il loro prodotto principale",
+        "seo": "No",
+        "assistants": "Bozze programmate; pubblichi tu",
+        "agents": "Attività programmate"
+      },
+      "social": {
+        "label": "Social su cui pubblica",
+        "contivo": "Per ora solo il profilo personale LinkedIn",
+        "writers": "Nessuno",
+        "schedulers": "Da 6 a 28 reti",
+        "seo": "Nessuno",
+        "assistants": "Nessuno",
+        "agents": "Tramite connettori, come Buffer"
+      },
+      "ownSite": {
+        "label": "Pubblica sul tuo sito",
+        "contivo": "Qualsiasi tecnologia, con un'API in sola lettura",
+        "writers": "WordPress, in uno strumento",
+        "schedulers": "WordPress, Webflow, Wix, in uno strumento",
+        "seo": "Esportazione su WordPress",
+        "assistants": "No; copi e incolli tu",
+        "agents": "Se lo costruisci tu"
+      },
+      "persian": {
+        "label": "Scrive in persiano",
+        "contivo": "Sì, in modo nativo",
+        "writers": "Jasper no; gli altri non verificati",
+        "schedulers": "Non verificato",
+        "seo": "Non verificato",
+        "assistants": "Sì",
+        "agents": "Dipende dal modello"
+      },
+      "languages": {
+        "label": "Lingue",
+        "contivo": "Due: inglese e persiano",
+        "writers": "30 o più",
+        "schedulers": "18 o più, in uno strumento",
+        "seo": "Molte",
+        "assistants": "Molte",
+        "agents": "Molte"
+      },
+      "analytics": {
+        "label": "Mostra i risultati dei post",
+        "contivo": "Non ancora",
+        "writers": "Previsioni di rendimento, in uno strumento",
+        "schedulers": "Sì",
+        "seo": "Monitoraggio del posizionamento",
+        "assistants": "No",
+        "agents": "Se lo costruisci tu"
+      },
+      "price": {
+        "label": "Prezzo d'ingresso al mese",
+        "contivo": "Da 55 $ a 233 $; gratis in accesso anticipato",
+        "writers": "Da 29 $ a 79 $",
+        "schedulers": "Da 5 $ a canale fino a 99 $ e oltre",
+        "seo": "Da 49 $ a 60 $",
+        "assistants": "Circa 20 $",
+        "agents": "Da circa 20 $, più il tuo tempo"
+      }
+    },
+    "tableNote": "Letto sulle pagine prezzi e prodotto di ciascun fornitore il {date}. “Non indicato” significa che non l'abbiamo trovato in quelle pagine, non che non esista. I prezzi cambiano: verifica prima di decidere.",
+    "behindTitle": "Dove è indietro",
+    "behindIntro": "Tutto questo è vero oggi. Una parte è in arrivo, e niente di tutto ciò è nascosto altrove su questo sito.",
+    "behind": {
+      "channels": {
+        "title": "Un solo social",
+        "body": "Solo profili personali LinkedIn. Niente pagine aziendali, Instagram, Facebook o TikTok. X, Telegram, WordPress e Threads sono in costruzione."
+      },
+      "languages": {
+        "title": "Due lingue",
+        "body": "I contenuti sono scritti in inglese o in persiano. Gli strumenti di scrittura ne offrono trenta o più."
+      },
+      "analytics": {
+        "title": "Nessun dato sui risultati",
+        "body": "Non mostra ancora come è andato un post, e non monitora il posizionamento."
+      },
+      "monitoring": {
+        "title": "Ancora nessun avviso sui concorrenti",
+        "body": "Il monitoraggio settimanale dei concorrenti è in arrivo. Alcuni scheduler confrontano già i concorrenti nei piani più alti."
+      },
+      "estimates": {
+        "title": "I punteggi di posizionamento sono stime",
+        "body": "Il modello legge prove pubbliche e mostra il suo ragionamento. Non sono dati misurati."
+      },
+      "early": {
+        "title": "Fase iniziale",
+        "body": "Attivo da agosto 2026, la fatturazione non è partita e non abbiamo ancora clienti da citare."
+      },
+      "price": {
+        "title": "Non è il più economico",
+        "body": "Costa più di un assistente da 20 $ o di uno scheduler da 5 $ a canale. Paghi la ricerca e il rifiuto, non la scrittura."
+      }
+    },
+    "elsewhereTitle": "Scegli altro se…",
+    "elsewhere": {
+      "channels": {
+        "if": "Ti servono Instagram, TikTok o Facebook oggi",
+        "then": "Uno scheduler social come Buffer o Later pubblica già lì."
+      },
+      "languages": {
+        "if": "Pubblichi in una lingua diversa da inglese e persiano",
+        "then": "Uno strumento di scrittura AI come Jasper o Anyword copre trenta lingue o più."
+      },
+      "search": {
+        "if": "Ti servono dati di ricerca misurati e monitoraggio del posizionamento",
+        "then": "Una piattaforma SEO come Surfer o Semrush è fatta proprio per questo."
+      },
+      "build": {
+        "if": "Ti piace costruire e gestire una pipeline tutta tua",
+        "then": "Uno stack di agenti come Zapier, n8n o Manus può fare buona parte di questo ciclo, se lo progetti e lo mantieni in funzione."
+      },
+      "time": {
+        "if": "Hai il tempo di fare ricerca, scrivere e pubblicare da solo",
+        "then": "ChatGPT o Claude a circa 20 $ al mese scrivono buone bozze. Quello che non fanno è conservare la ricerca, rifiutarsi di inventare o pubblicare al posto tuo."
+      }
+    },
+    "sourcesTitle": "Fonti, lette il {date}",
+    "closeHeadline": "Se la ricerca conta per te, parti da lì.",
+    "closeCta": "Inizia gratis in accesso anticipato",
+    "closeFeatures": "Vedi tutte le funzioni"
+  }
+}

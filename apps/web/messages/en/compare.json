@@ -1,0 +1,234 @@
+{
+  "compare": {
+    "meta": {
+      "title": "Contivo compared: AI writers, schedulers, ChatGPT and AI agents",
+      "description": "How Contivo differs from AI writing tools, social schedulers, SEO platforms, ChatGPT-style assistants and AI agents, and where it is still behind. Facts from each vendor's own pages."
+    },
+    "eyebrow": "Compare",
+    "headline": "Where Contivo is different, and where it <accent>is not</accent>.",
+    "intro": "Compared with the five kinds of tools a small business would otherwise use for content, by category rather than by brand. Every named example comes from that vendor's own pages, read on {date}.",
+    "uniqueTitle": "What it does that the others do not",
+    "unique": {
+      "lock": {
+        "title": "It refuses to write first",
+        "body": "Ideas stay locked until your competitor map and positioning charts exist. None of the tools we compared lists anything like it."
+      },
+      "scale": {
+        "title": "It finds your real competitors",
+        "body": "Companies at your scale, not the famous names in your category, each checked to exist before you see it. Schedulers and SEO tools ask you to name them, or only show who ranks for one keyword."
+      },
+      "storyline": {
+        "title": "Every post advances a storyline",
+        "body": "Three or four claims your content has to move forward, each with a list of things it must never claim."
+      },
+      "gate": {
+        "title": "It vetoes invented facts",
+        "body": "A judge rejects made-up statistics, studies and client stories, and if no model can review a post, it does not publish. The only similar check we found sits on one writing tool's Enterprise plan."
+      },
+      "ownSite": {
+        "title": "It publishes to any website",
+        "body": "Your site reads its posts through one read-only API, whatever it is built on. A developer connects it once."
+      },
+      "persian": {
+        "title": "It writes Persian as Persian",
+        "body": "Not translated from an English draft, and checked against Persian word ranges. Jasper's language list has no Persian."
+      }
+    },
+    "tableTitle": "Side by side",
+    "capability": "Capability",
+    "swipe": "Swipe the table sideways to see every column.",
+    "status": {
+      "yes": "Yes",
+      "partial": "Partly",
+      "no": "No",
+      "unlisted": "Not listed"
+    },
+    "columns": {
+      "contivo": {
+        "name": "Contivo",
+        "examples": "Today, in early access"
+      },
+      "writers": {
+        "name": "AI writing tools",
+        "examples": "Jasper, Copy.ai, Writesonic, Anyword"
+      },
+      "schedulers": {
+        "name": "Social schedulers",
+        "examples": "Buffer, Hootsuite, Later, Ocoya"
+      },
+      "seo": {
+        "name": "SEO content platforms",
+        "examples": "Surfer, Semrush Content Toolkit"
+      },
+      "assistants": {
+        "name": "AI assistants, by hand",
+        "examples": "ChatGPT, Claude, Gemini"
+      },
+      "agents": {
+        "name": "AI agents",
+        "examples": "ChatGPT Work, Manus, Zapier, n8n"
+      }
+    },
+    "rows": {
+      "competitors": {
+        "label": "Finds your competitors and checks they exist",
+        "contivo": "At your scale, checked, then you confirm",
+        "writers": "Not listed",
+        "schedulers": "You name them; benchmarking on some plans",
+        "seo": "Who ranks for each keyword",
+        "assistants": "If you ask, every time, unchecked",
+        "agents": "If you build it"
+      },
+      "lock": {
+        "label": "Will not write before the research exists",
+        "contivo": "Ideas locked until the research exists",
+        "writers": "No",
+        "schedulers": "No",
+        "seo": "No",
+        "assistants": "No",
+        "agents": "Only if you build it"
+      },
+      "storyline": {
+        "label": "A strategy every post has to follow",
+        "contivo": "A narrative with storylines",
+        "writers": "Strategy tools, no enforced order",
+        "schedulers": "Content pillars, in one tool",
+        "seo": "A brief per article",
+        "assistants": "Only if you prompt it each time",
+        "agents": "If you build it"
+      },
+      "factGate": {
+        "label": "Stops invented statistics and stories",
+        "contivo": "A judge can veto; no review, no publish",
+        "writers": "One tool, Enterprise plan only",
+        "schedulers": "Not listed",
+        "seo": "Plagiarism check, not a fact check",
+        "assistants": "No; you check everything",
+        "agents": "Approvals cover actions, not claims"
+      },
+      "autopilot": {
+        "label": "Keeps a schedule full on its own",
+        "contivo": "1–14 posts a week, 7 days ahead",
+        "writers": "No scheduler listed",
+        "schedulers": "Their core product",
+        "seo": "No",
+        "assistants": "Scheduled drafts; you post them",
+        "agents": "Scheduled tasks"
+      },
+      "social": {
+        "label": "Social networks it posts to",
+        "contivo": "LinkedIn personal profile only, for now",
+        "writers": "None",
+        "schedulers": "6 to 28 networks",
+        "seo": "None",
+        "assistants": "None",
+        "agents": "Through connectors, such as Buffer"
+      },
+      "ownSite": {
+        "label": "Publishes to your own website",
+        "contivo": "Any stack, through a read-only API",
+        "writers": "WordPress, in one tool",
+        "schedulers": "WordPress, Webflow, Wix, in one tool",
+        "seo": "WordPress export",
+        "assistants": "No; you copy and paste",
+        "agents": "If you build it"
+      },
+      "persian": {
+        "label": "Writes Persian",
+        "contivo": "Yes, natively",
+        "writers": "Not Jasper; the others unverified",
+        "schedulers": "Unverified",
+        "seo": "Unverified",
+        "assistants": "Yes",
+        "agents": "Depends on the model"
+      },
+      "languages": {
+        "label": "Languages",
+        "contivo": "Two: English and Persian",
+        "writers": "30 or more",
+        "schedulers": "18 or more, in one tool",
+        "seo": "Many",
+        "assistants": "Many",
+        "agents": "Many"
+      },
+      "analytics": {
+        "label": "Shows how posts performed",
+        "contivo": "Not yet",
+        "writers": "Predicted performance, in one tool",
+        "schedulers": "Yes",
+        "seo": "Rank tracking",
+        "assistants": "No",
+        "agents": "If you build it"
+      },
+      "price": {
+        "label": "Entry price a month",
+        "contivo": "$55 to $233; free in early access",
+        "writers": "$29 to $79",
+        "schedulers": "$5 a channel to $99 and up",
+        "seo": "$49 to $60",
+        "assistants": "About $20",
+        "agents": "From about $20, plus your time"
+      }
+    },
+    "tableNote": "Read on each vendor's own pricing and product pages on {date}. “Not listed” means we did not find it on those pages, not that it does not exist. Prices change; check before you decide.",
+    "behindTitle": "Where it is behind",
+    "behindIntro": "All of this is true today. Some of it is on the way, and none of it is hidden anywhere else on this site.",
+    "behind": {
+      "channels": {
+        "title": "One social network",
+        "body": "LinkedIn personal profiles only. No company pages, Instagram, Facebook or TikTok. X, Telegram, WordPress and Threads are being built."
+      },
+      "languages": {
+        "title": "Two languages",
+        "body": "Content is written in English or Persian. Writing tools offer thirty or more."
+      },
+      "analytics": {
+        "title": "No performance data",
+        "body": "It does not yet show how a post performed, and it does not track rankings."
+      },
+      "monitoring": {
+        "title": "No competitor alerts yet",
+        "body": "A weekly competitor watch is coming. Some schedulers already benchmark competitors on their higher plans."
+      },
+      "estimates": {
+        "title": "Positioning scores are estimates",
+        "body": "The model reads public evidence and shows its reasoning. The scores are not measured data."
+      },
+      "early": {
+        "title": "Early stage",
+        "body": "Live since August 2026, billing has not started, and there is no customer we can name yet."
+      },
+      "price": {
+        "title": "Not the cheapest",
+        "body": "It costs more than a $20 assistant or a $5-a-channel scheduler. You are paying for the research and the refusal, not for the writing."
+      }
+    },
+    "elsewhereTitle": "Pick something else if…",
+    "elsewhere": {
+      "channels": {
+        "if": "You need Instagram, TikTok or Facebook today",
+        "then": "A social scheduler such as Buffer or Later already posts there."
+      },
+      "languages": {
+        "if": "You publish in a language other than English or Persian",
+        "then": "An AI writing tool such as Jasper or Anyword covers thirty languages or more."
+      },
+      "search": {
+        "if": "You need measured search data and rank tracking",
+        "then": "An SEO platform such as Surfer or Semrush is built for exactly that."
+      },
+      "build": {
+        "if": "You like building and running your own pipeline",
+        "then": "An agent stack such as Zapier, n8n or Manus can do much of this loop, as long as you design it and keep it running."
+      },
+      "time": {
+        "if": "You have the time to research, write and post yourself",
+        "then": "ChatGPT or Claude at about $20 a month will write good drafts. What they will not do is hold the research, refuse to invent, or post for you."
+      }
+    },
+    "sourcesTitle": "Sources, read on {date}",
+    "closeHeadline": "If the research matters to you, start there.",
+    "closeCta": "Start free in early access",
+    "closeFeatures": "See every feature"
+  }
+}

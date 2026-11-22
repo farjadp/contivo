@@ -21,6 +21,7 @@ export function GlobalHeader() {
     '/pricing',
     '/docs',
     '/features',
+    '/compare',
     '/privacy',
     '/terms',
     '/contact',
