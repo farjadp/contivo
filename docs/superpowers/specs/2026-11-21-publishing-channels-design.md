@@ -1,6 +1,6 @@
 # Publishing channels: Telegram, WordPress, X, Threads — design
 
-Status: **draft, waiting for Farjad's go** (order + X spend). Author: contivo-cto, 2026-11-21.
+Status: **approved by Farjad 2026-11-21**: recommended order (core → Telegram → X → WordPress → Threads), X pay-per-use with a $75/month cap, no links in X posts by default. Open: WordPress default status, bot username, Meta Business Verification start. Author: contivo-cto, 2026-11-21.
 Base: `origin/main` 9df407f. Branch: `myca/channels-211611`.
 Sources were read on 2026-11-21. [P] = primary/official, [S] = secondary. Line refs are against 9df407f.
 
