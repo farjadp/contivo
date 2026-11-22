@@ -12,6 +12,7 @@
 import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { RotateCcw, X, Clock, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
+import { useRouter } from '@/i18n/navigation';
 import { retryPublishJob, cancelPublishJob } from '@/app/actions/social';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -27,6 +28,8 @@ interface PublishJob {
   createdAt: string;
   publishedAtUtc: string | null;
 }
+
+type JobAction = 'retry' | 'cancel';
 
 interface PublishQueueSectionProps {
   jobs: PublishJob[];
@@ -56,24 +59,47 @@ const PLATFORM_LABELS: Record<string, string> = {
 export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionProps) {
   const t = useTranslations('connections.queue');
   const format = useFormatter();
+  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, { action: JobAction; detail: string | null }>>({});
 
   // Show active jobs (not published / cancelled / revoked)
   const activeJobs = jobs.filter(
     (j) => !['PUBLISHED', 'CANCELLED'].includes(j.status),
   );
 
-  const handleRetry = async (id: string) => {
-    setLoading(`retry-${id}`);
-    await retryPublishJob(id, workspaceId);
-    setLoading(null);
+  /** Pending state, inline `{error}`, and a server refresh on success. */
+  const run = async (
+    action: JobAction,
+    id: string,
+    call: () => Promise<{ error?: string } | undefined>,
+  ) => {
+    setLoading(`${action}-${id}`);
+    setErrors(({ [id]: _cleared, ...rest }) => rest);
+    try {
+      const result = await call();
+      if (result?.error) {
+        setErrors((prev) => ({ ...prev, [id]: { action, detail: result.error ?? null } }));
+        return;
+      }
+      router.refresh();
+    } catch (err) {
+      setErrors((prev) => ({
+        ...prev,
+        [id]: { action, detail: err instanceof Error ? err.message : null },
+      }));
+    } finally {
+      setLoading(null);
+    }
   };
 
-  const handleCancel = async (id: string) => {
+  const handleRetry = (id: string) => {
+    void run('retry', id, () => retryPublishJob(id, workspaceId));
+  };
+
+  const handleCancel = (id: string) => {
     if (!confirm(t('cancelConfirm'))) return;
-    setLoading(`cancel-${id}`);
-    await cancelPublishJob(id, workspaceId);
-    setLoading(null);
+    void run('cancel', id, () => cancelPublishJob(id, workspaceId));
   };
 
   return (
@@ -107,10 +133,11 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
               {activeJobs.map((job) => {
                 const config = STATUS_CONFIG[job.status] ?? STATUS_CONFIG.DRAFT;
                 const StatusIcon = config.Icon;
-                const isJobLoading = loading?.endsWith(job.id);
+                const isJobLoading = loading?.endsWith(job.id) ?? false;
+                const error = errors[job.id];
 
                 return (
-                  <tr key={job.id} className="hover:bg-chalk/50 transition-colors">
+                  <tr key={job.id} aria-busy={isJobLoading} className="hover:bg-chalk/50 transition-colors">
                     <td className="py-3 pe-4 font-semibold text-moss">
                       {PLATFORM_LABELS[job.platform] ?? job.platform}
                     </td>
@@ -141,29 +168,47 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                       <div className="flex items-center gap-2">
                         {job.status === 'FAILED' && (
                           <button
+                            type="button"
                             onClick={() => handleRetry(job.id)}
                             disabled={isJobLoading}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline disabled:opacity-50"
                           >
-                            <RotateCcw className="w-3.5 h-3.5" />
+                            {loading === `retry-${job.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <RotateCcw className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
                             {t('retry')}
                           </button>
                         )}
                         {!['PUBLISHING', 'PUBLISHED'].includes(job.status) && (
                           <button
+                            type="button"
                             onClick={() => handleCancel(job.id)}
                             disabled={isJobLoading}
                             className="inline-flex items-center gap-1 text-xs font-semibold text-red-500 hover:underline disabled:opacity-50"
                           >
-                            <X className="w-3.5 h-3.5" />
+                            {loading === `cancel-${job.id}` ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+                            ) : (
+                              <X className="w-3.5 h-3.5" aria-hidden="true" />
+                            )}
                             {t('cancel')}
                           </button>
                         )}
                       </div>
                       {job.lastError && (
-                        <p className="text-[10px] text-red-500 mt-1 max-w-[200px] truncate" title={job.lastError}>
+                        <p dir="auto" className="text-[11px] text-red-600 mt-1 max-w-[260px] break-words">
                           {job.lastError}
                         </p>
+                      )}
+                      {error && (
+                        <div role="alert" className="mt-2 max-w-[260px] rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
+                          <p className="font-semibold">{t(`errors.${error.action}`)}</p>
+                          {error.detail && (
+                            <p dir="auto" className="mt-0.5 break-words text-red-600">{error.detail}</p>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

@@ -10,7 +10,8 @@
 'use client';
 
 import { useFormatter, useTranslations } from 'next-intl';
-import { ExternalLink, CheckCircle, XCircle, X } from 'lucide-react';
+import { ExternalLink, CheckCircle, XCircle, X, RefreshCw } from 'lucide-react';
+import { needsReconnect, safePostUrl } from '@/lib/publish-outcome';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,10 +25,13 @@ interface PublishJob {
   retryCount: number;
   createdAt: string;
   publishedAtUtc: string | null;
+  connectionStatus: string | null;
 }
 
 interface PublishHistorySectionProps {
   jobs: PublishJob[];
+  /** Opens the Connected Accounts tab, where Reconnect lives. */
+  onReconnect: () => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -38,7 +42,7 @@ const PLATFORM_LABELS: Record<string, string> = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
+export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySectionProps) {
   const t = useTranslations('connections.history');
   const format = useFormatter();
 
@@ -67,12 +71,16 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
           {historyJobs.map((job) => {
             const isPublished = job.status === 'PUBLISHED';
             const isCancelled = job.status === 'CANCELLED';
+            const isFailed = !isPublished && !isCancelled;
+            const postUrl = isPublished ? safePostUrl(job.externalPostUrl) : null;
+            const reconnect = isFailed && needsReconnect(job.connectionStatus);
 
             return (
               <div
                 key={job.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm"
+                className="rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm"
               >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 {/* Left: platform + time */}
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
@@ -132,9 +140,9 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                     </span>
                   )}
 
-                  {isPublished && job.externalPostUrl && (
+                  {postUrl && (
                     <a
-                      href={job.externalPostUrl}
+                      href={postUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline"
@@ -146,15 +154,26 @@ export function PublishHistorySection({ jobs }: PublishHistorySectionProps) {
                     </a>
                   )}
 
-                  {!isPublished && !isCancelled && job.lastError && (
-                    <span
-                      className="text-xs text-red-400 max-w-[200px] truncate"
-                      title={job.lastError}
+                  {reconnect && (
+                    <button
+                      type="button"
+                      onClick={onReconnect}
+                      className="inline-flex items-center gap-1 text-xs font-semibold text-moss-700 hover:underline"
                     >
-                      {job.lastError}
-                    </span>
+                      <RefreshCw className="w-3.5 h-3.5" aria-hidden="true" />
+                      {t('reconnect')}
+                    </button>
                   )}
                 </div>
+              </div>
+
+              {/* The full reason: it is the only thing that tells the user what to fix. */}
+              {isFailed && job.lastError && (
+                <p className="mt-3 text-xs text-red-700">
+                  <span className="font-semibold">{t('failureReason')}</span>{' '}
+                  <span dir="auto" className="break-words">{job.lastError}</span>
+                </p>
+              )}
               </div>
             );
           })}

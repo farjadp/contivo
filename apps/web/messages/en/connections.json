@@ -69,6 +69,19 @@
         "failed": "Failed",
         "revoked": "Revoked",
         "pendingReauth": "Needs re-auth"
+      },
+      "reconnecting": "Opening sign-in…",
+      "statusHint": {
+        "expired": "Your <bdi>{platform}</bdi> sign-in has expired. Posts to this account will fail until you reconnect.",
+        "revoked": "Access to this <bdi>{platform}</bdi> account was withdrawn. Reconnect to publish to it again.",
+        "pendingReauth": "<bdi>{platform}</bdi> needs you to sign in again before <bdi>Contivo</bdi> can publish.",
+        "failed": "The connection to <bdi>{platform}</bdi> stopped working. Reconnect to publish to it again.",
+        "unsupported": "This <bdi>{platform}</bdi> connection stopped working, and it cannot be reconnected from this page yet."
+      },
+      "errors": {
+        "disconnect": "Could not disconnect this account.",
+        "setDefault": "Could not make this the default account.",
+        "reconnect": "Could not start the reconnect."
       }
     },
     "rules": {
@@ -105,6 +118,10 @@
         "published": "Published",
         "failed": "Failed",
         "cancelled": "Cancelled"
+      },
+      "errors": {
+        "retry": "Could not retry this post.",
+        "cancel": "Could not cancel this post."
       }
     },
     "history": {
@@ -120,7 +137,9 @@
         "published": "Published",
         "cancelled": "Cancelled",
         "failed": "Failed"
-      }
+      },
+      "reconnect": "Reconnect account",
+      "failureReason": "Reason:"
     },
     "sites": {
       "noWorkspaceTitle": "No workspace yet",

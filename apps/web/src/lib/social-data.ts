@@ -13,6 +13,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import { latestJobByContentItem, type LatestPublishJob } from '@/lib/publish-outcome';
 
 export type WorkspaceOption = { id: string; name: string };
 
@@ -81,6 +82,8 @@ export async function getPublishJobs(workspaceId: string, limit = 100) {
       retryCount: true,
       createdAt: true,
       publishedAtUtc: true,
+      // Status only: whether the account behind a failed job needs a reconnect.
+      connection: { select: { status: true } },
     },
   });
 
@@ -94,5 +97,44 @@ export async function getPublishJobs(workspaceId: string, limit = 100) {
     retryCount: j.retryCount,
     createdAt: j.createdAt.toISOString(),
     publishedAtUtc: j.publishedAtUtc?.toISOString() ?? null,
+    connectionStatus: j.connection ? String(j.connection.status) : null,
   }));
+}
+
+/**
+ * The newest social publish job per content item, keyed by content item id,
+ * for the Pipeline to show where a post landed or why it did not. Token
+ * columns are never selected; only the connection's status comes along.
+ */
+export async function getLatestPublishJobsByContentItem(
+  workspaceId: string,
+  limit = 500,
+): Promise<Record<string, LatestPublishJob>> {
+  const rows = await prisma.socialPublishJob.findMany({
+    where: { workspaceId, contentItemId: { not: null } },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    select: {
+      contentItemId: true,
+      platform: true,
+      status: true,
+      externalPostUrl: true,
+      lastError: true,
+      publishedAtUtc: true,
+      connection: { select: { status: true } },
+    },
+  });
+
+  const latest: Record<string, LatestPublishJob> = {};
+  for (const [contentItemId, j] of latestJobByContentItem(rows)) {
+    latest[contentItemId] = {
+      platform: String(j.platform),
+      status: String(j.status),
+      externalPostUrl: j.externalPostUrl,
+      lastError: j.lastError,
+      publishedAtUtc: j.publishedAtUtc?.toISOString() ?? null,
+      connectionStatus: j.connection ? String(j.connection.status) : null,
+    };
+  }
+  return latest;
 }
