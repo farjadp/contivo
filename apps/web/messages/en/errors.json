@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Something went wrong. Please try again.",
     "agentLimit": "A workspace can run at most 8 agents.",
     "aiAnalysisFailed": "AI analysis failed. Try again in a moment.",
     "brandAssetsNoEvidence": "AI could not produce brand assets from current evidence.",

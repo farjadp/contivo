@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Une erreur s'est produite. Veuillez réessayer.",
     "agentLimit": "Un espace de travail peut faire tourner 8 agents au maximum.",
     "aiAnalysisFailed": "L’analyse par l’IA a échoué. Réessayez dans un instant.",
     "brandAssetsNoEvidence": "L’IA n’a pas pu produire d’éléments de marque à partir des éléments disponibles.",

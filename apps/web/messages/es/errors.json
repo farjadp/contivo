@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Algo salió mal. Inténtalo de nuevo.",
     "agentLimit": "Un workspace puede tener como máximo 8 agentes.",
     "aiAnalysisFailed": "El análisis con IA ha fallado. Inténtalo de nuevo en un momento.",
     "brandAssetsNoEvidence": "La IA no pudo generar los activos de marca con la evidencia actual.",
