@@ -21,7 +21,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-export type AiProvider = 'openai' | 'gemini';
+export type AiProvider = 'openai' | 'anthropic' | 'gemini';
 
 export interface AiTokenUsage {
   promptTokens: number;
