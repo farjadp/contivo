@@ -1,0 +1,126 @@
+{
+  "bugReport": {
+    "button": {
+      "label": "Informar de un problema",
+      "aria": "Informar de un problema"
+    },
+    "sheet": {
+      "title": "Informar de un problema",
+      "label": "¿Qué pasó? (opcional)",
+      "placeholder": "Cuéntanos qué estabas haciendo y qué viste. Con una o dos líneas basta.",
+      "counter": "{count, number} de {max, number}",
+      "send": "Enviar",
+      "sending": "Enviando...",
+      "note": "Adjuntamos datos técnicos (la página, errores recientes e ID de actividad reciente). Nunca tus borradores ni tus contraseñas.",
+      "withRef": "Sobre el fallo",
+      "sentTitle": "Recibido.",
+      "sentBody": "Si nos escribes, indica este código.",
+      "refLabel": "Ref.",
+      "copy": "Copiar",
+      "copied": "Copiado",
+      "close": "Cerrar",
+      "retry": "Reintentar",
+      "errorFallback": "No pudimos enviarlo. Inténtalo de nuevo en un momento."
+    },
+    "toast": {
+      "message": "Algo ha fallado por nuestra parte.",
+      "refLabel": "Ref.",
+      "report": "Informar",
+      "dismiss": "Cerrar",
+      "copy": "Copiar el código",
+      "copied": "Código copiado"
+    },
+    "boundary": {
+      "title": "Esta página no se cargó",
+      "body": "La culpa es nuestra, no tuya. Inténtalo de nuevo o avísanos y lo revisamos. El código de abajo viaja con tu informe.",
+      "refLabel": "Ref.",
+      "retry": "Reintentar",
+      "report": "Informar del fallo",
+      "home": "Volver al panel",
+      "copy": "Copiar el código",
+      "copied": "Código copiado"
+    },
+    "admin": {
+      "nav": "Informes",
+      "title": "Informes",
+      "blurb": "Lo que se ha comunicado, agrupado por causa. Cada fila es una huella.",
+      "newBadge": "{count, number} nuevos",
+      "filter": {
+        "label": "Estado",
+        "all": "Todos"
+      },
+      "statuses": {
+        "NEW": "Nuevo",
+        "SEEN": "Visto",
+        "FIXED": "Resuelto",
+        "WONTFIX": "No se arreglará"
+      },
+      "list": {
+        "empty": "No hay informes en esta vista.",
+        "status": "Estado",
+        "cause": "Causa principal",
+        "reports": "Informes",
+        "users": "Usuarios",
+        "lastSeen": "Último",
+        "sample": "Ejemplo",
+        "noMessage": "Sin texto escrito",
+        "noCause": "Sin causa registrada",
+        "failed": "No se pudieron cargar los informes. Revisa el registro del servidor."
+      },
+      "detail": {
+        "back": "Todos los informes",
+        "reportedAt": "Informado",
+        "resolvedAt": "Resuelto",
+        "locale": "Idioma",
+        "route": "Página",
+        "appVersion": "Versión de la app",
+        "user": "Usuario",
+        "workspace": "Espacio de trabajo",
+        "unknown": "Desconocido",
+        "message": "Lo que escribió",
+        "noMessage": "No escribió nada.",
+        "cause": "Causa",
+        "noCause": "No se capturó una causa codificada para este informe.",
+        "sentry": "Evento de Sentry",
+        "sentryOpen": "Abrir en Sentry",
+        "copy": "Copiar",
+        "copied": "Copiado",
+        "viewed": "Objetos en pantalla",
+        "timeline": "Cronología",
+        "timelineEmpty": "No se capturaron eventos alrededor de este informe.",
+        "siblings": "Misma huella",
+        "siblingsEmpty": "Es el único informe con esta huella.",
+        "loadFailed": "No se pudieron cargar los informes. Revisa el registro del servidor."
+      },
+      "source": {
+        "client": "Navegador",
+        "activity": "Actividad",
+        "run": "Ejecución",
+        "ai_provider": "Proveedor de IA",
+        "publish": "Publicación"
+      },
+      "form": {
+        "title": "Cambiar el estado",
+        "apply": "Aplicar a todos los informes del grupo",
+        "submit": "Guardar",
+        "saved": "Estado guardado",
+        "failed": "No se pudo guardar el estado"
+      },
+      "causes": {
+        "PROVIDER_OUT_OF_CREDIT": "Proveedor de IA sin crédito",
+        "PROVIDER_RATE_LIMITED": "Límite de uso del proveedor de IA",
+        "PROVIDER_TIMEOUT": "El proveedor de IA no respondió a tiempo",
+        "PROVIDER_UNAVAILABLE": "Proveedor de IA no disponible",
+        "PROVIDER_AUTH": "Clave o modelo rechazados",
+        "CREDITS_EXHAUSTED": "Créditos del espacio agotados",
+        "NOT_ENOUGH_EVIDENCE": "Pruebas insuficientes",
+        "CONNECTION_EXPIRED": "Conexión social caducada",
+        "VALIDATION": "Entrada rechazada",
+        "DISPATCH_FAILED": "La tarea no entró en cola",
+        "TIMED_OUT": "Tiempo agotado",
+        "DATABASE": "Error de base de datos",
+        "UNKNOWN": "Causa desconocida"
+      }
+    }
+  }
+}
