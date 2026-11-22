@@ -110,7 +110,11 @@ export function ConnectedAccountsSection({
     call: () => Promise<{ error?: string; code?: SocialActionErrorCode } | undefined>,
   ) => {
     setLoading(`${action}-${id}`);
-    setErrors(({ [id]: _cleared, ...rest }) => rest);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     try {
       const result = await call();
       const detail = result ? socialActionDetail(result) : null;
@@ -143,7 +147,11 @@ export function ConnectedAccountsSection({
   const handleReconnect = async (account: SocialAccount) => {
     const id = account.id;
     setLoading(`reconnect-${id}`);
-    setErrors(({ [id]: _cleared, ...rest }) => rest);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     try {
       const result = await reconnectSocialConnection(id, workspaceId);
       const url = result.data?.url;

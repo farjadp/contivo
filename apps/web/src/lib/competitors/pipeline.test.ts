@@ -11,7 +11,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // module-scope `const`.
 // ---------------------------------------------------------------------------
 const { prismaMock, activityLogMock, queriesMock, searchMock, judgeMock, scoringMock, aiMock } = vi.hoisted(() => ({
-  aiMock: { hasHealthyProvider: vi.fn((_task: string) => true), runAiTask: vi.fn() },
+  aiMock: { hasHealthyProvider: vi.fn<(task: string) => boolean>(() => true), runAiTask: vi.fn() },
   prismaMock: {
     discoveryRun: {
       findUnique: vi.fn(),
