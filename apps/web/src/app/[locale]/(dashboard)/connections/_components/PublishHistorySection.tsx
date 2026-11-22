@@ -11,7 +11,10 @@
 
 import { useFormatter, useTranslations } from 'next-intl';
 import { ExternalLink, CheckCircle, XCircle, X, RefreshCw } from 'lucide-react';
-import { needsReconnect, safePostUrl } from '@/lib/publish-outcome';
+import { parseFailure } from '@contivo/types';
+
+import { FailureReason } from '@/components/publishing/FailureReason';
+import { failureAction, safePostUrl } from '@/lib/publish-outcome';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,7 +76,10 @@ export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySecti
             const isCancelled = job.status === 'CANCELLED';
             const isFailed = !isPublished && !isCancelled;
             const postUrl = isPublished ? safePostUrl(job.externalPostUrl) : null;
-            const reconnect = isFailed && needsReconnect(job.connectionStatus);
+            const failure = isFailed ? parseFailure(job.lastError) : null;
+            const reconnect =
+              failure != null &&
+              failureAction(failure.code, failure.detail, job.connectionStatus)?.action === 'reconnect';
 
             return (
               <div
@@ -168,11 +174,8 @@ export function PublishHistorySection({ jobs, onReconnect }: PublishHistorySecti
               </div>
 
               {/* The full reason: it is the only thing that tells the user what to fix. */}
-              {isFailed && job.lastError && (
-                <p className="mt-3 text-xs text-red-700">
-                  <span className="font-semibold">{t('failureReason')}</span>{' '}
-                  <span dir="auto" className="break-words">{job.lastError}</span>
-                </p>
+              {isFailed && (
+                <FailureReason reason={job.lastError} label={t('failureReason')} className="mt-3 text-red-700" />
               )}
               </div>
             );

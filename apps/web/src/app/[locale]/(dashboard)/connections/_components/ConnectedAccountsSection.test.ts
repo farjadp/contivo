@@ -10,8 +10,8 @@ vi.mock('@/i18n/navigation', () => ({ useRouter: () => ({ refresh: () => {} }) }
 vi.mock('@/app/actions/social', () => ({
   disconnectSocialConnection: vi.fn(),
   setDefaultConnection: vi.fn(),
+  reconnectSocialConnection: vi.fn(),
 }));
-vi.mock('@/app/actions/social-connect', () => ({ getSocialConnectUrl: vi.fn() }));
 
 const { ConnectedAccountsSection } = await import('./ConnectedAccountsSection');
 

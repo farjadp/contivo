@@ -6,7 +6,12 @@
  * user can do about it. Pure, so the rules are tested without a browser.
  */
 
-import type { SocialConnectionStatus, SocialPlatform } from '@contivo/types';
+import {
+  parseFailure,
+  type PublishFailureCode,
+  type SocialConnectionStatus,
+  type SocialPlatform,
+} from '@contivo/types';
 
 /** Connection states that only a new sign-in with the provider can fix. */
 const RECONNECT_STATUSES: ReadonlySet<string> = new Set<SocialConnectionStatus>([
@@ -33,16 +38,42 @@ export function canStartConnectFlow(platform: string): boolean {
 }
 
 /**
- * The messages the scheduler and the site publisher write when there is no
- * connection to publish through at all (social-scheduler.service.ts,
- * lib/site-api/publisher.ts). Matching their text is brittle, so it is kept to
- * the two sentences we write ourselves.
+ * Rows written before failure codes existed carry only English. These are the
+ * two sentences we wrote ourselves when nothing was connected
+ * (social-scheduler.service.ts, lib/site-api/publisher.ts); matching them is
+ * the fallback for `code: null` only.
  */
-const MISSING_CONNECTION_PATTERNS = [/no default \w+ connection found/i, /no active site connection/i];
+const LEGACY_NO_CONNECTION = /no default \w+ connection found/i;
+const LEGACY_NO_SITE = /no active site connection/i;
 
-export function isMissingConnectionReason(reason: string | null | undefined): boolean {
-  if (!reason) return false;
-  return MISSING_CONNECTION_PATTERNS.some((pattern) => pattern.test(reason));
+export type FailureAction = { action: 'reconnect' | 'connect'; tab: 'social' | 'websites' };
+
+/**
+ * What the user can do about a failure, decided by its code. `null` = nothing
+ * on the Connections page will fix it (bad content, rate limit, platform error).
+ */
+export function failureAction(
+  code: PublishFailureCode | null,
+  detail: string,
+  connectionStatus: string | null | undefined,
+): FailureAction | null {
+  switch (code) {
+    case 'CONNECTION_EXPIRED':
+    case 'CONNECTION_REVOKED':
+      return { action: 'reconnect', tab: 'social' };
+    case 'NO_CONNECTION':
+      return { action: 'connect', tab: 'social' };
+    case 'NO_SITE':
+      return { action: 'connect', tab: 'websites' };
+    case null:
+      // Old rows: the account's own status first, then our two English sentences.
+      if (needsReconnect(connectionStatus)) return { action: 'reconnect', tab: 'social' };
+      if (LEGACY_NO_SITE.test(detail)) return { action: 'connect', tab: 'websites' };
+      if (LEGACY_NO_CONNECTION.test(detail)) return { action: 'connect', tab: 'social' };
+      return null;
+    default:
+      return null;
+  }
 }
 
 /** The latest social publish job for one content item, as read from Prisma. */
@@ -57,7 +88,15 @@ export type LatestPublishJob = {
 
 export type PublishOutcome =
   | { kind: 'published'; url: string | null; platform: string | null; publishedAtUtc: string | null }
-  | { kind: 'failed'; reason: string | null; action: 'reconnect' | 'connect' | null; platform: string | null };
+  | {
+      kind: 'failed';
+      /** Localised headline key; null for rows written before codes existed. */
+      code: PublishFailureCode | null;
+      /** The English detail after the code, shown as a secondary line. */
+      detail: string | null;
+      action: FailureAction | null;
+      platform: string | null;
+    };
 
 /**
  * Only http(s) links are rendered as links; anything else from a provider is
@@ -94,10 +133,14 @@ export function resolvePublishOutcome(
   if (item.status === 'FAILED' || jobFailed) {
     // The item's reason is written last by the publisher; the job's error is the fallback.
     const reason = item.failedReason?.trim() || job?.lastError?.trim() || null;
-    let action: 'reconnect' | 'connect' | null = null;
-    if (needsReconnect(job?.connectionStatus)) action = 'reconnect';
-    else if (isMissingConnectionReason(reason)) action = 'connect';
-    return { kind: 'failed', reason, action, platform: job?.platform ?? null };
+    const { code, detail } = parseFailure(reason);
+    return {
+      kind: 'failed',
+      code,
+      detail: detail.trim() || null,
+      action: failureAction(code, detail, job?.connectionStatus),
+      platform: job?.platform ?? null,
+    };
   }
 
   return null;

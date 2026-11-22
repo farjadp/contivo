@@ -13,7 +13,10 @@ import { useState } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
 import { RotateCcw, X, Clock, Zap, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { useRouter } from '@/i18n/navigation';
-import { retryPublishJob, cancelPublishJob } from '@/app/actions/social';
+import { retryPublishJob, cancelPublishJob, type SocialActionErrorCode } from '@/app/actions/social';
+import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
+import { FailureReason } from '@/components/publishing/FailureReason';
+import { socialActionDetail, type SocialActionDetail } from '@/lib/social-action-error';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -61,7 +64,7 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
   const format = useFormatter();
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
-  const [errors, setErrors] = useState<Record<string, { action: JobAction; detail: string | null }>>({});
+  const [errors, setErrors] = useState<Record<string, { action: JobAction; detail: SocialActionDetail | null }>>({});
 
   // Show active jobs (not published / cancelled / revoked)
   const activeJobs = jobs.filter(
@@ -72,21 +75,22 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
   const run = async (
     action: JobAction,
     id: string,
-    call: () => Promise<{ error?: string } | undefined>,
+    call: () => Promise<{ error?: string; code?: SocialActionErrorCode } | undefined>,
   ) => {
     setLoading(`${action}-${id}`);
     setErrors(({ [id]: _cleared, ...rest }) => rest);
     try {
       const result = await call();
-      if (result?.error) {
-        setErrors((prev) => ({ ...prev, [id]: { action, detail: result.error ?? null } }));
+      const detail = result ? socialActionDetail(result) : null;
+      if (detail) {
+        setErrors((prev) => ({ ...prev, [id]: { action, detail } }));
         return;
       }
       router.refresh();
     } catch (err) {
       setErrors((prev) => ({
         ...prev,
-        [id]: { action, detail: err instanceof Error ? err.message : null },
+        [id]: { action, detail: err instanceof Error && err.message ? { kind: 'raw', text: err.message } : null },
       }));
     } finally {
       setLoading(null);
@@ -197,18 +201,13 @@ export function PublishQueueSection({ jobs, workspaceId }: PublishQueueSectionPr
                           </button>
                         )}
                       </div>
-                      {job.lastError && (
-                        <p dir="auto" className="text-[11px] text-red-600 mt-1 max-w-[260px] break-words">
-                          {job.lastError}
-                        </p>
-                      )}
+                      <FailureReason reason={job.lastError} className="mt-1 max-w-[260px] text-[11px] text-red-600" />
                       {error && (
-                        <div role="alert" className="mt-2 max-w-[260px] rounded-lg border border-red-200 bg-red-50 px-2 py-1.5 text-[11px] text-red-700">
-                          <p className="font-semibold">{t(`errors.${error.action}`)}</p>
-                          {error.detail && (
-                            <p dir="auto" className="mt-0.5 break-words text-red-600">{error.detail}</p>
-                          )}
-                        </div>
+                        <ActionErrorAlert
+                          className="mt-2 max-w-[260px] text-[11px]"
+                          headline={t(`errors.${error.action}`)}
+                          detail={error.detail}
+                        />
                       )}
                     </td>
                   </tr>

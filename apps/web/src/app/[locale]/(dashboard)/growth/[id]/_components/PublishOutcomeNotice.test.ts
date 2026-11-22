@@ -3,8 +3,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { NextIntlClientProvider } from 'next-intl';
 import { describe, expect, it, vi } from 'vitest';
 
-import en from '../../../../../../../messages/en/tabs-a.json';
-import fa from '../../../../../../../messages/fa/tabs-a.json';
+import enErrors from '../../../../../../../messages/en/errors.json';
+import enTabs from '../../../../../../../messages/en/tabs-a.json';
+import faErrors from '../../../../../../../messages/fa/errors.json';
+import faTabs from '../../../../../../../messages/fa/tabs-a.json';
+
+const en = { ...enTabs, ...enErrors };
+const fa = { ...faTabs, ...faErrors };
 import type { PublishOutcome } from '@/lib/publish-outcome';
 
 // The locale-aware Link needs the Next router; a plain anchor shows the href we build.
@@ -15,13 +20,13 @@ vi.mock('@/i18n/navigation', () => ({
 
 const { PublishOutcomeNotice } = await import('./PublishOutcomeNotice');
 
-function render(outcome: PublishOutcome, locale: 'en' | 'fa' = 'en', channel = 'linkedin') {
+function render(outcome: PublishOutcome, locale: 'en' | 'fa' = 'en') {
   return renderToStaticMarkup(
     createElement(NextIntlClientProvider, {
       locale,
       messages: locale === 'en' ? en : fa,
       timeZone: 'UTC',
-      children: createElement(PublishOutcomeNotice, { outcome, channel, workspaceId: 'ws_1' }),
+      children: createElement(PublishOutcomeNotice, { outcome, workspaceId: 'ws_1' }),
     }),
   );
 }
@@ -39,27 +44,51 @@ describe('PublishOutcomeNotice', () => {
     expect(html).toContain('rel="noopener noreferrer"');
   });
 
-  it('shows the reason and sends an expired connection to Connections', () => {
-    const html = render({ kind: 'failed', reason: 'Token revoked by LinkedIn', action: 'reconnect', platform: 'LINKEDIN' });
-    expect(html).toContain('Token revoked by LinkedIn');
+  it('shows a localised headline for the code, the English detail below, and sends an expired connection to Connections', () => {
+    const html = render({
+      kind: 'failed',
+      code: 'CONNECTION_EXPIRED',
+      detail: 'LinkedIn rejected the access token (401).',
+      action: { action: 'reconnect', tab: 'social' },
+      platform: 'LINKEDIN',
+    });
+    expect(html).toContain('The connection to this account has expired.');
+    expect(html).toContain('LinkedIn rejected the access token (401).');
     expect(html).toContain('Reconnect in Connections');
     expect(html).toContain('href="/connections?tab=social&amp;workspaceId=ws_1"');
   });
 
-  it('sends a blog post with no site connection to the Websites tab', () => {
-    const html = render(
-      { kind: 'failed', reason: 'No active site connection for this workspace.', action: 'connect', platform: null },
-      'en',
-      'blog',
-    );
+  it('sends NO_SITE to the Websites tab', () => {
+    const html = render({
+      kind: 'failed',
+      code: 'NO_SITE',
+      detail: 'No active site connection for this workspace.',
+      action: { action: 'connect', tab: 'websites' },
+      platform: null,
+    });
     expect(html).toContain('tab=websites');
     expect(html).toContain('Open Connections');
   });
 
+  it('shows an old uncoded reason as it is', () => {
+    const html = render({ kind: 'failed', code: null, detail: 'Something broke', action: null, platform: 'X' });
+    expect(html).toContain('Something broke');
+    expect(html).not.toContain('/connections');
+  });
+
   it('offers no action when the failure is not about the connection', () => {
-    const html = render({ kind: 'failed', reason: null, action: null, platform: 'X' });
+    const html = render({ kind: 'failed', code: null, detail: null, action: null, platform: 'X' });
     expect(html).toContain('No reason was recorded.');
     expect(html).not.toContain('/connections');
+  });
+
+  it('writes the failure headline in Persian', () => {
+    const html = render(
+      { kind: 'failed', code: 'RATE_LIMITED', detail: 'HTTP 429 from X', action: null, platform: 'X' },
+      'fa',
+    );
+    expect(html).toContain('پلتفرم درخواست‌ها را محدود کرد');
+    expect(html).toContain('HTTP 429 from X');
   });
 
   it('renders Persian with Persian digits in the date', () => {

@@ -28,9 +28,15 @@ import {
   XCircle,
   Loader2,
 } from 'lucide-react';
-import { disconnectSocialConnection, setDefaultConnection } from '@/app/actions/social';
-import { getSocialConnectUrl } from '@/app/actions/social-connect';
+import {
+  disconnectSocialConnection,
+  reconnectSocialConnection,
+  setDefaultConnection,
+  type SocialActionErrorCode,
+} from '@/app/actions/social';
+import { ActionErrorAlert } from '@/components/publishing/ActionErrorAlert';
 import { canStartConnectFlow, needsReconnect } from '@/lib/publish-outcome';
+import { socialActionDetail, type SocialActionDetail } from '@/lib/social-action-error';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -86,7 +92,12 @@ export function ConnectedAccountsSection({
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   // One error per account row, so a failure is shown next to the button that caused it.
-  const [errors, setErrors] = useState<Record<string, { action: ActionKind; detail: string | null }>>({});
+  const [errors, setErrors] = useState<Record<string, { action: ActionKind; detail: SocialActionDetail | null }>>({});
+
+  const fail = (id: string, action: ActionKind, detail: SocialActionDetail | null) =>
+    setErrors((prev) => ({ ...prev, [id]: { action, detail } }));
+  const thrown = (err: unknown): SocialActionDetail | null =>
+    err instanceof Error && err.message ? { kind: 'raw', text: err.message } : null;
 
   /**
    * Runs one server action for one row: pending state while it runs, the
@@ -96,22 +107,20 @@ export function ConnectedAccountsSection({
   const run = async (
     action: ActionKind,
     id: string,
-    call: () => Promise<{ error?: string } | undefined>,
+    call: () => Promise<{ error?: string; code?: SocialActionErrorCode } | undefined>,
   ) => {
     setLoading(`${action}-${id}`);
     setErrors(({ [id]: _cleared, ...rest }) => rest);
     try {
       const result = await call();
-      if (result?.error) {
-        setErrors((prev) => ({ ...prev, [id]: { action, detail: result.error ?? null } }));
+      const detail = result ? socialActionDetail(result) : null;
+      if (detail) {
+        fail(id, action, detail);
         return;
       }
       router.refresh();
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        [id]: { action, detail: err instanceof Error ? err.message : null },
-      }));
+      fail(id, action, thrown(err));
     } finally {
       setLoading(null);
     }
@@ -127,28 +136,28 @@ export function ConnectedAccountsSection({
   };
 
   /**
-   * Reconnect sends the browser back through the provider's sign-in, the same
-   * flow as a first connection. Marking the row PENDING_REAUTH alone (the old
-   * behaviour) never gave the user a way to actually sign in again.
+   * Reconnect asks the API to restart this connection's flow; for OAuth
+   * platforms it returns the provider sign-in URL and the browser goes there.
+   * The callback updates the same row back to CONNECTED.
    */
   const handleReconnect = async (account: SocialAccount) => {
     const id = account.id;
     setLoading(`reconnect-${id}`);
     setErrors(({ [id]: _cleared, ...rest }) => rest);
     try {
-      const result = await getSocialConnectUrl(account.platform.toLowerCase(), workspaceId);
-      if ('error' in result) {
-        setErrors((prev) => ({ ...prev, [id]: { action: 'reconnect', detail: result.error } }));
+      const result = await reconnectSocialConnection(id, workspaceId);
+      const url = result.data?.url;
+      if (!url) {
+        // reconnect_unsupported and every other code land here, localised.
+        fail(id, 'reconnect', socialActionDetail(result) ?? { kind: 'message', key: 'api_error' });
         setLoading(null);
+        router.refresh();
         return;
       }
       // Leave the spinner on: the page is about to navigate away.
-      window.location.href = result.url;
+      window.location.href = url;
     } catch (err) {
-      setErrors((prev) => ({
-        ...prev,
-        [id]: { action: 'reconnect', detail: err instanceof Error ? err.message : null },
-      }));
+      fail(id, 'reconnect', thrown(err));
       setLoading(null);
     }
   };
@@ -326,18 +335,12 @@ export function ConnectedAccountsSection({
                 )}
 
                 {error && (
-                  <div
+                  <ActionErrorAlert
                     id={errorId}
-                    role="alert"
-                    className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700"
-                  >
-                    <p className="font-semibold">{t(`errors.${error.action}`)}</p>
-                    {error.detail && (
-                      <p dir="auto" className="mt-0.5 break-words text-red-600">
-                        {error.detail}
-                      </p>
-                    )}
-                  </div>
+                    className="mt-3"
+                    headline={t(`errors.${error.action}`)}
+                    detail={error.detail}
+                  />
                 )}
               </div>
             );

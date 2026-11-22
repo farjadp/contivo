@@ -574,7 +574,7 @@ function PipelineItemCard({
        </div>
 
        {publishOutcome ? (
-         <PublishOutcomeNotice outcome={publishOutcome} channel={currentItem.channel} workspaceId={workspace.id} />
+         <PublishOutcomeNotice outcome={publishOutcome} workspaceId={workspace.id} />
        ) : null}
 
        {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (

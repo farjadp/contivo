@@ -12,6 +12,7 @@
 import { CheckCircle, ExternalLink, RefreshCw, XCircle } from 'lucide-react';
 import { useFormatter, useTranslations } from 'next-intl';
 
+import { FailureReason } from '@/components/publishing/FailureReason';
 import { Link } from '@/i18n/navigation';
 import type { PublishOutcome } from '@/lib/publish-outcome';
 
@@ -30,17 +31,13 @@ const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
 
 export function PublishOutcomeNotice({
   outcome,
-  channel,
   workspaceId,
 }: {
   outcome: PublishOutcome;
-  /** The content item's channel; blog posts publish through a site connection. */
-  channel: string;
   workspaceId: string;
 }) {
   const t = useTranslations('tabsA.pipeline.outcome');
   const format = useFormatter();
-  const connectionsTab = channel === 'blog' ? 'websites' : 'social';
   const platform = outcome.platform ? PLATFORM_LABELS[outcome.platform] ?? outcome.platform : null;
 
   if (outcome.kind === 'published') {
@@ -79,21 +76,24 @@ export function PublishOutcomeNotice({
         <XCircle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
         <span>{platform ? t.rich('failedOn', { platform, bdi }) : t('failed')}</span>
       </p>
-      <p className="mt-1 text-red-700">
-        <span className="font-semibold">{t('reasonLabel')}</span>{' '}
-        {outcome.reason ? (
-          <span dir="auto" className="break-words">{outcome.reason}</span>
-        ) : (
-          t('noReason')
-        )}
-      </p>
+      {outcome.code || outcome.detail ? (
+        <FailureReason
+          reason={{ code: outcome.code, detail: outcome.detail }}
+          label={t('reasonLabel')}
+          className="mt-1 text-red-700"
+        />
+      ) : (
+        <p className="mt-1 text-red-700">
+          <span className="font-semibold">{t('reasonLabel')}</span> {t('noReason')}
+        </p>
+      )}
       {outcome.action ? (
         <Link
-          href={{ pathname: '/connections', query: { tab: connectionsTab, workspaceId } }}
+          href={{ pathname: '/connections', query: { tab: outcome.action.tab, workspaceId } }}
           className="mt-2 inline-flex items-center gap-1 rounded-lg bg-moss px-3 py-1.5 font-semibold text-chalk hover:bg-moss-700"
         >
           <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-          {outcome.action === 'reconnect' ? t('reconnect') : t('connect')}
+          {outcome.action.action === 'reconnect' ? t('reconnect') : t('connect')}
         </Link>
       ) : null}
     </div>
