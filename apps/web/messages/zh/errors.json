@@ -133,6 +133,8 @@
       "UNREACHABLE": "多次重试后仍无法连接到该平台。",
       "PLATFORM_ERROR": "平台拒绝了这篇帖子。"
     },
-    "creditRequestFailed": "请求未能发送，请重试。"
+    "creditRequestFailed": "请求未能发送，请重试。",
+    "bugReportRateLimited": "你在过去一小时内已提交多份反馈，请稍后再试。",
+    "bugReportFailed": "我们没能保存你的反馈，请重试。"
   }
 }

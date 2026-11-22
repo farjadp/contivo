@@ -10,6 +10,7 @@ import { PUBLISHABLE_CHANNELS } from '@/lib/autopilot/channels';
 import { getRecipe } from '@/lib/autopilot/recipes';
 import { runPolicy } from '@/lib/autopilot/runner';
 import { actionError } from '@/lib/action-errors';
+import { guardedAction } from '@/lib/bug-report/action-failure';
 
 export type AutopilotPolicyInput = {
   name?: string;
@@ -184,6 +185,11 @@ export async function deleteAgent(workspaceId: string, agentId: string) {
 }
 
 export async function runAutopilotNow(workspaceId: string, agentId?: string) {
+  // A thrown error becomes { error: friendly, ref }; every returned result is unchanged.
+  return guardedAction('runAutopilotNow', workspaceId || null, () => runAutopilotNowBody(workspaceId, agentId));
+}
+
+async function runAutopilotNowBody(workspaceId: string, agentId?: string) {
   const auth = await requireUser();
   if (!auth.ok) return { error: auth.error };
   if (!(await requireWorkspace(workspaceId, auth.userId))) return { error: await actionError('workspaceNotFoundDot') };

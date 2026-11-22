@@ -133,6 +133,8 @@
       "UNREACHABLE": "La plateforme est restée injoignable, même après plusieurs tentatives.",
       "PLATFORM_ERROR": "La plateforme a rejeté la publication."
     },
-    "creditRequestFailed": "Votre demande n’a pas pu être envoyée. Veuillez réessayer."
+    "creditRequestFailed": "Votre demande n’a pas pu être envoyée. Veuillez réessayer.",
+    "bugReportRateLimited": "Vous avez envoyé plusieurs signalements au cours de la dernière heure. Réessayez un peu plus tard.",
+    "bugReportFailed": "Nous n'avons pas pu enregistrer votre signalement. Réessayez."
   }
 }

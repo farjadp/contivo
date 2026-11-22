@@ -536,7 +536,7 @@ describe('startCompetitorDiscovery', () => {
     expect(backgroundRunMock.triggerBackgroundRun).not.toHaveBeenCalled();
   });
 
-  it('re-throws a database error that is not the active-run unique constraint', async () => {
+  it('turns a database error that is not the active-run unique constraint into a friendly error with a ref', async () => {
     const { Prisma } = await import('@prisma/client');
     prismaMock.discoveryRun.create.mockRejectedValue(
       new Prisma.PrismaClientKnownRequestError('Some other failure', {
@@ -545,10 +545,11 @@ describe('startCompetitorDiscovery', () => {
       }),
     );
 
-    await expect(startCompetitorDiscovery('ws-1')).rejects.toThrow('Some other failure');
+    const result = await startCompetitorDiscovery('ws-1');
+    expect(result).toMatchObject({ error: 'generic', ref: expect.stringMatching(/^CTV-/) });
   });
 
-  it('re-throws a P2002 on this model that is not the active-run constraint, rather than reporting discoveryAlreadyRunning for it', async () => {
+  it('does not report discoveryAlreadyRunning for a P2002 that is not the active-run constraint (friendly error with a ref instead)', async () => {
     // A P2002 whose target does not name workspaceId is some other unique
     // violation entirely (DiscoveryRun has none today, but this proves the
     // catch does not swallow every P2002 indiscriminately).
@@ -561,7 +562,9 @@ describe('startCompetitorDiscovery', () => {
       }),
     );
 
-    await expect(startCompetitorDiscovery('ws-1')).rejects.toThrow('Unique constraint failed');
+    const result = await startCompetitorDiscovery('ws-1');
+    expect(result).toMatchObject({ error: 'generic', ref: expect.stringMatching(/^CTV-/) });
+    expect(result).not.toEqual({ error: 'discoveryAlreadyRunning' });
   });
 });
 
