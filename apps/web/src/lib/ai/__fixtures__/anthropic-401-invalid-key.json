@@ -1,0 +1,12 @@
+{
+  "source": "recorded 2026-11-21 with curl against api.anthropic.com/v1/messages using an obviously fake key (sk-ant-invalid-for-fixture)",
+  "status": 401,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "authentication_error",
+      "message": "invalid x-api-key"
+    },
+    "request_id": "req_011ChH6oafniQxVG64RHGFwZ"
+  }
+}

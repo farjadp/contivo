@@ -1,0 +1,15 @@
+{
+  "source": "documented shape from OpenAI's error-codes guide (https://platform.openai.com/docs/guides/error-codes); NOT recorded",
+  "status": 429,
+  "headers": {
+    "retry-after-ms": "1400"
+  },
+  "body": {
+    "error": {
+      "message": "Rate limit reached for gpt-4.1 on tokens per min (TPM): Limit 30000, Used 29500, Requested 1200. Please try again in 1.4s.",
+      "type": "tokens",
+      "param": null,
+      "code": "rate_limit_exceeded"
+    }
+  }
+}

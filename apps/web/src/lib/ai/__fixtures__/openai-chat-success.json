@@ -1,0 +1,24 @@
+{
+  "source": "documented shape of OpenAI chat completions (fields lib/matrices/openai.ts reads); NOT recorded",
+  "status": 200,
+  "body": {
+    "id": "chatcmpl-1",
+    "model": "gpt-4.1-2025-04-14",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "{\"ok\":true}",
+          "refusal": null
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 100,
+      "completion_tokens": 10,
+      "total_tokens": 110
+    }
+  }
+}

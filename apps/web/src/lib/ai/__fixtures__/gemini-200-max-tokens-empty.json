@@ -1,0 +1,27 @@
+{
+  "source": "recorded 2026-11-21 with curl against gemini-3.7-flash generateContent (local GEMINI_API_KEY, maxOutputTokens 16): thinking used the whole budget, content is {} \u2014 and Google answered with modelVersion gemini-3.8-flash",
+  "status": 200,
+  "body": {
+    "candidates": [
+      {
+        "content": {},
+        "finishReason": "MAX_TOKENS",
+        "index": 0
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 6,
+      "totalTokenCount": 19,
+      "promptTokensDetails": [
+        {
+          "modality": "TEXT",
+          "tokenCount": 6
+        }
+      ],
+      "thoughtsTokenCount": 13,
+      "serviceTier": "standard"
+    },
+    "modelVersion": "gemini-3.8-flash",
+    "responseId": "w0gCa8OIF8mio_UPw_O6wQs"
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "source": "documented shape: google.rpc error model with QuotaFailure + RetryInfo details (https://cloud.google.com/apis/design/errors, https://ai.google.dev/gemini-api/docs/rate-limits); NOT recorded — the per-minute vs per-day quotaId split is the classification assumption",
+  "status": 429,
+  "body": {
+    "error": {
+      "code": 429,
+      "message": "You exceeded your current quota, please check your plan and billing details.",
+      "status": "RESOURCE_EXHAUSTED",
+      "details": [
+        {
+          "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+          "violations": [
+            {
+              "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+              "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+              "quotaDimensions": {
+                "location": "global",
+                "model": "gemini-3.7-flash"
+              }
+            }
+          ]
+        },
+        {
+          "@type": "type.googleapis.com/google.rpc.RetryInfo",
+          "retryDelay": "3600s"
+        }
+      ]
+    }
+  }
+}

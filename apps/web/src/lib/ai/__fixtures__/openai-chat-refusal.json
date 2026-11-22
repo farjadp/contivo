@@ -1,0 +1,24 @@
+{
+  "source": "documented shape of OpenAI chat completions refusal field; NOT recorded",
+  "status": 200,
+  "body": {
+    "id": "chatcmpl-2",
+    "model": "gpt-4.1-2025-04-14",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": null,
+          "refusal": "I'm sorry, I can't help with that."
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 100,
+      "completion_tokens": 10,
+      "total_tokens": 110
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "source": "documented shape from the claude-api skill (shared/error-codes.md, cached 2026-11-03); NOT recorded (429 with error.details.error_code enforced_spend_limit_reached, no retry-after)",
+  "status": 429,
+  "body": {
+    "type": "error",
+    "error": {
+      "type": "rate_limit_error",
+      "message": "You have reached your monthly spend limit",
+      "details": {
+        "error_code": "enforced_spend_limit_reached"
+      }
+    }
+  }
+}

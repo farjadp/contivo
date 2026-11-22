@@ -1,0 +1,20 @@
+{
+  "source": "documented shape of Gemini generateContent (+ groundingMetadata), the fields lib/gemini.ts reads; NOT recorded",
+  "status": 200,
+  "body": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": []
+        },
+        "finishReason": "SAFETY"
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 100,
+      "candidatesTokenCount": 0,
+      "totalTokenCount": 100
+    }
+  }
+}

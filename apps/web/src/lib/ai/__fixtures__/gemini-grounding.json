@@ -1,0 +1,63 @@
+{
+  "source": "documented shape of Gemini generateContent (+ groundingMetadata), the fields lib/gemini.ts reads; NOT recorded",
+  "status": 200,
+  "body": {
+    "candidates": [
+      {
+        "content": {
+          "role": "model",
+          "parts": [
+            {
+              "text": "Sepidar offers cloud accounting."
+            }
+          ]
+        },
+        "finishReason": "STOP",
+        "groundingMetadata": {
+          "webSearchQueries": [
+            "cloud accounting software iran"
+          ],
+          "groundingChunks": [
+            {
+              "web": {
+                "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AAA",
+                "title": "sepidar.example"
+              }
+            },
+            {
+              "web": {
+                "uri": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/BBB",
+                "title": "Top 10 accounting tools"
+              }
+            },
+            {
+              "web": {
+                "uri": "https://hamkaran.example/",
+                "title": "hamkaran.example"
+              }
+            }
+          ],
+          "groundingSupports": [
+            {
+              "segment": {
+                "startIndex": 0,
+                "endIndex": 7,
+                "text": "Sepidar"
+              },
+              "groundingChunkIndices": [
+                0,
+                1
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "usageMetadata": {
+      "promptTokenCount": 100,
+      "candidatesTokenCount": 10,
+      "totalTokenCount": 110
+    },
+    "modelVersion": "gemini-3.7-flash"
+  }
+}
