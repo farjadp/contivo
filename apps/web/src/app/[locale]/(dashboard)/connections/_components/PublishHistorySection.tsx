@@ -65,7 +65,11 @@ export function PublishHistorySection({ jobs, workspaceId, onOpenAccounts, onCon
   /** Leaves the spinner on when it navigates to the provider sign-in. */
   const handleReconnect = async (jobId: string, connectionId: string) => {
     setPending(jobId);
-    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[jobId];
+      return next;
+    });
     const detail = await startReconnect(connectionId, workspaceId);
     if (detail) {
       setErrors((prev) => ({ ...prev, [jobId]: detail }));

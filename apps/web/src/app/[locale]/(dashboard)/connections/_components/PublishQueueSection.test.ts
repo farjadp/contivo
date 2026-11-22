@@ -1,3 +1,4 @@
+/* eslint-disable react/no-children-prop -- server-render tests build the provider tree with createElement props */
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { NextIntlClientProvider } from 'next-intl';

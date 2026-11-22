@@ -88,7 +88,11 @@ export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConne
     call: () => Promise<Pick<SocialActionResult<unknown>, 'error' | 'code' | 'reason'> | undefined>,
   ) => {
     setLoading(`${action}-${id}`);
-    setErrors(({ [id]: _cleared, ...rest }) => rest);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
     try {
       const result = await call();
       const detail = result ? socialActionDetail(result) : null;
@@ -114,7 +118,11 @@ export function PublishQueueSection({ jobs, workspaceId, onOpenAccounts, onConne
   /** Leaves the spinner on when it navigates to the provider sign-in. */
   const handleReconnect = async (jobId: string, connectionId: string) => {
     setLoading(`reconnect-${jobId}`);
-    setErrors(({ [jobId]: _cleared, ...rest }) => rest);
+    setErrors((prev) => {
+      const next = { ...prev };
+      delete next[jobId];
+      return next;
+    });
     const detail = await startReconnect(connectionId, workspaceId);
     if (detail) {
       setErrors((prev) => ({ ...prev, [jobId]: { action: 'reconnect', detail } }));
