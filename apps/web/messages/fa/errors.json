@@ -87,6 +87,10 @@
     "sessionExpired": "نشست شما منقضی شده است. دوباره وارد شوید.",
     "urlScheme": "{label} باید با http یا https شروع شود.",
     "urlInvalid": "{label} نشانی معتبری نیست.",
+    "urlHttpsRequired": "{label} باید با https شروع شود.",
+    "urlCredentials": "{label} نباید نام کاربری یا گذرواژه داشته باشد. رمز را در فیلد رمز بگذارید.",
+    "urlUnresolvable": "{label} در اینترنت پیدا نشد. دامنه را بررسی کنید و دوباره امتحان کنید.",
+    "urlNotPublic": "{label} باید نشانی عمومی اینترنتی باشد. نشانی‌های محلی، خصوصی و داخلی پذیرفته نمی‌شوند.",
     "fields": {
       "siteUrl": "نشانی سایت",
       "revalidateUrl": "نشانی revalidate"

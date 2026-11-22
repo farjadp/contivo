@@ -87,6 +87,10 @@
     "sessionExpired": "La sessione è scaduta. Accedi di nuovo.",
     "urlScheme": "{label} deve iniziare con http:// o https://",
     "urlInvalid": "{label} non è un URL valido.",
+    "urlHttpsRequired": "{label} deve iniziare con https://",
+    "urlCredentials": "{label} non deve contenere nome utente o password. Inserisci il segreto nell'apposito campo.",
+    "urlUnresolvable": "Non troviamo {label} su internet. Controlla il dominio e riprova.",
+    "urlNotPublic": "{label} deve essere un indirizzo internet pubblico. Indirizzi locali, privati e interni non sono ammessi.",
     "fields": {
       "siteUrl": "URL del sito",
       "revalidateUrl": "URL di riconvalida"

@@ -1,20 +1,28 @@
+import { EventEmitter } from 'node:events';
+
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 // A slug the user chose before publishing is the URL; only items without one
 // get an auto slug from the title (spec 2026-11-21, write-own-post).
 
-const { prismaMock, activityLogMock, buildUniqueSlugMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, buildUniqueSlugMock, lookupMock, requestMock } = vi.hoisted(() => ({
   prismaMock: {
     contentItem: { findMany: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     siteConnection: { findFirst: vi.fn(), update: vi.fn() },
   },
   activityLogMock: vi.fn(),
   buildUniqueSlugMock: vi.fn(),
+  lookupMock: vi.fn(),
+  requestMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
 vi.mock('./posts', () => ({ buildUniqueSlug: buildUniqueSlugMock }));
+// The revalidate ping goes through the SSRF guard (node:dns + node:https), not fetch.
+vi.mock('node:dns', () => ({ default: { lookup: lookupMock }, lookup: lookupMock }));
+vi.mock('node:https', () => ({ default: { request: requestMock }, request: requestMock }));
+vi.mock('node:http', () => ({ default: { request: requestMock }, request: requestMock }));
 
 import { publishDueWebContent, revalidateWorkspaceSite } from './publisher';
 
@@ -24,11 +32,45 @@ function dueItem(overrides: Record<string, unknown> = {}) {
   return { id: 'item-1', workspaceId: 'ws-1', topic: 'چطور محتوا بنویسیم', userId: 'user-1', slug: null, ...overrides };
 }
 
-const fetchMock = vi.fn();
+type Addr = { address: string; family: number };
+type Sent = { url: URL; options: { method: string; headers: Record<string, string>; lookup: (host: string, opts: object, cb: (err: Error | null) => void) => void }; body: string };
+
+/** Each call to dns.lookup answers with the next list (the last one repeats). */
+function dnsAnswers(...answers: Addr[][]) {
+  let i = 0;
+  lookupMock.mockImplementation((_h: string, _o: unknown, cb: (e: Error | null, a: Addr[]) => void) => {
+    const a = answers[Math.min(i++, answers.length - 1)]!;
+    cb(null, a);
+  });
+}
+
+/**
+ * Fake https.request: runs the socket's lookup hook (as Node would), then
+ * answers with `status` or errors like a real socket would.
+ */
+function respondWith(status: number | Error) {
+  requestMock.mockImplementation((url: URL, options: Sent['options'], onResponse: (res: unknown) => void) => {
+    const req = new EventEmitter() as EventEmitter & { end: (b: string) => void; destroy: () => void };
+    req.destroy = vi.fn();
+    req.end = (body: string) => {
+      sent.push({ url, options, body });
+      options.lookup(url.hostname, {}, (err: Error | null) => {
+        if (err) req.emit('error', err);
+        else if (status instanceof Error) req.emit('error', status);
+        else onResponse({ statusCode: status, resume: () => undefined });
+      });
+    };
+    return req;
+  });
+}
+
+let sent: Sent[] = [];
+const PUBLIC = [{ address: '66.33.22.11', family: 4 }];
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal('fetch', fetchMock);
+  sent = [];
+  dnsAnswers(PUBLIC);
   prismaMock.siteConnection.update.mockResolvedValue({});
   prismaMock.siteConnection.findFirst.mockResolvedValue({
     id: 'site-1',
@@ -82,11 +124,10 @@ describe('publishDueWebContent revalidate event', () => {
       revalidateUrl: 'https://site.test/api/revalidate',
       revalidateSecret: null,
     });
-    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    respondWith(200);
     prismaMock.contentItem.findMany.mockResolvedValue([dueItem({ slug: 'live' })]);
     await publishDueWebContent();
-    const init = fetchMock.mock.calls[0]?.[1] as { body: string };
-    expect(JSON.parse(init.body)).toEqual({ slug: 'live', event: 'post.published' });
+    expect(JSON.parse(sent[0]!.body)).toEqual({ slug: 'live', event: 'post.published' });
   });
 });
 
@@ -105,23 +146,23 @@ describe('revalidateWorkspaceSite', () => {
       where: { workspaceId: 'ws-1', status: 'ACTIVE' },
       orderBy: { createdAt: 'asc' },
     });
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(requestMock).not.toHaveBeenCalled();
   });
 
   it('returns null when the site has no revalidate URL', async () => {
     expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBeNull();
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(requestMock).not.toHaveBeenCalled();
   });
 
   it('posts the slug and event with the bearer secret', async () => {
     prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
-    fetchMock.mockResolvedValue({ ok: true, status: 200 });
+    respondWith(200);
     expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(true);
-    const [url, init] = fetchMock.mock.calls[0] as [string, { method: string; headers: Record<string, string>; body: string }];
-    expect(url).toBe('https://site.test/api/revalidate');
-    expect(init.method).toBe('POST');
-    expect(init.headers.Authorization).toBe('Bearer shh');
-    expect(JSON.parse(init.body)).toEqual({ slug: 'live', event: 'post.updated' });
+    const { url, options, body } = sent[0]!;
+    expect(url.href).toBe('https://site.test/api/revalidate');
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBe('Bearer shh');
+    expect(JSON.parse(body)).toEqual({ slug: 'live', event: 'post.updated' });
     expect(prismaMock.siteConnection.update).toHaveBeenCalledWith({
       where: { id: 'site-1' },
       data: { lastRevalidateAt: expect.any(Date), lastRevalidateStatus: 200 },
@@ -130,13 +171,13 @@ describe('revalidateWorkspaceSite', () => {
 
   it('returns false on a non-2xx response', async () => {
     prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
-    fetchMock.mockResolvedValue({ ok: false, status: 500 });
+    respondWith(500);
     expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
   });
 
   it('returns false and does not throw when fetch fails', async () => {
     prismaMock.siteConnection.findFirst.mockResolvedValue(activeSite);
-    fetchMock.mockRejectedValue(new Error('network down'));
+    respondWith(new Error('network down'));
     expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
   });
 
@@ -146,5 +187,61 @@ describe('revalidateWorkspaceSite', () => {
     expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
     expect(errSpy.mock.calls[0]?.[0]).toBe('[site-publisher] revalidate failed');
     errSpy.mockRestore();
+  });
+
+  describe('SSRF guard', () => {
+    function siteWith(revalidateUrl: string) {
+      prismaMock.siteConnection.findFirst.mockResolvedValue({ ...activeSite, revalidateUrl });
+    }
+    function recordedStatus() {
+      return (prismaMock.siteConnection.update.mock.calls[0]?.[0] as { data: { lastRevalidateStatus: number } }).data
+        .lastRevalidateStatus;
+    }
+
+    it.each([
+      'https://169.254.169.254/latest/meta-data/',
+      'https://10.0.0.7/revalidate',
+      'https://[::1]/revalidate',
+      'https://contivo-api.railway.internal/api/v1/health',
+      'https://localhost:3000/api/revalidate',
+    ])('never sends a request to %s', async (url) => {
+      siteWith(url);
+      respondWith(200);
+      expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+      expect(requestMock).not.toHaveBeenCalled();
+      expect(recordedStatus()).toBe(0);
+    });
+
+    it('never sends a request when the name resolves to a private address', async () => {
+      siteWith('https://hooks.attacker.example/revalidate');
+      dnsAnswers([{ address: '192.168.1.10', family: 4 }]);
+      respondWith(200);
+      expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+      expect(requestMock).not.toHaveBeenCalled();
+    });
+
+    it('refuses at connect time when DNS changes after the check (rebinding)', async () => {
+      siteWith('https://rebind.attacker.example/revalidate');
+      dnsAnswers(PUBLIC, [{ address: '127.0.0.1', family: 4 }]);
+      respondWith(200);
+      expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+      expect(recordedStatus()).toBe(0);
+    });
+
+    it('does not follow a redirect', async () => {
+      siteWith('https://site.test/api/revalidate');
+      respondWith(302);
+      expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.updated')).toBe(false);
+      expect(requestMock).toHaveBeenCalledTimes(1);
+      expect(recordedStatus()).toBe(302);
+    });
+
+    it('sends to a valid public https URL', async () => {
+      siteWith('https://www.contivo.app/api/blog/revalidate');
+      respondWith(200);
+      expect(await revalidateWorkspaceSite('ws-1', 'live', 'post.published')).toBe(true);
+      expect(sent[0]!.url.hostname).toBe('www.contivo.app');
+      expect(recordedStatus()).toBe(200);
+    });
   });
 });
