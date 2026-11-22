@@ -1,0 +1,80 @@
+{
+  "dashboard": {
+    "eyebrow": "סקירה כללית",
+    "openWorkspace": "פתיחת סביבת העבודה",
+    "archived": {
+      "title": "כל סביבות העבודה בארכיון",
+      "body": "אפשר ליצור סביבת עבודה חדשה, או לבקש ממנהל המערכת לשחזר אחת קיימת.",
+      "cta": "סביבת עבודה חדשה"
+    },
+    "journey": {
+      "step": "שלב {order, number} מתוך {total, number} · ההגדרה הושלמה ב-{percent, number}%"
+    },
+    "autopilot": {
+      "label": "טייס אוטומטי",
+      "on": "פעיל",
+      "off": "כבוי",
+      "running": "{posts, number} פוסטים בשבוע, ב-{channels}.",
+      "noChannel": "אין ערוץ",
+      "notRunning": "עדיין לא פועל.",
+      "lastRun": "הריצה האחרונה {when}: {status} — {scheduled, number} תוזמנו, {skipped, number} דולגו.",
+      "firstRunPending": "מופעל — הריצה הראשונה תתבצע בסבב הבא.",
+      "needsIntelligence": "קודם בונים את שכבת המודיעין (זיכרון מותג, מטריצות, מילות מפתח) — בלעדיה הטייס האוטומטי מסרב לכתוב.",
+      "needsChannel": "חברו חשבון רשת חברתית או אתר, כדי שיהיה לו לאן לפרסם.",
+      "ready": "הכול מוכן. מפעילים, והוא דואג שהשבוע שלכם יהיה מלא.",
+      "open": "פתיחת הטייס האוטומטי",
+      "setUp": "הגדרת טייס אוטומטי",
+      "connectChannel": "חיבור ערוץ"
+    },
+    "actions": {
+      "brandTitle": "השלימו את החסר בזיכרון המותג",
+      "brandDesc": "Contivo עדיין לא מכיר את המותג שלכם מספיק. עד שיידע יותר, הטיוטות יהיו כלליות.",
+      "brandCta": "סקירת זיכרון המותג",
+      "marketTitle": "אשרו עוד מתחרים",
+      "marketDesc": "אושרו פחות משלושה. מפת השוק צריכה אותם כדי להראות איפה אתם עומדים.",
+      "marketCta": "חיפוש מתחרים",
+      "keywordsTitle": "הפכו פערי מילות מפתח לרעיונות",
+      "keywordsDesc": "{count, number} מילות מפתח מוכנות למיקוד.",
+      "keywordsCta": "רעיונות ממילות מפתח",
+      "scheduleTitle": "תזמנו את מה שכבר נכתב",
+      "scheduleDesc": "{count, plural, one {טיוטה אחת ממתינה} other {# טיוטות ממתינות}} בצנרת.",
+      "scheduleCta": "פתיחת לוח השנה",
+      "momentumTitle": "שימו משהו בלוח השנה",
+      "momentumDesc": "שום דבר לא מתוזמן לפרסום.",
+      "momentumCta": "פתיחת הצנרת"
+    },
+    "today": {
+      "headline": "{count, plural, =0 {אין השבוע שום דבר דחוף.} one {יש השבוע צעד אחד ששווה לעשות.} other {יש השבוע # צעדים ששווה לעשות.}}",
+      "healthy": "שכבת המודיעין והצנרת במצב טוב. אפשר לתת לטייס האוטומטי לעבוד, או לחשוב על רעיונות בעצמכם.",
+      "setupTag": "הגדרה · שלב {order, number} מתוך {total, number}",
+      "credits": "{count, number} קרדיטים",
+      "moved": {
+        "title": "מה זז",
+        "since": "7 הימים האחרונים",
+        "empty": "שום דבר לא השתנה בשבוע האחרון.",
+        "tagAutopilot": "טייס אוטומטי",
+        "tagPublished": "פורסם",
+        "tagCompetitors": "מתחרים",
+        "autopilot": "הטייס האוטומטי רץ {when}: {scheduled, number} תוזמנו, {skipped, number} דולגו.",
+        "published": "{count, plural, one {פוסט אחד יצא} other {# פוסטים יצאו}} השבוע.",
+        "pending": "{count, plural, one {מתחרה אחד ממתין} other {# מתחרים ממתינים}} להחלטה שלכם.",
+        "pendingCta": "לבדיקה"
+      },
+      "shipping": {
+        "title": "בדרך החוצה",
+        "published": "פורסמו",
+        "scheduled": "מתוזמנים",
+        "today": "היום",
+        "calendar": "לוח שנה"
+      },
+      "pipe": {
+        "title": "בצנרת",
+        "drafting": "בכתיבה",
+        "ready": "מוכנים",
+        "scheduled": "מתוזמנים",
+        "published": "פורסמו"
+      },
+      "loopLabel": "שלבי ההגדרה"
+    }
+  }
+}

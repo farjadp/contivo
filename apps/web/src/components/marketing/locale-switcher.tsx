@@ -29,6 +29,8 @@ const FLAG_SRC: Record<Locale, string> = {
   en: '/flags/en.svg',
   fa: '/flags/fa.png',
   it: '/flags/it.svg',
+  es: '/flags/es.svg',
+  he: '/flags/he.svg',
 };
 
 function Flag({ locale }: { locale: Locale }) {

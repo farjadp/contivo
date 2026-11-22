@@ -1,0 +1,87 @@
+{
+  "settings": {
+    "meta": {
+      "title": "הגדרות"
+    },
+    "title": "הגדרות",
+    "subtitle": "העדפות החשבון ויומני הפעילות של סביבת העבודה.",
+    "limits": {
+      "title": "מגבלות סביבת העבודה",
+      "saved": "המגבלות עודכנו.",
+      "invalid": "ערך מגבלה לא תקין. יש להזין מספר שלם בין {min, number} ל־{max, number}.",
+      "failed": "לא הצלחנו לשמור את המגבלות. צריך לבדוק את החיבור למסד הנתונים ולנסות שוב.",
+      "competitiveLabel": "נוף תחרותי",
+      "competitiveValue": "{count, number} הרצות גילוי AI לכל סביבת עבודה",
+      "brandLabel": "זיכרון המותג",
+      "brandValue": "{count, number} ניסיונות סריקה מחדש לכל סביבת עבודה",
+      "ideationLabel": "רעיונות",
+      "ideationValue": "עד {count, number} רעיונות בכל יצירה",
+      "wordCountTitle": "מגבלות אורך תוכן במילים (לפי פלטפורמה)",
+      "wordCountRange": "{min, number} - {max, number} מילים",
+      "competitiveField": "מגבלת נוף תחרותי",
+      "brandField": "מגבלת זיכרון המותג",
+      "ideationField": "מספר רעיונות מקסימלי",
+      "wordCountField": "מגבלות מספר מילים",
+      "min": "מינ׳",
+      "max": "מקס׳",
+      "save": "שמירת המגבלות"
+    },
+    "account": {
+      "title": "חשבון",
+      "email": "אימייל",
+      "role": "תפקיד"
+    },
+    "activity": {
+      "title": "יומני פעילות",
+      "empty": "עדיין אין רישומי פעילות.",
+      "workspace": "סביבת עבודה: {name}",
+      "workspaceNone": "סביבת עבודה: אין"
+    },
+    "actions": {
+      "AUTOPILOT_AGENT_CREATED": "נוצר סוכן טייס אוטומטי",
+      "AUTOPILOT_AGENT_DELETED": "נמחק סוכן טייס אוטומטי",
+      "AUTOPILOT_POLICY_SAVED": "נשמרה מדיניות הטייס האוטומטי",
+      "AUTOPILOT_RUN": "הרצת טייס אוטומטי",
+      "BRAND_ASSETS_EDITED": "נכסי המותג נערכו",
+      "BRAND_ASSETS_GENERATED": "נכסי המותג נוצרו",
+      "BRAND_MEMORY_RESCRAPE_BLOCKED": "סריקה מחדש של זיכרון המותג נחסמה",
+      "BRAND_MEMORY_RESCRAPE_FAILED": "סריקה מחדש של זיכרון המותג נכשלה",
+      "BRAND_MEMORY_RESCRAPE_SUCCEEDED": "סריקה מחדש של זיכרון המותג הצליחה",
+      "COMPETITIVE_MATRICES_EDITED": "מטריצות התחרות נערכו",
+      "COMPETITIVE_MATRICES_GENERATED": "מטריצות התחרות נוצרו",
+      "COMPETITOR_DECISION_SET": "נקבעה החלטה לגבי מתחרה",
+      "COMPETITOR_DISCOVERY_BLOCKED": "גילוי מתחרים נחסם",
+      "COMPETITOR_DISCOVERY_FAILED": "גילוי מתחרים נכשל",
+      "COMPETITOR_DISCOVERY_RUN": "הרצת גילוי מתחרים",
+      "COMPETITOR_KEYWORDS_GENERATED": "נוצרו מילות מפתח של מתחרים",
+      "COMPETITOR_MANUAL_EDIT_SAVED": "נשמרה עריכה ידנית של מתחרה",
+      "COMPETITOR_REVIEW_SAVED": "נשמרה בדיקת מתחרים",
+      "CONTENT_CALENDAR_MOCK_INSERTED": "נוספו נתוני דמה ללוח התוכן",
+      "CONTENT_EDITED_AND_SCHEDULED": "התוכן נערך ותוזמן",
+      "CONTENT_GENERATED_FROM_PIPELINE": "נוצר תוכן מהצנרת",
+      "CONTENT_PIPELINE_ITEM_SAVED": "נשמר פריט בצנרת התוכן",
+      "CONTENT_PREVIEW_GENERATED_FROM_IDEA": "נוצרה תצוגה מקדימה מרעיון",
+      "CONTENT_SCHEDULED": "התוכן תוזמן",
+      "EVOLUTION_REPORT_VIEWED": "נצפה דוח ההתפתחות",
+      "IDEATION_GENERATED": "נוצרו רעיונות",
+      "INSTANT_CONTENT_GENERATED": "נוצר תוכן מיידי",
+      "NARRATIVE_GENERATED": "נוצר נרטיב",
+      "PRODUCTS_SERVICES_INTEL_EDITED": "מודיעין מוצרים ושירותים נערך",
+      "PRODUCTS_SERVICES_INTEL_GENERATED": "מודיעין מוצרים ושירותים נוצר",
+      "SITE_CONNECTION_CREATED": "נוצר חיבור לאתר",
+      "SITE_CONNECTION_DELETED": "נמחק חיבור לאתר",
+      "SITE_CONNECTION_KEY_ROTATED": "הוחלף המפתח של חיבור האתר",
+      "SITE_CONNECTION_STATUS_CHANGED": "סטטוס חיבור האתר השתנה",
+      "WEB_CONTENT_PUBLISHED": "תוכן פורסם באתר",
+      "WORKSPACE_BASELINE_SNAPSHOT_CREATED": "נוצרה תמונת מצב בסיסית של סביבת העבודה",
+      "WORKSPACE_CREATED": "נוצרה סביבת עבודה"
+    },
+    "platforms": {
+      "blog": "בלוג / מאמר",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "אימייל",
+      "instagram": "Instagram"
+    }
+  }
+}

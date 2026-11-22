@@ -1,0 +1,234 @@
+{
+  "compare": {
+    "meta": {
+      "title": "Contivo comparado: redactores con IA, programadores de redes, ChatGPT y agentes de IA",
+      "description": "En qué se diferencia Contivo de las herramientas de redacción con IA, los programadores de redes sociales, las plataformas de SEO, los asistentes tipo ChatGPT y los agentes de IA, y en qué todavía va por detrás. Datos sacados de las propias páginas de cada proveedor."
+    },
+    "eyebrow": "Comparativa",
+    "headline": "En qué es diferente Contivo, y en qué <accent>no</accent>.",
+    "intro": "Comparado con los cinco tipos de herramientas que una pequeña empresa usaría como alternativa para su contenido, por categoría y no por marca. Cada ejemplo citado procede de las propias páginas del proveedor, consultadas el {date}.",
+    "uniqueTitle": "Lo que hace y los demás no",
+    "unique": {
+      "lock": {
+        "title": "Se niega a escribir primero",
+        "body": "Las ideas siguen bloqueadas hasta que existen tu mapa de competidores y tus gráficos de posicionamiento. Ninguna de las herramientas que comparamos ofrece nada parecido."
+      },
+      "scale": {
+        "title": "Encuentra a tus competidores reales",
+        "body": "Empresas de tu tamaño, no los nombres famosos de tu sector, y cada una verificada antes de que la veas. Los programadores de redes y las herramientas de SEO te piden que los nombres tú, o solo muestran quién posiciona para una palabra clave."
+      },
+      "storyline": {
+        "title": "Cada publicación hace avanzar una línea narrativa",
+        "body": "Tres o cuatro afirmaciones que tu contenido tiene que impulsar, cada una con una lista de cosas que nunca debe afirmar."
+      },
+      "gate": {
+        "title": "Veta los datos inventados",
+        "body": "Un juez rechaza estadísticas, estudios e historias de clientes inventados, y si ningún modelo puede revisar una publicación, no se publica. La única comprobación parecida que encontramos está en el plan Enterprise de una herramienta de redacción."
+      },
+      "ownSite": {
+        "title": "Publica en cualquier web",
+        "body": "Tu web lee sus publicaciones a través de una API de solo lectura, esté hecha con lo que esté hecha. Un desarrollador la conecta una sola vez."
+      },
+      "persian": {
+        "title": "Escribe el persa como persa",
+        "body": "Sin traducir de un borrador en inglés, y evaluado con rangos de palabras propios del persa. La lista de idiomas de Jasper no incluye el persa."
+      }
+    },
+    "tableTitle": "Frente a frente",
+    "capability": "Capacidad",
+    "swipe": "Desliza la tabla hacia los lados para ver todas las columnas.",
+    "status": {
+      "yes": "Sí",
+      "partial": "En parte",
+      "no": "No",
+      "unlisted": "No indicado"
+    },
+    "columns": {
+      "contivo": {
+        "name": "Contivo",
+        "examples": "Hoy, en acceso anticipado"
+      },
+      "writers": {
+        "name": "Herramientas de redacción con IA",
+        "examples": "Jasper, Copy.ai, Writesonic, Anyword"
+      },
+      "schedulers": {
+        "name": "Programadores de redes sociales",
+        "examples": "Buffer, Hootsuite, Later, Ocoya"
+      },
+      "seo": {
+        "name": "Plataformas de contenido SEO",
+        "examples": "Surfer, Semrush Content Toolkit"
+      },
+      "assistants": {
+        "name": "Asistentes de IA, a mano",
+        "examples": "ChatGPT, Claude, Gemini"
+      },
+      "agents": {
+        "name": "Agentes de IA",
+        "examples": "ChatGPT Work, Manus, Zapier, n8n"
+      }
+    },
+    "rows": {
+      "competitors": {
+        "label": "Encuentra a tus competidores y comprueba que existen",
+        "contivo": "De tu tamaño, verificados, y luego los confirmas tú",
+        "writers": "No indicado",
+        "schedulers": "Los nombras tú; benchmarking en algunos planes",
+        "seo": "Quién posiciona para cada palabra clave",
+        "assistants": "Si se lo pides, cada vez, sin verificar",
+        "agents": "Si lo construyes tú"
+      },
+      "lock": {
+        "label": "No escribe antes de que exista la investigación",
+        "contivo": "Ideas bloqueadas hasta que existe la investigación",
+        "writers": "No",
+        "schedulers": "No",
+        "seo": "No",
+        "assistants": "No",
+        "agents": "Solo si lo construyes tú"
+      },
+      "storyline": {
+        "label": "Una estrategia que cada publicación debe seguir",
+        "contivo": "Una narrativa con líneas narrativas",
+        "writers": "Herramientas de estrategia, sin un orden obligatorio",
+        "schedulers": "Pilares de contenido, en una herramienta",
+        "seo": "Un brief por artículo",
+        "assistants": "Solo si se lo indicas en cada prompt",
+        "agents": "Si lo construyes tú"
+      },
+      "factGate": {
+        "label": "Frena estadísticas e historias inventadas",
+        "contivo": "Un juez puede vetar; sin revisión, no se publica",
+        "writers": "Una herramienta, solo en el plan Enterprise",
+        "schedulers": "No indicado",
+        "seo": "Detección de plagio, no verificación de datos",
+        "assistants": "No; lo compruebas todo tú",
+        "agents": "Las aprobaciones cubren acciones, no afirmaciones"
+      },
+      "autopilot": {
+        "label": "Mantiene un calendario lleno por sí solo",
+        "contivo": "De 1 a 14 publicaciones por semana, con 7 días de antelación",
+        "writers": "No indica programador",
+        "schedulers": "Es su producto principal",
+        "seo": "No",
+        "assistants": "Borradores programados; los publicas tú",
+        "agents": "Tareas programadas"
+      },
+      "social": {
+        "label": "Redes sociales en las que publica",
+        "contivo": "Por ahora, solo perfil personal de LinkedIn",
+        "writers": "Ninguna",
+        "schedulers": "De 6 a 28 redes",
+        "seo": "Ninguna",
+        "assistants": "Ninguna",
+        "agents": "Mediante conectores, como Buffer"
+      },
+      "ownSite": {
+        "label": "Publica en tu propia web",
+        "contivo": "Cualquier stack, mediante una API de solo lectura",
+        "writers": "WordPress, en una herramienta",
+        "schedulers": "WordPress, Webflow, Wix, en una herramienta",
+        "seo": "Exportación a WordPress",
+        "assistants": "No; copias y pegas tú",
+        "agents": "Si lo construyes tú"
+      },
+      "persian": {
+        "label": "Escribe en persa",
+        "contivo": "Sí, de forma nativa",
+        "writers": "Jasper no; el resto sin verificar",
+        "schedulers": "Sin verificar",
+        "seo": "Sin verificar",
+        "assistants": "Sí",
+        "agents": "Depende del modelo"
+      },
+      "languages": {
+        "label": "Idiomas",
+        "contivo": "Dos: inglés y persa",
+        "writers": "30 o más",
+        "schedulers": "18 o más, en una herramienta",
+        "seo": "Muchos",
+        "assistants": "Muchos",
+        "agents": "Muchos"
+      },
+      "analytics": {
+        "label": "Muestra el rendimiento de las publicaciones",
+        "contivo": "Todavía no",
+        "writers": "Rendimiento previsto, en una herramienta",
+        "schedulers": "Sí",
+        "seo": "Seguimiento de posiciones",
+        "assistants": "No",
+        "agents": "Si lo construyes tú"
+      },
+      "price": {
+        "label": "Precio de entrada al mes",
+        "contivo": "De $55 a $233; gratis en acceso anticipado",
+        "writers": "De $29 a $79",
+        "schedulers": "Desde $5 por canal hasta $99 o más",
+        "seo": "De $49 a $60",
+        "assistants": "Unos $20",
+        "agents": "Desde unos $20, más tu tiempo"
+      }
+    },
+    "tableNote": "Consultado en las páginas de precios y de producto de cada proveedor el {date}. «No indicado» significa que no lo encontramos en esas páginas, no que no exista. Los precios cambian; compruébalos antes de decidir.",
+    "behindTitle": "En qué va por detrás",
+    "behindIntro": "Todo esto es cierto hoy. Parte de ello está en camino, y nada de ello se oculta en ningún otro lugar de esta web.",
+    "behind": {
+      "channels": {
+        "title": "Una sola red social",
+        "body": "Solo perfiles personales de LinkedIn. Ni páginas de empresa, ni Instagram, Facebook o TikTok. X, Telegram, WordPress y Threads están en construcción."
+      },
+      "languages": {
+        "title": "Dos idiomas",
+        "body": "El contenido se escribe en inglés o en persa. Las herramientas de redacción ofrecen treinta o más."
+      },
+      "analytics": {
+        "title": "Sin datos de rendimiento",
+        "body": "Todavía no muestra cómo ha funcionado una publicación ni hace seguimiento de posiciones."
+      },
+      "monitoring": {
+        "title": "Aún sin alertas de la competencia",
+        "body": "La vigilancia semanal de la competencia está en camino. Algunos programadores de redes ya comparan competidores en sus planes superiores."
+      },
+      "estimates": {
+        "title": "Las puntuaciones de posicionamiento son estimaciones",
+        "body": "El modelo lee la evidencia pública y muestra su razonamiento. Las puntuaciones no son datos medidos."
+      },
+      "early": {
+        "title": "Fase inicial",
+        "body": "En marcha desde agosto de 2026, la facturación no ha empezado y todavía no hay ningún cliente que podamos nombrar."
+      },
+      "price": {
+        "title": "No es lo más barato",
+        "body": "Cuesta más que un asistente de $20 o un programador de $5 por canal. Pagas por la investigación y por la negativa, no por la redacción."
+      }
+    },
+    "elsewhereTitle": "Elige otra cosa si…",
+    "elsewhere": {
+      "channels": {
+        "if": "Necesitas Instagram, TikTok o Facebook hoy",
+        "then": "Un programador de redes como Buffer o Later ya publica ahí."
+      },
+      "languages": {
+        "if": "Publicas en un idioma que no es inglés ni persa",
+        "then": "Una herramienta de redacción con IA como Jasper o Anyword cubre treinta idiomas o más."
+      },
+      "search": {
+        "if": "Necesitas datos de búsqueda medidos y seguimiento de posiciones",
+        "then": "Una plataforma de SEO como Surfer o Semrush está hecha justo para eso."
+      },
+      "build": {
+        "if": "Te gusta construir y mantener tu propio pipeline",
+        "then": "Un stack de agentes como Zapier, n8n o Manus puede cubrir buena parte de este ciclo, siempre que tú lo diseñes y lo mantengas en marcha."
+      },
+      "time": {
+        "if": "Tienes tiempo para investigar, escribir y publicar por tu cuenta",
+        "then": "ChatGPT o Claude, por unos $20 al mes, escribirán buenos borradores. Lo que no harán es guardar la investigación, negarse a inventar ni publicar por ti."
+      }
+    },
+    "sourcesTitle": "Fuentes, consultadas el {date}",
+    "closeHeadline": "Si la investigación te importa, empieza por ahí.",
+    "closeCta": "Empieza gratis en acceso anticipado",
+    "closeFeatures": "Ver todas las funciones"
+  }
+}

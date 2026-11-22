@@ -1,0 +1,87 @@
+{
+  "settings": {
+    "meta": {
+      "title": "Configuración"
+    },
+    "title": "Configuración",
+    "subtitle": "Preferencias de la cuenta y registros de actividad de tu workspace.",
+    "limits": {
+      "title": "Límites del workspace",
+      "saved": "Límites actualizados correctamente.",
+      "invalid": "Valor de límite no válido. Usa un número entero entre {min, number} y {max, number}.",
+      "failed": "No se pudieron guardar los límites. Revisa la conexión con la base de datos y vuelve a intentarlo.",
+      "competitiveLabel": "Panorama competitivo",
+      "competitiveValue": "{count, number} búsquedas con IA por workspace",
+      "brandLabel": "Memoria de marca",
+      "brandValue": "{count, number} intentos de nueva extracción por workspace",
+      "ideationLabel": "Ideación",
+      "ideationValue": "{count, number} ideas como máximo por generación",
+      "wordCountTitle": "Límites de palabras del contenido (por plataforma)",
+      "wordCountRange": "{min, number} - {max, number} palabras",
+      "competitiveField": "Límite del panorama competitivo",
+      "brandField": "Límite de la memoria de marca",
+      "ideationField": "Máximo de contenidos en la ideación",
+      "wordCountField": "Límites de palabras",
+      "min": "Mín.",
+      "max": "Máx.",
+      "save": "Guardar límites"
+    },
+    "account": {
+      "title": "Cuenta",
+      "email": "Correo electrónico",
+      "role": "Rol"
+    },
+    "activity": {
+      "title": "Registros de actividad",
+      "empty": "Aún no hay registros de actividad.",
+      "workspace": "Workspace: {name}",
+      "workspaceNone": "Workspace: n/d"
+    },
+    "actions": {
+      "AUTOPILOT_AGENT_CREATED": "Agente de Autopilot creado",
+      "AUTOPILOT_AGENT_DELETED": "Agente de Autopilot eliminado",
+      "AUTOPILOT_POLICY_SAVED": "Política de Autopilot guardada",
+      "AUTOPILOT_RUN": "Ejecución del Autopilot",
+      "BRAND_ASSETS_EDITED": "Recursos de marca editados",
+      "BRAND_ASSETS_GENERATED": "Recursos de marca generados",
+      "BRAND_MEMORY_RESCRAPE_BLOCKED": "Nueva extracción de la memoria de marca bloqueada",
+      "BRAND_MEMORY_RESCRAPE_FAILED": "Error en la nueva extracción de la memoria de marca",
+      "BRAND_MEMORY_RESCRAPE_SUCCEEDED": "Nueva extracción de la memoria de marca completada",
+      "COMPETITIVE_MATRICES_EDITED": "Matrices competitivas editadas",
+      "COMPETITIVE_MATRICES_GENERATED": "Matrices competitivas generadas",
+      "COMPETITOR_DECISION_SET": "Decisión sobre competidor registrada",
+      "COMPETITOR_DISCOVERY_BLOCKED": "Búsqueda de competidores bloqueada",
+      "COMPETITOR_DISCOVERY_FAILED": "Error en la búsqueda de competidores",
+      "COMPETITOR_DISCOVERY_RUN": "Búsqueda de competidores ejecutada",
+      "COMPETITOR_KEYWORDS_GENERATED": "Keywords de competidores generadas",
+      "COMPETITOR_MANUAL_EDIT_SAVED": "Edición manual de competidor guardada",
+      "COMPETITOR_REVIEW_SAVED": "Revisión de competidor guardada",
+      "CONTENT_CALENDAR_MOCK_INSERTED": "Datos de prueba añadidos al calendario de contenido",
+      "CONTENT_EDITED_AND_SCHEDULED": "Contenido editado y programado",
+      "CONTENT_GENERATED_FROM_PIPELINE": "Contenido generado desde el pipeline",
+      "CONTENT_PIPELINE_ITEM_SAVED": "Elemento del pipeline de contenido guardado",
+      "CONTENT_PREVIEW_GENERATED_FROM_IDEA": "Vista previa de contenido generada a partir de una idea",
+      "CONTENT_SCHEDULED": "Contenido programado",
+      "EVOLUTION_REPORT_VIEWED": "Informe de evolución consultado",
+      "IDEATION_GENERATED": "Ideas generadas",
+      "INSTANT_CONTENT_GENERATED": "Contenido instantáneo generado",
+      "NARRATIVE_GENERATED": "Narrativa generada",
+      "PRODUCTS_SERVICES_INTEL_EDITED": "Análisis de productos y servicios editado",
+      "PRODUCTS_SERVICES_INTEL_GENERATED": "Análisis de productos y servicios generado",
+      "SITE_CONNECTION_CREATED": "Conexión de sitio creada",
+      "SITE_CONNECTION_DELETED": "Conexión de sitio eliminada",
+      "SITE_CONNECTION_KEY_ROTATED": "Clave de conexión de sitio renovada",
+      "SITE_CONNECTION_STATUS_CHANGED": "Estado de conexión de sitio cambiado",
+      "WEB_CONTENT_PUBLISHED": "Contenido web publicado",
+      "WORKSPACE_BASELINE_SNAPSHOT_CREATED": "Instantánea de referencia del workspace creada",
+      "WORKSPACE_CREATED": "Workspace creado"
+    },
+    "platforms": {
+      "blog": "Blog / Artículo",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "Correo electrónico",
+      "instagram": "Instagram"
+    }
+  }
+}

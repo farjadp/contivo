@@ -1,0 +1,48 @@
+{
+  "instant": {
+    "meta": { "title": "תוכן מיידי — Contivo" },
+    "title": "תוכן מיידי",
+    "subtitle": "בוחרים נושא וערוץ, ומקבלים תוכן מוכן לפרסום תוך שניות.",
+    "form": {
+      "channel": "ערוץ",
+      "topic": "נושא",
+      "topicPlaceholder": "למשל: למה מייסדי B2B צריכים להשקיע במנהיגות מחשבתית לפני שהם מגייסים צוות שיווק",
+      "tone": "טון",
+      "generating": "יוצר…",
+      "generate": "יצירת תוכן",
+      "unexpectedError": "משהו השתבש. כדאי לנסות שוב."
+    },
+    "channels": {
+      "linkedin": "פוסט",
+      "twitter": "שרשור",
+      "instagram": "כיתוב",
+      "email": "טיוטה",
+      "blog": "ראשי פרקים"
+    },
+    "channelNames": {
+      "email": "אימייל",
+      "blog": "בלוג"
+    },
+    "tones": {
+      "professional": "מקצועי",
+      "friendly": "ידידותי",
+      "bold": "נועז",
+      "educational": "מסביר",
+      "persuasive": "משכנע"
+    },
+    "result": {
+      "linkedin": "פוסט ל-LinkedIn",
+      "twitter": "שרשור ב-X",
+      "instagram": "כיתוב ל-Instagram",
+      "email": "טיוטת אימייל",
+      "blog": "ראשי פרקים לבלוג",
+      "copy": "העתקה",
+      "copied": "הועתק!",
+      "new": "חדש",
+      "regenerate": "יצירה מחדש",
+      "topicLabel": "נושא: ",
+      "creditsUsed": "{count, plural, one {נוצל קרדיט אחד} two {נוצלו 2 קרדיטים} other {נוצלו # קרדיטים}}",
+      "creditsRemaining": "נותרו {count, number}"
+    }
+  }
+}

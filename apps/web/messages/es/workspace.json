@@ -1,0 +1,85 @@
+{
+  "journey": {
+    "steps": {
+      "brand": {
+        "title": "Crea la memoria de marca",
+        "why": "Todo lo que escribe Contivo parte de aquí. Sin ella no hay una voz con la que escribir.",
+        "action": "Revisa o vuelve a extraer la memoria de marca",
+        "detailDone": "Extraída de tu sitio",
+        "detailTodo": "Aún no se ha extraído"
+      },
+      "market": {
+        "title": "Mapea el mercado",
+        "why": "Acepta los competidores que de verdad lo son y genera los gráficos de posicionamiento. Las ideas nacen de los huecos que salen a la luz.",
+        "actionDiscover": "Descubre y acepta al menos 2 competidores",
+        "actionCharts": "Genera las matrices de posicionamiento",
+        "detailDone": "{charts, number} gráficos · {competitors, number} competidores aceptados",
+        "detailPartial": "{accepted, number} de {total, number} competidores aceptados · aún sin gráficos",
+        "detailNone": "Aún no se han descubierto competidores"
+      },
+      "keywords": {
+        "title": "Analiza las keywords de la competencia",
+        "why": "Muestra qué temas dominan tus competidores y cuáles dejan libres. De ahí sale el enfoque del contenido.",
+        "action": "Ejecuta el análisis de keywords",
+        "detailDone": "{count, number} competidores analizados",
+        "detailTodo": "Aún sin analizar"
+      },
+      "narrative": {
+        "title": "Decide qué defiendes",
+        "why": "Tres o cuatro argumentos que cada publicación debe hacer avanzar, para que el contenido sume en lugar de ser cuarenta publicaciones sin relación. Se redactan a partir de la información anterior.",
+        "action": "Redacta la narrativa",
+        "detailDone": "{count, number} líneas narrativas",
+        "detailTodo": "Aún sin posicionamiento"
+      },
+      "channel": {
+        "title": "Conecta un lugar donde publicar",
+        "why": "Una cuenta social o tu propio sitio web. Sin uno, los borradores no tienen adónde ir.",
+        "action": "Conecta una cuenta o añade un sitio",
+        "detailDone": "Conectado",
+        "detailNamed": "{name}",
+        "detailTodo": "Nada conectado"
+      },
+      "autopilot": {
+        "title": "Activa el Autopilot",
+        "why": "Contivo genera ideas, redacta, revisa la calidad y publica según tu calendario sin que tengas que pedírselo.",
+        "actionReview": "Revisa la política",
+        "actionEnable": "Activa y guarda la política",
+        "detailOn": "En marcha",
+        "detailOff": "Desactivado"
+      }
+    },
+    "blockers": {
+      "brandMemory": "la memoria de marca",
+      "acceptedCompetitors": "competidores aceptados",
+      "marketMap": "el mapa del mercado",
+      "connectedChannel": "un canal conectado",
+      "narrative": "una narrativa que hacer avanzar",
+      "intelligenceSteps": "los pasos de análisis anteriores"
+    },
+    "gates": {
+      "acceptCompetitors": "Primero acepta competidores",
+      "matricesAndKeywords": "Requiere matrices y keywords",
+      "marketMap": "Requiere el mapa del mercado",
+      "narrative": "Requiere una narrativa",
+      "fullIntelligence": "Requiere el análisis completo"
+    }
+  },
+  "journeyGuide": {
+    "complete": "Configuración completa: marca, mercado, keywords, canal y Autopilot ya están listos.",
+    "whatNow": "¿Y ahora qué?",
+    "youAreHere": "Estás aquí:",
+    "needs": "Requiere {what}",
+    "doneHeadline": "La configuración está completa.",
+    "doneRunning": "El Autopilot está activado. {scheduled, plural, one {# publicación} other {# publicaciones}} en cola, {published, number} publicadas hasta ahora. No hace falta que hagas nada; revisa el historial de ejecuciones del Autopilot si quieres ver qué decidió.",
+    "doneIdle": "Todo está conectado y analizado. Genera ideas a mano o activa el Autopilot para que funcione sin ti.",
+    "nextHeadline": "Siguiente: {step}",
+    "nextBody": "{why} Ahora mismo: {detail}.",
+    "gateBlocked": "Este paso aún no está listo: {reason}.",
+    "gateConsequence": "Si lo ejecutas ahora, no obtendrás nada útil.",
+    "setup": "Configuración",
+    "explainStep": "Explicar este paso",
+    "dismiss": "Descartar",
+    "writtenForBrand": "escrito para esta marca",
+    "guideLabel": "guía"
+  }
+}

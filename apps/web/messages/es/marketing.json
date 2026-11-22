@@ -1,0 +1,261 @@
+{
+  "meta": {
+    "title": "Contivo — Marketing en piloto automático",
+    "description": "Contivo convierte tu web en memoria de marca, inteligencia competitiva y un piloto automático de publicación: escribe, revisa y publica por ti, con el calendario que tú decidas."
+  },
+  "nav": {
+    "refusal": "La negativa",
+    "intelligence": "Inteligencia",
+    "autopilot": "Autopilot",
+    "pricing": "Precios",
+    "signIn": "Iniciar sesión",
+    "startFree": "Empieza gratis",
+    "features": "Funciones"
+  },
+  "localeSwitcher": {
+    "label": "Idioma",
+    "en": "English",
+    "fa": "فارسی",
+    "it": "Italiano",
+    "es": "Español",
+    "he": "עברית"
+  },
+  "intake": {
+    "label": "Empieza por lo único que necesita",
+    "placeholder": "tu-empresa.com",
+    "submit": "Lee mi web",
+    "submitting": "Abriendo…",
+    "errorEmpty": "Escribe la dirección de la web que quieres que lea.",
+    "errorInvalid": "Eso no parece la dirección de una web.",
+    "hint": "Ahora viene un registro breve. La dirección se queda contigo."
+  },
+  "home": {
+    "actOne": {
+      "headline": "Dale tu web. <accent>Quédate</accent> con el resto del día.",
+      "body": "Contivo convierte tu web en una memoria de marca, identifica a los competidores que de verdad tienes y descubre qué palabras clave te dejan libres. Solo entonces escribe, y solo publica lo que supera un filtro de calidad diseñado para rechazarlo.",
+      "evidence": {
+        "readTime": "Tiempo para leer una web",
+        "readTimeValue": "≈ 20 s",
+        "readCost": "Coste de IA de esa lectura",
+        "readCostValue": "$0.03",
+        "competitors": "Competidores identificados",
+        "competitorsValue": "5 de 9 conservados",
+        "charts": "Gráficos de posicionamiento creados",
+        "chartsValue": "5",
+        "note": "Medido en un workspace de ejemplo creado a partir de una web pública mientras escribíamos esta página, no en la cuenta de un cliente."
+      }
+    },
+    "reel": {
+      "headline": "El ciclo completo, en veintidós segundos.",
+      "body": "Cómo una URL se convierte en una memoria de marca, un mapa del mercado, una negativa y una semana de publicaciones que salieron solas.",
+      "videoAlt": "Recorrido animado por Contivo: se lee la dirección de una web y se convierte en memoria de marca, los competidores aparecen en un gráfico de posicionamiento, la generación de ideas sigue bloqueada hasta que existe la inteligencia, un borrador supera el filtro de calidad y una semana se llena de publicaciones programadas.",
+      "caption": "Una animación explicativa, no una grabación de pantalla: las capturas de más abajo son el producto real. Sin sonido.",
+      "reducedNote": "En pausa porque tu sistema pide reducir el movimiento.",
+      "play": "Reproducir",
+      "pause": "Pausar"
+    },
+    "intelligence": {
+      "headline": "La mayoría de las herramientas parten de un prompt en blanco. <accent>Y se nota</accent>.",
+      "brandTitle": "Tu marca, contada de vuelta",
+      "brandBody": "Pega una URL. Contivo extrae el resumen del negocio, la propuesta de valor, el público al que de verdad te diriges y el tono en el que escribes, y te deja corregirlo todo. Cada borrador posterior se construye a partir de esto, no de tu prompt.",
+      "brandAlt": "Pantalla de memoria de marca de Contivo con el resumen del negocio extraído, la propuesta de valor, el perfil del público objetivo y etiquetas del tono de marca.",
+      "marketTitle": "El mercado, contigo dentro",
+      "marketBody": "Encuentra competidores de tu tamaño, comprueba que existen y te deja descartar los que en realidad no lo son. Los que quedan se puntúan en gráficos de posicionamiento hechos para tu mercado, y tú apareces entre ellos, no descrito en un párrafo.",
+      "marketAlt": "Gráfico del panorama competitivo de Contivo que sitúa la marca del cliente entre los competidores encontrados según tamaño de audiencia y sofisticación del producto."
+    },
+    "actTwo": {
+      "headline": "<accent>Todavía</accent> no va a escribir.",
+      "body": "La generación de ideas está bloqueada hasta que existe la inteligencia que la sostiene. No puedes convencerlo para saltársela, y el modelo tampoco. Es precisamente lo que hace que el resultado merezca la pena.",
+      "chainAlt": "Cadena de configuración de Contivo en un workspace real: memoria de marca, mapa del mercado, palabras clave de la competencia y un canal de publicación completados; el siguiente paso es decidir qué defiende la marca.",
+      "chainCaption": "La cadena real, en el producto real. Cada paso se desbloquea solo cuando el anterior se ha ejecutado.",
+      "checksTitle": "Comprobaciones que no admiten discusión",
+      "checks": {
+        "limits": "Los límites de cada plataforma y el rango de palabras que fijes",
+        "scaffolding": "Restos de plantilla, marcadores de posición, «como IA…»",
+        "blocklist": "Tu lista de temas prohibidos, en el cuerpo y no solo en el título",
+        "duplicates": "Textos casi idénticos a algo ya publicado"
+      },
+      "judgeTitle": "Un juez con derecho a veto",
+      "judge": {
+        "scores": "Puntúa de uno a diez el encaje con la marca, la seguridad factual y la claridad",
+        "strictest": "La seguridad factual es el umbral más exigente de los tres",
+        "vetoes": "Veta estadísticas inventadas, estudios con nombre y anécdotas de clientes",
+        "held": "¿Los dos proveedores caídos? La publicación se retiene. Nunca sale sin revisar."
+      }
+    },
+    "actThree": {
+      "headline": "Luego escribe. Y <accent>publica</accent>.",
+      "body": "Tú eliges la frecuencia, los canales y las horas en las que puede publicar. Mantiene llena la semana siguiente, reparte las publicaciones dentro de tu franja, evita repetirse y vuelve a intentarlo cuando la cola se queda corta. Nadie aprueba nada, salvo que tú quieras.",
+      "cadence": "Frecuencia",
+      "cadenceValue": "De 1 a 14 publicaciones por semana, siempre con 7 días cubiertos",
+      "channels": "Canales",
+      "channelsValue": "LinkedIn · tu propia web",
+      "window": "Franja",
+      "windowValue": "Los días y horas locales que elijas",
+      "steering": "Dirección",
+      "steeringValue": "Un objetivo, temas en los que insistir y temas que nunca tocar",
+      "postAlt": "Pipeline de Contivo en un workspace real: publicaciones de LinkedIn que escribió, dos publicadas y una en borrador con su fecha de publicación, cada una con su objetivo de palabras.",
+      "postCaption": "El pipeline de un workspace real, capturado para esta página."
+    },
+    "channels": {
+      "headline": "Redes sociales mediante OAuth. Tu propia web con una sola clave.",
+      "body": "Conecta tu perfil de LinkedIn una vez y Contivo publica en tu nombre. Para tu propia web, con cualquier tecnología y en cualquier hosting, recibes una clave de API y tu web lee sus publicaciones. Nunca se introduce nada en tu código ni se instala ningún plugin. X todavía no está activado, e Instagram, Facebook y TikTok necesitan antes pasar la revisión de apps de cada plataforma.",
+      "connect": "Conecta",
+      "connectBody": "Un paso de OAuth para LinkedIn, o una clave para tu web.",
+      "schedule": "Programa",
+      "scheduleBody": "Contivo elige huecos dentro de la franja que permitiste.",
+      "publish": "Publica",
+      "publishBody": "Un programador se ejecuta cada minuto y publica lo que toca.",
+      "record": "Registra",
+      "recordBody": "Cada ejecución queda registrada paso a paso, incluido lo que rechazó."
+    },
+    "close": {
+      "headline": "Pega una URL y vuelve a tu <accent>trabajo</accent>.",
+      "body": "Regístrate, dale tu dirección y convertirá tu web en una memoria de marca y un mapa competitivo. A partir de ahí la cola se llena sola, y lo único que no hará es publicar algo que no pueda respaldar.",
+      "cta": "Crea tu workspace",
+      "pricing": "Ver precios"
+    },
+    "loop": {
+      "title": "El ciclo",
+      "sub": "cada semana, por sí solo",
+      "position": "{n} de 06",
+      "tabsLabel": "Etapas del ciclo",
+      "stages": {
+        "know": {
+          "name": "Conocer",
+          "short": "memoria de marca",
+          "title": "Tu marca, contada de vuelta.",
+          "body": "Resumen del negocio, propuesta de valor, público y tono, extraídos de tu web, y todo a tu disposición para corregirlo."
+        },
+        "watch": {
+          "name": "Observar",
+          "short": "mapa del mercado",
+          "title": "El mercado, contigo dentro.",
+          "body": "Competidores de tu tamaño, verificados, puntuados en gráficos de posicionamiento hechos para tu mercado y contigo situado entre ellos."
+        },
+        "think": {
+          "name": "Pensar",
+          "short": "bloqueado hasta 01–02",
+          "title": "Todavía no va a escribir.",
+          "body": "La generación de ideas sigue bloqueada hasta que existe la inteligencia que la sostiene. Ni tú ni el modelo pueden saltársela."
+        },
+        "make": {
+          "name": "Crear",
+          "short": "borradores que superan el filtro",
+          "title": "Luego escribe.",
+          "body": "Solo lo que supera un filtro de calidad diseñado para rechazarlo: primero comprobaciones estrictas, después un juez con derecho a veto."
+        },
+        "ship": {
+          "name": "Publicar",
+          "short": "tus canales",
+          "title": "Y publica.",
+          "body": "De 1 a 14 publicaciones por semana, dentro de los días y horas que permitas, en LinkedIn o en tu propia web."
+        },
+        "learn": {
+          "name": "Aprender",
+          "short": "cada ejecución registrada",
+          "title": "Cada ejecución, documentada.",
+          "body": "Cada ejecución queda registrada paso a paso, incluido lo que rechazó."
+        }
+      }
+    },
+    "steps": {
+      "heading": "Lo que hace la primera lectura · ≈ 20 s",
+      "read": "Leyendo tus páginas",
+      "memory": "Escribiendo tu memoria de marca",
+      "competitors": "Buscando competidores de tu tamaño",
+      "charts": "Puntuando los gráficos de posicionamiento"
+    },
+    "tryIt": {
+      "label": "Pruébalo",
+      "button": "Haz que escriba una publicación ya",
+      "attempts": "{count, plural, =0 {Aún no lo has pulsado} one {Pulsado una vez · sigue bloqueado} other {Pulsado # veces · sigue bloqueado}}",
+      "lines": {
+        "0": "Púlsalo. Es el botón que cualquier otra herramienta te da primero.",
+        "1": "Bloqueado. Las ideas necesitan las palabras clave de la competencia, y el paso 03 no se ha ejecutado.",
+        "2": "Sigue bloqueado. Pedirlo otra vez no crea la inteligencia que hace falta.",
+        "3": "El modelo recibe la misma respuesta que tú. No hay prompt que abra esto.",
+        "4": "Completa el 03 —Palabras clave— y la generación de ideas se desbloquea sola."
+      },
+      "chain": {
+        "brand": "Memoria de marca",
+        "market": "Mapa del mercado",
+        "keywords": "Palabras clave",
+        "ideas": "Ideas",
+        "channel": "Canal",
+        "autopilot": "Autopilot",
+        "done": "hecho",
+        "next": "siguiente",
+        "locked": "bloqueado"
+      }
+    },
+    "cadence": {
+      "label": "Prueba una frecuencia",
+      "value": "{count, plural, one {# publicación por semana} other {# publicaciones por semana}}",
+      "caption": "Repartidas en tu franja, nunca dos de la misma idea seguidas."
+    },
+    "log": {
+      "title": "Registro de ejecución · ejemplo",
+      "replay": "Repetir",
+      "rows": {
+        "r1": {
+          "kind": "Plan",
+          "text": "La semana tiene 3 huecos libres en tu franja"
+        },
+        "r2": {
+          "kind": "Borrador",
+          "text": "LinkedIn, a partir de una de tus líneas narrativas"
+        },
+        "r3": {
+          "kind": "Rechazado",
+          "text": "Veto del juez: citaba un estudio que no existe"
+        },
+        "r4": {
+          "kind": "Borrador",
+          "text": "Reescrito sin esa afirmación"
+        },
+        "r5": {
+          "kind": "Aprobado",
+          "text": "Encaje con la marca, seguridad factual y claridad por encima del umbral"
+        },
+        "r6": {
+          "kind": "Programado",
+          "text": "Jueves, dentro de tu franja de publicación"
+        }
+      }
+    },
+    "chapters": {
+      "thinkLabel": "Pensar y negarse",
+      "makeShip": "Crear · Publicar"
+    }
+  },
+  "footer": {
+    "blurb": "Convierte tu web en memoria de marca y un mapa competitivo, y después escribe, revisa y publica con el calendario que tú decidas.",
+    "provenance": "Construido y usado primero en las webs de su propio fundador. Desde entonces, 23 usuarios de acceso anticipado han pagado por él; ninguno aparece aquí sin su permiso.",
+    "productTitle": "El producto",
+    "intelligence": "Inteligencia",
+    "qualityGate": "El filtro de calidad",
+    "autopilot": "Autopilot",
+    "pricing": "Precios",
+    "publishesTitle": "Publica en",
+    "ownSite": "Tu propia web",
+    "accountTitle": "Cuenta",
+    "signIn": "Iniciar sesión",
+    "createWorkspace": "Crear un workspace",
+    "copyright": "© {year} Contivo",
+    "companyTitle": "Empresa",
+    "about": "Quiénes somos",
+    "blog": "Blog",
+    "contact": "Contacto",
+    "privacy": "Privacidad",
+    "terms": "Términos",
+    "socialSoon": "X · Telegram · WordPress · Threads",
+    "soon": "Próximamente",
+    "writeTo": "Escribe a una persona",
+    "navLabel": "Sitio",
+    "features": "Funciones",
+    "compare": "Comparativa",
+    "product": "Cómo funciona",
+    "why": "Por qué Contivo"
+  }
+}

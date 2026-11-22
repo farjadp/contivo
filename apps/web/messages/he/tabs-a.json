@@ -1,0 +1,398 @@
+{
+  "tabsA": {
+    "common": {
+      "attachFiles": "צירוף קבצים (PDF/TXT/MD/CSV/JSON)",
+      "maxFiles": "עד {count, number}",
+      "extracting": "מחלצים טקסט מהקבצים המצורפים...",
+      "tokensApprox": "חולצו כ-{count, number} טוקנים",
+      "remove": "הסרה",
+      "cancel": "ביטול",
+      "date": "תאריך",
+      "time": "שעה",
+      "timezone": "אזור זמן"
+    },
+    "channels": {
+      "linkedin": "LinkedIn",
+      "twitter": "X (Twitter)",
+      "instagram": "Instagram",
+      "blog": "בלוג",
+      "email": "אימייל"
+    },
+    "goals": {
+      "authority": "סמכות מקצועית",
+      "awareness": "מודעות",
+      "engagement": "מעורבות",
+      "leads": "לידים",
+      "education": "הסברה",
+      "conversion": "המרה",
+      "strategic_education": "הסברה אסטרטגית",
+      "decision_support": "תמיכה בהחלטה"
+    },
+    "platforms": {
+      "linkedin": "LinkedIn",
+      "x": "X / Twitter",
+      "blog": "בלוג",
+      "email": "אימייל",
+      "landing_page": "דף נחיתה",
+      "ad": "קופי למודעה",
+      "strategy_note": "הערת אסטרטגיה"
+    },
+    "funnel": {
+      "AUTO": "אוטומטי",
+      "TOFU": "TOFU",
+      "MOFU": "MOFU",
+      "BOFU": "BOFU"
+    },
+    "frameworks": {
+      "hook_value_cta": "הוק ← ערך ← קריאה לפעולה",
+      "problem_cause_solution": "בעיה ← סיבה ← פתרון",
+      "what_why_how": "מה ← למה ← איך",
+      "opinion_reason_example": "דעה נחרצת ← נימוק ← דוגמה",
+      "aida": "AIDA",
+      "insight_implication_action": "תובנה ← משמעות ← פעולה"
+    },
+    "wordCountPlatforms": {
+      "blog": "בלוג / מאמר",
+      "linkedin": "LinkedIn",
+      "twitter": "Twitter / X",
+      "email": "אימייל",
+      "instagram": "Instagram"
+    },
+    "timezones": {
+      "America/Toronto": "שעון החוף המזרחי (ET)",
+      "America/Los_Angeles": "שעון החוף המערבי (PT)",
+      "Europe/London": "לונדון (GMT)"
+    },
+    "contentStatus": {
+      "DRAFT": "טיוטה",
+      "GENERATED": "נוצר",
+      "READY": "מוכן",
+      "SCHEDULED": "מתוזמן",
+      "PUBLISHED": "פורסם",
+      "FAILED": "נכשל"
+    },
+    "autopilot": {
+      "agents": {
+        "title": "סוכנים",
+        "body": "כל סוכן הוא משימה אחת עם קצב, ערוצים והכוונה משלו. כולם חולקים את המודיעין של סביבת העבודה ואף פעם לא תופסים את אותה משבצת זמן פעמיים.",
+        "new": "סוכן חדש",
+        "on": "פעיל",
+        "off": "כבוי",
+        "postsPerWeek": "{count, number} בשבוע",
+        "noChannel": "אין ערוץ",
+        "lastRun": "הרצה אחרונה {date}",
+        "created": "{name} נוצר. בדקו את ההגדרות ואז הפעילו אותו.",
+        "recipesTitle": "התחלה מתבנית"
+      },
+      "recipes": {
+        "requiresSite": "דורש אתר",
+        "requiresSocial": "דורש חשבון ברשת חברתית",
+        "requiresEither": "כל ערוץ",
+        "linkedin_voice": {
+          "name": "הקול שלכם ב-LinkedIn",
+          "tagline": "פוסטים קצרים עם עמדה, בקול שלכם, כמה פעמים בשבוע."
+        },
+        "blog_writer": {
+          "name": "כותב בלוג",
+          "tagline": "מאמרים ארוכים שמתפרסמים ישירות באתר שלכם."
+        },
+        "thought_leader": {
+          "name": "מוביל דעה",
+          "tagline": "פחות פוסטים, טיעונים גדולים יותר, מכוונים לקונה שלכם."
+        },
+        "product_updates": {
+          "name": "מוצרים ומבצעים",
+          "tagline": "הופך את מה שאתם מוכרים לפעימה קבועה."
+        },
+        "custom": {
+          "name": "סוכן מותאם אישית",
+          "tagline": "מתחילים מאפס ומגדירים כל פרט בעצמכם."
+        }
+      },
+      "status": {
+        "defaultName": "טייס אוטומטי",
+        "body": "כשהוא פעיל, Contivo מעלה רעיונות, מנסח ומתזמן פוסטים בשבילכם לפי קצב קבוע — בלי לחיצות. הפרסום קורה אוטומטית כשמגיעה כל משבצת זמן.",
+        "label": "סטטוס:",
+        "on": "פעיל",
+        "off": "כבוי",
+        "lastRun": "הרצה אחרונה: {date}",
+        "nextRun": "הרצה הבאה: {date}"
+      },
+      "actions": {
+        "runNow": "הרצה עכשיו",
+        "running": "רץ…",
+        "runNowTitle": "הרצת מחזור אחד עכשיו",
+        "runDisabledTitle": "קודם צריך להפעיל ולשמור",
+        "save": "שמירה",
+        "saving": "שומרים…"
+      },
+      "messages": {
+        "savedOn": "הטייס האוטומטי פעיל. ההרצה המתוזמנת הבאה תמלא את התור שלכם.",
+        "savedOff": "הגדרות הטייס האוטומטי נשמרו (כרגע כבוי).",
+        "runResult": "ההרצה {status}: {scheduled, number} תוזמנו, {skipped, number} דולגו.",
+        "runResultWithReason": "ההרצה {status}: {scheduled, number} תוזמנו, {skipped, number} דולגו — {reason}."
+      },
+      "warnings": {
+        "ideation": "סביבת העבודה הזו עדיין לא יכולה להעלות רעיונות. הטייס האוטומטי צריך זיכרון מותג, מטריצות שוק ומילות המפתח של המתחרים — הריצו קודם את הלשוניות האלה. עד אז ההרצות ידולגו.",
+        "channels": "אף אחד מהערוצים שנבחרו עדיין לא יכול לפרסם. ערוצים חברתיים צריכים חשבון ברירת מחדל מחובר, ובלוג צריך אתר — הגדירו אחד בדף <link>החיבורים</link>, אחרת הטייס האוטומטי ידלג על כל הרצה."
+      },
+      "form": {
+        "enable": "הפעלת הטייס האוטומטי בסביבת העבודה הזו",
+        "postsPerWeek": "פוסטים בשבוע",
+        "postsPerWeekHint": "הטייס האוטומטי דואג שב-7 הימים הקרובים יהיה תמיד המספר הזה של פוסטים.",
+        "timezone": "אזור זמן",
+        "timezoneHint": "שם IANA. חלון הפרסום והימים מחושבים לפי אזור הזמן הזה.",
+        "channels": "ערוצים",
+        "channelsHint": "נקודה ירוקה = הערוץ באמת יכול לפרסם (חשבון ברשת חברתית או אתר מחובר).",
+        "publishDays": "ימי פרסום",
+        "window": "חלון פרסום (שעות מקומיות)",
+        "windowTo": "עד",
+        "windowHint": "למשל 9 עד 18 = הפוסטים יתפרסמו בין 09:00 ל-17:59.",
+        "goal": "מטרה עיקרית",
+        "storylines": "אילו קווי עלילה הסוכן הזה מקדם",
+        "storylinesHint": "כולם, אלא אם תצמצמו. הסוכן מתחלף בין אלה שנבחרו, כדי שאותה טענה לא תחזור שבוע אחרי שבוע.",
+        "themes": "נושאים להתמקד בהם",
+        "themesPlaceholder": "למשל: אימוץ AI בעסקים קטנים, לקחים של מייסדים, עדכוני מוצר",
+        "themesHint": "מופרדים בפסיק או בשורה חדשה. מועברים ל-AI כהכוונה.",
+        "avoid": "לעולם לא לכתוב על",
+        "avoidPlaceholder": "למשל: מחירים, פוליטיקה, שמות של מתחרים",
+        "avoidHint": "רעיונות שהנושא שלהם כולל אחד מהביטויים האלה יוסרו.",
+        "requireReview": "בדיקת טיוטות לפני שהן מתפרסמות",
+        "requireReviewOff": "כבוי: טיוטות שעוברות את בדיקות האיכות מתפרסמות לפי התזמון.",
+        "requireReviewOn": "פעיל: כל טיוטה מחכה לכם בצנרת עד שתאשרו אותה."
+      },
+      "channelDot": {
+        "ready": "מוכן לפרסום",
+        "noSite": "אין חיבור פעיל לאתר",
+        "noAccount": "אין חשבון ברירת מחדל מחובר"
+      },
+      "days": {
+        "0": "א׳",
+        "1": "ב׳",
+        "2": "ג׳",
+        "3": "ד׳",
+        "4": "ה׳",
+        "5": "ו׳",
+        "6": "ש׳"
+      },
+      "narrative": {
+        "title": "הסוכן הזה מפרסם בלי נרטיב.",
+        "body": "הוא עדיין רץ, ושום דבר כאן לא חסום. אבל הפוסטים שלו לא בונים לשום כיוון, ולכן לא יצטברו למשהו לאורך חודש.",
+        "cta": "לתת לו עמדה"
+      },
+      "runs": {
+        "title": "היסטוריית הרצות",
+        "count": "{count, number} האחרונות",
+        "empty": "עדיין אין הרצות. הפעילו את הטייס האוטומטי ושמרו, או לחצו על הרצה עכשיו.",
+        "via": "דרך {trigger}",
+        "ideas": "{count, number} רעיונות",
+        "scheduled": "{count, number} תוזמנו",
+        "skipped": "{count, number} דולגו"
+      },
+      "runStatus": {
+        "SUCCEEDED": "הצליחה",
+        "PARTIAL": "חלקית",
+        "FAILED": "נכשלה",
+        "RUNNING": "רצה",
+        "QUEUED": "בתור",
+        "SKIPPED": "דולגה"
+      },
+      "runStatusLower": {
+        "SUCCEEDED": "הצליחה",
+        "PARTIAL": "הסתיימה חלקית",
+        "FAILED": "נכשלה",
+        "RUNNING": "רצה",
+        "QUEUED": "בתור",
+        "SKIPPED": "דולגה"
+      }
+    },
+    "ideation": {
+      "title": "תחנת הרעיונות",
+      "lede": "צרו רעיונות תוכן שעובדים, מותאמים לקהל ולעמודי התוכן של המותג. אנחנו משתמשים אך ורק בזיכרון המותג, במדדי השוק ובמילות המפתח של המתחרים כהקשר חובה.",
+      "requiredInputs": "קלט חובה להעלאת רעיונות: זיכרון המותג + מדדי השוק + מילות המפתח של המתחרים.",
+      "targetWords": "יעד מילים: {count, number} (טווח ל-{platform}: {min, number}-{max, number})",
+      "goalOption": "מטרה: {label}",
+      "platformOption": "פלטפורמה: {label}",
+      "funnelOption": "משפך: {label}",
+      "frameworkAuto": "מבנה: אוטומטי",
+      "frameworkManual": "מבנה: ידני",
+      "ideasLabel": "רעיונות",
+      "wordsLabel": "מילים",
+      "needImagesLabel": "צריך תמונות",
+      "imagesLabel": "תמונות",
+      "autoCalendarLabel": "יומן אוטומטי",
+      "generationPath": "דרך היצירה",
+      "directGenerate": "יצירה ישירה",
+      "sourceFormGenerate": "יצירה עם טופס מקור",
+      "sourcePlaceholder": "הדביקו את ההערות שלכם, תקציר מסמך, תסריט או רעיונות מרכזיים...",
+      "sourceNote": "טופס המקור הזה כללי, וישמש לכל התצוגות המקדימות שייווצרו בסבב הרעיונות הזה.",
+      "directNote": "מצב ישיר: יצירת רעיונות תוכן בלי הקשר מקור ידני.",
+      "generateCta": "{count, plural, one {יצירת # רעיון תוכן} other {יצירת # רעיונות תוכן}}",
+      "brainstorming": "מסיעים מוחות עם ה-AI...",
+      "selectedFramework": "המבנה שנבחר",
+      "overallScore": "ציון כולל: {score}/10",
+      "fallbackApplied": "הופעלה חלופה",
+      "imagesBadge": "תמונות: {count, number} (הראשונה = תמונת שער)",
+      "imagesBadgeNone": "תמונות: לא",
+      "calendarAuto": "יומן: הוספה אוטומטית (הדמיה)",
+      "calendarManual": "יומן: ידני",
+      "wordsBadge": "מילים: {count, number}",
+      "freshIdeas": "רעיונות חדשים נוצרו",
+      "freshIdeasCount": "({count, number})",
+      "formatFallback": "מאמר",
+      "pillarFallback": "כללי",
+      "imagesCount": "{count, number} תמונות",
+      "wordsCount": "{count, number} מילים",
+      "generatePreview": "יצירת תצוגה מקדימה",
+      "generatingPreview": "יוצרים תצוגה מקדימה...",
+      "addToPipeline": "הוספה לצנרת",
+      "addedToPipeline": "נוסף לצנרת",
+      "contentPreview": "תצוגה מקדימה של התוכן",
+      "closePreview": "סגירת התצוגה המקדימה",
+      "channelFallback": "תוכן",
+      "noPreview": "עדיין אין תוכן לתצוגה מקדימה.",
+      "errors": {
+        "unexpected": "אירעה שגיאה לא צפויה בזמן העלאת הרעיונות.",
+        "previewFailed": "יצירת התצוגה המקדימה נכשלה.",
+        "maxFiles": "אפשר לצרף עד {count, number} קבצים.",
+        "readFailed": "לא הצלחנו לקרוא את \"{name}\". השתמשו בקובצי PDF/TXT/MD/CSV/JSON או הדביקו את הטקסט ידנית."
+      }
+    },
+    "pipeline": {
+      "empty": {
+        "title": "הצנרת שלכם ריקה",
+        "body": "עדיין אין כאן כלום. צרו רעיונות בתחנת הרעיונות, או כתבו פוסט בעצמכם.",
+        "cta": "לתחנת הרעיונות"
+      },
+      "wordsTarget": "יעד של {count, number} מילים",
+      "previewLabel": "תצוגה מקדימה",
+      "publishAt": "פרסום: {date} {time}",
+      "quickSchedule": {
+        "title": "תזמון פרסום מהיר",
+        "saving": "שומרים...",
+        "publish": "פרסום",
+        "note": "תזמון ברירת המחדל הוא {hours, number} שעות אחרי היצירה.",
+        "noteDraft": "צרו עכשיו כדי להחיל את התזמון הזה אוטומטית.",
+        "noteReady": "אפשר לעדכן אותו כאן בלחיצה אחת."
+      },
+      "source": {
+        "refineTitle": "שיפור עם מקור משלכם",
+        "useTitle": "שימוש במקור משלכם",
+        "hide": "הסתרה",
+        "addContext": "הוספת הקשר",
+        "wordCount": "מספר מילים ({platform} {min, number}-{max, number})",
+        "placeholder": "הדביקו הערות, רעיונות גולמיים, תמלול או נקודות מרכזיות...",
+        "note": "יצירת התוכן תעדיף את ההערות הידניות שלכם, את טקסט המקור המצורף ואת יעד המילים."
+      },
+      "actions": {
+        "generate": "יצירה, תזמון ותצוגה מקדימה",
+        "edit": "עריכה",
+        "approve": "אישור הרעיון",
+        "reschedule": "תזמון מחדש",
+        "publish": "פרסום"
+      },
+      "editor": {
+        "eyebrow": "עריכה ותזמון של הפוסט",
+        "close": "סגירת התצוגה המקדימה",
+        "draftLabel": "טיוטת התוכן",
+        "scheduleTitle": "תזמון הפרסום",
+        "dateOptional": "תאריך (לא חובה)",
+        "timeOptional": "שעה (לא חובה)",
+        "blankNote": "השאירו את התאריך והשעה ריקים כדי לשמור פשוט כ\"מוכן\", או מלאו אותם כדי לסמן את הפוסט אוטומטית כ\"מתוזמן\".",
+        "save": "שמירת השינויים",
+        "titleLabel": "כותרת",
+        "slugLabel": "Slug לכתובת",
+        "slugFrozen": "קבוע אחרי הפרסום, כדי שכתובת הפוסט לא תשתנה לעולם.",
+        "slugAuto": "נוצר מהכותרת בזמן הפרסום.",
+        "saveFailed": "השינויים לא נשמרו. נסו שוב.",
+        "publishedEyebrow": "עריכת פוסט שפורסם",
+        "publishedNote": "השמירה מעדכנת מיד את המאמר החי באתר שלכם. הכתובת שלו נשארת אותה כתובת.",
+        "saveLive": "שמירה ועדכון באתר"
+      },
+      "scheduleModal": {
+        "title": "תזמון תוכן",
+        "confirm": "אישור התזמון"
+      },
+      "errors": {
+        "maxFiles": "אפשר לצרף עד {count, number} קבצים.",
+        "readFailed": "לא הצלחנו לקרוא את \"{name}\". השתמשו בקובצי PDF/TXT/MD/CSV/JSON או הדביקו את הטקסט ידנית.",
+        "own": {
+          "title_required": "הוסיפו כותרת.",
+          "title_too_long": "הכותרת צריכה להיות עד {max, number} תווים.",
+          "body_required": "כתבו את הפוסט לפני השמירה.",
+          "body_too_long": "הפוסט ארוך מ-{max, number} תווים.",
+          "slug_invalid": "השתמשו רק באותיות לטיניות קטנות, ספרות ומקפים בודדים.",
+          "slug_taken": "פוסט אחר בסביבת העבודה הזו כבר משתמש ב-slug הזה.",
+          "slug_frozen": "הפוסט הזה כבר פורסם, ולכן אי אפשר לשנות את ה-slug שלו.",
+          "not_found": "הפוסט הזה כבר לא קיים. רעננו את הדף.",
+          "invalid_channel": "בחרו בלוג או LinkedIn.",
+          "not_editable": "אפשר לערוך כאן רק פוסט בלוג שפורסם. רעננו את הדף.",
+          "unknown": "משהו השתבש. נסו שוב."
+        }
+      },
+      "write": {
+        "open": "כתיבת פוסט",
+        "title": "כתיבת פוסט משלכם",
+        "intro": "הטקסט שלכם, נשמר כ\"מוכן\". אפשר לתזמן אותו כמו כל פוסט אחר. בלי AI ובלי קרדיטים.",
+        "channelLabel": "פרסום ב",
+        "titleLabel": "כותרת",
+        "titlePlaceholder": "הכותרת שהקוראים יראו",
+        "slugLabel": "Slug לכתובת (לא חובה)",
+        "slugHint": "אותיות לטיניות קטנות, ספרות ומקפים. השאירו ריק כדי ליצור אחד מהכותרת.",
+        "slugHintNonLatin": "כותרת שלא כתובה באותיות לטיניות הופכת ל-post-xxxx. הגדירו slug בעצמכם כדי לקבל כתובת קריאה.",
+        "bodyLabel": "פוסט (Markdown)",
+        "bodyPlaceholder": "כתבו ב-Markdown: ## לכותרות, - לרשימות, **מודגש**.",
+        "save": "שמירת הפוסט",
+        "saving": "שומרים…",
+        "close": "סגירה"
+      },
+      "outcome": {
+        "published": "פורסם",
+        "publishedOn": "פורסם ב-<bdi>{platform}</bdi>",
+        "viewPost": "צפייה בפוסט",
+        "noLink": "הפלטפורמה לא החזירה קישור לפוסט.",
+        "failed": "לא פורסם",
+        "failedOn": "לא פורסם ב-<bdi>{platform}</bdi>",
+        "reasonLabel": "סיבה:",
+        "noReason": "לא נרשמה סיבה.",
+        "reconnect": "חיבור מחדש בדף החיבורים",
+        "connect": "פתיחת החיבורים"
+      }
+    },
+    "calendar": {
+      "title": "לוח התוכן",
+      "subtitle": "תזמון וציר זמן",
+      "weekView": "תצוגת שבוע",
+      "listView": "תצוגת רשימה",
+      "loadError": "טעינת פריטי הלוח נכשלה",
+      "emptyTitle": "הלוח שלכם ריק",
+      "emptyBody": "צרו תוכן חדש בתחנת הרעיונות ותזמנו אותו כדי למלא את ציר הזמן.",
+      "unscheduled": "לא מתוזמן",
+      "noTime": "בלי שעה",
+      "dayEmpty": "ריק"
+    },
+    "brandMemory": {
+      "badge": "זיכרון המותג",
+      "title": "יסודות המותג ושכבת הידע",
+      "body": "המדור הזה שומר על הקשר המותג שלכם יציב לאורך האסטרטגיה, התוכן והעיצוב. ה-AI מנסח את הגרסה הראשונה מתוך האתר שלכם, ואז הצוות שלכם מאשר ומשפר אותה.",
+      "assetsCount": "{count, number} נכסים",
+      "pendingCount": "{count, number} ממתינים לבדיקה",
+      "approvedCount": "{count, number} אושרו",
+      "businessSummary": "תקציר העסק",
+      "valueProposition": "הצעת ערך",
+      "audienceClarity": "בהירות הקהל",
+      "ready": "מוכן",
+      "needsReview": "דורש בדיקה",
+      "noSummary": "אין תקציר זמין.",
+      "noValueProposition": "לא הוגדרה הצעת ערך.",
+      "targetAudience": "קהל יעד",
+      "personaFallback": "קהל כללי",
+      "noAudience": "לא סופקו פרטים על הקהל.",
+      "brandTone": "טון המותג",
+      "toneNotSpecified": "לא צוין",
+      "pillarsTitle": "עמודי התוכן המרכזיים",
+      "pillarLabel": "עמוד תוכן {index, number}",
+      "noPillars": "לא הוגדרו עמודי תוכן."
+    }
+  }
+}

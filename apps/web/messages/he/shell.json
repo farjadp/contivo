@@ -1,0 +1,28 @@
+{
+  "shell": {
+    "nav": {
+      "overview": "היום",
+      "growth": "סביבות עבודה",
+      "connections": "חיבורים",
+      "instant": "תוכן מיידי",
+      "settings": "הגדרות"
+    },
+    "signOut": "התנתקות",
+    "header": {
+      "signIn": "התחברות",
+      "signUp": "הרשמה"
+    },
+    "credits": {
+      "label": "{count, number} קרדיטים"
+    },
+    "navLabel": "ראשי",
+    "account": "חשבון",
+    "notFound": {
+      "eyebrow": "שגיאה {code, number}",
+      "title": "הדף הזה לא נמצא",
+      "body": "ייתכן שהקישור ישן, או שהפוסט הועבר או שמעולם לא פורסם.",
+      "home": "חזרה לדף הבית",
+      "blog": "לבלוג"
+    }
+  }
+}

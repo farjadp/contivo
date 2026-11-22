@@ -158,12 +158,24 @@
     font-style: normal;
   }
 
-  /* Latin fragments inside Persian prose — brand names, URLs, model ids,
+  /* Hebrew surface. Putting Plex Sans Hebrew after the Latin faces is not
+     enough: next/font's metric fallbacks are local(Arial), which has Hebrew
+     glyphs on macOS, so every Hebrew character stopped there and the real face
+     never loaded. Like Vazirmatn on /fa, it carries the whole page instead;
+     its Latin cut is Plex Sans, so brand names and numbers keep the design.
+     Set on body because next/font declares these variables there. */
+  [lang='he'] body {
+    --font-display: var(--font-plex-hebrew);
+    --font-inter: var(--font-plex-hebrew);
+    --font-plex: var(--font-plex-hebrew);
+  }
+
+  /* Latin fragments inside Persian or Hebrew prose — brand names, URLs, model ids,
      version numbers — scramble the surrounding punctuation unless isolated. */
-  [lang='fa'] bdi,
-  [lang='fa'] code,
-  [lang='fa'] kbd,
-  [lang='fa'] samp {
+  [dir='rtl'] bdi,
+  [dir='rtl'] code,
+  [dir='rtl'] kbd,
+  [dir='rtl'] samp {
     unicode-bidi: isolate;
   }
 

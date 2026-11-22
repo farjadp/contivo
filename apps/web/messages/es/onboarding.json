@@ -1,0 +1,17 @@
+{
+  "onboarding": {
+    "stage": "Primeros pasos: configuración",
+    "welcome": {
+      "titleLead": "Empieza a",
+      "titleAccent": "dar forma",
+      "titleTail": "a tu sistema.",
+      "body": "Contivo pone orden en tu contenido. Elige un camino para construir tu estrategia a largo plazo, o salta la configuración y genera contenido al instante.",
+      "workspaceIndex": "01 — Recomendado",
+      "workspaceTitle": "Crear un workspace",
+      "workspaceBody": "Define la identidad de tu marca y pon en marcha un motor de marketing completo y basado en datos.",
+      "instantIndex": "02 — Vía rápida",
+      "instantTitle": "Contenido instantáneo",
+      "instantBody": "Sin configuración. Indica un tema, elige una plataforma y obtén publicaciones pulidas en segundos."
+    }
+  }
+}

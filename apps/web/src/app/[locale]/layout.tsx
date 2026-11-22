@@ -2,7 +2,15 @@ import { notFound } from 'next/navigation';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { getMessages, getTranslations, setRequestLocale } from 'next-intl/server';
 import type { Metadata } from 'next';
-import { Bricolage_Grotesque, IBM_Plex_Mono, IBM_Plex_Sans, Inter, JetBrains_Mono, Vazirmatn } from 'next/font/google';
+import {
+  Bricolage_Grotesque,
+  IBM_Plex_Mono,
+  IBM_Plex_Sans,
+  IBM_Plex_Sans_Hebrew,
+  Inter,
+  JetBrains_Mono,
+  Vazirmatn,
+} from 'next/font/google';
 
 import { GlobalHeader } from '@/components/layout/global-header';
 import { TimezoneProbe } from '@/components/layout/timezone-probe';
@@ -33,6 +41,19 @@ const vazir = Vazirmatn({
   subsets: ['arabic', 'latin'],
   variable: '--font-vazir',
   display: 'swap',
+});
+
+/*
+  None of the Latin faces has Hebrew glyphs. On /he, globals.css points the
+  display, sans and Plex variables at this face, the way Vazirmatn carries /fa.
+  Not preloaded: only /he needs it.
+*/
+const plexHebrew = IBM_Plex_Sans_Hebrew({
+  subsets: ['hebrew', 'latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-plex-hebrew',
+  display: 'swap',
+  preload: false,
 });
 
 export function generateStaticParams() {
@@ -69,6 +90,8 @@ export async function generateMetadata({
         en: '/en',
         fa: '/fa',
         it: '/it',
+        es: '/es',
+        he: '/he',
         'x-default': `/${routing.defaultLocale}`,
       },
     },
@@ -116,7 +139,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} dir={dir}>
       <body
-        className={`${inter.variable} ${display.variable} ${mono.variable} ${vazir.variable} ${plex.variable} ${plexMono.variable} font-sans bg-chalk text-moss antialiased`}
+        className={`${inter.variable} ${display.variable} ${mono.variable} ${vazir.variable} ${plexHebrew.variable} ${plex.variable} ${plexMono.variable} font-sans bg-chalk text-moss antialiased`}
       >
         <div hidden dangerouslySetInnerHTML={{ __html: `<!--${DIRECTION_CONTRACT}-->` }} />
         <NextIntlClientProvider messages={messages}>

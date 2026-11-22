@@ -1,0 +1,262 @@
+{
+  "legal": {
+    "common": {
+      "eyebrow": "Legal",
+      "updated": "Última actualización: {date}",
+      "shortVersion": "En resumen",
+      "contents": "Contenido",
+      "related": "También te puede interesar",
+      "links": {
+        "privacy": {
+          "title": "Privacidad",
+          "body": "Qué recopilamos, quién lo procesa y cómo pedir que se elimine."
+        },
+        "terms": {
+          "title": "Términos de uso",
+          "body": "Lo que aceptas, lo que prometemos y la política de reembolso."
+        },
+        "contact": {
+          "title": "Contacto",
+          "body": "Si esta página no responde a tu pregunta, la atiende una persona."
+        }
+      }
+    },
+    "privacy": {
+      "meta": {
+        "title": "Privacidad — Contivo",
+        "description": "Qué recopila Contivo, qué proveedores lo procesan, las tres cookies que utiliza y cómo solicitar la eliminación de tus datos."
+      },
+      "eyebrow": "Privacidad",
+      "headline": "Qué guardamos, y <accent>por qué</accent>.",
+      "intro": "Contivo lee tu web, escribe en tu nombre y, si lo permites, publica en tus cuentas. Eso requiere acceso real a datos reales. Esta página explica exactamente a cuáles, y qué no hacemos nunca con ellos. Contivo es operado por {entity}, con sede en Ontario (Canadá).",
+      "summary": [
+        "Recopilamos lo que el producto necesita para funcionar: tu cuenta, tu workspace y las cuentas que conectes. Nada con fines publicitarios.",
+        "Nunca vendemos tus datos, nunca te mostramos anuncios y no usamos cookies de seguimiento ni de analítica.",
+        "Tus textos se envían a proveedores de IA (OpenAI y Google) para analizarlos y redactar contenido. Así funciona el producto, y lo decimos claramente.",
+        "Escribe a {email} y eliminaremos tu cuenta y tu workspace en un plazo de 30 días."
+      ],
+      "sections": [
+        {
+          "id": "who",
+          "title": "Quién es el responsable",
+          "blocks": [
+            "Contivo es operado por {entity}, con sede en Ontario (Canadá). Somos responsables de la información personal descrita en esta página conforme a la Ley de Protección de Información Personal y Documentos Electrónicos de Canadá (PIPEDA).",
+            "Las preguntas y solicitudes sobre privacidad se envían a {email}. Esa bandeja la lee una persona, no un bot."
+          ]
+        },
+        {
+          "id": "collect",
+          "title": "Qué recopilamos",
+          "blocks": [
+            "Solo lo necesario para que el producto funcione:",
+            [
+              "Cuenta: tu dirección de correo electrónico, tu nombre si nos lo facilitas y tu contraseña. La contraseña se guarda únicamente como hash irreversible; no podemos leerla.",
+              "Workspace: la dirección web que nos indicas, lo que leemos de las páginas públicas de ese sitio y lo que Contivo construye a partir de ello: memoria de marca, competidores, palabras clave, estrategia, borradores y contenido publicado.",
+              "Cuentas conectadas: cuando conectas LinkedIn o X, un token de acceso que permite a Contivo publicar en tu nombre. Se almacena cifrado.",
+              "Tu propia web: si la conectas mediante la Site API, la clave que permite a Contivo publicar en ella.",
+              "Registros de uso: qué acciones de IA se ejecutaron y cuándo, y un registro de la actividad del workspace, para poder mostrarte qué ha pasado y mantener los costes bajo control.",
+              "Informes de errores: cuando algo falla, un informe técnico del fallo. Está configurado para no incluir tu información personal."
+            ],
+            "La facturación aún no está activa. Cuando lo esté, los pagos se procesarán a través de Stripe, y el número de tu tarjeta irá a Stripe, nunca a nosotros."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "Cómo la utilizamos",
+          "blocks": [
+            "Para hacer lo que nos pides: analizar tu web y tu mercado, redactar borradores, revisarlos y publicar lo que apruebes o lo que Autopilot tenga configurado para enviar.",
+            "Para que el servicio funcione y sea seguro: corregir errores, impedir abusos y aplicar los límites de uso.",
+            "Para escribirte sobre tu cuenta: avisos de seguridad, cambios en estas condiciones y, cuando exista, la facturación. Ningún correo de marketing salvo que lo pidas.",
+            "No vendemos ni alquilamos tus datos, no los usamos para publicidad y no entrenamos modelos propios con ellos."
+          ]
+        },
+        {
+          "id": "providers",
+          "title": "Quién más los procesa",
+          "blocks": [
+            "Contivo funciona sobre la infraestructura de otras empresas. Cada una recibe solo lo que necesita para su parte del trabajo:",
+            [
+              "OpenAI y Google (Gemini): el contenido de tu web, tu memoria de marca y tus instrucciones, para analizar, planificar y redactar. Lo que hacen con los datos de la API se rige por sus condiciones de la API.",
+              "DataForSEO: palabras clave y nombres de dominio, para obtener volúmenes de búsqueda y páginas de resultados. Ninguna información personal.",
+              "LinkedIn y X: las publicaciones que publicas, y solo una vez que hayas conectado la cuenta.",
+              "Vercel, Railway y Neon: el alojamiento y la base de datos, donde se almacena todo lo anterior.",
+              "Sentry: informes de errores.",
+              "Stripe: pagos, cuando la facturación esté activa."
+            ],
+            "Algunos de estos proveedores almacenan o procesan datos fuera de Canadá, incluso en Estados Unidos. Los datos que se encuentran allí pueden ser accesibles para las autoridades de ese país conforme a sus leyes."
+          ]
+        },
+        {
+          "id": "cookies",
+          "title": "Cookies",
+          "blocks": [
+            "Contivo utiliza tres cookies, todas necesarias para que el sitio funcione:",
+            [
+              "auth-token: mantiene tu sesión iniciada. Dura siete días y los scripts de la página no pueden leerla.",
+              "NEXT_LOCALE: recuerda el idioma que elegiste.",
+              "tz: tu zona horaria, para que las publicaciones programadas salgan a la hora que querías."
+            ],
+            "Sin cookies publicitarias, sin cookies de analítica y sin rastreadores de terceros. Por eso no hay banner de cookies."
+          ]
+        },
+        {
+          "id": "retention",
+          "title": "Cuánto tiempo los conservamos",
+          "blocks": [
+            "Mientras exista tu cuenta. Si nos pides que la eliminemos, borramos tu cuenta, tus workspaces, tu contenido y los tokens de las cuentas conectadas en un plazo de 30 días.",
+            "Hay dos excepciones. Los registros de pagos que la ley nos obliga a conservar se guardan durante el tiempo que establezca la ley. Y las publicaciones que ya se han publicado en LinkedIn, X o tu propia web permanecen allí: podemos eliminarlas de Contivo, pero borrarlas de esas plataformas se hace en las propias plataformas."
+          ]
+        },
+        {
+          "id": "rights",
+          "title": "Tus derechos",
+          "blocks": [
+            "Puedes solicitar ver la información personal que tenemos sobre ti, corregirla, recibir una copia o que la eliminemos. Escribe a {email}. Respondemos en un plazo de 30 días.",
+            "Puedes desconectar LinkedIn o X en cualquier momento desde la página de Conexiones. Contivo deja de publicar de inmediato y elimina el token.",
+            "Si no estás satisfecho con cómo gestionamos una reclamación, puedes presentarla ante la Oficina del Comisionado de Privacidad de Canadá."
+          ]
+        },
+        {
+          "id": "security",
+          "title": "Seguridad",
+          "blocks": [
+            "Las contraseñas se guardan como hash, los tokens de las cuentas conectadas están cifrados y todo viaja por HTTPS. El acceso a los datos de producción está limitado a las personas que gestionan el servicio.",
+            "Ningún sistema es completamente seguro. Si una brecha pone en riesgo real tu información, te lo comunicaremos a ti y al Comisionado de Privacidad, tal como exige la ley."
+          ]
+        },
+        {
+          "id": "children",
+          "title": "Menores",
+          "blocks": [
+            "Contivo es una herramienta para empresas y no está pensada para menores de 16 años. No recopilamos a sabiendas información de menores."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Cambios en esta página",
+          "blocks": [
+            "Cuando esta página cambie, la fecha de la parte superior cambiará con ella. Si un cambio afecta a lo que recopilamos o a quién lo recibe, enviaremos un correo a los titulares de las cuentas antes de que entre en vigor."
+          ]
+        }
+      ]
+    },
+    "terms": {
+      "meta": {
+        "title": "Términos de uso — Contivo",
+        "description": "El acuerdo entre tú y Contivo: acceso anticipado, tu contenido, el contenido generado por IA, las cuentas conectadas, el pago y el reembolso en 14 días."
+      },
+      "eyebrow": "Términos",
+      "headline": "Las reglas, en palabras <accent>claras</accent>.",
+      "intro": "Estos términos son el acuerdo entre tú y {entity}, que opera Contivo. Al crear una cuenta, los aceptas. Están escritos para leerse, así que léelos.",
+      "summary": [
+        "Lo que aportas y lo que Contivo escribe para ti te pertenece.",
+        "La IA puede equivocarse. El filtro de calidad detecta mucho, pero tú eres responsable de lo que se publica con tu nombre, incluido lo que publica Autopilot.",
+        "Contivo está en acceso anticipado y, por ahora, es gratis. Cuando empiece la facturación, podrás cancelar en cualquier momento.",
+        "En los 14 días siguientes a cualquier pago, pídenoslo y te lo reembolsamos íntegramente. Sin preguntas."
+      ],
+      "sections": [
+        {
+          "id": "agreement",
+          "title": "El acuerdo",
+          "blocks": [
+            "Estos términos son un acuerdo entre tú y {entity}, con sede en Ontario (Canadá). Si usas Contivo en nombre de una empresa, los aceptas en su nombre y confirmas que tienes autorización para hacerlo.",
+            "La página de Privacidad forma parte de este acuerdo. Explica qué hacemos con tus datos."
+          ]
+        },
+        {
+          "id": "early-access",
+          "title": "Acceso anticipado",
+          "blocks": [
+            "Contivo está en acceso anticipado. Las funciones cambiarán, se añadirán algunas y se eliminarán otras, y habrá interrupciones del servicio. Por ahora no garantizamos ningún nivel de disponibilidad.",
+            "Mientras la facturación no esté activa, usar Contivo es gratis. Antes de empezar a cobrar, te diremos cuánto cuesta, y no se cobrará nada sin tu consentimiento."
+          ]
+        },
+        {
+          "id": "account",
+          "title": "Tu cuenta",
+          "blocks": [
+            "Debes tener al menos 16 años, facilitar una dirección de correo electrónico real y no compartir tu contraseña. Todo lo que ocurra en tu cuenta es responsabilidad tuya, así que, si crees que otra persona tiene acceso, avísanos de inmediato."
+          ]
+        },
+        {
+          "id": "content",
+          "title": "Tu contenido",
+          "blocks": [
+            "Todo lo que aportas sigue siendo tuyo: tu web, tus textos, tu marca. Lo que Contivo escribe para ti también es tuyo, y puedes usarlo como quieras.",
+            "Para prestar el servicio, nos autorizas a almacenar y procesar ese contenido y a enviarlo a los proveedores indicados en la página de Privacidad. Esa autorización cubre únicamente el funcionamiento de Contivo para ti y termina cuando se elimina tu contenido.",
+            "Confirmas que tienes derecho sobre lo que aportas y derecho a publicar en cada cuenta que conectes."
+          ]
+        },
+        {
+          "id": "ai-output",
+          "title": "Lo que escribe la IA",
+          "blocks": [
+            "Contivo escribe con modelos de IA, y estos se equivocan: un dato erróneo, una cifra inventada, una afirmación que tu negocio no puede respaldar. El filtro de calidad está para detectarlos, y detecta muchos. No los detecta todos.",
+            "Eres responsable de lo que se publica con tu nombre. Si activas Autopilot, le estás indicando a Contivo que publique sin preguntarte cada vez, y la responsabilidad de esas publicaciones también es tuya. Si una publicación es importante, léela antes."
+          ]
+        },
+        {
+          "id": "use",
+          "title": "Lo que no puedes hacer",
+          "blocks": [
+            [
+              "Publicar spam o cualquier contenido ilegal, engañoso o que infrinja los derechos de otras personas.",
+              "Hacerte pasar por otra persona o conectar una cuenta sobre la que no tienes derechos.",
+              "Usar Contivo para sobrecargar o atacar otra web.",
+              "Eludir los límites de uso, o sondear o vulnerar la seguridad del servicio.",
+              "Revender Contivo a terceros sin un acuerdo con nosotros."
+            ],
+            "Si lo haces, podemos suspender o cerrar tu cuenta. Siempre que sea posible, te avisaremos antes."
+          ]
+        },
+        {
+          "id": "networks",
+          "title": "Redes conectadas",
+          "blocks": [
+            "Cuando conectas LinkedIn, X o tu propia web, también se aplican las normas de esa plataforma. Esas plataformas pueden cambiar sus API, restringir el acceso o desconectar una cuenta, y si lo hacen, la publicación a través de Contivo puede dejar de funcionar. Eso queda fuera de nuestro control y no somos responsables de ello."
+          ]
+        },
+        {
+          "id": "payment",
+          "title": "Pagos y reembolsos",
+          "blocks": [
+            "Cuando la facturación esté activa, los precios serán los que muestre la página de Precios en el momento de suscribirte. Las suscripciones se renuevan en cada periodo hasta que canceles. Al cancelar se detiene la siguiente renovación, y tu plan sigue activo hasta el final del periodo que hayas pagado.",
+            "En los 14 días siguientes a cualquier pago, escribe a {email} y te reembolsaremos ese pago íntegramente. No te preguntaremos el motivo.",
+            "Si cambiamos un precio, te avisaremos con al menos 30 días de antelación antes de que se te aplique. Se añadirán impuestos cuando la ley lo exija."
+          ]
+        },
+        {
+          "id": "ending",
+          "title": "Fin del acuerdo",
+          "blocks": [
+            "Puedes dejar de usar Contivo y solicitar la eliminación de tu cuenta en cualquier momento. Si antes quieres una copia de tu contenido, pídela y te la enviaremos.",
+            "Podemos cerrar las cuentas que incumplan estos términos. Si algún día cerramos Contivo, avisaremos con al menos 30 días de antelación para que puedas llevarte tu contenido."
+          ]
+        },
+        {
+          "id": "liability",
+          "title": "Responsabilidad",
+          "blocks": [
+            "Contivo se ofrece tal cual. En la medida en que la ley lo permita, no garantizamos que funcione sin interrupciones ni errores, ni que produzca un resultado empresarial concreto.",
+            "En la medida en que la ley lo permita, nuestra responsabilidad total frente a ti se limita a la mayor de estas cantidades: lo que nos hayas pagado en los 12 meses anteriores a la reclamación, o 100 dólares canadienses. No somos responsables de pérdidas indirectas, como lucro cesante o pérdida de datos. Nada de lo aquí dispuesto limita derechos que la ley no nos permite limitar."
+          ]
+        },
+        {
+          "id": "law",
+          "title": "Legislación aplicable",
+          "blocks": [
+            "Estos términos se rigen por las leyes de Ontario y por las leyes federales de Canadá aplicables en esa provincia. Cualquier disputa se someterá a los tribunales de Ontario."
+          ]
+        },
+        {
+          "id": "changes",
+          "title": "Cambios",
+          "blocks": [
+            "Si modificamos estos términos, cambiará la fecha de la parte superior. Si el cambio es relevante, te enviaremos un correo al menos 14 días antes de que entre en vigor. Si sigues usando Contivo después de esa fecha, aceptas los nuevos términos. Si no los aceptas, puedes cerrar tu cuenta.",
+            "Las preguntas sobre estos términos se envían a {email}."
+          ]
+        }
+      ]
+    }
+  }
+}

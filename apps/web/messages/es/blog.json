@@ -1,0 +1,31 @@
+{
+  "blog": {
+    "meta": {
+      "title": "Blog: marketing de contenidos, SEO y búsqueda con IA",
+      "description": "Cómo las pequeñas empresas aparecen en Google y se citan en las respuestas de la IA, escrito por el equipo que crea Contivo.",
+      "feedTitle": "Blog de Contivo"
+    },
+    "eyebrow": "Blog",
+    "title": "Aparecer en Google y en las respuestas de la IA",
+    "intro": "Notas prácticas sobre marketing de contenidos, SEO y búsqueda con IA para negocios sin equipo de contenido, de quienes crean Contivo.",
+    "empty": {
+      "title": "Aún no hay artículos",
+      "body": "Estamos escribiendo los primeros. Mientras tanto, puedes ver cómo funciona Contivo.",
+      "cta": "Mira cómo funciona"
+    },
+    "readMore": "Leer el artículo",
+    "minutes": "{count, number} min de lectura",
+    "published": "Publicado el {date}",
+    "updated": "Actualizado el {date}",
+    "by": "Por {author}",
+    "back": "Todos los artículos",
+    "crumbs": {
+      "home": "Inicio",
+      "blog": "Blog"
+    },
+    "rss": "Feed RSS",
+    "ctaTitle": "¿Quieres contenido así para tu negocio?",
+    "ctaBody": "Contivo estudia a tu competencia, crea un plan a partir de tu propia marca y escribe el contenido.",
+    "ctaStart": "Empieza gratis"
+  }
+}

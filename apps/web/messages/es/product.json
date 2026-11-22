@@ -1,0 +1,122 @@
+{
+  "product": {
+    "meta": {
+      "title": "Cómo funciona Contivo, de principio a fin",
+      "description": "Cada paso desde el registro hasta que los posts se publican solos: tu sitio web, tus competidores, una narrativa, LinkedIn y tu propio sitio, y Autopilot. Lo que haces tú, lo que hace Contivo y lo que conviene saber."
+    },
+    "eyebrow": "Cómo funciona",
+    "headline": "De una sola dirección a una semana que <accent>se publica sola</accent>.",
+    "intro": "Siete pasos, en el orden en que te guía el producto. Cada uno explica lo que haces tú y lo que hace Contivo, para que sepas a qué te apuntas antes de apuntarte.",
+    "stepsTitle": "Los pasos",
+    "itDoes": "Contivo",
+    "steps": {
+      "signUp": {
+        "title": "Regístrate",
+        "you": "Nombre, email y contraseña. Sin tarjeta, y nada se publica en ningún sitio hasta que tú mismo conectes un canal.",
+        "it": "Abre tu cuenta en acceso anticipado, gratis, y te ofrece dos caminos: crear un workspace o probar un único post al momento."
+      },
+      "website": {
+        "title": "Dale tu sitio web",
+        "you": "Escribe el nombre de tu empresa y la dirección de tu web.",
+        "it": "Lee tus páginas y te devuelve una memoria de marca: qué haces, qué prometes, para quién es y cómo suena. Tú corriges lo que no haya entendido bien. También hace una primera estimación de tus competidores."
+      },
+      "competitors": {
+        "title": "Confirma tus competidores",
+        "you": "Acepta, descarta o añade competidores. Todo lo que viene después se construye a partir de los que conserves.",
+        "it": "Crea gráficos de posicionamiento que te sitúan entre ellos y luego analiza qué vende cada uno y en qué búsquedas aparece. Las ideas no se desbloquean hasta que existen esos gráficos y esa investigación."
+      },
+      "narrative": {
+        "title": "Acuerda la historia",
+        "you": "Lee las líneas narrativas que propone y edítalas: qué afirma cada una, a quién se dirige y qué no debe decir nunca.",
+        "it": "Redacta tres o cuatro líneas narrativas a partir de la investigación. Cada idea posterior se vincula a una de ellas."
+      },
+      "connect": {
+        "title": "Conecta dónde publica",
+        "you": "Inicia sesión en LinkedIn una vez, o crea una clave para tu sitio web y pide a un desarrollador que la conecte.",
+        "it": "Publica en tu perfil personal de LinkedIn y pone tus artículos publicados a disposición de tu sitio mediante una API de solo lectura."
+      },
+      "autopilot": {
+        "title": "Activa Autopilot",
+        "you": "Elige una receta inicial, los días y horas en que puede publicar, tu zona horaria y cuántos posts a la semana, de uno a catorce. Decide si quieres aprobar cada post antes.",
+        "it": "Con la aprobación desactivada, cada borrador tiene que pasar igualmente el control de calidad antes de programarse. Con la aprobación activada, los borradores te esperan."
+      },
+      "running": {
+        "title": "Déjalo funcionar",
+        "you": "Échale un vistazo cuando quieras. Cada ejecución queda en el registro, incluido lo que se rechazó y por qué.",
+        "it": "Mantiene planificados los próximos siete días, vuelve a revisar cada día, reintenta cuando algo falla y reparte los posts dentro de tu horario. Cuando lo necesites, tienes un informe estratégico con todo lo que ha aprendido sobre tu mercado."
+      }
+    },
+    "recipesTitle": "Por dónde empieza casi todo el mundo",
+    "recipesIntro": "Autopilot incluye cinco puntos de partida. Cada uno es solo una configuración por defecto: cambia los días, las horas y el número de posts como quieras. Un workspace puede tener hasta ocho funcionando a la vez.",
+    "perWeek": "{count, plural, one {# post a la semana} other {# posts a la semana}}",
+    "recipes": {
+      "linkedinVoice": {
+        "name": "Voz en LinkedIn",
+        "body": "Posts en primera persona a partir de tu memoria de marca y de los huecos que dejan tus competidores.",
+        "when": "LinkedIn · de lunes a viernes, de 9:00 a 18:00"
+      },
+      "blogWriter": {
+        "name": "Redactor de blog",
+        "body": "Artículos de 600 a 2200 palabras orientados a los huecos de tu investigación competitiva, publicados en tu propio sitio.",
+        "when": "Tu sitio web · martes, de 8:00 a 12:00"
+      },
+      "thoughtLeader": {
+        "name": "Referente del sector",
+        "body": "Uno o dos posts de peso a la semana que toman postura, para cuando prefieres que te citen a que te vean a diario.",
+        "when": "LinkedIn · martes y jueves, de 7:00 a 10:00"
+      },
+      "productOffers": {
+        "name": "Productos y ofertas",
+        "body": "Posts sobre lo que vendes, planteados frente a lo que ofrecen tus competidores.",
+        "when": "LinkedIn · lunes y miércoles, de 10:00 a 16:00"
+      },
+      "custom": {
+        "name": "Personalizado",
+        "body": "El mismo motor, sin opiniones: tu frecuencia, tus canales, tu horario y tus indicaciones.",
+        "when": "LinkedIn o tu sitio web · tú eliges"
+      }
+    },
+    "needTitle": "Lo que necesitas",
+    "need": {
+      "website": {
+        "title": "Un sitio web",
+        "body": "Contivo parte de lo que tu propio sitio dice de ti."
+      },
+      "linkedin": {
+        "title": "Una cuenta de LinkedIn, para publicar allí",
+        "body": "Los posts se publican en tu perfil personal. Las páginas de empresa todavía no son compatibles."
+      },
+      "developer": {
+        "title": "Un desarrollador, una sola vez, para publicar en tu sitio",
+        "body": "Tu sitio obtiene sus artículos de la API de Contivo, con cualquier tecnología. Alguien tiene que añadirlo a tu sitio una vez. La documentación para desarrolladores explica cómo."
+      }
+    },
+    "knowTitle": "Conviene saber",
+    "know": {
+      "confirm": {
+        "title": "Los competidores necesitan tu sí",
+        "body": "Sus primeras estimaciones son solo sugerencias. No se analiza nada hasta que las aceptas."
+      },
+      "review": {
+        "title": "La aprobación está desactivada salvo que la actives",
+        "body": "Por defecto, los posts que pasan el control de calidad se publican solos. Activa la aprobación si quieres ver cada uno antes."
+      },
+      "reconnect": {
+        "title": "LinkedIn vuelve a pedir acceso cada 60 días",
+        "body": "La sesión de LinkedIn dura unos dos meses. Cuando caduca, vuelves a conectarte."
+      },
+      "estimates": {
+        "title": "Las puntuaciones de posicionamiento son estimaciones",
+        "body": "El modelo lee evidencias públicas y muestra su razonamiento, para que puedas discrepar."
+      },
+      "languages": {
+        "title": "Inglés o persa",
+        "body": "El contenido se escribe en uno de esos dos idiomas, que se elige para cada marca."
+      }
+    },
+    "featuresLink": "Ver todas las funciones, incluidas las que están por llegar",
+    "closeHeadline": "Empieza por el primer paso. Solo pide un nombre y una dirección.",
+    "closeCta": "Empieza gratis en acceso anticipado",
+    "closeWhy": "Por qué Contivo"
+  }
+}

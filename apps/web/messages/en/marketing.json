@@ -16,7 +16,9 @@
     "label": "Language",
     "en": "English",
     "fa": "فارسی",
-    "it": "Italiano"
+    "it": "Italiano",
+    "es": "Español",
+    "he": "עברית"
   },
   "intake": {
     "label": "Start with the only thing it needs",

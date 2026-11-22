@@ -8,17 +8,19 @@ import { defineRouting } from 'next-intl/routing';
  * workspace produces Persian articles rather than English ones with a Persian
  * menu around them. Anything added here has to answer all three questions.
  *
- * `it` is left-to-right and covered by the Latin font stack. Its workspaces
- * still write in English: the content language (see lib/content-language.ts)
- * is a Prisma enum with EN and FA only, so Italian is a UI language for now.
+ * `it` and `es` are left-to-right and covered by the Latin font stack. `he` is
+ * right-to-left and takes its glyphs from IBM Plex Sans Hebrew, the Hebrew
+ * cut of the face the marketing site already uses. All three write in English:
+ * the content language (see lib/content-language.ts) is a Prisma enum with EN
+ * and FA only, so they are UI languages for now.
  */
-export const locales = ['en', 'fa', 'it'] as const;
+export const locales = ['en', 'fa', 'it', 'es', 'he'] as const;
 export type Locale = (typeof locales)[number];
 
 export const defaultLocale: Locale = 'en';
 
 /** Right-to-left locales. Drives `dir`, the font stack and logical-CSS mirroring. */
-const RTL_LOCALES = new Set<Locale>(['fa']);
+const RTL_LOCALES = new Set<Locale>(['fa', 'he']);
 
 export function isRtl(locale: string): boolean {
   return RTL_LOCALES.has(locale as Locale);
