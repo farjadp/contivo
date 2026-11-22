@@ -15,6 +15,7 @@ export type OwnPostError =
   | 'slug_taken'
   | 'slug_frozen'
   | 'not_found'
+  | 'not_editable'
   | 'invalid_channel';
 
 export const POST_TITLE_MAX = 200;

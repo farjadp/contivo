@@ -5,20 +5,22 @@ import { Prisma } from '@prisma/client';
 // network, no database: prisma, the session and the activity log are mocked,
 // and fetch is stubbed so any network call fails the "no fetch" assertions.
 
-const { prismaMock, activityLogMock, sessionMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, sessionMock, revalidateMock } = vi.hoisted(() => ({
   prismaMock: {
     workspace: { findFirst: vi.fn() },
     contentItem: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
   },
   activityLogMock: vi.fn(),
   sessionMock: vi.fn(),
+  revalidateMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/auth', () => ({ getSession: sessionMock }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
+vi.mock('@/lib/site-api/publisher', () => ({ revalidateWorkspaceSite: revalidateMock }));
 
-import { createOwnPost, updateOwnPostMeta } from './own-post';
+import { createOwnPost, updatePublishedPost, updateOwnPostMeta } from './own-post';
 
 const fetchMock = vi.fn();
 
@@ -56,6 +58,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   sessionMock.mockResolvedValue({ userId: 'user-1' });
   prismaMock.workspace.findFirst.mockResolvedValue({ id: 'ws-1' });
+  revalidateMock.mockResolvedValue(true);
   prismaMock.contentItem.findFirst.mockResolvedValue(null);
   prismaMock.contentItem.create.mockImplementation(async (args: CreateArgs) => ({ id: 'new-1', ...args.data }));
   prismaMock.contentItem.update.mockImplementation(async (args: UpdateArgs) => ({
@@ -283,5 +286,102 @@ describe('updateOwnPostMeta', () => {
     const result = await updateOwnPostMeta({ contentId: 'item-1', title: 'a'.repeat(201) });
     expect(result).toEqual({ ok: false, error: 'title_too_long' });
     expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+  });
+});
+
+describe('updatePublishedPost', () => {
+  const published = (overrides: Record<string, unknown> = {}) =>
+    existingItem({
+      slug: 'live',
+      status: 'PUBLISHED',
+      publishedAtUtc: new Date('2026-11-01T00:00:00Z'),
+      scheduledAtUtc: new Date('2026-11-01T00:00:00Z'),
+      ...overrides,
+    });
+
+  it('updates only title and body of a published blog post and revalidates', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(published());
+    const result = await updatePublishedPost({ contentId: 'item-1', title: '  Fixed title ', content: '\nFixed body\n' });
+    expect(result.ok).toBe(true);
+    expect((prismaMock.contentItem.findFirst.mock.calls[0]?.[0] as FindArgs).where).toEqual({
+      id: 'item-1',
+      userId: 'user-1',
+    });
+    expect(updateCall().where).toEqual({ id: 'item-1' });
+    expect(updateCall().data).toEqual({ topic: 'Fixed title', content: 'Fixed body' });
+    expect(revalidateMock).toHaveBeenCalledWith('ws-1', 'live', 'post.updated');
+    expect(activityLogMock).toHaveBeenCalledWith({
+      userId: 'user-1',
+      workspaceId: 'ws-1',
+      action: 'CONTENT_EDITED_AFTER_PUBLISH',
+      detail: { contentId: 'item-1', revalidated: true },
+    });
+  });
+
+  it('returns not_found for an item the user does not own', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(null);
+    const result = await updatePublishedPost({ contentId: 'item-x', title: 'T', content: 'B' });
+    expect(result).toEqual({ ok: false, error: 'not_found' });
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(revalidateMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['READY', { status: 'READY', publishedAtUtc: null }],
+    ['SCHEDULED', { status: 'SCHEDULED', publishedAtUtc: null }],
+    ['PUBLISHING', { status: 'PUBLISHING' }],
+    ['linkedin', { channel: 'linkedin' }],
+    ['no workspace', { workspaceId: null }],
+  ])('refuses %s with not_editable', async (_label, overrides) => {
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(published(overrides));
+    const result = await updatePublishedPost({ contentId: 'item-1', title: 'T', content: 'B' });
+    expect(result).toEqual({ ok: false, error: 'not_editable' });
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(revalidateMock).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
+  it('validates title and body', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue(published());
+    expect(await updatePublishedPost({ contentId: 'item-1', title: ' ', content: 'B' })).toEqual({
+      ok: false,
+      error: 'title_required',
+    });
+    expect(await updatePublishedPost({ contentId: 'item-1', title: 'T', content: '  ' })).toEqual({
+      ok: false,
+      error: 'body_required',
+    });
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+  });
+
+  it('still saves when the revalidate ping fails', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(published());
+    revalidateMock.mockResolvedValue(false);
+    const result = await updatePublishedPost({ contentId: 'item-1', title: 'T', content: 'B' });
+    expect(result.ok).toBe(true);
+    expect(activityLogMock.mock.calls[0]?.[0]).toMatchObject({ detail: { contentId: 'item-1', revalidated: false } });
+  });
+
+  it('still saves when the revalidate helper throws', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(published());
+    revalidateMock.mockRejectedValue(new Error('boom'));
+    const result = await updatePublishedPost({ contentId: 'item-1', title: 'T', content: 'B' });
+    expect(result.ok).toBe(true);
+    expect(activityLogMock.mock.calls[0]?.[0]).toMatchObject({ detail: { contentId: 'item-1', revalidated: false } });
+    errSpy.mockRestore();
+  });
+
+  it('skips the ping when the published item has no slug', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValueOnce(published({ slug: null }));
+    const result = await updatePublishedPost({ contentId: 'item-1', title: 'T', content: 'B' });
+    expect(result.ok).toBe(true);
+    expect(revalidateMock).not.toHaveBeenCalled();
+    expect(activityLogMock.mock.calls[0]?.[0]).toMatchObject({ detail: { contentId: 'item-1', revalidated: null } });
+  });
+
+  it('throws Unauthorized without a session', async () => {
+    sessionMock.mockResolvedValue(null);
+    await expect(updatePublishedPost({ contentId: 'item-1', title: 'T', content: 'B' })).rejects.toThrow('Unauthorized');
   });
 });

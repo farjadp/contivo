@@ -3,7 +3,7 @@
 
 import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, Paperclip, Send, Save, PenLine } from 'lucide-react';
 import { updateContentStatus, scheduleContentItem, updateContentAndSchedule } from '@/app/actions/calendar';
-import { updateOwnPostMeta } from '@/app/actions/own-post';
+import { updateOwnPostMeta, updatePublishedPost } from '@/app/actions/own-post';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -299,6 +299,34 @@ function PipelineItemCard({
 
   const isSlugLocked =
     Boolean(currentItem.publishedAtUtc) || ['PUBLISHED', 'PUBLISHING'].includes(currentItem.status);
+
+  // A published blog post is edited in place: same URL, no schedule, the site updates on save.
+  // LinkedIn posts can't change once posted, so they never get here.
+  const isLiveEdit = currentItem.status === 'PUBLISHED' && currentItem.channel === 'blog';
+
+  const handleSavePublished = async () => {
+    setIsSavingEdits(true);
+    setEditError(null);
+    try {
+      const result = await updatePublishedPost({
+        contentId: currentItem.id,
+        title: editTitle,
+        content: editContentText,
+      });
+      if (!result.ok) {
+        setEditError({ field: ownPostErrorField(result.error), message: ownPostErrorMessage(t, result.error) });
+        return;
+      }
+      setCurrentItem(result.item);
+      setIsPreviewOpen(false);
+      router.refresh();
+    } catch (e) {
+      console.error(e);
+      setEditError({ field: 'form', message: t('pipeline.editor.saveFailed') });
+    } finally {
+      setIsSavingEdits(false);
+    }
+  };
 
   const openEditorModal = () => {
     setEditContentText(currentItem.content || '');
@@ -740,6 +768,16 @@ function PipelineItemCard({
               </button>
             ) : null}
 
+            {isLiveEdit ? (
+              <button
+                type="button"
+                onClick={openEditorModal}
+                className="text-moss-muted hover:text-moss font-bold items-center inline-flex gap-1"
+              >
+                {t('pipeline.actions.edit')}
+              </button>
+            ) : null}
+
             {['GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
               <>
                 <button
@@ -779,7 +817,12 @@ function PipelineItemCard({
         <div className="flex w-full max-w-4xl flex-col rounded-3xl border border-rule bg-chalk-raised shadow-2xl overflow-hidden h-[90vh]">
           <div className="flex items-center justify-between border-b border-rule px-6 py-5 bg-chalk/50">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-widest text-moss">{t('pipeline.editor.eyebrow')}</p>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-moss">
+                {isLiveEdit ? t('pipeline.editor.publishedEyebrow') : t('pipeline.editor.eyebrow')}
+              </p>
+              {isLiveEdit ? (
+                <p className="mt-1 text-xs text-moss-muted">{t('pipeline.editor.publishedNote')}</p>
+              ) : null}
               <h4 dir="auto" className="text-lg font-bold text-moss line-clamp-1 mt-0.5 text-start">{editTitle || currentItem.topic}</h4>
             </div>
             <button
@@ -791,8 +834,8 @@ function PipelineItemCard({
             </button>
           </div>
           
-          <div className="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2 flex flex-col h-full">
+          <div className={`flex-1 overflow-y-auto p-6 grid grid-cols-1 gap-8 ${isLiveEdit ? '' : 'lg:grid-cols-3'}`}>
+            <div className={`flex flex-col h-full ${isLiveEdit ? '' : 'lg:col-span-2'}`}>
               <div className="mb-4">
                 <label htmlFor={`edit-title-${currentItem.id}`} className="block text-xs font-bold uppercase tracking-wider text-moss-muted mb-2">
                   {t('pipeline.editor.titleLabel')}
@@ -865,6 +908,7 @@ function PipelineItemCard({
               ) : null}
             </div>
 
+            {isLiveEdit ? null : (
             <div className="flex flex-col gap-6">
               <div className="rounded-2xl bg-chalk-sunk/50 border border-rule p-5">
                 <div className="flex items-center gap-2 mb-4 text-moss">
@@ -907,6 +951,7 @@ function PipelineItemCard({
                 </div>
               </div>
             </div>
+            )}
           </div>
 
           <div className="border-t border-rule px-6 py-4 flex items-center justify-between gap-4 bg-chalk/50">
@@ -928,12 +973,12 @@ function PipelineItemCard({
                 {t('common.cancel')}
               </button>
               <button
-                onClick={handleSaveEdits}
+                onClick={isLiveEdit ? handleSavePublished : handleSaveEdits}
                 disabled={isSavingEdits}
                 className="bg-moss flex items-center gap-1.5 text-chalk px-5 py-2 rounded-xl text-sm font-bold hover:bg-moss-700 transition-colors disabled:opacity-60"
               >
                 {isSavingEdits ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                {t('pipeline.editor.save')}
+                {isLiveEdit ? t('pipeline.editor.saveLive') : t('pipeline.editor.save')}
               </button>
            </div>
           </div>

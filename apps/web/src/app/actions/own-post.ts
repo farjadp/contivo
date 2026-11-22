@@ -11,6 +11,7 @@ import { Prisma, type ContentItem } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
+import { revalidateWorkspaceSite } from '@/lib/site-api/publisher';
 import {
   normalizeSlugInput,
   validatePostBody,
@@ -35,6 +36,12 @@ export interface UpdateOwnPostMetaInput {
   contentId: string;
   title: string;
   slug?: string | null;
+}
+
+export interface UpdatePublishedPostInput {
+  contentId: string;
+  title: string;
+  content: string;
 }
 
 const TYPE_BY_CHANNEL: Record<OwnPostChannel, 'ARTICLE' | 'POST'> = {
@@ -172,4 +179,55 @@ export async function updateOwnPostMeta(input: UpdateOwnPostMetaInput): Promise<
     if (isUniqueViolation(error)) return { ok: false, error: 'slug_taken' };
     throw error;
   }
+}
+
+/**
+ * Edit a live blog post in place (spec 2026-11-22, edit-published-post).
+ * Only title and body change; status, slug and publish dates stay as they
+ * are, so the URL is stable and the blog shows "Updated" from updatedAt.
+ * LinkedIn is refused: the post on LinkedIn cannot be changed from here.
+ */
+export async function updatePublishedPost(input: UpdatePublishedPostInput): Promise<OwnPostResult> {
+  const userId = await requireUserId();
+
+  const item = await prisma.contentItem.findFirst({
+    where: { id: input.contentId, userId },
+  });
+  if (!item) return { ok: false, error: 'not_found' };
+
+  if (item.status !== 'PUBLISHED' || item.channel !== 'blog' || !item.workspaceId) {
+    return { ok: false, error: 'not_editable' };
+  }
+  const workspaceId = item.workspaceId;
+
+  const titleError = validatePostTitle(input.title ?? '');
+  if (titleError) return { ok: false, error: titleError };
+  const bodyError = validatePostBody(input.content ?? '');
+  if (bodyError) return { ok: false, error: bodyError };
+
+  const updated = await prisma.contentItem.update({
+    where: { id: item.id },
+    data: { topic: input.title.trim(), content: input.content.trim() },
+  });
+
+  // The Content API already serves the new text; a failed ping only means the
+  // site cache refreshes on its own schedule, so it never fails the save.
+  let revalidated: boolean | null = null;
+  if (item.slug) {
+    try {
+      revalidated = await revalidateWorkspaceSite(workspaceId, item.slug, 'post.updated');
+    } catch (error) {
+      console.error('[own-post] revalidate after edit failed', item.id, error);
+      revalidated = false;
+    }
+  }
+
+  await writeActivityLog({
+    userId,
+    workspaceId,
+    action: 'CONTENT_EDITED_AFTER_PUBLISH',
+    detail: { contentId: item.id, revalidated },
+  });
+
+  return { ok: true, item: updated };
 }
