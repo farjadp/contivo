@@ -240,8 +240,9 @@ describe('P2-3 OAuth state is bound to the browser and single-use', () => {
     const redirect = await svc.handleCallback('linkedin', 'code', stateOf(url), nonce);
     assert.match(redirect, /\/connections\?pending=/);
     assert.equal(prisma.socialConnection.rows.length, 0, 'nothing saved before finalize');
-    await svc.finalizeConnect(ticketOf(redirect), 'u1');
+    const done = await svc.finalizeConnect(ticketOf(redirect), 'u1');
     assert.equal(prisma.socialConnection.rows.length, 1);
+    assert.equal(done.workspaceId, 'w1', 'finalize names the workspace the flow was started for (B17)');
   });
 
   it('a state issued for one platform cannot complete another', async () => {

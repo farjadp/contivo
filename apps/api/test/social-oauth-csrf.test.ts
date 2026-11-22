@@ -158,7 +158,7 @@ describe('P2-A: OAuth connect is bound to the signed-in web session', () => {
     const landing = await victimOpensLink(own);
     const out = await ctrl.finalize({ ticket: ticketOf(landing) }, { id: VICTIM });
 
-    assert.deepEqual(out, { platform: 'linkedin', accounts: 1 });
+    assert.deepEqual(out, { platform: 'linkedin', accounts: 1, workspaceId: 'ws-victim' });
     assert.equal(prisma.conns.length, 1);
     assert.equal(prisma.conns[0].workspaceId, 'ws-victim');
     assert.equal(prisma.conns[0].accountIdentifier, 'li-victim');

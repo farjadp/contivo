@@ -12,12 +12,13 @@
  */
 
 import { Link, usePathname } from '@/i18n/navigation';
-import type { ElementType, ReactNode } from 'react';
+import { useEffect, type ElementType, type ReactNode } from 'react';
 import { useTranslations } from 'next-intl';
 import { Sun, Layers, Settings, LogOut, Share2, Zap } from 'lucide-react';
 
 import { logout } from '@/app/actions/auth';
 import { LocaleSwitcher } from '@/components/marketing/locale-switcher';
+import { rememberWorkspace, workspaceIdFromPath } from '@/lib/last-workspace';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
@@ -77,6 +78,13 @@ function BottomLink({
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const t = useTranslations('shell');
+
+  // Inside a workspace, remember it: the top bar's Connections link carries
+  // no workspace, and should open on this one rather than the oldest (B2).
+  useEffect(() => {
+    const workspaceId = workspaceIdFromPath(pathname);
+    if (workspaceId) rememberWorkspace(workspaceId);
+  }, [pathname]);
 
   // Full-bleed flows (workspace creation / analysis) render without chrome.
   if (pathname === '/growth/new' || pathname === '/growth/analyzing') {

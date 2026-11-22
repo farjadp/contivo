@@ -80,6 +80,16 @@ export async function getSocialConnectUrl(
 
 export type FinalizeConnectResult = 'ok' | 'foreign' | 'failed';
 
+export interface FinalizeConnectOutcome {
+  result: FinalizeConnectResult;
+  /**
+   * The workspace the connection was saved to, when the API says so (B17).
+   * Only a hint for where to land: the page still looks it up among the
+   * signed-in user's own workspaces before showing it.
+   */
+  workspaceId?: string;
+}
+
 /**
  * Step 3 of a social connect: confirms the account the OAuth callback parked
  * under `ticket`, as the user signed in HERE.
@@ -90,9 +100,9 @@ export type FinalizeConnectResult = 'ok' | 'foreign' | 'failed';
  * the user who started the flow. A victim who opens an attacker's connect link
  * lands here with their own session, gets 'foreign', and nothing is connected.
  */
-export async function finalizeSocialConnect(ticket: string): Promise<FinalizeConnectResult> {
+export async function finalizeSocialConnect(ticket: string): Promise<FinalizeConnectOutcome> {
   const session = await getSession();
-  if (!session || !ticket) return 'failed';
+  if (!session || !ticket) return { result: 'failed' };
 
   try {
     const token = await mintApiToken();
@@ -103,12 +113,16 @@ export async function finalizeSocialConnect(ticket: string): Promise<FinalizeCon
       body: JSON.stringify({ ticket }),
       cache: 'no-store',
     });
-    if (res.ok) return 'ok';
-    if (res.status === 403) return 'foreign';
+    if (res.ok) {
+      const body = (await res.json().catch(() => null)) as { workspaceId?: unknown } | null;
+      const workspaceId = typeof body?.workspaceId === 'string' && body.workspaceId ? body.workspaceId : undefined;
+      return workspaceId ? { result: 'ok', workspaceId } : { result: 'ok' };
+    }
+    if (res.status === 403) return { result: 'foreign' };
     console.error(`Social connect finalize failed: HTTP ${res.status}`);
-    return 'failed';
+    return { result: 'failed' };
   } catch (error) {
     console.error('Social connect finalize failed:', error);
-    return 'failed';
+    return { result: 'failed' };
   }
 }

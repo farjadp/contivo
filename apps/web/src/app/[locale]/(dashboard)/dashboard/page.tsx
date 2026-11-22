@@ -528,7 +528,7 @@ export default async function DashboardPage() {
             <Link
               href={
                 !autopilotOn && ideationReady && !canPublish
-                  ? '/connections'
+                  ? { pathname: '/connections', query: { tab: 'social', workspaceId: workspace.id } }
                   : { pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }
               }
               className="text-[14px] font-semibold underline underline-offset-4 hover:text-moss-700"

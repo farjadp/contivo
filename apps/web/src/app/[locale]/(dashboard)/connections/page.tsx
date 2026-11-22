@@ -15,11 +15,14 @@
 import { redirect, Link } from '@/i18n/navigation';
 import { Share2, Globe } from 'lucide-react';
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 import { getSession } from '@/lib/auth';
+import { LAST_WORKSPACE_COOKIE } from '@/lib/last-workspace';
 import { cn } from '@/lib/utils';
 import { ConnectResumeBanner } from './_components/ConnectResumeBanner';
+import { RememberWorkspace } from './_components/RememberWorkspace';
 import { SocialChannelsTab } from './_components/SocialChannelsTab';
 import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
@@ -59,10 +62,19 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   // Back from a platform's consent screen: confirm the parked connection as
   // the signed-in user, then drop the one-time ticket from the URL so a
   // reload, a shared link or a Referer never carries it.
+  //
+  // Land on the workspace the account was connected to (B17). Without it the
+  // page fell back to the oldest workspace, and "Account connected" appeared
+  // next to that workspace's own, possibly expired, connection.
   if (params.pending) {
-    const result = await finalizeSocialConnect(params.pending);
+    const { result, workspaceId: connectedTo } = await finalizeSocialConnect(params.pending);
     redirect({
-      href: { pathname: '/connections', query: { tab: 'social', connect: result } },
+      href: {
+        pathname: '/connections',
+        query: connectedTo
+          ? { tab: 'social', connect: result, workspaceId: connectedTo }
+          : { tab: 'social', connect: result },
+      },
       locale: await getLocale(),
     });
   }
@@ -79,9 +91,14 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   // Resolve a REAL workspace. This used to fall back to session.userId, which
   // is not a workspace id — every social action then failed with
   // "Workspace not found", including the Connect button.
+  // Without a workspaceId in the URL (the top bar's Connections link, or a
+  // connect that came back with an error), open on the workspace the
+  // customer was last in, not the oldest one (B2).
+  const lastWorkspaceId = (await cookies()).get(LAST_WORKSPACE_COOKIE)?.value;
   const { workspaces, workspace } = await resolveWorkspaceScope(
     session.userId as string,
     params.workspaceId,
+    lastWorkspaceId,
   );
   const workspaceId = workspace?.id ?? '';
 
@@ -116,6 +133,8 @@ export default async function ConnectionsPage({ searchParams }: Props) {
           {t(`connectResult.${connectResult}`)}
         </div>
       )}
+
+      {workspace && <RememberWorkspace workspaceId={workspace.id} />}
 
       {/* ─── A LinkedIn connect that never came back (B13) ─────────────── */}
       {workspace && <ConnectResumeBanner hasResult={connectResult != null} />}

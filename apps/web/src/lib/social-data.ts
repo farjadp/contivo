@@ -20,19 +20,22 @@ import { pickConnectionMeta } from '@/lib/telegram-connect';
 export type WorkspaceOption = { id: string; name: string };
 
 /**
- * Resolves which workspace the Connections page should operate on:
- * the requested one if the user owns it, otherwise their first workspace.
+ * Resolves which workspace the Connections page should operate on: the
+ * first of `candidateIds` the user owns (the URL's workspaceId, then the one
+ * they were last working in), otherwise their first workspace. A candidate
+ * the user does not own is ignored, never shown.
  */
-export async function resolveWorkspaceScope(userId: string, requestedId?: string) {
+export async function resolveWorkspaceScope(userId: string, ...candidateIds: Array<string | undefined>) {
   const workspaces = await prisma.workspace.findMany({
     where: { userId },
     orderBy: { createdAt: 'asc' },
     select: { id: true, name: true },
   });
 
-  const requested = requestedId
-    ? workspaces.find((w) => w.id === requestedId)
-    : undefined;
+  const requested = candidateIds
+    .filter((id): id is string => Boolean(id))
+    .map((id) => workspaces.find((w) => w.id === id))
+    .find(Boolean);
 
   return {
     workspaces,
