@@ -12,16 +12,16 @@ import { beforeEach, describe, it } from 'node:test';
 
 process.env.SOCIAL_TOKEN_SECRET ??= 'test-only-secret-not-used-anywhere';
 
-import { HttpException } from '@nestjs/common';
 import { formatFailure, isPublishJobRefusal, PUBLISH_JOB_REFUSALS } from '@contivo/types';
+import { HttpException } from '@nestjs/common';
 
 import { AdapterFactory } from '../src/modules/social/adapters/adapter.factory';
 import type { SocialAdapter } from '../src/modules/social/adapters/social-adapter.interface';
 import { buildPublishPayload } from '../src/modules/social/publish-payload';
 import { SocialConnectionsService } from '../src/modules/social/social-connections.service';
 import { SocialPublishService } from '../src/modules/social/social-publish.service';
-import { TokenRefreshService, type LockStore } from '../src/modules/social/token-refresh.service';
 import { encryptToken } from '../src/modules/social/token-crypto';
+import { TokenRefreshService, type LockStore } from '../src/modules/social/token-refresh.service';
 
 import { fakePrisma, type FakePrisma } from './helpers/fake-prisma';
 

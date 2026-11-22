@@ -7,9 +7,9 @@
  * platform fails to compile.
  */
 
+import { CHANNEL_TO_PLATFORM, type ContentChannel } from '@contivo/types';
 import type { SocialPlatform } from '@prisma/client';
 
-import { CHANNEL_TO_PLATFORM, type ContentChannel } from '@contivo/types';
 
 /** Platforms that connect through our OAuth redirect flow, in URL form. */
 export const OAUTH_PLATFORMS = ['linkedin', 'x', 'facebook', 'tiktok'] as const satisfies readonly Lowercase<SocialPlatform>[];

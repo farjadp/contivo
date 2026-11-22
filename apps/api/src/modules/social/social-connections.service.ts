@@ -22,7 +22,6 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-
 import type { SocialConnectionStatus, SocialPlatform } from '@prisma/client';
 
 import { PrismaService } from '../../common/prisma/prisma.service';

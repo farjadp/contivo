@@ -43,8 +43,8 @@ import { CurrentUser, AuthenticatedUser } from '../auth/decorators/current-user.
 import { Public } from '../auth/decorators/public.decorator';
 
 import { verifyHandoffToken } from './connect-handoff';
-import { SocialConnectionsService } from './social-connections.service';
 import type { OAuthPlatform } from './platforms';
+import { SocialConnectionsService } from './social-connections.service';
 import { OAUTH_NONCE_COOKIE, OAuthFlowError, SocialOAuthService, STATE_TTL_MS } from './social-oauth.service';
 
 /**

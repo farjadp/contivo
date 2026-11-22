@@ -18,8 +18,8 @@ import type {
 import { TransientPublishError } from '../src/modules/social/publish-errors';
 import { SocialConnectionsService } from '../src/modules/social/social-connections.service';
 import { SocialPublishService } from '../src/modules/social/social-publish.service';
-import { TokenRefreshService, type LockStore } from '../src/modules/social/token-refresh.service';
 import { encryptToken } from '../src/modules/social/token-crypto';
+import { TokenRefreshService, type LockStore } from '../src/modules/social/token-refresh.service';
 
 import { fakePrisma, type FakePrisma } from './helpers/fake-prisma';
 

@@ -8,10 +8,10 @@
  * All adapters are NestJS Injectable services registered in SocialModule.
  */
 
+import { PLATFORM_KEYS } from '@contivo/types';
 import { Injectable } from '@nestjs/common';
 import type { SocialPlatform } from '@prisma/client';
 
-import { PLATFORM_KEYS } from '@contivo/types';
 
 import { FacebookAdapter } from './facebook.adapter';
 import { InstagramAdapter } from './instagram.adapter';

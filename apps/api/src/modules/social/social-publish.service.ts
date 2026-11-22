@@ -20,6 +20,7 @@
  *    leads to timeouts and bad UX. Always queue and poll.
  */
 
+import { formatFailure, type PublishFailureCode, type PublishJobRefusal } from '@contivo/types';
 import {
   Injectable,
   Logger,
@@ -29,7 +30,6 @@ import {
 } from '@nestjs/common';
 import type { SocialPlatform } from '@prisma/client';
 
-import { formatFailure, type PublishFailureCode, type PublishJobRefusal } from '@contivo/types';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 import { JobsService } from '../jobs/jobs.service';

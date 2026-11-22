@@ -15,10 +15,10 @@
  * calls the same SocialPublishService.
  */
 
+import { formatFailure, type PublishFailureCode } from '@contivo/types';
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 
-import { formatFailure, type PublishFailureCode } from '@contivo/types';
 
 import { PrismaService } from '../../common/prisma/prisma.service';
 
