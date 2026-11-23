@@ -3,21 +3,19 @@
 /**
  * PublishPanel.tsx
  *
- * The publish half of the first-post draft (spec first-post B §4.4): with
- * LinkedIn connected, "Publish now" (schedule at now; the scheduler picks it
- * up within a minute); without it, the one Connect button. While the post is
- * on its way it shows the wait line, and the PublishOutcomeNotice if the job
- * failed. A refused publish is a returned value, never a thrown error (W2).
+ * The publish half of the first-post draft (spec first-post B §4.4). The
+ * next-step bar owns "Publish now" and "Connect LinkedIn" (CPO); this panel
+ * shows status only. ConnectFixButton stays exported for PipelineTab.
  */
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Loader2 } from 'lucide-react';
 
-import { publishNow } from '@/app/actions/publish-now';
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
 import { Link } from '@/i18n/navigation';
 import { markConnectAttempt } from '@/lib/connect-attempt';
+import type { PublishRefusal } from '@/lib/first-post/publish-refusal';
 import type { LinkedInState } from '@/lib/first-post/types';
 import type { PublishOutcome } from '@/lib/publish-outcome';
 
@@ -89,19 +87,22 @@ export function ConnectFixButton({
   );
 }
 
-type Refusal = 'noConnection' | 'gateBlocked' | 'notFound' | 'failed';
-
+/**
+ * Status only (CPO: the bar owns the action). With LinkedIn connected it says
+ * which account and that the post goes live within a minute; without it, that
+ * LinkedIn needs connecting. The bar's button does either. While the post is
+ * on its way it shows the wait line, or the PublishOutcomeNotice when the job
+ * failed. "Schedule for later" stays as the one secondary link.
+ */
 export function PublishPanel({
   workspaceId,
-  contentItemId,
   linkedIn,
   mode,
   slow = false,
   outcome = null,
-  onStarted,
+  refusal = null,
 }: {
   workspaceId: string;
-  contentItemId: string;
   linkedIn: LinkedInState;
   /** `ready`: the draft can be published; `publishing`: it is on its way. */
   mode: 'ready' | 'publishing';
@@ -109,14 +110,10 @@ export function PublishPanel({
   slow?: boolean;
   /** The latest publish outcome while publishing (only a failure is shown here). */
   outcome?: PublishOutcome | null;
-  /** The item is SCHEDULED at now: the parent switches to the publishing view. */
-  onStarted: () => void;
+  /** Why the bar's "Publish now" was refused (`?publish=`), shown in the ready state only. */
+  refusal?: PublishRefusal | null;
 }) {
   const t = useTranslations('tabsA.firstPost');
-  const [busy, setBusy] = useState(false);
-  const [refusal, setRefusal] = useState<Refusal | null>(null);
-
-  const linkedInFix: ConnectFix = { kind: 'oauth', platform: 'linkedin' };
 
   if (mode === 'publishing') {
     if (outcome?.kind === 'failed') return <PublishOutcomeNotice outcome={outcome} workspaceId={workspaceId} />;
@@ -130,81 +127,37 @@ export function PublishPanel({
     );
   }
 
-  if (!linkedIn.connected) {
-    return (
-      <div className="space-y-3 rounded-lg border border-rule bg-chalk-raised px-4 py-4">
-        <p className="text-[14.5px] text-moss">{t('publish.notConnected')}</p>
-        <ConnectFixButton
-          fix={linkedInFix}
-          workspaceId={workspaceId}
-          label={t('publish.connect')}
-          busyLabel={t('publish.connecting')}
-        />
-      </div>
-    );
-  }
-
-  const publish = async () => {
-    setBusy(true);
-    setRefusal(null);
-    try {
-      const result = await publishNow(contentItemId);
-      if ('ok' in result && result.ok) {
-        onStarted();
-        return;
-      }
-      if ('reason' in result) {
-        setRefusal(
-          result.reason === 'no_connection'
-            ? 'noConnection'
-            : result.reason === 'quality_gate_blocked'
-              ? 'gateBlocked'
-              : 'notFound',
-        );
-      } else {
-        setRefusal('failed');
-      }
-    } catch {
-      setRefusal('failed');
-    } finally {
-      setBusy(false);
-    }
-  };
+  // A stale "no connection" refusal after connecting says nothing true.
+  const shownRefusal = refusal === 'noConnection' && linkedIn.connected ? null : refusal;
 
   return (
     <div className="space-y-4">
-      <p className="flex items-center gap-3 rounded-lg border border-moss-700 bg-chalk-raised px-4 py-3 text-[14.5px] font-medium text-moss">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-moss-700 text-chalk">
-          <Check className="h-3 w-3" aria-hidden="true" />
-        </span>
-        <span>{t.rich('publish.connectedAs', { name: linkedIn.accountName, bdi: (c) => <bdi>{c}</bdi> })}</span>
-      </p>
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
-        <button type="button" onClick={publish} disabled={busy} className={primaryButton}>
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-          {busy ? t('publish.publishing') : t('publish.publishNow')}
-        </button>
-        <Link
-          href={{ pathname: '/growth/[id]', params: { id: workspaceId }, query: { tab: 'pipeline' } }}
-          className={quietLink}
-        >
-          {t('publish.scheduleLater')}
-        </Link>
-        <span className="text-[13px] text-moss-muted">{t('publish.whatHappens')}</span>
-      </div>
-      {refusal ? (
-        <div role="alert" className="space-y-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
-          <p>{t(`publish.${refusal}`)}</p>
-          {refusal === 'noConnection' ? (
-            <ConnectFixButton
-              fix={linkedInFix}
-              workspaceId={workspaceId}
-              label={t('publish.connect')}
-              busyLabel={t('publish.connecting')}
-                />
-          ) : null}
-        </div>
+      {linkedIn.connected ? (
+        <p className="flex items-center gap-3 rounded-lg border border-moss-700 bg-chalk-raised px-4 py-3 text-[14.5px] font-medium text-moss">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-moss-700 text-chalk">
+            <Check className="h-3 w-3" aria-hidden="true" />
+          </span>
+          <span>
+            {t.rich('publish.connectedAs', { name: linkedIn.accountName, bdi: (c) => <bdi>{c}</bdi> })}{' '}
+            <span className="font-normal text-moss-muted">{t('publish.whatHappens')}</span>
+          </span>
+        </p>
+      ) : shownRefusal !== 'noConnection' ? (
+        <p className="rounded-lg border border-rule bg-chalk-raised px-4 py-3 text-[14.5px] text-moss">
+          {t('publish.notConnected')}
+        </p>
       ) : null}
+      {shownRefusal ? (
+        <p role="alert" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-[14px] text-amber-900">
+          {t(`publish.${shownRefusal}`)}
+        </p>
+      ) : null}
+      <Link
+        href={{ pathname: '/growth/[id]', params: { id: workspaceId }, query: { tab: 'pipeline' } }}
+        className={quietLink}
+      >
+        {t('publish.scheduleLater')}
+      </Link>
     </div>
   );
 }

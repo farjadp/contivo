@@ -70,6 +70,7 @@ import { NextStepButton } from '@/components/next-step/NextStepButton';
 import { barText, toButtonAction } from '@/components/next-step/next-step-logic';
 import { buildNextStep } from '@/lib/next-step';
 import { loadNextStepInput } from '@/lib/next-step-load';
+import { parsePublishRefusal } from '@/lib/first-post/publish-refusal';
 import { FirstPostView } from './_components/first-post/FirstPostView';
 import { recordFirstDraftSeen, resolveWorkspaceTab, toFirstPostCompetitors } from './_components/workspace-tab';
 
@@ -668,6 +669,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             draft={firstPost.draft}
             why={firstPost.why}
             otherAnglesUsed={firstPost.otherAnglesUsed}
+            publishRefusal={parsePublishRefusal(resolvedSearchParams.publish)}
           />
         )}
         {activeTab === 'strategy' && (

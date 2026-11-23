@@ -11,6 +11,7 @@
  */
 
 import type { EvidenceItem } from '@/lib/competitors/types';
+import type { PublishRefusal } from '@/lib/first-post/publish-refusal';
 import type { Msg } from '@/lib/workspace-journey';
 
 /* ------------------------------------------------------------------ */
@@ -313,4 +314,6 @@ export type FirstPostViewProps = {
   why: FirstPostWhyFacts;
   /** FIRST_POST_OTHER_ANGLE rows so far; the button hides at FIRST_POST_OTHER_ANGLE_LIMIT. */
   otherAnglesUsed: number;
+  /** `?publish=`: why the bar's "Publish now" was refused, when it was. */
+  publishRefusal?: PublishRefusal | null;
 };

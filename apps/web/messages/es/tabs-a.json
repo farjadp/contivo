@@ -586,17 +586,12 @@
       },
       "publish": {
         "connectedAs": "LinkedIn conectado como <bdi>{name}</bdi>",
-        "publishNow": "Publicar ahora",
-        "publishing": "Publicando…",
         "scheduleLater": "Programar para más tarde",
         "whatHappens": "Publicada en menos de un minuto.",
         "notConnected": "Conecta LinkedIn para publicar. No se publica nada hasta que pulses Publicar.",
-        "connect": "Conectar LinkedIn",
-        "connecting": "Abriendo LinkedIn…",
         "noConnection": "Conecta LinkedIn para publicar. No se programó nada.",
         "gateBlocked": "El control de calidad retuvo esta publicación. Los motivos están arriba.",
-        "notFound": "Esta publicación ya no existe. Actualiza la página.",
-        "failed": "La publicación no empezó. Inténtalo de nuevo."
+        "notFound": "Esta publicación ya no existe. Actualiza la página."
       },
       "publishing": {
         "line": "Publicando en LinkedIn… menos de un minuto",

@@ -59,7 +59,9 @@ export function FirstPostView(props: FirstPostViewProps) {
     linkedIn: props.linkedIn,
   };
   const { state, draft } = live;
-  // "Publish now" was pressed here: show the wait before the server agrees.
+  // "Publish anyway" was pressed here: show the wait before the server agrees.
+  // The bar's "Publish now" refreshes the page instead, so props.state arrives
+  // as `publishing` and the poll below starts from it.
   const phase = publishStarted && state.phase === 'draft' ? 'publishing' : state.phase;
   const contentItemId = 'contentItemId' in state ? state.contentItemId : (draft?.id ?? null);
 
@@ -132,6 +134,7 @@ export function FirstPostView(props: FirstPostViewProps) {
   }, [phase, headingId]);
 
   const refresh = () => router.refresh();
+  // Only "Publish anyway" (quality notice) starts a publish from the view.
   const startPublishing = () => {
     setPublishStarted(true);
     router.refresh();
@@ -167,12 +170,11 @@ export function FirstPostView(props: FirstPostViewProps) {
       >
         <PublishPanel
           workspaceId={workspaceId}
-          contentItemId={contentItemId}
           linkedIn={live.linkedIn}
           mode={publishing ? 'publishing' : 'ready'}
           slow={slow}
           outcome={outcome}
-          onStarted={startPublishing}
+          refusal={props.publishRefusal ?? null}
         />
       </DraftCard>
     );

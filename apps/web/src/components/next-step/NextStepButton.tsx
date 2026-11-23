@@ -8,8 +8,8 @@
  *   without waiting, because this page does not unload;
  * - connectLinkedIn: getSocialConnectUrl, then the browser goes to LinkedIn;
  * - publishNow: publishNow, then a refresh so the bar and view show
- *   "Publishing…". A refusal opens the first-post tab, whose publish panel
- *   says why (no connection, quality gate).
+ *   "Publishing…". A refusal opens the first-post tab with `?publish=<refusal>`,
+ *   and the view's publish panel says why (no connection, quality gate).
  */
 
 import { ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
@@ -19,6 +19,7 @@ import { recordNextStepClick } from '@/app/actions/next-step';
 import { publishNow } from '@/app/actions/publish-now';
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
 import { useRouter } from '@/i18n/navigation';
+import { publishRefusalHref, refusalFromReason } from '@/lib/first-post/publish-refusal';
 import type { NextStepId, NextStepSurface } from '@/lib/first-post/types';
 
 /** NextStepAction with its label already translated. */
@@ -91,7 +92,7 @@ export function NextStepButton({
         router.refresh();
         return;
       }
-      router.push(action.href as never);
+      router.push(publishRefusalHref(action.href, refusalFromReason(result.reason)) as never);
     });
   };
 

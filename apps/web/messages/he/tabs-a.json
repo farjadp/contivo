@@ -586,17 +586,12 @@
       },
       "publish": {
         "connectedAs": "LinkedIn מחובר בתור <bdi>{name}</bdi>",
-        "publishNow": "פרסום עכשיו",
-        "publishing": "מפרסמים…",
         "scheduleLater": "תזמון למועד אחר",
         "whatHappens": "יעלה לאוויר תוך דקה.",
         "notConnected": "חברו את LinkedIn כדי לפרסם. שום דבר לא יתפרסם עד שתלחצו על פרסום.",
-        "connect": "חיבור LinkedIn",
-        "connecting": "פותחים את LinkedIn…",
         "noConnection": "חברו את LinkedIn כדי לפרסם. שום דבר לא תוזמן.",
         "gateBlocked": "בדיקת האיכות עצרה את הפוסט. הסיבות מופיעות מעליו.",
-        "notFound": "הפוסט הזה כבר לא קיים. רעננו את הדף.",
-        "failed": "הפרסום לא התחיל. נסו שוב."
+        "notFound": "הפוסט הזה כבר לא קיים. רעננו את הדף."
       },
       "publishing": {
         "line": "מפרסמים ב־LinkedIn… פחות מדקה",

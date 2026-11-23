@@ -160,23 +160,41 @@ describe('run', () => {
 });
 
 describe('draft and publish', () => {
-  it('shows the post, stored "why" facts and Connect LinkedIn when not connected', () => {
+  it('shows the post, stored "why" facts and the not-connected status, with no button of its own', () => {
     const html = render(STATES.draft, 'en');
     expect(html).toContain('Most people who stop physio');
     expect(html).toContain('Recovery week by week');
     expect(html).toContain('Market map · 4 charts');
-    expect(html).toContain('Connect LinkedIn');
+    expect(html).toContain('Connect LinkedIn to publish.');
+    // The bar owns the action (CPO): no Connect or Publish button in the view.
+    expect(html).not.toMatch(/<button[^>]*>[^<]*Connect LinkedIn/);
     expect(html).not.toContain('Publish now');
+    expect(html).toContain('Schedule for later');
   });
 
-  it('shows Publish now with the account once LinkedIn is connected', () => {
+  it('shows the account once LinkedIn is connected, still with no Publish button', () => {
     const html = render(
       { phase: 'draft', contentItemId: 'ci_1', approved: true, linkedIn: { connected: true, accountName: 'Sara Ahmadi' } },
       'en',
       { linkedIn: { connected: true, accountName: 'Sara Ahmadi' } },
     );
     expect(html).toContain('<bdi>Sara Ahmadi</bdi>');
-    expect(html).toContain('Publish now');
+    expect(html).not.toContain('Publish now');
+    expect(html).toContain('Schedule for later');
+  });
+
+  it('says why the bar\'s Publish now was refused', () => {
+    const connected = { connected: true as const, accountName: 'Sara Ahmadi' };
+    const draft: FirstPostState = { phase: 'draft', contentItemId: 'ci_1', approved: false, linkedIn: connected };
+    expect(render(draft, 'en', { linkedIn: connected, publishRefusal: 'gateBlocked' })).toContain(
+      'The quality check held this post.',
+    );
+    expect(render(STATES.draft, 'en', { publishRefusal: 'noConnection' })).toContain('Nothing was scheduled.');
+    // Connected since: the old "no connection" refusal is not shown.
+    expect(render(draft, 'en', { linkedIn: connected, publishRefusal: 'noConnection' })).not.toContain(
+      'Nothing was scheduled.',
+    );
+    expect(render(STATES.publishing, 'en', { publishRefusal: 'gateBlocked' })).not.toContain('quality check held');
   });
 
   it('hides Try another angle at the limit', () => {

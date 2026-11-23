@@ -239,7 +239,7 @@ export const SCREEN_KEYS: Record<keyof typeof WORD_BUDGETS, string[]> = {
     'why.aiTag',
     'why.aiWording',
   ],
-  publish: ['publish.connectedAs', 'publish.publishNow', 'publish.scheduleLater', 'publish.whatHappens'],
+  publish: ['publish.connectedAs', 'publish.whatHappens', 'publish.scheduleLater'],
   published: ['published.eyebrow', 'published.title', 'published.view', 'published.copy', 'published.open'],
 };
 

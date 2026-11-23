@@ -586,17 +586,12 @@
       },
       "publish": {
         "connectedAs": "LinkedIn connected as <bdi>{name}</bdi>",
-        "publishNow": "Publish now",
-        "publishing": "Publishing…",
         "scheduleLater": "Schedule for later",
         "whatHappens": "Live within a minute.",
         "notConnected": "Connect LinkedIn to publish. Nothing posts until you press Publish.",
-        "connect": "Connect LinkedIn",
-        "connecting": "Opening LinkedIn…",
         "noConnection": "Connect LinkedIn to publish. Nothing was scheduled.",
         "gateBlocked": "The quality check held this post. The reasons are above it.",
-        "notFound": "This post no longer exists. Refresh the page.",
-        "failed": "Publishing didn't start. Try again."
+        "notFound": "This post no longer exists. Refresh the page."
       },
       "publishing": {
         "line": "Publishing to LinkedIn… under a minute",
