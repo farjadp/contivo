@@ -80,4 +80,14 @@ describe('generateImageOutcome', () => {
     const { CAUSE_CODES } = await import('@/lib/bug-report/types');
     for (const c of IMAGE_CAUSES) expect(CAUSE_CODES).toContain(IMAGE_CAUSE_CODE[c]);
   });
+
+  it("content-image-service's reader records the retired model as PROVIDER_AUTH with the image code (PR #65 contract)", async () => {
+    const { readGeneratorResult } = await import('./content-image-service');
+    generateOpenAiImage.mockResolvedValue({ ok: false, cause: 'IMAGE_MODEL_UNAVAILABLE', model: 'x', attempts: [], message: 'gone' });
+    expect(readGeneratorResult(await generateImageForContentItem(input))).toEqual({
+      ok: false,
+      cause: 'PROVIDER_AUTH',
+      failureCode: 'PROVIDER_AUTH',
+    });
+  });
 });
