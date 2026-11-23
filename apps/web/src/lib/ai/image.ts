@@ -25,6 +25,8 @@
 
 import * as Sentry from '@sentry/nextjs';
 
+import type { CauseCode } from '@/lib/bug-report/types';
+
 import { classifyOpenAi, sanitizeAiMessage } from './errors';
 import { warnIfRetiring } from './retirements';
 import type { AiErrorClass } from './types';
@@ -60,6 +62,24 @@ export const IMAGE_CAUSES = [
   'IMAGE_STORE_FAILED', // generated, but saving it failed
 ] as const;
 export type ImageCause = (typeof IMAGE_CAUSES)[number];
+
+/**
+ * ImageCause → the closed bug-report CauseCode list, so admin triage reads a
+ * retired or misconfigured model as PROVIDER_AUTH ("bad/retired key or
+ * model"), never as an outage.
+ */
+export const IMAGE_CAUSE_CODE: Readonly<Record<ImageCause, CauseCode>> = {
+  IMAGE_MODEL_UNAVAILABLE: 'PROVIDER_AUTH',
+  IMAGE_PROVIDER_OUT_OF_CREDIT: 'PROVIDER_OUT_OF_CREDIT',
+  IMAGE_PROVIDER_AUTH: 'PROVIDER_AUTH',
+  IMAGE_NOT_CONFIGURED: 'PROVIDER_AUTH',
+  IMAGE_RATE_LIMITED: 'PROVIDER_RATE_LIMITED',
+  IMAGE_TIMEOUT: 'PROVIDER_TIMEOUT',
+  IMAGE_PROVIDER_UNAVAILABLE: 'PROVIDER_UNAVAILABLE',
+  IMAGE_REJECTED: 'UNKNOWN',
+  IMAGE_EMPTY_RESPONSE: 'PROVIDER_UNAVAILABLE',
+  IMAGE_STORE_FAILED: 'DATABASE',
+};
 
 const CAUSE_BY_CLASS: Record<AiErrorClass, ImageCause> = {
   billing: 'IMAGE_PROVIDER_OUT_OF_CREDIT',

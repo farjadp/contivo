@@ -5,6 +5,7 @@
  * it. Duck-typed (no instanceof on SDK classes) so it imports nothing heavy.
  */
 
+import { IMAGE_CAUSE_CODE } from '@/lib/ai/image';
 import { classifyRunError } from '@/lib/competitors/run-errors';
 
 import type { CauseCode } from './types';
@@ -39,17 +40,6 @@ const AI_CLASS: Record<string, CauseCode | null> = {
   cooling_down: null, // not a cause on its own: the event's `reason` holds it
 };
 
-/** lib/ai/image.ts ImageCause → the closed CauseCode list. */
-const IMAGE_CAUSE: Record<string, CauseCode> = {
-  IMAGE_MODEL_UNAVAILABLE: 'PROVIDER_AUTH', // "bad/retired key or model"
-  IMAGE_PROVIDER_OUT_OF_CREDIT: 'PROVIDER_OUT_OF_CREDIT',
-  IMAGE_PROVIDER_AUTH: 'PROVIDER_AUTH',
-  IMAGE_NOT_CONFIGURED: 'PROVIDER_AUTH',
-  IMAGE_RATE_LIMITED: 'PROVIDER_RATE_LIMITED',
-  IMAGE_TIMEOUT: 'PROVIDER_TIMEOUT',
-  IMAGE_PROVIDER_UNAVAILABLE: 'PROVIDER_UNAVAILABLE',
-  IMAGE_STORE_FAILED: 'DATABASE',
-};
 
 /** Text-only classification shared by thrown messages and stored strings. Null when nothing matches. */
 function classifyText(text: string): CauseCode | null {
@@ -104,7 +94,7 @@ export function classifyCauseFromStored(code: string | null | undefined): CauseC
 
   // Autopilot runs whose drafts lost their picture: "IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE" (B19).
   const image = /^IMAGES_MISSING:(IMAGE_[A-Z_]+)$/.exec(text);
-  if (image) return IMAGE_CAUSE[image[1]] ?? 'UNKNOWN';
+  if (image) return (IMAGE_CAUSE_CODE as Record<string, CauseCode>)[image[1]] ?? 'UNKNOWN';
 
   // describeAiFailure writes "provider:class[:reason][:status]" per attempt. Take the highest-signal attempt:
   // a not_configured neighbour must not outvote a real billing/auth/rate-limit failure.

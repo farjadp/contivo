@@ -8,7 +8,7 @@ const { runAiTask, recordAiUsage, generateOpenAiImage, prismaMock } = vi.hoisted
 }));
 
 vi.mock('@/lib/ai', () => ({ runAiTask }));
-vi.mock('@/lib/ai/image', () => ({ generateOpenAiImage }));
+vi.mock('@/lib/ai/image', async (orig) => ({ ...(await orig<typeof import('@/lib/ai/image')>()), generateOpenAiImage }));
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/ai-usage', async (orig) => ({ ...(await orig<typeof import('@/lib/ai-usage')>()), recordAiUsage }));
 
@@ -65,8 +65,19 @@ describe('generateImageOutcome', () => {
     expect(out).toMatchObject({ ok: false, cause: 'IMAGE_STORE_FAILED', model: 'gpt-image-2.5-flare' });
   });
 
-  it('the null-returning wrapper is unchanged for its callers', async () => {
-    generateOpenAiImage.mockResolvedValue({ ok: false, cause: 'IMAGE_TIMEOUT', model: 'x', attempts: [], message: 't' });
-    await expect(generateImageForContentItem(input)).resolves.toBeNull();
+  it('the wrapper returns a coded failure a caller can record (a retired model is not an outage)', async () => {
+    generateOpenAiImage.mockResolvedValue({ ok: false, cause: 'IMAGE_MODEL_UNAVAILABLE', model: 'x', attempts: [], message: 'gone' });
+    await expect(generateImageForContentItem(input)).resolves.toEqual({
+      ok: false,
+      code: 'IMAGE_MODEL_UNAVAILABLE',
+      cause: 'PROVIDER_AUTH',
+      model: 'x',
+    });
+  });
+
+  it('every image cause maps to a real bug-report cause code', async () => {
+    const { IMAGE_CAUSES, IMAGE_CAUSE_CODE } = await vi.importActual<typeof import('@/lib/ai/image')>('@/lib/ai/image');
+    const { CAUSE_CODES } = await import('@/lib/bug-report/types');
+    for (const c of IMAGE_CAUSES) expect(CAUSE_CODES).toContain(IMAGE_CAUSE_CODE[c]);
   });
 });

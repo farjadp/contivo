@@ -15,7 +15,8 @@
 import { parseOpenAiImageUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { runAiTask } from '@/lib/ai';
-import { generateOpenAiImage, type ImageCause, type ImageDeps } from '@/lib/ai/image';
+import { generateOpenAiImage, IMAGE_CAUSE_CODE, type ImageCause, type ImageDeps } from '@/lib/ai/image';
+import type { CauseCode } from '@/lib/bug-report/types';
 
 export type { ImageCause } from '@/lib/ai/image';
 
@@ -163,11 +164,16 @@ export async function generateImageOutcome(input: ImageInput, deps: ImageDeps = 
   }
 }
 
+/** A failed generation as content-image-service's readGeneratorResult reads it. */
+export type ImageFailure = { ok: false; code: ImageCause; cause: CauseCode; model: string | null };
+
 /**
- * The image or null. Kept for callers that only need the picture; the cause
- * is still logged and recorded by generateImageOutcome.
+ * The image, or a coded failure: `code` is the ImageCause (logged as
+ * failureCode), `cause` the bug-report CauseCode the caller records once with
+ * its own ref. This function records no ACTION_FAILED itself.
  */
-export async function generateImageForContentItem(input: ImageInput): Promise<GeneratedImage | null> {
+export async function generateImageForContentItem(input: ImageInput): Promise<GeneratedImage | ImageFailure> {
   const outcome = await generateImageOutcome(input);
-  return outcome.ok ? outcome.image : null;
+  if (outcome.ok) return outcome.image;
+  return { ok: false, code: outcome.cause, cause: IMAGE_CAUSE_CODE[outcome.cause], model: outcome.model };
 }
