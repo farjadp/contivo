@@ -73,6 +73,14 @@ beforeEach(() => {
 });
 
 describe('startMatrixRun', () => {
+  it('turns a thrown error into a friendly error with a ref instead of throwing', async () => {
+    prismaMock.matrixRun.create.mockRejectedValue(new Error('connection refused'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const result = await startMatrixRun('ws-1');
+    spy.mockRestore();
+    expect(result).toMatchObject({ error: expect.any(String), ref: expect.stringMatching(/^CTV-/) });
+  });
+
   it('refuses a workspace that is not the caller\'s', async () => {
     prismaMock.workspace.findFirst.mockResolvedValue(null);
     const result = await startMatrixRun('ws-x');

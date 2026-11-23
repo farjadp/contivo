@@ -1,6 +1,7 @@
 import { Link, redirect } from '@/i18n/navigation';
 
 import { getSession } from '@/lib/auth';
+import { ReportsNavLink } from './admin/_components/ReportsNavLink';
 import { getLocale, getTranslations } from 'next-intl/server';
 
 /*
@@ -60,6 +61,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 {t(`nav.${item.key}`)}
               </Link>
             ))}
+            <ReportsNavLink />
           </nav>
 
           <div className="mt-auto border-t border-rule pt-6">

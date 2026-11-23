@@ -13,6 +13,7 @@ import {
 } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { writeActivityLog } from '@/lib/activity-log';
+import { purgeBugReportsForWorkspace } from '@/lib/bug-report/retention';
 import {
   GEMINI_COOLDOWN_SECONDS_MAX,
   GEMINI_COOLDOWN_SECONDS_MIN,
@@ -380,6 +381,7 @@ export async function manageWorkspace(formData: FormData): Promise<void> {
       });
       await writeAdminAudit(session, 'WORKSPACE_TRANSFERRED', { workspaceId, targetUserId });
     } else if (actionType === 'DELETE') {
+      await purgeBugReportsForWorkspace(workspaceId); // bug reports keep no text of a deleted workspace
       await prisma.workspace.delete({
         where: { id: workspaceId },
       });

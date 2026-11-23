@@ -1,0 +1,126 @@
+{
+  "bugReport": {
+    "button": {
+      "label": "Report a problem",
+      "aria": "Report a problem"
+    },
+    "sheet": {
+      "title": "Report a problem",
+      "label": "What happened? (optional)",
+      "placeholder": "Tell us what you were doing and what you saw. One or two lines is plenty.",
+      "counter": "{count, number} of {max, number}",
+      "send": "Send",
+      "sending": "Sending...",
+      "note": "We attach technical details (page, recent errors, recent activity IDs). Never your drafts or passwords.",
+      "withRef": "About this failure",
+      "sentTitle": "We got it.",
+      "sentBody": "Quote this reference if you write to us.",
+      "refLabel": "Ref",
+      "copy": "Copy",
+      "copied": "Copied",
+      "close": "Close",
+      "retry": "Try again",
+      "errorFallback": "We could not send that. Please try again in a moment."
+    },
+    "toast": {
+      "message": "Something failed on our side.",
+      "refLabel": "Ref",
+      "report": "Report this",
+      "dismiss": "Dismiss",
+      "copy": "Copy reference",
+      "copied": "Reference copied"
+    },
+    "boundary": {
+      "title": "This page did not load",
+      "body": "That one is on us, not you. Try again, or tell us and we will look at it. The reference below goes with your report.",
+      "refLabel": "Ref",
+      "retry": "Try again",
+      "report": "Report this",
+      "home": "Back to the dashboard",
+      "copy": "Copy reference",
+      "copied": "Reference copied"
+    },
+    "admin": {
+      "nav": "Reports",
+      "title": "Reports",
+      "blurb": "What people reported, grouped by cause. Each row is one fingerprint.",
+      "newBadge": "{count, number} new",
+      "filter": {
+        "label": "Status",
+        "all": "All"
+      },
+      "statuses": {
+        "NEW": "New",
+        "SEEN": "Seen",
+        "FIXED": "Fixed",
+        "WONTFIX": "Won't fix"
+      },
+      "list": {
+        "empty": "No reports in this view.",
+        "status": "Status",
+        "cause": "Top cause",
+        "reports": "Reports",
+        "users": "Users",
+        "lastSeen": "Last seen",
+        "sample": "Sample",
+        "noMessage": "No message written",
+        "noCause": "No cause recorded",
+        "failed": "Could not load reports. Check the server log."
+      },
+      "detail": {
+        "back": "All reports",
+        "reportedAt": "Reported",
+        "resolvedAt": "Resolved",
+        "locale": "Language",
+        "route": "Page",
+        "appVersion": "App version",
+        "user": "User",
+        "workspace": "Workspace",
+        "unknown": "Unknown",
+        "message": "What they wrote",
+        "noMessage": "They did not write anything.",
+        "cause": "Cause",
+        "noCause": "No coded cause was captured for this report.",
+        "sentry": "Sentry event",
+        "sentryOpen": "Open in Sentry",
+        "copy": "Copy",
+        "copied": "Copied",
+        "viewed": "Objects on screen",
+        "timeline": "Timeline",
+        "timelineEmpty": "No events were captured around this report.",
+        "siblings": "Same fingerprint",
+        "siblingsEmpty": "This is the only report with this fingerprint.",
+        "loadFailed": "Could not load reports. Check the server log."
+      },
+      "source": {
+        "client": "Browser",
+        "activity": "Activity",
+        "run": "Run",
+        "ai_provider": "AI provider",
+        "publish": "Publish"
+      },
+      "form": {
+        "title": "Set status",
+        "apply": "Apply to every report in this group",
+        "submit": "Save",
+        "saved": "Status saved",
+        "failed": "Could not save the status"
+      },
+      "causes": {
+        "PROVIDER_OUT_OF_CREDIT": "AI provider out of credit",
+        "PROVIDER_RATE_LIMITED": "AI provider rate limit",
+        "PROVIDER_TIMEOUT": "AI provider timed out",
+        "PROVIDER_UNAVAILABLE": "AI provider unavailable",
+        "PROVIDER_AUTH": "AI provider key or model rejected",
+        "CREDITS_EXHAUSTED": "Workspace credits used up",
+        "NOT_ENOUGH_EVIDENCE": "Not enough evidence",
+        "CONNECTION_EXPIRED": "Social connection expired",
+        "VALIDATION": "Input rejected",
+        "DISPATCH_FAILED": "Job could not be queued",
+        "TIMED_OUT": "Timed out",
+        "DATABASE": "Database error",
+        "UNKNOWN": "Unknown cause"
+      }
+    }
+  }
+}

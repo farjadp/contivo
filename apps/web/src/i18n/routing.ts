@@ -135,6 +135,8 @@ export const routing = defineRouting({
     '/growth/analyzing': '/growth/analyzing',
     '/growth/[id]': '/growth/[id]',
     '/admin': '/admin',
+    '/admin/reports': '/admin/reports',
+    '/admin/reports/[ref]': '/admin/reports/[ref]',
     '/admin/content/[contentId]': '/admin/content/[contentId]',
     '/admin/users/[userId]': '/admin/users/[userId]',
     '/admin/workspaces/[workspaceId]': '/admin/workspaces/[workspaceId]',

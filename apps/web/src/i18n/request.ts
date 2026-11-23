@@ -43,6 +43,7 @@ const NAMESPACES = [
   'product',
   'roadmap',
   'team',
+  'bugreport',
 ] as const;
 
 /**

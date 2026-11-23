@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Qualcosa è andato storto. Riprova.",
     "agentLimit": "Un workspace può gestire al massimo 8 agenti.",
     "aiAnalysisFailed": "L'analisi AI non è riuscita. Riprova tra poco.",
     "brandAssetsNoEvidence": "Con i dati attuali l'AI non è riuscita a ricavare gli asset del brand.",
@@ -132,6 +133,8 @@
       "UNREACHABLE": "La piattaforma non era raggiungibile, nemmeno dopo i tentativi.",
       "PLATFORM_ERROR": "La piattaforma ha rifiutato il post."
     },
-    "creditRequestFailed": "Non è stato possibile inviare la richiesta. Riprova."
+    "creditRequestFailed": "Non è stato possibile inviare la richiesta. Riprova.",
+    "bugReportRateLimited": "Hai inviato diverse segnalazioni nell'ultima ora. Riprova tra un po'.",
+    "bugReportFailed": "Non siamo riusciti a salvare la segnalazione. Riprova."
   }
 }

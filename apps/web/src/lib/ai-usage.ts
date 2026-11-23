@@ -233,6 +233,11 @@ export function runWithAiContext<T>(context: AiContext, fn: () => T): T {
   return aiContext.run({ ...context }, fn);
 }
 
+/** The attribution context of the running call chain; empty outside `runWithAiContext`. */
+export function getAiContext(): AiContext {
+  return { ...(aiContext.getStore() ?? {}) };
+}
+
 /**
  * Fills in the current run context once the owner is known (a pipeline that
  * only learns its user after loading the run row). No-op outside a context.

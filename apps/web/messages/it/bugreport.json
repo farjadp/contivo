@@ -1,0 +1,126 @@
+{
+  "bugReport": {
+    "button": {
+      "label": "Segnala un problema",
+      "aria": "Segnala un problema"
+    },
+    "sheet": {
+      "title": "Segnala un problema",
+      "label": "Che cosa è successo? (facoltativo)",
+      "placeholder": "Dicci cosa stavi facendo e cosa hai visto. Una o due righe bastano.",
+      "counter": "{count, number} su {max, number}",
+      "send": "Invia",
+      "sending": "Invio in corso...",
+      "note": "Alleghiamo dettagli tecnici (pagina, errori recenti, ID delle attività recenti). Mai le tue bozze o le tue password.",
+      "withRef": "Riguarda l'errore",
+      "sentTitle": "Ricevuto.",
+      "sentBody": "Se ci scrivi, indica questo codice.",
+      "refLabel": "Rif.",
+      "copy": "Copia",
+      "copied": "Copiato",
+      "close": "Chiudi",
+      "retry": "Riprova",
+      "errorFallback": "Non siamo riusciti a inviarla. Riprova tra un momento."
+    },
+    "toast": {
+      "message": "Qualcosa non ha funzionato da parte nostra.",
+      "refLabel": "Rif.",
+      "report": "Segnala",
+      "dismiss": "Chiudi",
+      "copy": "Copia il codice",
+      "copied": "Codice copiato"
+    },
+    "boundary": {
+      "title": "Questa pagina non si è caricata",
+      "body": "La colpa è nostra, non tua. Riprova, oppure segnalacelo e daremo un'occhiata. Il codice qui sotto viaggia con la tua segnalazione.",
+      "refLabel": "Rif.",
+      "retry": "Riprova",
+      "report": "Segnala l'errore",
+      "home": "Torna alla dashboard",
+      "copy": "Copia il codice",
+      "copied": "Codice copiato"
+    },
+    "admin": {
+      "nav": "Segnalazioni",
+      "title": "Segnalazioni",
+      "blurb": "Cosa è stato segnalato, raggruppato per causa. Ogni riga è un'impronta.",
+      "newBadge": "{count, number} nuove",
+      "filter": {
+        "label": "Stato",
+        "all": "Tutte"
+      },
+      "statuses": {
+        "NEW": "Nuova",
+        "SEEN": "Vista",
+        "FIXED": "Risolta",
+        "WONTFIX": "Non si risolve"
+      },
+      "list": {
+        "empty": "Nessuna segnalazione in questa vista.",
+        "status": "Stato",
+        "cause": "Causa principale",
+        "reports": "Segnalazioni",
+        "users": "Utenti",
+        "lastSeen": "Ultima",
+        "sample": "Esempio",
+        "noMessage": "Nessun testo scritto",
+        "noCause": "Nessuna causa registrata",
+        "failed": "Impossibile caricare le segnalazioni. Controlla il log del server."
+      },
+      "detail": {
+        "back": "Tutte le segnalazioni",
+        "reportedAt": "Segnalata",
+        "resolvedAt": "Risolta",
+        "locale": "Lingua",
+        "route": "Pagina",
+        "appVersion": "Versione app",
+        "user": "Utente",
+        "workspace": "Workspace",
+        "unknown": "Sconosciuto",
+        "message": "Cosa ha scritto",
+        "noMessage": "Non ha scritto nulla.",
+        "cause": "Causa",
+        "noCause": "Per questa segnalazione non è stata catturata una causa codificata.",
+        "sentry": "Evento Sentry",
+        "sentryOpen": "Apri in Sentry",
+        "copy": "Copia",
+        "copied": "Copiato",
+        "viewed": "Oggetti a schermo",
+        "timeline": "Cronologia",
+        "timelineEmpty": "Nessun evento catturato attorno a questa segnalazione.",
+        "siblings": "Stessa impronta",
+        "siblingsEmpty": "È l'unica segnalazione con questa impronta.",
+        "loadFailed": "Impossibile caricare le segnalazioni. Controlla il log del server."
+      },
+      "source": {
+        "client": "Browser",
+        "activity": "Attività",
+        "run": "Esecuzione",
+        "ai_provider": "Provider AI",
+        "publish": "Pubblicazione"
+      },
+      "form": {
+        "title": "Imposta lo stato",
+        "apply": "Applica a tutte le segnalazioni del gruppo",
+        "submit": "Salva",
+        "saved": "Stato salvato",
+        "failed": "Impossibile salvare lo stato"
+      },
+      "causes": {
+        "PROVIDER_OUT_OF_CREDIT": "Provider AI senza credito",
+        "PROVIDER_RATE_LIMITED": "Limite di richieste del provider AI",
+        "PROVIDER_TIMEOUT": "Il provider AI non ha risposto in tempo",
+        "PROVIDER_UNAVAILABLE": "Provider AI non disponibile",
+        "PROVIDER_AUTH": "Chiave o modello rifiutati",
+        "CREDITS_EXHAUSTED": "Crediti del workspace esauriti",
+        "NOT_ENOUGH_EVIDENCE": "Prove insufficienti",
+        "CONNECTION_EXPIRED": "Connessione social scaduta",
+        "VALIDATION": "Input rifiutato",
+        "DISPATCH_FAILED": "Attività non messa in coda",
+        "TIMED_OUT": "Tempo scaduto",
+        "DATABASE": "Errore del database",
+        "UNKNOWN": "Causa sconosciuta"
+      }
+    }
+  }
+}

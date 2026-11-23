@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
+import { guardedAction } from '@/lib/bug-report/action-failure';
 import { triggerBackgroundRun } from '@/lib/background-run';
 import { classifyRunError, RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
 import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
@@ -181,10 +182,15 @@ async function startRun(owned: Owned): Promise<{ runId: string } | { error: stri
   return { runId: run.id };
 }
 
-export async function startMatrixRun(workspaceId: string): Promise<{ runId: string } | { error: string }> {
-  const owned = await authorise(workspaceId);
-  if ('error' in owned) return owned;
-  return startRun(owned);
+export async function startMatrixRun(
+  workspaceId: string,
+): Promise<{ runId: string } | { error: string; ref?: string }> {
+  // A thrown error becomes { error: friendly, ref }; every returned result is unchanged.
+  return guardedAction('startMatrixRun', workspaceId || null, async () => {
+    const owned = await authorise(workspaceId);
+    if ('error' in owned) return owned;
+    return startRun(owned);
+  });
 }
 
 function latestDoneRun(workspaceId: string) {

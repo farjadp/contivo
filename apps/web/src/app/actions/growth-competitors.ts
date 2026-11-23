@@ -45,6 +45,7 @@ import { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth';
 import { actionError } from '@/lib/action-errors';
+import { guardedAction } from '@/lib/bug-report/action-failure';
 import { triggerBackgroundRun } from '@/lib/background-run';
 import {
   getMaxDiscoveryRuns,
@@ -404,6 +405,13 @@ async function retryLimitError(ms: number): Promise<string> {
 // ---------------------------------------------------------------------------
 
 export async function startCompetitorDiscovery(
+  workspaceId: string,
+): Promise<{ runId: string } | { error: string; meta?: DiscoveryMeta; ref?: string }> {
+  // A thrown error becomes { error: friendly, ref }; every returned result is unchanged.
+  return guardedAction('startCompetitorDiscovery', workspaceId || null, () => startCompetitorDiscoveryBody(workspaceId));
+}
+
+async function startCompetitorDiscoveryBody(
   workspaceId: string,
 ): Promise<{ runId: string } | { error: string; meta?: DiscoveryMeta }> {
   const session = await getSession();

@@ -72,6 +72,13 @@ describe('callStructured', () => {
     });
   });
 
+  it('passes the run workspace and user from the AI context', async () => {
+    runAiTaskMock.mockResolvedValue(ok());
+    const { runWithAiContext } = await import('@/lib/ai-usage');
+    await runWithAiContext({ userId: 'u1', workspaceId: 'w1' }, () => callStructured(args));
+    expect(runAiTaskMock.mock.calls[0][2]).toEqual({ userId: 'u1', workspaceId: 'w1' });
+  });
+
   it.each([
     ['market_axis_candidates', 'matrix_propose_axes'],
     ['chart_scores', 'matrix_score_chart'],

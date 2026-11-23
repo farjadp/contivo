@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "出了点问题，请重试。",
     "agentLimit": "一个工作区最多可以运行 8 个代理。",
     "aiAnalysisFailed": "AI 分析失败，请稍后再试。",
     "brandAssetsNoEvidence": "根据现有依据，AI 无法生成品牌素材。",
@@ -132,6 +133,8 @@
       "UNREACHABLE": "多次重试后仍无法连接到该平台。",
       "PLATFORM_ERROR": "平台拒绝了这篇帖子。"
     },
-    "creditRequestFailed": "请求未能发送，请重试。"
+    "creditRequestFailed": "请求未能发送，请重试。",
+    "bugReportRateLimited": "你在过去一小时内已提交多份反馈，请稍后再试。",
+    "bugReportFailed": "我们没能保存你的反馈，请重试。"
   }
 }

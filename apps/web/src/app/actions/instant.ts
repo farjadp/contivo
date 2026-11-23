@@ -16,6 +16,7 @@
  */
 
 import { getSession } from '@/lib/auth';
+import { guardedAction } from '@/lib/bug-report/action-failure';
 import { prisma } from '@/lib/db';
 import { generateInstantDraft } from '@/lib/gemini';
 import { textForChannel } from '@/lib/social-text';
@@ -48,9 +49,22 @@ export type InstantContentResult =
       item: { id: string; topic: string; channel: string; content: string; createdAt: string };
       creditsRemaining: number;
     }
-  | { ok: false; error: string; code?: 'INSUFFICIENT_CREDITS' | 'PROVIDER_UNAVAILABLE' };
+  | { ok: false; error: string; code?: 'INSUFFICIENT_CREDITS' | 'PROVIDER_UNAVAILABLE'; ref?: string };
 
 export async function generateInstantContentAction(input: {
+  topic: string;
+  channel: string;
+  tone?: string;
+}): Promise<InstantContentResult> {
+  // A thrown error becomes { ok: false, error: friendly, ref }; every returned result is unchanged.
+  const result = await guardedAction<InstantContentResult>('generateInstantContent', null, () =>
+    generateInstantContentBody(input),
+  );
+  if ('ok' in result) return result;
+  return { ok: false, error: result.error, ref: result.ref };
+}
+
+async function generateInstantContentBody(input: {
   topic: string;
   channel: string;
   tone?: string;

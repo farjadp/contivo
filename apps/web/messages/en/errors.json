@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Something went wrong. Please try again.",
     "agentLimit": "A workspace can run at most 8 agents.",
     "aiAnalysisFailed": "AI analysis failed. Try again in a moment.",
     "brandAssetsNoEvidence": "AI could not produce brand assets from current evidence.",
@@ -132,6 +133,8 @@
       "UNREACHABLE": "The platform could not be reached, even after retries.",
       "PLATFORM_ERROR": "The platform rejected the post."
     },
-    "creditRequestFailed": "Your request could not be sent. Please try again."
+    "creditRequestFailed": "Your request could not be sent. Please try again.",
+    "bugReportRateLimited": "You have sent several reports in the last hour. Please try again a little later.",
+    "bugReportFailed": "We could not save your report. Please try again."
   }
 }

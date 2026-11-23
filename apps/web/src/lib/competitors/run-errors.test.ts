@@ -104,6 +104,14 @@ describe('AI_UNAVAILABLE', () => {
     expect(isAiUnavailableFailure(failure({ kind: 'refusal', firstErrorClass: 'refusal' }))).toBe(false);
   });
 
+  it('describeAiFailure keeps the cooldown reason in the token', () => {
+    const f = { kind: 'all_unavailable', firstErrorClass: 'billing', allRateLimited: false, attempts: [{ provider: 'openai', errorClass: 'cooling_down', reason: 'billing' }, { provider: 'anthropic', errorClass: 'not_configured' }] };
+    const text = describeAiFailure('x', f);
+    expect(text).toContain('openai:cooling_down:billing, anthropic:not_configured');
+    expect(classifyRunError(text)).toBe('aiUnavailable');
+    expect(describeAiFailure('x', { ...f, attempts: [{ provider: 'openai', errorClass: 'billing', status: 429 }] })).toContain('(openai:billing:429)');
+  });
+
   it('describeAiFailure: billing -> aiUnavailable, all rate limited -> rateLimited, bad request -> neither', () => {
     const billing = describeAiFailure('Judge batch failed', failure());
     expect(billing).toBe(

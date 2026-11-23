@@ -1,5 +1,6 @@
 {
   "errors": {
+    "generic": "Algo salió mal. Inténtalo de nuevo.",
     "agentLimit": "Un workspace puede tener como máximo 8 agentes.",
     "aiAnalysisFailed": "El análisis con IA ha fallado. Inténtalo de nuevo en un momento.",
     "brandAssetsNoEvidence": "La IA no pudo generar los activos de marca con la evidencia actual.",
@@ -132,6 +133,8 @@
       "UNREACHABLE": "No se pudo contactar con la plataforma, ni siquiera tras varios reintentos.",
       "PLATFORM_ERROR": "La plataforma rechazó el post."
     },
-    "creditRequestFailed": "No se pudo enviar tu solicitud. Inténtalo de nuevo."
+    "creditRequestFailed": "No se pudo enviar tu solicitud. Inténtalo de nuevo.",
+    "bugReportRateLimited": "Has enviado varios informes en la última hora. Inténtalo de nuevo un poco más tarde.",
+    "bugReportFailed": "No pudimos guardar tu informe. Inténtalo de nuevo."
   }
 }
