@@ -20,6 +20,10 @@ import { buildLoop, STAGES, type StageId } from '@/lib/workspace-loop';
 import { LoopRail } from '../growth/[id]/_components/LoopRail';
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
 import { countCompetitors, countPendingCompetitors } from '@/lib/competitor-counts';
+import { NextStepBar } from '@/components/next-step/NextStepBar';
+import { buildNextStep } from '@/lib/next-step';
+import { loadNextStepInput, type NextStepLoad } from '@/lib/next-step-load';
+import { logStepView } from '@/lib/step-view';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -173,6 +177,16 @@ export default async function DashboardPage() {
 
   if (!workspace) redirect({ href: '/growth', locale: await getLocale() });
 
+  logStepView(userId, 'today', workspace.id);
+  // The one next-step bar. Secondary on this page, so a failed read drops the
+  // bar (and with it the guided hiding) rather than the whole of Today.
+  const nextStepLoad: NextStepLoad | null = await loadNextStepInput(userId, workspace.id, 'today').catch((error) => {
+    console.error('Today: next step failed to load:', error);
+    return null;
+  });
+  const guided = nextStepLoad?.input.guided ?? false;
+  const nextStep = nextStepLoad ? buildNextStep({ ...nextStepLoad.input, onFirstPostTab: false }) : null;
+
   const counts = countStatuses(workspace.contentItems);
   const accepted = workspace.competitors.filter((c: any) => c.userDecision === 'ACCEPTED').length;
   const pendingCompetitors = countPendingCompetitors(workspace.competitors);
@@ -267,7 +281,8 @@ export default async function DashboardPage() {
   if (publishedThisWeek > 0) {
     moved.push({ tag: t('today.moved.tagPublished'), text: t('today.moved.published', { count: publishedThisWeek }) });
   }
-  if (pendingCompetitors > 0) {
+  // Guided mode: competitors are confirmed in the first-post view, which the bar points at.
+  if (pendingCompetitors > 0 && !guided) {
     moved.push({
       tag: t('today.moved.tagCompetitors'),
       text: t('today.moved.pending', { count: pendingCompetitors }),
@@ -312,46 +327,52 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* ── The loop, for this workspace ─────────────────────────────── */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href={{ pathname: '/growth/[id]', params: { id: workspace.id } }}
-            className="inline-flex items-center gap-2 text-[15px] font-semibold hover:text-moss-700"
-          >
-            {workspace.name}
-            <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-          </Link>
-          <span className="font-plexmono text-[12px] text-moss-muted">
-            {t('today.credits', { count: creditsLeft })}
-          </span>
-        </div>
-        <LoopRail
-          workspaceId={workspace.id}
-          stages={loop}
-          activeStage={activeStage}
-          activeTab=""
-          tabs={[]}
-          names={Object.fromEntries(STAGES.map((s) => [s.id, tw(`loop.${s.id}.name`)])) as Record<StageId, string>}
-          numbers={
-            Object.fromEntries(loop.map((s) => [s.id, format.number(s.order, { minimumIntegerDigits: 2 })])) as Record<
-              StageId,
-              string
-            >
-          }
-          subs={Object.fromEntries(STAGES.map((s) => [s.id, tw(`loop.${s.id}.sub`)])) as Record<StageId, string>}
-          stateLabels={{
-            done: tw('loop.state.done'),
-            next: tw('loop.state.next'),
-            open: tw('loop.state.open'),
-            locked: tw('loop.state.locked'),
-          }}
-          navLabel={tw('loop.tabsLabel')}
-          stagesLabel={t('today.loopLabel')}
-        />
-      </section>
+      <NextStepBar step={nextStep} surface="today" />
 
-      <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)_300px]">
+      {/* ── The loop, for this workspace (hidden until the first post) ─ */}
+      {!guided && (
+        <section className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Link
+              href={{ pathname: '/growth/[id]', params: { id: workspace.id } }}
+              className="inline-flex items-center gap-2 text-[15px] font-semibold hover:text-moss-700"
+            >
+              {workspace.name}
+              <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+            </Link>
+            <span className="font-plexmono text-[12px] text-moss-muted">
+              {t('today.credits', { count: creditsLeft })}
+            </span>
+          </div>
+          <LoopRail
+            workspaceId={workspace.id}
+            stages={loop}
+            activeStage={activeStage}
+            activeTab=""
+            tabs={[]}
+            names={Object.fromEntries(STAGES.map((s) => [s.id, tw(`loop.${s.id}.name`)])) as Record<StageId, string>}
+            numbers={
+              Object.fromEntries(loop.map((s) => [s.id, format.number(s.order, { minimumIntegerDigits: 2 })])) as Record<
+                StageId,
+                string
+              >
+            }
+            subs={Object.fromEntries(STAGES.map((s) => [s.id, tw(`loop.${s.id}.sub`)])) as Record<StageId, string>}
+            stateLabels={{
+              done: tw('loop.state.done'),
+              next: tw('loop.state.next'),
+              open: tw('loop.state.open'),
+              locked: tw('loop.state.locked'),
+            }}
+            navLabel={tw('loop.tabsLabel')}
+            stagesLabel={t('today.loopLabel')}
+          />
+        </section>
+      )}
+
+      <div
+        className={`grid gap-8 ${guided ? 'lg:grid-cols-[320px_minmax(0,1fr)]' : 'lg:grid-cols-[320px_minmax(0,1fr)_300px]'}`}
+      >
         {/* ── What moved ─────────────────────────────────────────────── */}
         <section
           aria-labelledby="moved-title"
@@ -382,58 +403,60 @@ export default async function DashboardPage() {
           )}
         </section>
 
-        {/* ── Next moves ─────────────────────────────────────────────── */}
-        <section aria-labelledby="moves-title" className="order-1 min-w-0 lg:order-2">
-          <p className="font-plexmono text-[13px] text-moss-muted">
-            {format.dateTime(now, { weekday: 'long', month: 'long', day: 'numeric' })}
-          </p>
-          <h1
-            id="moves-title"
-            className="mt-1.5 font-display text-[34px] font-bold leading-[1.08] tracking-tight sm:text-[44px]"
-          >
-            {t('today.headline', { count: moves.length })}
-          </h1>
+        {/* ── Next moves (hidden until the first post: the bar is the one move) ── */}
+        {!guided && (
+          <section aria-labelledby="moves-title" className="order-1 min-w-0 lg:order-2">
+            <p className="font-plexmono text-[13px] text-moss-muted">
+              {format.dateTime(now, { weekday: 'long', month: 'long', day: 'numeric' })}
+            </p>
+            <h1
+              id="moves-title"
+              className="mt-1.5 font-display text-[34px] font-bold leading-[1.08] tracking-tight sm:text-[44px]"
+            >
+              {t('today.headline', { count: moves.length })}
+            </h1>
 
-          {moves.length === 0 ? (
-            <p className="mt-6 border-t border-moss pt-5 text-[15px] text-moss-muted">{t('today.healthy')}</p>
-          ) : (
-            <ol className="mt-6">
-              {moves.map((move, i) => (
-                <li
-                  key={move.id}
-                  className={`grid grid-cols-[40px_minmax(0,1fr)] gap-4 border-t py-5 sm:grid-cols-[52px_minmax(0,1fr)] ${
-                    i === 0 ? 'border-moss' : 'border-rule'
-                  } ${i === moves.length - 1 ? 'border-b border-b-rule' : ''}`}
-                >
-                  <span aria-hidden className="font-plexmono text-[28px] leading-none text-rule-strong">
-                    {format.number(i + 1)}
-                  </span>
-                  <div className="flex min-w-0 flex-col gap-2.5">
-                    <h3 className="text-[19px] font-semibold leading-snug">{move.title}</h3>
-                    <p className="text-[15px] leading-relaxed text-moss-muted">{move.desc}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="rounded bg-chalk-sunk px-2 py-1 font-plexmono text-[12px]">
-                        {tw(`loop.${move.stage}.name`)} · {tw(`loop.${move.stage}.sub`)}
-                      </span>
-                      {move.tag && (
-                        <span className="rounded bg-chalk-sunk px-2 py-1 font-plexmono text-[12px]">{move.tag}</span>
-                      )}
-                      <Link
-                        href={move.href as never}
-                        className={`ms-auto inline-flex h-11 items-center gap-2 rounded-lg px-5 text-[14px] font-semibold transition-colors ${
-                          i === 0 ? 'bg-saffron text-moss hover:bg-saffron-soft' : 'bg-moss text-chalk hover:bg-moss-700'
-                        }`}
-                      >
-                        {move.cta}
-                        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-                      </Link>
+            {moves.length === 0 ? (
+              <p className="mt-6 border-t border-moss pt-5 text-[15px] text-moss-muted">{t('today.healthy')}</p>
+            ) : (
+              <ol className="mt-6">
+                {moves.map((move, i) => (
+                  <li
+                    key={move.id}
+                    className={`grid grid-cols-[40px_minmax(0,1fr)] gap-4 border-t py-5 sm:grid-cols-[52px_minmax(0,1fr)] ${
+                      i === 0 ? 'border-moss' : 'border-rule'
+                    } ${i === moves.length - 1 ? 'border-b border-b-rule' : ''}`}
+                  >
+                    <span aria-hidden className="font-plexmono text-[28px] leading-none text-rule-strong">
+                      {format.number(i + 1)}
+                    </span>
+                    <div className="flex min-w-0 flex-col gap-2.5">
+                      <h3 className="text-[19px] font-semibold leading-snug">{move.title}</h3>
+                      <p className="text-[15px] leading-relaxed text-moss-muted">{move.desc}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded bg-chalk-sunk px-2 py-1 font-plexmono text-[12px]">
+                          {tw(`loop.${move.stage}.name`)} · {tw(`loop.${move.stage}.sub`)}
+                        </span>
+                        {move.tag && (
+                          <span className="rounded bg-chalk-sunk px-2 py-1 font-plexmono text-[12px]">{move.tag}</span>
+                        )}
+                        <Link
+                          href={move.href as never}
+                          className={`ms-auto inline-flex h-11 items-center gap-2 rounded-lg px-5 text-[14px] font-semibold transition-colors ${
+                            i === 0 ? 'bg-saffron text-moss hover:bg-saffron-soft' : 'bg-moss text-chalk hover:bg-moss-700'
+                          }`}
+                        >
+                          {move.cta}
+                          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </li>
-              ))}
-            </ol>
-          )}
-        </section>
+                  </li>
+                ))}
+              </ol>
+            )}
+          </section>
+        )}
 
         {/* ── Shipping ───────────────────────────────────────────────── */}
         <aside className="order-3 flex flex-col gap-8">
@@ -509,37 +532,40 @@ export default async function DashboardPage() {
             </dl>
           </section>
 
-          <section className="flex flex-col gap-2.5 rounded-xl border border-dashed border-rule-strong p-5">
-            <span className="font-plexmono text-[11px] uppercase tracking-widest text-moss-muted">
-              {t('autopilot.label')} · {autopilotOn ? t('autopilot.on') : t('autopilot.off')}
-            </span>
-            <p className="text-[15px] leading-relaxed">
-              {autopilotOn
-                ? t('autopilot.running', {
-                    posts: autopilot!.postsPerWeek,
-                    channels: autopilot!.channels.join(' + ') || t('autopilot.noChannel'),
-                  })
-                : !ideationReady
-                  ? t('autopilot.needsIntelligence')
-                  : !canPublish
-                    ? t('autopilot.needsChannel')
-                    : t('autopilot.ready')}
-            </p>
-            <Link
-              href={
-                !autopilotOn && ideationReady && !canPublish
-                  ? { pathname: '/connections', query: { tab: 'social', workspaceId: workspace.id } }
-                  : { pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }
-              }
-              className="text-[14px] font-semibold underline underline-offset-4 hover:text-moss-700"
-            >
-              {autopilotOn
-                ? t('autopilot.open')
-                : ideationReady && !canPublish
-                  ? t('autopilot.connectChannel')
-                  : t('autopilot.setUp')}
-            </Link>
-          </section>
+          {/* Autopilot card: hidden in guided mode, where Autopilot is off by definition. */}
+          {!guided && (
+            <section className="flex flex-col gap-2.5 rounded-xl border border-dashed border-rule-strong p-5">
+              <span className="font-plexmono text-[11px] uppercase tracking-widest text-moss-muted">
+                {t('autopilot.label')} · {autopilotOn ? t('autopilot.on') : t('autopilot.off')}
+              </span>
+              <p className="text-[15px] leading-relaxed">
+                {autopilotOn
+                  ? t('autopilot.running', {
+                      posts: autopilot!.postsPerWeek,
+                      channels: autopilot!.channels.join(' + ') || t('autopilot.noChannel'),
+                    })
+                  : !ideationReady
+                    ? t('autopilot.needsIntelligence')
+                    : !canPublish
+                      ? t('autopilot.needsChannel')
+                      : t('autopilot.ready')}
+              </p>
+              <Link
+                href={
+                  !autopilotOn && ideationReady && !canPublish
+                    ? { pathname: '/connections', query: { tab: 'social', workspaceId: workspace.id } }
+                    : { pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }
+                }
+                className="text-[14px] font-semibold underline underline-offset-4 hover:text-moss-700"
+              >
+                {autopilotOn
+                  ? t('autopilot.open')
+                  : ideationReady && !canPublish
+                    ? t('autopilot.connectChannel')
+                    : t('autopilot.setUp')}
+              </Link>
+            </section>
+          )}
         </aside>
       </div>
     </div>
