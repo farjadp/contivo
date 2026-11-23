@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
-import { useFormatter, useTranslations } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 import { Sparkles, Loader2, FileText, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { generateIdeas, saveIdeaToPipeline, generateDraftPreviewFromIdea } from '@/app/actions/workspace';
@@ -121,13 +121,10 @@ export function IdeationTab({
   wordCountLimits: ContentWordCountLimits;
 }) {
   const t = useTranslations('tabsA');
-  const format = useFormatter();
   const [isGenerating, setIsGenerating] = useState(false);
   const [ideas, setIdeas] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [frameworkMeta, setFrameworkMeta] = useState<any | null>(null);
-  const [qualityScores, setQualityScores] = useState<any | null>(null);
-  const [fallbackUsed, setFallbackUsed] = useState(false);
   const [goal, setGoal] = useState<string>('authority');
   const [platform, setPlatform] = useState<string>('linkedin');
   const [funnelStage, setFunnelStage] = useState<string>('AUTO');
@@ -242,8 +239,6 @@ export function IdeationTab({
           })),
         );
         setFrameworkMeta(result.framework || null);
-        setQualityScores(result.qualityScores || null);
-        setFallbackUsed(Boolean(result.fallbackUsed));
       }
     } catch (err) {
       setError(t('ideation.errors.unexpected'));
@@ -495,7 +490,7 @@ export function IdeationTab({
         {error && <p className="mt-4 text-sm text-red-600 font-medium">{error}</p>}
       </div>
 
-      {frameworkMeta && qualityScores ? (
+      {frameworkMeta ? (
         <div className="rounded-2xl border border-rule bg-chalk-raised p-4 shadow-sm">
           <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
             <div>
@@ -504,26 +499,10 @@ export function IdeationTab({
               <p className="mt-1 text-sm text-moss-muted">{frameworkMeta.selection_reason}</p>
             </div>
             <div className="flex flex-wrap gap-2">
-              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss-700">
-                {t('ideation.overallScore', {
-                  score: format.number(Number(qualityScores.overall_score || 0), {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }),
-                })}
-              </span>
-              {fallbackUsed ? (
-                <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-xs font-bold text-amber-700">
-                  {t('ideation.fallbackApplied')}
-                </span>
-              ) : null}
               <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
                 {includeImages
                   ? t('ideation.imagesBadge', { count: imageCount })
                   : t('ideation.imagesBadgeNone')}
-              </span>
-              <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
-                {autoInsertToCalendar ? t('ideation.calendarAuto') : t('ideation.calendarManual')}
               </span>
               <span className="inline-flex items-center rounded-full bg-chalk-sunk px-3 py-1 text-xs font-bold text-moss">
                 {t('ideation.wordsBadge', { count: normalizedTargetWordCount })}
