@@ -14,6 +14,9 @@ const { prismaMock, activityLogMock, proposeMock, scoreMock, summariseMock, pers
     matrixChart: {
       create: vi.fn(),
     },
+    workspace: {
+      update: vi.fn(),
+    },
     $transaction: vi.fn(),
   },
   activityLogMock: { writeActivityLog: vi.fn() },
@@ -536,6 +539,69 @@ describe('runMatrixPipeline: evidence for competitors that have none (spec §15)
     const bundle = proposeMock.proposeMarketAxes.mock.calls[0][0];
     expect(bundle.competitors.map((c: { competitorId: string }) => c.competitorId)).toEqual(['c1', 'c2']);
     expect(finalRunWrite().data.status).toBe('NEEDS_AXES');
+  });
+});
+
+describe('runMatrixPipeline: autoAxes (first post, spec D4)', () => {
+  it('without the option, a workspace with no market axes still pauses at NEEDS_AXES and saves no axes', async () => {
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { matrixAxes: null } }));
+
+    await runMatrixPipeline('run-1');
+
+    expect(finalRunWrite().data.status).toBe('NEEDS_AXES');
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+  });
+
+  it('autoAxes 2 with 4 candidates: stores the first 2, logs it, and finishes DONE with 4 charts', async () => {
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { matrixAxes: null } }));
+
+    await runMatrixPipeline('run-1', { autoAxes: 2 });
+
+    expect(proposeMock.proposeMarketAxes).toHaveBeenCalledTimes(1);
+    expect(prismaMock.workspace.update).toHaveBeenCalledTimes(1);
+    const saved = prismaMock.workspace.update.mock.calls[0][0];
+    expect(saved.where).toEqual({ id: 'ws-1' });
+    expect(saved.data.matrixAxes.map((a: { key: string }) => a.key)).toEqual(['price_service', 'local_global']);
+
+    expect(runWrites().some((w) => w.data.status === 'NEEDS_AXES')).toBe(false);
+    const done = finalRunWrite();
+    expect(done.data.status).toBe('DONE');
+    expect(done.data.axesUsed).toHaveLength(4);
+    expect(prismaMock.matrixChart.create).toHaveBeenCalledTimes(4);
+    // 40 (proposal) + 4 x 100 + 4 x 10 + 5
+    expect(done.data.tokensUsed).toBe(485);
+    expect(activityLogMock.writeActivityLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'MATRICES_AXES_AUTO_CHOSEN',
+        detail: { runId: 'run-1', axes: ['price_service', 'local_global'], candidates: 4 },
+      }),
+    );
+    expect(activityLogMock.writeActivityLog).not.toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'MATRICES_AXES_PROPOSED' }),
+    );
+  });
+
+  it('autoAxes 2 with 0 usable candidates: saves nothing and finishes DONE with the 2 core charts only', async () => {
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun({ workspace: { matrixAxes: null } }));
+    proposeMock.proposeMarketAxes.mockResolvedValue({ candidates: [], tokens: 40 });
+
+    await runMatrixPipeline('run-1', { autoAxes: 2 });
+
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+    const done = finalRunWrite();
+    expect(done.data.status).toBe('DONE');
+    expect(done.data.axesUsed.map((a: { kind: string }) => a.kind)).toEqual(['CORE', 'CORE']);
+    expect(prismaMock.matrixChart.create).toHaveBeenCalledTimes(2);
+  });
+
+  it('autoAxes is ignored when the workspace already has market axes: no proposal, the stored axes are used', async () => {
+    prismaMock.matrixRun.findUnique.mockResolvedValue(makeRun());
+
+    await runMatrixPipeline('run-1', { autoAxes: 2 });
+
+    expect(proposeMock.proposeMarketAxes).not.toHaveBeenCalled();
+    expect(prismaMock.workspace.update).not.toHaveBeenCalled();
+    expect(finalRunWrite().data.status).toBe('DONE');
   });
 });
 

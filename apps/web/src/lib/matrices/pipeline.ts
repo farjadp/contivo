@@ -18,7 +18,13 @@ import { sanitizeUpstreamText } from '@/lib/competitors/redact';
 import { RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
 import { runWithConcurrency } from '@/lib/run-with-concurrency';
 
-import { axesForRun, parseStoredMarketAxes, type AxisDefinition, type MatrixLanguage } from './axes';
+import {
+  axesForRun,
+  normaliseMarketAxes,
+  parseStoredMarketAxes,
+  type AxisDefinition,
+  type MatrixLanguage,
+} from './axes';
 import { buildEvidenceBundle, competitorEvidence, hasBrandSummary } from './bundle';
 import { MATRIX_ENRICH_BUDGET_MS, enrichEvidenceLessCompetitors, mergeEvidence } from './enrich';
 import { MatrixAiError } from './openai';
@@ -118,13 +124,24 @@ class TokenTally {
   }
 }
 
-export async function runMatrixPipeline(runId: string): Promise<void> {
+export type MatrixPipelineOptions = {
+  /**
+   * First post (spec 2026-11-23-first-post-b D4): when the workspace has no
+   * stored market axes, keep the first N AI-proposed candidates, save them to
+   * the workspace as `saveMatrixAxes` would, and go on to SCORE instead of
+   * pausing at NEEDS_AXES. Without it the pipeline is unchanged: the user
+   * chooses.
+   */
+  autoAxes?: number;
+};
+
+export async function runMatrixPipeline(runId: string, options: MatrixPipelineOptions = {}): Promise<void> {
   // Runs detached from the request, so model calls are attributed to the
   // run's owner through this context, filled in once the run is loaded.
-  return runWithAiContext({}, () => runMatrixPipelineInAiContext(runId));
+  return runWithAiContext({}, () => runMatrixPipelineInAiContext(runId, options));
 }
 
-async function runMatrixPipelineInAiContext(runId: string): Promise<void> {
+async function runMatrixPipelineInAiContext(runId: string, options: MatrixPipelineOptions): Promise<void> {
   const tokens = new TokenTally();
   let run: Awaited<ReturnType<typeof loadRun>> | null = null;
 
@@ -247,24 +264,45 @@ async function runMatrixPipelineInAiContext(runId: string): Promise<void> {
 
     // --- AXES -----------------------------------------------------------
     await setStage(runId, 'AXES');
-    const market = parseStoredMarketAxes(workspace.matrixAxes);
+    let market = parseStoredMarketAxes(workspace.matrixAxes);
     if (market.length === 0) {
       const { candidates } = await tokens.track(() =>
         proposeMarketAxes(bundle, language, { brandName: workspace.name, targetCountry: workspace.targetCountry }),
       );
-      await updateWhileRunning(runId, {
-        status: 'NEEDS_AXES',
-        axisCandidates: candidates as unknown as Prisma.InputJsonValue,
-        tokensUsed: tokens.total,
-        finishedAt: new Date(),
-      });
+      const autoAxes = options.autoAxes;
+      if (!(typeof autoAxes === 'number' && Number.isInteger(autoAxes) && autoAxes > 0)) {
+        await updateWhileRunning(runId, {
+          status: 'NEEDS_AXES',
+          axisCandidates: candidates as unknown as Prisma.InputJsonValue,
+          tokensUsed: tokens.total,
+          finishedAt: new Date(),
+        });
+        await writeActivityLog({
+          userId: run.userId,
+          workspaceId: workspace.id,
+          action: 'MATRICES_AXES_PROPOSED',
+          detail: { runId, candidates: candidates.length, tokens: tokens.total },
+        });
+        return;
+      }
+
+      // autoAxes: the first N candidates, saved as saveMatrixAxes would. Zero
+      // usable candidates leaves the 2 core charts; the run still finishes
+      // and the caller's matricesGate check fails it honestly.
+      market = normaliseMarketAxes(candidates, autoAxes);
+      await updateWhileRunning(runId, { axisCandidates: candidates as unknown as Prisma.InputJsonValue });
+      if (market.length > 0) {
+        await prisma.workspace.update({
+          where: { id: workspace.id },
+          data: { matrixAxes: market as unknown as Prisma.InputJsonValue },
+        });
+      }
       await writeActivityLog({
         userId: run.userId,
         workspaceId: workspace.id,
-        action: 'MATRICES_AXES_PROPOSED',
-        detail: { runId, candidates: candidates.length, tokens: tokens.total },
+        action: 'MATRICES_AXES_AUTO_CHOSEN',
+        detail: { runId, axes: market.map((axis) => axis.key), candidates: candidates.length },
       });
-      return;
     }
 
     // --- SCORE ----------------------------------------------------------
