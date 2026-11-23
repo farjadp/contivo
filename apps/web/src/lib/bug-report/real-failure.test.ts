@@ -34,7 +34,7 @@ vi.mock('@/lib/ai/alert', async (importOriginal) => {
     createPrismaEventStore: () => ({
       ...real.createPrismaEventStore(),
       insert: async (row: unknown) => {
-        await prismaMock.aiProviderEvent.create({ data: row } as never);
+        await (prismaMock.aiProviderEvent.create as (arg: unknown) => Promise<unknown>)({ data: row });
       },
       latestCriticalSince: async () => [],
     }),
