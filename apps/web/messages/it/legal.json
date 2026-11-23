@@ -36,7 +36,7 @@
       "summary": [
         "Raccogliamo solo ciò che serve al funzionamento del prodotto: il tuo account, il tuo workspace e gli account che colleghi. Nulla a fini pubblicitari.",
         "Non vendiamo mai i tuoi dati, non ti mostriamo pubblicità e non impostiamo cookie di tracciamento o di analisi.",
-        "Se accedi con Google o GitHub, riceviamo il tuo nome e la tua email e non conserviamo alcun accesso al tuo account presso di loro.",
+        "Se accedi con Google, riceviamo il tuo nome e la tua email e non conserviamo alcun accesso al tuo account presso Google.",
         "I tuoi testi vengono inviati a fornitori di AI (OpenAI, Anthropic e Google) per essere analizzati e scritti. È così che funziona il prodotto, e lo diciamo chiaramente.",
         "Scrivi a {email} e cancelleremo il tuo account e il tuo workspace entro 30 giorni."
       ],
@@ -56,7 +56,7 @@
             "Solo quelli necessari al funzionamento del prodotto:",
             [
               "Account: il tuo indirizzo email, il tuo nome se lo indichi e la tua password, se ne usi una. La password è conservata solo sotto forma di hash irreversibile: non possiamo leggerla.",
-              "Accesso con Google o GitHub: se lo usi, il tuo nome e il tuo indirizzo email come li comunica quel fornitore, e l'ID che il fornitore assegna al tuo account. Registriamo anche quale fornitore hai usato, se il fornitore indica l'email come verificata e quando hai fatto il primo e l'ultimo accesso in questo modo. Copiamo il tuo nome una sola volta, quando l'account viene creato. Non riceviamo né conserviamo mai la tua password presso quel fornitore, i tuoi contatti o amici, i tuoi post o la tua foto del profilo, e non teniamo alcun token che ci dia accesso a quell'account.",
+              "Accesso con Google: se lo usi, il tuo nome e il tuo indirizzo email come li comunica quel fornitore, e l'ID che il fornitore assegna al tuo account. Registriamo anche quale fornitore hai usato, se il fornitore indica l'email come verificata e quando hai fatto il primo e l'ultimo accesso in questo modo. Copiamo il tuo nome una sola volta, quando l'account viene creato. Non riceviamo né conserviamo mai la tua password presso quel fornitore, i tuoi contatti o amici, i tuoi post o la tua foto del profilo, e non teniamo alcun token che ci dia accesso a quell'account.",
               "Workspace: l'indirizzo del sito web che ci fornisci, ciò che leggiamo dalle pagine pubbliche di quel sito e ciò che Contivo ne ricava: memoria del brand, concorrenti, keyword, strategia, bozze e contenuti pubblicati.",
               "Account collegati: quando colleghi LinkedIn o X, un token di accesso che consente a Contivo di pubblicare a tuo nome. È conservato in forma cifrata.",
               "Il tuo sito: se lo colleghi tramite la Site API, la chiave che consente a Contivo di pubblicarvi contenuti.",
@@ -86,7 +86,7 @@
               "OpenAI, Anthropic (Claude) e Google (Gemini): i contenuti del tuo sito, la memoria del brand e le tue istruzioni, per analizzare, pianificare e scrivere. Se uno di loro non è disponibile, la stessa richiesta può passare a un altro. L'uso che fanno dei dati ricevuti tramite API è regolato dai loro termini per le API.",
               "DataForSEO: keyword e nomi di dominio, per ottenere volumi di ricerca e pagine dei risultati. Nessuna informazione personale.",
               "LinkedIn e X: i post che pubblichi, e solo dopo che hai collegato l'account.",
-              "Google e GitHub (di proprietà di Microsoft): solo se scegli di accedere con loro. Fanno da fornitori di identità per l'accesso e basta. Sanno che hai effettuato l'accesso a Contivo e gestiscono quell'accesso secondo le proprie informative sulla privacy. Non inviamo loro nulla del tuo workspace.",
+              "Google: solo se scegli di accedere con questo servizio. Fa da fornitore di identità per l'accesso e basta. Sa che hai effettuato l'accesso a Contivo e gestisce quell'accesso secondo la propria informativa sulla privacy. Non gli inviamo nulla del tuo workspace.",
               "Railway e Neon: hosting e database, dove viene conservato tutto quanto sopra.",
               "Sentry: segnalazioni di errore.",
               "Stripe: pagamenti, quando la fatturazione sarà attiva."
@@ -103,7 +103,7 @@
               "auth-token: mantiene attivo il tuo accesso. Dura sette giorni e non può essere letto dagli script della pagina.",
               "NEXT_LOCALE: ricorda la lingua che hai scelto.",
               "tz: il tuo fuso orario, così i post programmati escono all'ora che intendevi.",
-              "__Host-oauth_tx: porta l'accesso con Google o GitHub dal nostro sito al fornitore e ritorno. È un cookie di prima parte, usato solo durante quell'accesso: viene eliminato al termine e comunque sparisce dopo 10 minuti al massimo."
+              "__Host-oauth_tx: porta l'accesso con Google dal nostro sito al fornitore e ritorno. È un cookie di prima parte, usato solo durante quell'accesso: viene eliminato al termine e comunque sparisce dopo 10 minuti al massimo."
             ],
             "Nessun cookie pubblicitario, nessun cookie di analisi, nessun tracker di terze parti. Per questo non c'è alcun banner dei cookie."
           ]
@@ -120,7 +120,7 @@
           "id": "delete-account",
           "title": "Come cancellare il tuo account e i tuoi dati",
           "blocks": [
-            "Vale per tutti, anche per chi ha effettuato l'accesso a Contivo con Google o GitHub. Contivo è gestito da {entity}. Se vuoi che i tuoi dati vengano cancellati, si fa così.",
+            "Vale per tutti, anche per chi ha effettuato l'accesso a Contivo con Google. Contivo è gestito da {entity}. Se vuoi che i tuoi dati vengano cancellati, si fa così.",
             "Scrivi a {email} dall'indirizzo associato al tuo account e di' che vuoi cancellarlo. Se hai usato un fornitore e non sei sicuro di quale indirizzo abbiamo, indicaci il fornitore e lo cerchiamo noi. Potremmo farti una domanda per verificare che la richiesta sia tua. Non ci serve la tua password.",
             "Entro 30 giorni cancelliamo:",
             [
@@ -130,7 +130,7 @@
               "i dati di accesso: il fornitore, l'ID del tuo account presso il fornitore e l'email che ha comunicato."
             ],
             "Poi ti scriviamo per confermare che è fatto. Due eccezioni: i registri dei pagamenti che dobbiamo conservare per legge restano per il tempo che la legge prevede, e i post già pubblicati su LinkedIn, X o sul tuo sito restano lì finché non li rimuovi su quelle piattaforme.",
-            "Puoi anche rimuovere Contivo dal tuo account Google o GitHub da solo, nelle impostazioni di quel fornitore, alla voce app collegate o app di terze parti. Non abbiamo alcun token di accesso al tuo account presso di loro, quindi per noi non cambia nulla: serve solo a togliere Contivo dal tuo elenco presso il fornitore."
+            "Puoi anche rimuovere Contivo dal tuo account Google da solo, nelle impostazioni di quel fornitore, alla voce app collegate o app di terze parti. Non abbiamo alcun token di accesso al tuo account presso Google, quindi per noi non cambia nulla: serve solo a togliere Contivo dal tuo elenco presso il fornitore."
           ]
         },
         {
@@ -203,7 +203,7 @@
           "title": "Il tuo account",
           "blocks": [
             "Devi avere almeno 16 anni, fornire un indirizzo email reale e tenere riservata la tua password. Sei responsabile di tutto ciò che accade con il tuo account: se pensi che qualcun altro vi abbia accesso, avvisaci subito.",
-            "Se accedi con Google o GitHub, per l'uso di quell'accesso valgono anche i termini del fornitore. Se non hai ancora un account, accedere con un fornitore crea un account Contivo soggetto a questi termini."
+            "Se accedi con Google, per l'uso di quell'accesso valgono anche i termini del fornitore. Se non hai ancora un account, accedere con un fornitore crea un account Contivo soggetto a questi termini."
           ]
         },
         {

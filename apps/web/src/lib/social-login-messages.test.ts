@@ -63,6 +63,12 @@ describe('social sign-in copy: legal.json', () => {
     expect(text).not.toMatch(/facebook|\bmeta\b|فیسبوک|فيسبوك|פייסבוק|脸书|臉書/i);
   });
 
+  it.each(ALL)('%s legal text names no GitHub or Microsoft until GitHub sign-in ships', (loc) => {
+    const values: string[] = [];
+    JSON.stringify(load(loc, 'legal'), (_k, v) => (typeof v === 'string' ? (values.push(v), v) : v));
+    expect(values.join('\n')).not.toMatch(/github|microsoft|گیت‌هاب|مایکروسافت|مايكروسوفت|微软/i);
+  });
+
   it('English meta description no longer says "three cookies"', () => {
     expect(load('en', 'legal').legal.privacy.meta.description).not.toMatch(/three/);
   });

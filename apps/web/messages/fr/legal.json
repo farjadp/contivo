@@ -36,7 +36,7 @@
       "summary": [
         "Nous collectons ce dont le produit a besoin pour fonctionner : votre compte, votre espace de travail et les comptes que vous connectez. Rien à des fins publicitaires.",
         "Nous ne vendons jamais vos données, ne vous montrons jamais de publicité et ne déposons aucun cookie de suivi ou de mesure d’audience.",
-        "Si vous vous connectez avec Google ou GitHub, nous recevons votre nom et votre e-mail et ne conservons aucun accès à votre compte chez eux.",
+        "Si vous vous connectez avec Google, nous recevons votre nom et votre e-mail et ne conservons aucun accès à votre compte chez Google.",
         "Vos textes sont envoyés à des fournisseurs d’IA (OpenAI, Anthropic et Google) pour être analysés et rédigés. C’est ainsi que le produit fonctionne, et nous le disons clairement.",
         "Écrivez à {email} et nous supprimons votre compte et votre espace de travail dans un délai de 30 jours."
       ],
@@ -56,7 +56,7 @@
             "Uniquement ce qu’exige le fonctionnement du produit :",
             [
               "Compte : votre adresse e-mail, votre nom si vous l’indiquez, et votre mot de passe si vous en utilisez un. Le mot de passe n’est conservé que sous forme de hachage à sens unique ; nous ne pouvons pas le lire.",
-              "Connexion avec Google ou GitHub : si vous l’utilisez, votre nom et votre adresse e-mail tels que ce fournisseur les communique, et l’identifiant que le fournisseur attribue à votre compte. Nous enregistrons aussi de quel fournisseur il s’agit, s’il indique que l’e-mail est vérifié, et la date de votre première et de votre dernière connexion de cette façon. Nous copions votre nom une seule fois, à la création du compte. Nous ne recevons ni ne conservons jamais votre mot de passe chez ce fournisseur, vos contacts ou amis, vos publications ou votre photo de profil, et nous ne gardons aucun jeton qui nous donnerait accès à ce compte.",
+              "Connexion avec Google : si vous l’utilisez, votre nom et votre adresse e-mail tels que ce fournisseur les communique, et l’identifiant que le fournisseur attribue à votre compte. Nous enregistrons aussi de quel fournisseur il s’agit, s’il indique que l’e-mail est vérifié, et la date de votre première et de votre dernière connexion de cette façon. Nous copions votre nom une seule fois, à la création du compte. Nous ne recevons ni ne conservons jamais votre mot de passe chez ce fournisseur, vos contacts ou amis, vos publications ou votre photo de profil, et nous ne gardons aucun jeton qui nous donnerait accès à ce compte.",
               "Espace de travail : l’adresse du site web que vous nous indiquez, ce que nous lisons sur les pages publiques de ce site, et ce que Contivo construit à partir de là : mémoire de marque, concurrents, mots-clés, stratégie, brouillons et contenus publiés.",
               "Comptes connectés : lorsque vous connectez LinkedIn ou X, un jeton d’accès qui permet à Contivo de publier en votre nom. Il est conservé chiffré.",
               "Votre propre site : si vous le connectez via la Site API, la clé qui permet à Contivo d’y publier.",
@@ -86,7 +86,7 @@
               "OpenAI, Anthropic (Claude) et Google (Gemini) : le contenu de votre site, votre mémoire de marque et vos instructions, pour analyser, planifier et rédiger. Si l’un d’eux est indisponible, la même requête peut passer à un autre. Ce qu’ils font des données transmises par API est régi par leurs conditions d’API.",
               "DataForSEO : des mots-clés et des noms de domaine, pour obtenir les volumes de recherche et les pages de résultats. Aucun renseignement personnel.",
               "LinkedIn et X : les publications que vous publiez, et uniquement une fois le compte connecté.",
-              "Google et GitHub (propriété de Microsoft) : uniquement si vous choisissez de vous connecter avec eux. Ils servent de fournisseurs d’identité pour la connexion, et rien d’autre. Ils savent que vous vous êtes connecté à Contivo, et ils traitent cette connexion selon leurs propres politiques de confidentialité. Nous ne leur envoyons rien de votre espace de travail.",
+              "Google : uniquement si vous choisissez de vous connecter avec lui. Il sert de fournisseur d’identité pour la connexion, et rien d’autre. Il sait que vous vous êtes connecté à Contivo, et il traite cette connexion selon sa propre politique de confidentialité. Nous ne lui envoyons rien de votre espace de travail.",
               "Railway et Neon : l’hébergement et la base de données, où tout ce qui précède est stocké.",
               "Sentry : les rapports d’erreur.",
               "Stripe : les paiements, une fois la facturation en place."
@@ -103,7 +103,7 @@
               "auth-token : vous garde connecté. Il dure sept jours et ne peut pas être lu par les scripts de la page.",
               "NEXT_LOCALE : mémorise la langue que vous avez choisie.",
               "tz : votre fuseau horaire, pour que les publications programmées partent à l’heure voulue.",
-              "__Host-oauth_tx : fait passer la connexion avec Google ou GitHub de notre site au fournisseur et retour. C’est un cookie propriétaire, utilisé uniquement pendant cette connexion : il est supprimé à la fin et disparaît au plus tard après 10 minutes."
+              "__Host-oauth_tx : fait passer la connexion avec Google de notre site au fournisseur et retour. C’est un cookie propriétaire, utilisé uniquement pendant cette connexion : il est supprimé à la fin et disparaît au plus tard après 10 minutes."
             ],
             "Aucun cookie publicitaire, aucun cookie de mesure d’audience, aucun traceur tiers. C’est pourquoi il n’y a pas de bandeau de cookies."
           ]
@@ -120,7 +120,7 @@
           "id": "delete-account",
           "title": "Comment supprimer votre compte et vos données",
           "blocks": [
-            "Cela concerne tout le monde, y compris les personnes qui se sont connectées à Contivo avec Google ou GitHub. Contivo est exploité par {entity}. Si vous voulez que vos données soient supprimées, voici comment faire.",
+            "Cela concerne tout le monde, y compris les personnes qui se sont connectées à Contivo avec Google. Contivo est exploité par {entity}. Si vous voulez que vos données soient supprimées, voici comment faire.",
             "Écrivez à {email} depuis l’adresse de votre compte et dites que vous voulez le faire supprimer. Si vous vous êtes connecté avec un fournisseur et que vous ne savez plus quelle adresse nous avons, indiquez-nous le fournisseur et nous la retrouverons. Nous pouvons vous poser une question pour vérifier que la demande vient bien de vous. Nous n’avons pas besoin de votre mot de passe.",
             "Dans un délai de 30 jours, nous supprimons :",
             [
@@ -130,7 +130,7 @@
               "vos enregistrements de connexion : le fournisseur, l’identifiant de votre compte chez lui et l’e-mail qu’il a communiqué."
             ],
             "Nous vous écrivons ensuite pour confirmer que c’est fait. Deux exceptions : les justificatifs de paiement que la loi nous oblige à conserver restent le temps que la loi l’impose, et les publications déjà parues sur LinkedIn, X ou votre propre site y restent tant que vous ne les retirez pas sur ces plateformes.",
-            "Vous pouvez aussi retirer Contivo vous-même de votre compte Google ou GitHub, dans les paramètres de ce fournisseur, rubrique applications connectées ou applications tierces. Nous ne détenons aucun jeton d’accès à votre compte là-bas : cela ne change donc rien de notre côté et retire seulement Contivo de votre liste chez le fournisseur."
+            "Vous pouvez aussi retirer Contivo vous-même de votre compte Google, dans les paramètres de ce fournisseur, rubrique applications connectées ou applications tierces. Nous ne détenons aucun jeton d’accès à votre compte là-bas : cela ne change donc rien de notre côté et retire seulement Contivo de votre liste chez le fournisseur."
           ]
         },
         {
@@ -203,7 +203,7 @@
           "title": "Votre compte",
           "blocks": [
             "Vous devez avoir au moins 16 ans, fournir une adresse e-mail réelle et garder votre mot de passe pour vous. Tout ce qui se passe sur votre compte relève de votre responsabilité : si vous pensez que quelqu’un d’autre y a accès, prévenez-nous immédiatement.",
-            "Si vous vous connectez avec Google ou GitHub, les conditions de ce fournisseur s’appliquent aussi à votre usage de sa connexion. Se connecter avec un fournisseur crée un compte Contivo soumis aux présentes conditions, si vous n’en avez pas déjà un."
+            "Si vous vous connectez avec Google, les conditions de ce fournisseur s’appliquent aussi à votre usage de sa connexion. Se connecter avec un fournisseur crée un compte Contivo soumis aux présentes conditions, si vous n’en avez pas déjà un."
           ]
         },
         {
