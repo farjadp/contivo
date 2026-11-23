@@ -102,12 +102,69 @@
     "body": {
       "firstPost": "Ahora Contivo puede publicar en {platform} por ti. Escribe tu primera publicación y publícala.",
       "journey": "Ahora Contivo puede publicar en {platform} por ti. Sigue con el próximo paso de la configuración.",
-      "pipeline": "Ahora Contivo puede publicar en {platform} por ti. La configuración está completa."
+      "pipeline": "Ahora Contivo puede publicar en {platform} por ti. La configuración está completa.",
+      "firstPostDraft": "Ahora Contivo puede publicar en {platform} por ti. Tu primera publicación está lista para salir."
     },
     "action": {
       "firstPost": "Publica tu primera publicación",
-      "pipeline": "Abrir el pipeline"
+      "pipeline": "Abrir el pipeline",
+      "firstPostDraft": "Publicar esta publicación"
     },
     "dismiss": "Cerrar"
+  },
+  "nextStep": {
+    "counter": "{n, number}/{total, number}",
+    "addCompany": {
+      "line": "Añade tu empresa para empezar",
+      "action": "Añadir empresa"
+    },
+    "confirmCompetitors": {
+      "line": "Confirma con quién compites",
+      "why": "Tu primera publicación se escribe teniéndolos en cuenta.",
+      "action": "Confirmar competidores"
+    },
+    "writing": {
+      "line": "Escribiendo tu primera publicación… unos 2 minutos"
+    },
+    "runFailed": {
+      "line": {
+        "matrices": "El mapa de mercado no terminó",
+        "keywords": "El análisis de temas pendientes no terminó",
+        "idea": "No encontramos un enfoque para tu publicación",
+        "draft": "La redacción de la publicación no terminó"
+      },
+      "action": "Reintentar",
+      "actionWriteOwn": "Prefiero escribirla yo"
+    },
+    "readDraft": {
+      "line": "Tu primera publicación está lista",
+      "action": "Leerla"
+    },
+    "connectLinkedIn": {
+      "line": "Publica esto en LinkedIn",
+      "why": "En tu perfil personal. No se publica nada hasta que pulses Publicar.",
+      "action": "Conectar LinkedIn"
+    },
+    "publishNow": {
+      "line": "LinkedIn conectado. Publica tu primera publicación.",
+      "action": "Publicar ahora"
+    },
+    "publishing": {
+      "line": "Publicando en LinkedIn… menos de un minuto"
+    },
+    "firstPostLive": {
+      "line": "Tu primera publicación ya está en línea",
+      "action": "Ver en LinkedIn"
+    },
+    "autopilot": {
+      "line": "Deja que Contivo publique cada semana",
+      "action": "Configurar Autopilot"
+    },
+    "narrative": {
+      "line": "Define con claridad lo que defiendes",
+      "why": "Autopilot escribe a partir de ella.",
+      "action": "Redactar la narrativa"
+    },
+    "busy": "En curso"
   }
 }
