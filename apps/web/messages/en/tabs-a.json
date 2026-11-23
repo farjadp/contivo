@@ -224,7 +224,7 @@
       "frameworkManual": "Framework: Manual",
       "ideasLabel": "Ideas",
       "wordsLabel": "Words",
-      "needImagesLabel": "Need Images",
+      "needImagesLabel": "Add an image",
       "imagesLabel": "Images",
       "autoCalendarLabel": "Auto Calendar",
       "generationPath": "Generation Path",
@@ -238,7 +238,7 @@
       "selectedFramework": "Selected Framework",
       "overallScore": "Overall Score: {score}/10",
       "fallbackApplied": "Fallback applied",
-      "imagesBadge": "Images: {count, number} (1st = cover)",
+      "imagesBadge": "Image: {count, number} per post",
       "imagesBadgeNone": "Images: No",
       "calendarAuto": "Calendar: Auto insert (mock)",
       "calendarManual": "Calendar: Manual",
@@ -263,7 +263,8 @@
         "previewFailed": "Failed to generate preview.",
         "maxFiles": "You can attach up to {count, number} files.",
         "readFailed": "Failed to read \"{name}\". Use PDF/TXT/MD/CSV/JSON files or paste text manually."
-      }
+      },
+      "imageCostHint": "{cost, number} credits per image"
     },
     "pipeline": {
       "empty": {
@@ -343,7 +344,7 @@
       "write": {
         "open": "Write a post",
         "title": "Write your own post",
-        "intro": "Your text, saved as Ready. Schedule it like any other post. No AI and no credits.",
+        "intro": "Your text, saved as Ready and never rewritten. Schedule it like any other post. An optional image is the only part that costs credits.",
         "channelLabel": "Publish to",
         "titleLabel": "Title",
         "titlePlaceholder": "The headline readers see",
@@ -448,6 +449,36 @@
         "low_score": "It scored below the bar on the reviewer's checks.",
         "other": "It didn't pass one of the quality checks."
       }
+    },
+    "image": {
+      "badgeWith": "Image",
+      "badgeWithout": "No image",
+      "none": "No image yet",
+      "attachedGenerated": "Image attached, made from the post",
+      "attachedUpload": "Image attached, your upload",
+      "textOnlyChannel": "This channel publishes text only.",
+      "generate": "Make an image · {cost, number} credits",
+      "regenerate": "Make a new one · {cost, number} credits",
+      "upload": "Upload my own",
+      "replaceUpload": "Use my own instead",
+      "remove": "Remove",
+      "uploadHint": "PNG or JPG, up to {mb, number} MB.",
+      "generating": "Making the image. This can take up to a minute.",
+      "uploading": "Uploading the image…",
+      "removing": "Removing the image…",
+      "failed": "No image: this post will publish as text only. Reference {ref}.",
+      "failedNoRef": "No image: this post will publish as text only.",
+      "insufficient": "No image: one needs {required, number} credits and you have {balance, number}. This post will publish as text only.",
+      "locked": "This post is published, so its image stays as it is.",
+      "notFound": "This post was not found. Refresh the page.",
+      "uploadErrors": {
+        "empty": "That file is empty. Choose another PNG or JPG.",
+        "too_large": "That file is over {mb, number} MB. Choose a smaller PNG or JPG.",
+        "wrong_type": "Only PNG and JPG pictures can be used.",
+        "network": "The image did not upload. Check your connection and try again."
+      },
+      "writeGenerate": "Make an image from my text · {cost, number} credits",
+      "writeGenerateHint": "LinkedIn and Telegram posts can carry one image. You see it on the post's card before you schedule, and can replace or remove it there."
     }
   }
 }

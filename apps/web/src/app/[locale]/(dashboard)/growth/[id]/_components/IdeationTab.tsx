@@ -6,6 +6,9 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Sparkles, Loader2, FileText, CheckCircle2, Paperclip, X } from 'lucide-react';
 import { generateIdeas, saveIdeaToPipeline, generateDraftPreviewFromIdea } from '@/app/actions/workspace';
 import { QualityVerdictNotice } from './QualityVerdictNotice';
+import { ContentImageControl } from './ContentImageControl';
+import { channelCarriesImage } from '@/lib/content-image-rules';
+import { IMAGE_GENERATION_COST } from '@/lib/credit-costs';
 import { useRouter } from '@/i18n/navigation';
 import {
   CONTENT_GOAL_OPTIONS,
@@ -109,12 +112,12 @@ async function extractTextFromFile(file: File): Promise<string> {
 export function IdeationTab({
   workspace,
   maxIdeaCount,
-  maxImageCount,
   wordCountLimits,
 }: {
   workspace: any;
   maxIdeaCount: number;
-  maxImageCount: number;
+  /** Kept for the page's call; one picture per post is what publishes. */
+  maxImageCount?: number;
   wordCountLimits: ContentWordCountLimits;
 }) {
   const t = useTranslations('tabsA');
@@ -134,8 +137,18 @@ export function IdeationTab({
   const [targetWordCount, setTargetWordCount] = useState<number>(
     midpointWordCount(wordCountLimits.linkedin),
   );
-  const [includeImages, setIncludeImages] = useState<boolean>(false);
-  const [imageCount, setImageCount] = useState<number>(1);
+  /*
+    On by default where the channel publishes the picture (LinkedIn,
+    Telegram): posts with one get seen more, and Autopilot already makes one
+    per draft. Still the person's switch; it follows the platform until they
+    touch it. One picture per post is what publishes, so the count is 1.
+  */
+  const [includeImages, setIncludeImages] = useState<boolean>(() => channelCarriesImage('linkedin'));
+  const [imagesTouched, setImagesTouched] = useState(false);
+  const imageCount = 1;
+  useEffect(() => {
+    if (!imagesTouched) setIncludeImages(channelCarriesImage(platform));
+  }, [platform, imagesTouched]);
   const [autoInsertToCalendar, setAutoInsertToCalendar] = useState<boolean>(true);
   const [generationPath, setGenerationPath] = useState<'direct' | 'source_form'>('direct');
   const [manualSourceNotes, setManualSourceNotes] = useState('');
@@ -346,28 +359,21 @@ export function IdeationTab({
               className="w-full min-w-0 bg-transparent text-end outline-none"
             />
           </label>
-          <label className="flex h-10 items-center justify-between rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
-            <span className="whitespace-nowrap">{t('ideation.needImagesLabel')}</span>
+          <label className="flex h-10 items-center justify-between gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss md:col-span-2">
+            <span className="min-w-0">
+              <span className="block truncate">{t('ideation.needImagesLabel')}</span>
+              <span className="block truncate text-[10px] font-medium text-moss-muted">
+                {t('ideation.imageCostHint', { cost: IMAGE_GENERATION_COST })}
+              </span>
+            </span>
             <input
               type="checkbox"
               checked={includeImages}
-              onChange={(event) => setIncludeImages(event.target.checked)}
-              className="h-4 w-4"
-            />
-          </label>
-          <label className="flex h-10 items-center gap-2 rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
-            <span className="whitespace-nowrap">{t('ideation.imagesLabel')}</span>
-            <input
-              type="number"
-              min={1}
-              max={maxImageCount}
-              value={imageCount}
-              disabled={!includeImages}
               onChange={(event) => {
-                const next = Number(event.target.value);
-                setImageCount(Math.max(1, Math.min(maxImageCount, Number.isFinite(next) ? next : 1)));
+                setImagesTouched(true);
+                setIncludeImages(event.target.checked);
               }}
-              className="w-full min-w-0 bg-transparent text-end outline-none disabled:opacity-50"
+              className="h-4 w-4 shrink-0"
             />
           </label>
           <label className="flex h-10 items-center justify-between rounded-lg border border-rule-strong bg-chalk-raised px-2.5 text-xs font-semibold text-moss">
@@ -597,6 +603,8 @@ function IdeaCard({
   const [previewVerdict, setPreviewVerdict] = useState<unknown>(null);
   const [previewVerdictToken, setPreviewVerdictToken] = useState<string | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  // The saved item, so its picture can be made (and shown) right here.
+  const [savedItem, setSavedItem] = useState<{ id: string; channel: string; status: string } | null>(null);
 
   const handleGeneratePreview = async () => {
     setPreviewError(null);
@@ -640,6 +648,9 @@ function IdeaCard({
       );
       if (res && 'success' in res && res.success) {
         setSaved(true);
+        if ('id' in res && res.id) {
+          setSavedItem({ id: String(res.id), channel: String(res.channel ?? ''), status: String(res.status ?? 'DRAFT') });
+        }
         router.refresh();
       }
     } catch (e) {
@@ -704,6 +715,20 @@ function IdeaCard({
            <><FileText className="w-4 h-4" /> {previewText ? t('ideation.addPreviewToPipeline') : t('ideation.addToPipeline')}</>}
         </button>
       </div>
+
+      {savedItem && idea.include_images && channelCarriesImage(savedItem.channel) ? (
+        <div className="mt-3">
+          <ContentImageControl
+            workspaceId={workspaceId}
+            itemId={savedItem.id}
+            channel={savedItem.channel}
+            status={savedItem.status}
+            topic={String(idea.topic || '')}
+            initialImage={null}
+            autoGenerate
+          />
+        </div>
+      ) : null}
 
       {isPreviewOpen ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-moss/50 p-4">

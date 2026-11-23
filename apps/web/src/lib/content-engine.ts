@@ -555,7 +555,7 @@ export async function saveIdeaToPipelineCore(actor: Actor, idea: any, preview?: 
       });
     }
 
-    return { success: true, id: item.id };
+    return { success: true, id: item.id, channel: item.channel, status: item.status };
   } catch (err) {
     console.error('Failed to save idea to pipeline:', err);
     return { error: 'Failed to save to pipeline.' };

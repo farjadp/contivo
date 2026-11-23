@@ -224,7 +224,7 @@
       "frameworkManual": "Estructura: manual",
       "ideasLabel": "Ideas",
       "wordsLabel": "Palabras",
-      "needImagesLabel": "Con imágenes",
+      "needImagesLabel": "Añadir una imagen",
       "imagesLabel": "Imágenes",
       "autoCalendarLabel": "Calendario automático",
       "generationPath": "Modo de generación",
@@ -238,7 +238,7 @@
       "selectedFramework": "Estructura elegida",
       "overallScore": "Puntuación general: {score}/10",
       "fallbackApplied": "Se aplicó una alternativa",
-      "imagesBadge": "Imágenes: {count, number} (la 1.ª es la portada)",
+      "imagesBadge": "Imagen: {count, number} por publicación",
       "imagesBadgeNone": "Imágenes: no",
       "calendarAuto": "Calendario: inserción automática (simulada)",
       "calendarManual": "Calendario: manual",
@@ -263,7 +263,8 @@
         "previewFailed": "No se pudo generar la vista previa.",
         "maxFiles": "Puedes adjuntar hasta {count, number} archivos.",
         "readFailed": "No se pudo leer «{name}». Usa archivos PDF/TXT/MD/CSV/JSON o pega el texto a mano."
-      }
+      },
+      "imageCostHint": "{cost, number} créditos por imagen"
     },
     "pipeline": {
       "empty": {
@@ -343,7 +344,7 @@
       "write": {
         "open": "Escribir una publicación",
         "title": "Escribe tu propia publicación",
-        "intro": "Tu texto, guardado como Lista. Prográmala como cualquier otra publicación. Sin IA y sin créditos.",
+        "intro": "Tu texto, guardado como Lista y nunca reescrito. Prográmala como cualquier otra publicación. Solo la imagen opcional consume créditos.",
         "channelLabel": "Publicar en",
         "titleLabel": "Título",
         "titlePlaceholder": "El titular que verán tus lectores",
@@ -448,6 +449,36 @@
         "low_score": "Puntuó por debajo del mínimo en las comprobaciones del revisor.",
         "other": "No pasó uno de los controles de calidad."
       }
+    },
+    "image": {
+      "badgeWith": "Imagen",
+      "badgeWithout": "Sin imagen",
+      "none": "Todavía sin imagen",
+      "attachedGenerated": "Imagen adjunta, creada a partir de la publicación",
+      "attachedUpload": "Imagen adjunta, subida por ti",
+      "textOnlyChannel": "Este canal publica solo texto.",
+      "generate": "Crear una imagen · {cost, number} créditos",
+      "regenerate": "Crear otra · {cost, number} créditos",
+      "upload": "Subir la mía",
+      "replaceUpload": "Usar la mía",
+      "remove": "Quitar",
+      "uploadHint": "PNG o JPG, hasta {mb, number} MB.",
+      "generating": "Creando la imagen. Puede tardar hasta un minuto.",
+      "uploading": "Subiendo la imagen…",
+      "removing": "Quitando la imagen…",
+      "failed": "Sin imagen: esta publicación saldrá solo con texto. Referencia {ref}.",
+      "failedNoRef": "Sin imagen: esta publicación saldrá solo con texto.",
+      "insufficient": "Sin imagen: hacen falta {required, number} créditos y tienes {balance, number}. Esta publicación saldrá solo con texto.",
+      "locked": "Esta publicación ya salió, así que su imagen no cambia.",
+      "notFound": "No se encontró la publicación. Recarga la página.",
+      "uploadErrors": {
+        "empty": "El archivo está vacío. Elige otro PNG o JPG.",
+        "too_large": "El archivo supera {mb, number} MB. Elige un PNG o JPG más ligero.",
+        "wrong_type": "Solo se pueden usar imágenes PNG y JPG.",
+        "network": "La imagen no se subió. Revisa tu conexión e inténtalo de nuevo."
+      },
+      "writeGenerate": "Crear una imagen a partir de mi texto · {cost, number} créditos",
+      "writeGenerateHint": "Las publicaciones de LinkedIn y Telegram pueden llevar una imagen. La verás en la tarjeta de la publicación antes de programarla y allí podrás cambiarla o quitarla."
     }
   }
 }
