@@ -1,4 +1,6 @@
-import { getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation';
+import { getSession } from '@/lib/auth';
 
 import { listReportGroups } from '@/lib/bug-report/admin-queries';
 import type { ReportGroupRow } from '@/lib/bug-report/types';
@@ -9,6 +11,11 @@ type Props = { searchParams: Promise<{ [key: string]: string | string[] | undefi
 
 /** Reports grouped by fingerprint. The admin layout already guards the route. */
 export default async function AdminReportsPage({ searchParams }: Props) {
+  // Pages render in parallel with the layout guard, so check the role here before any query runs.
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    redirect({ href: '/dashboard', locale: await getLocale() });
+  }
   const t = await getTranslations('bugReport.admin');
   const raw = (await searchParams).status;
   const requested = Array.isArray(raw) ? raw[0] : raw;

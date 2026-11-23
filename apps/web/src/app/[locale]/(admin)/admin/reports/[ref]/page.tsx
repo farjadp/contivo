@@ -1,4 +1,6 @@
 import { getFormatter, getLocale, getTranslations } from 'next-intl/server';
+import { redirect } from '@/i18n/navigation';
+import { getSession } from '@/lib/auth';
 import { notFound } from 'next/navigation';
 
 import { setReportStatus } from '@/app/actions/bug-reports-admin';
@@ -19,6 +21,11 @@ type Props = { params: Promise<{ ref: string }> };
 
 /** One report: the person's words, the coded cause, and the merged timeline. */
 export default async function AdminReportDetailPage({ params }: Props) {
+  // Pages render in parallel with the layout guard, so check the role here before any query runs.
+  const session = await getSession();
+  if (!session || session.role !== 'ADMIN') {
+    redirect({ href: '/dashboard', locale: await getLocale() });
+  }
   const { ref } = await params;
   // A malformed reference cannot match a row; skip the query.
   if (!REF_PATTERN.test(ref)) notFound();
