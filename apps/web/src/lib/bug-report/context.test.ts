@@ -160,3 +160,61 @@ describe('buildServerContext ref ownership', () => {
     expect(r.causeCode).toBeNull();
   });
 });
+
+describe('buildServerContext shape and speed', () => {
+  it('stores the real pathname next to the route template', async () => {
+    const { context } = await buildServerContext({
+      userId: USER,
+      client: { ...client(), route: '/growth/[id]', path: '/growth/clx1/matrices' },
+    });
+    expect(context.client.route).toBe('/growth/[id]');
+    expect(context.client.path).toBe('/growth/clx1/matrices');
+  });
+
+  it('resolves appVersion through the chain (deployment id when nothing else is set)', async () => {
+    vi.stubEnv('APP_COMMIT_SHA', '');
+    vi.stubEnv('RAILWAY_GIT_COMMIT_SHA', '');
+    vi.stubEnv('RAILWAY_DEPLOYMENT_ID', '9f8e7d6c-5b4a-3210-aaaa-bbbbccccdddd');
+    const { context } = await buildServerContext({ userId: USER, client: client() });
+    vi.unstubAllEnvs();
+    expect(context.appVersion).toBe('deploy:9f8e7d6c');
+  });
+
+  it('runs independent queries in parallel (about 2 rounds, not 5)', async () => {
+    const DELAY = 50;
+    const slow = <T,>(v: T) => async () => {
+      await new Promise((r) => setTimeout(r, DELAY));
+      return v;
+    };
+    prismaMock.workspace.findFirst.mockImplementation(async ({ where }) => {
+      await new Promise((r) => setTimeout(r, DELAY));
+      return where.id === WS && where.userId === USER ? { id: WS } : null;
+    });
+    prismaMock.contentItem.findFirst.mockImplementation(slow({ id: 'clci0000000000000000000a1' }));
+    prismaMock.discoveryRun.findFirst.mockImplementation(slow({ id: 'cldr0000000000000000000a1' }));
+    prismaMock.matrixRun.findFirst.mockImplementation(slow({ id: MATRIX }));
+    prismaMock.socialPublishLog.findFirst.mockImplementation(slow({ id: 'clpl0000000000000000000a1' }));
+    prismaMock.discoveryRun.findMany.mockImplementation(slow([]));
+    prismaMock.matrixRun.findMany.mockImplementation(slow([]));
+    prismaMock.socialPublishLog.findMany.mockImplementation(slow([]));
+    prismaMock.aiProviderEvent.findMany.mockImplementation(slow([]));
+    prismaMock.activity_logs.findMany.mockImplementation(slow([]));
+    prismaMock.activity_logs.findFirst.mockImplementation(slow(null));
+    const t = Date.now();
+    const { context } = await buildServerContext({
+      userId: USER,
+      workspaceId: WS,
+      ref: 'CTV-7F3K',
+      client: client({ workspaceId: WS, contentItemId: 'clci0000000000000000000a1', discoveryRunId: 'cldr0000000000000000000a1', matrixRunId: MATRIX, publishLogId: 'clpl0000000000000000000a1' }),
+    });
+    const elapsed = Date.now() - t;
+    expect(context.viewedIds).toEqual({
+      workspaceId: WS,
+      contentItemId: 'clci0000000000000000000a1',
+      discoveryRunId: 'cldr0000000000000000000a1',
+      matrixRunId: MATRIX,
+      publishLogId: 'clpl0000000000000000000a1',
+    });
+    expect(elapsed).toBeLessThan(DELAY * 3.5);
+  });
+});

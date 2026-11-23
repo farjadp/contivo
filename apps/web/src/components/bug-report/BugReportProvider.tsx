@@ -17,7 +17,7 @@ import {
 import { buildClientContext, pushBreadcrumb, pushConsole } from '@/lib/bug-report/client-buffer';
 import { REF_COOKIE, type ClientContext } from '@/lib/bug-report/types';
 import { workspaceIdFromRoute } from '@/lib/last-workspace';
-import { readRefFromCookie, readViewedIds } from './page-signals';
+import { readRefFromCookie, readViewedIds, stripLocale } from './page-signals';
 import { RefToast } from './RefToast';
 import { ReportSheet } from './ReportSheet';
 
@@ -112,6 +112,7 @@ export function BugReportProvider({ children }: { children: ReactNode }) {
     const { pathname: route, locale: loc, workspaceId } = live.current;
     return buildClientContext({
       route,
+      path: stripLocale(window.location.pathname, loc),
       locale: loc,
       viewport: { w: window.innerWidth, h: window.innerHeight },
       viewedIds: readViewedIds(document, workspaceId),

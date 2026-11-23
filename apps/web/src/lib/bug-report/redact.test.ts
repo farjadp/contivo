@@ -106,3 +106,21 @@ describe('sanitizeClientContext', () => {
     expect(out.breadcrumbs[2].ref).toBeUndefined();
   });
 });
+
+describe('sanitizeClientContext path', () => {
+  it('keeps a pathname-only path, drops query and hash', () => {
+    expect(sanitizeClientContext({ route: '/growth/[id]', path: '/growth/clx123/matrices?token=1#x' }).path).toBe('/growth/clx123/matrices');
+  });
+
+  it('omits path when missing, not a path, or not a string', () => {
+    expect(sanitizeClientContext({ route: '/x' }).path).toBeUndefined();
+    expect(sanitizeClientContext({ route: '/x', path: 'javascript:alert(1)' }).path).toBeUndefined();
+    expect(sanitizeClientContext({ route: '/x', path: 42 }).path).toBeUndefined();
+    expect(sanitizeClientContext({ route: '/x', path: '' }).path).toBeUndefined();
+  });
+
+  it('caps path at 200 chars', () => {
+    const out = sanitizeClientContext({ route: '/x', path: `/${'a'.repeat(500)}` });
+    expect(out.path?.length).toBeLessThanOrEqual(200);
+  });
+});

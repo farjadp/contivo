@@ -12,6 +12,8 @@ vi.mock('@/lib/auth', () => sessionMock);
 vi.mock('@/lib/rate-limit', () => rateMock);
 vi.mock('@/lib/bug-report/context', () => ctxMock);
 vi.mock('@/lib/activity-log', () => logMock);
+const afterMock = vi.hoisted(() => ({ after: vi.fn() }));
+vi.mock('next/server', () => afterMock);
 vi.mock('@/lib/action-errors', () => ({ actionError: async (k: string) => `err:${k}` }));
 
 import { submitBugReport } from './bug-report';
@@ -26,6 +28,9 @@ const baseContext = (over: Record<string, unknown> = {}) => ({
 
 beforeEach(() => {
   vi.clearAllMocks();
+  afterMock.after.mockImplementation((fn: () => unknown) => {
+    void fn();
+  });
   sessionMock.getSession.mockResolvedValue({ userId: 'u1' });
   rateMock.consumeRateLimit.mockResolvedValue({ allowed: true, remaining: 9, retryAfter: 0 });
   ctxMock.buildServerContext.mockResolvedValue(baseContext());
@@ -98,5 +103,40 @@ describe('submitBugReport', () => {
     expect(await submitBugReport({ client })).toEqual({ ok: false, error: 'err:bugReportFailed' });
     spy.mockRestore();
     expect(logMock.writeActivityLog).not.toHaveBeenCalled();
+  });
+});
+
+describe('submitBugReport speed', () => {
+  it('replies without waiting for the BUG_REPORT_SENT row: it is handed to after()', async () => {
+    afterMock.after.mockImplementation(() => {}); // the framework runs it later
+    logMock.writeActivityLog.mockResolvedValue(undefined);
+    const r = await submitBugReport({ client });
+    expect(r.ok).toBe(true);
+    expect(afterMock.after).toHaveBeenCalledTimes(1);
+    expect(logMock.writeActivityLog).not.toHaveBeenCalled(); // runs only when after() runs it
+    await afterMock.after.mock.calls[0][0]();
+    expect(logMock.writeActivityLog).toHaveBeenCalledWith(expect.objectContaining({ action: 'BUG_REPORT_SENT' }));
+  });
+
+  it('still writes the row (fire-and-forget) when after() is unavailable outside a request', async () => {
+    afterMock.after.mockImplementation(() => {
+      throw new Error('outside request scope');
+    });
+    logMock.writeActivityLog.mockResolvedValue(undefined);
+    const r = await submitBugReport({ client });
+    expect(r.ok).toBe(true);
+    expect(logMock.writeActivityLog).toHaveBeenCalledTimes(1);
+  });
+
+  it('a failing activity write never fails the report', async () => {
+    afterMock.after.mockImplementation(() => {
+      throw new Error('outside request scope');
+    });
+    logMock.writeActivityLog.mockRejectedValue(new Error('db'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const r = await submitBugReport({ client });
+    await new Promise((res) => setTimeout(res, 0));
+    spy.mockRestore();
+    expect(r.ok).toBe(true);
   });
 });

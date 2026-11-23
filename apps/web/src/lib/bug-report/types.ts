@@ -52,7 +52,8 @@ export type ViewedIds = {
 
 /** What the browser sends. The server never trusts it for anything but display. */
 export type ClientContext = {
-  route: string; // pathname only, no query
+  route: string; // route TEMPLATE (e.g. /growth/[id]); the fingerprint key
+  path?: string; // the real pathname, no query, <= 200 chars
   locale: string;
   viewport: { w: number; h: number };
   breadcrumbs: Breadcrumb[]; // last 20
@@ -99,6 +100,7 @@ export type ReportDetail = {
   message: string | null; // plain text, rendered as text only
   locale: string | null;
   route: string | null;
+  path: string | null; // real pathname from context.client.path
   appVersion: string | null;
   user: { id: string; email: string | null } | null;
   workspace: { id: string; name: string | null } | null;

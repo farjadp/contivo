@@ -73,6 +73,7 @@
         "resolvedAt": "Resuelto",
         "locale": "Idioma",
         "route": "Página",
+        "path": "Ruta de la URL",
         "appVersion": "Versión de la app",
         "user": "Usuario",
         "workspace": "Espacio de trabajo",

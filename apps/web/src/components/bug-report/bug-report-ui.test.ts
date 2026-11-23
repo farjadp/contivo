@@ -13,7 +13,7 @@ import fa from '../../../messages/fa/bugreport.json';
 import he from '../../../messages/he/bugreport.json';
 import it_ from '../../../messages/it/bugreport.json';
 import type { ClientContext } from '@/lib/bug-report/types';
-import { readRefFromCookie, readViewedIds } from './page-signals';
+import { readRefFromCookie, readViewedIds, restoreFocus, stripLocale } from './page-signals';
 import { sendReport } from './report-flow';
 
 vi.mock('@/app/actions/bug-report', () => ({ submitBugReport: vi.fn() }));
@@ -189,5 +189,44 @@ describe('source rules', () => {
       typeof v === 'object' && v ? Object.entries(v).flatMap(([k, x]) => flat(x, p ? `${p}.${k}` : k)) : [p];
     const base = flat(en).sort();
     for (const [name, cat] of Object.entries(catalogues)) expect(flat(cat).sort(), name).toEqual(base);
+  });
+});
+
+describe('stripLocale', () => {
+  it('removes only a leading locale segment', () => {
+    expect(stripLocale('/fa/growth/abc', 'fa')).toBe('/growth/abc');
+    expect(stripLocale('/en', 'en')).toBe('/');
+    expect(stripLocale('/growth/abc', 'en')).toBe('/growth/abc');
+    expect(stripLocale('/english/x', 'en')).toBe('/english/x');
+  });
+});
+
+describe('ReportSheet dialog semantics', () => {
+  it('declares role=dialog, aria-modal and a label pointing at the visible title', async () => {
+    const { ReportSheet: Sheet } = await import('./ReportSheet');
+    const html = withIntl(
+      'en',
+      createElement(Sheet, { prefillRef: null, fallbackRef: null, getContext: () => client, onClose: noop }),
+    );
+    expect(html).toMatch(/<dialog[^>]*role="dialog"/);
+    expect(html).toMatch(/<dialog[^>]*aria-modal="true"/);
+    const labelledBy = /<dialog[^>]*aria-labelledby="([^"]+)"/.exec(html)?.[1];
+    expect(labelledBy).toBeTruthy();
+    expect(html).toContain(`<h2 id="${labelledBy}"`);
+  });
+});
+
+describe('restoreFocus', () => {
+  it('returns focus to the opener when it is still in the page', () => {
+    const focus = vi.fn();
+    restoreFocus({ isConnected: true, focus });
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('does nothing for a missing or detached opener', () => {
+    const focus = vi.fn();
+    restoreFocus(null);
+    restoreFocus({ isConnected: false, focus });
+    expect(focus).not.toHaveBeenCalled();
   });
 });

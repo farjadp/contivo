@@ -1,6 +1,7 @@
 'use server';
 
 import { Prisma } from '@prisma/client';
+import { after } from 'next/server';
 
 import { actionError } from '@/lib/action-errors';
 import { writeActivityLog } from '@/lib/activity-log';
@@ -15,6 +16,16 @@ import { consumeRateLimit } from '@/lib/rate-limit';
 
 const REPORTS_PER_HOUR = 10;
 const MAX_REF_TRIES = 5;
+
+/** Runs after the response is sent; outside a request scope it is simply fire-and-forget. */
+function afterResponse(task: () => Promise<unknown>): void {
+  const run = () => Promise.resolve().then(task).catch((error) => console.error('submitBugReport: deferred task failed:', error instanceof Error ? error.name : 'error'));
+  try {
+    after(run);
+  } catch {
+    void run();
+  }
+}
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { code?: unknown }).code === 'P2002';
@@ -61,12 +72,11 @@ export async function submitBugReport(input: SubmitBugReportInput): Promise<Subm
             fingerprint,
           },
         });
-        await writeActivityLog({
-          userId,
-          workspaceId: context.workspaceId,
-          action: 'BUG_REPORT_SENT',
-          detail: { ref: candidate },
-        });
+        // The report is saved; this audit row is not worth the user's wait.
+        const sentRef = candidate;
+        afterResponse(() =>
+          writeActivityLog({ userId, workspaceId: context.workspaceId, action: 'BUG_REPORT_SENT', detail: { ref: sentRef } }),
+        );
         return { ok: true, ref: candidate };
       } catch (error) {
         if (!isUniqueViolation(error)) throw error;
