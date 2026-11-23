@@ -6,6 +6,8 @@ import { getLocale } from 'next-intl/server';
 import { getSession, mintApiToken } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { actionError } from '@/lib/action-errors';
+import { writeActivityLog } from '@/lib/activity-log';
+import { CHANNEL_CONNECT_STARTED } from '@/lib/first-post/types';
 import { isSiteOnly, locales } from '@/i18n/routing';
 
 /**
@@ -97,6 +99,21 @@ export async function getSocialConnectUrl(
   const url = `${apiBase}/api/v1/social/oauth/${normalizedPlatform}/connect?workspaceId=${encodeURIComponent(
     workspaceId,
   )}&t=${encodeURIComponent(`${body}.${signature}`)}`;
+
+  /*
+    Funnel row (spec §7), only once a URL exists. An admin acting on someone
+    else's workspace is not the owner starting a connect, so it is not
+    counted. Not awaited: writeActivityLog never throws, and the redirect
+    must not wait on a log.
+  */
+  if (workspace) {
+    void writeActivityLog({
+      userId,
+      workspaceId,
+      action: CHANNEL_CONNECT_STARTED,
+      detail: { platform: normalizedPlatform },
+    });
+  }
 
   return { url };
 }
