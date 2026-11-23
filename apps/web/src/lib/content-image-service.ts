@@ -15,6 +15,7 @@
  */
 
 import { recordActionFailure } from '@/lib/bug-report/action-failure';
+import { CAUSE_CODES, type CauseCode } from '@/lib/bug-report/types';
 import { writeActivityLog } from '@/lib/activity-log';
 import { generateImageForContentItem } from '@/lib/content-image';
 import {
@@ -50,6 +51,25 @@ export function imageMetaFromRow(row: { id: string; altText: string | null; mime
   };
 }
 
+/**
+ * What the generator returned, read without trusting its shape. Today it is
+ * the image or null; the B19 fix (model registry, head-of-data) returns a
+ * coded failure instead. A result counts as an image only when it carries an
+ * id, so a failure object can never pass as a picture. `failureCode` is the
+ * generator's own code (e.g. MODEL_UNAVAILABLE), kept for the log.
+ */
+export function readGeneratorResult(
+  raw: unknown,
+): { ok: true; id: string; altText: string; bytes: number } | { ok: false; cause: CauseCode; failureCode: string | null } {
+  const r = (raw ?? null) as { id?: unknown; altText?: unknown; bytes?: unknown; ok?: unknown; code?: unknown; cause?: unknown } | null;
+  if (r && r.ok !== false && typeof r.id === 'string' && r.id) {
+    return { ok: true, id: r.id, altText: typeof r.altText === 'string' ? r.altText : '', bytes: Number(r.bytes) || 0 };
+  }
+  const named = [r?.cause, r?.code].find((v): v is string => typeof v === 'string' && v.length > 0) ?? null;
+  const cause = named && (CAUSE_CODES as readonly string[]).includes(named) ? (named as CauseCode) : 'PROVIDER_UNAVAILABLE';
+  return { ok: false, cause, failureCode: named };
+}
+
 async function findItem(actor: ImageActor, itemId: string) {
   if (typeof itemId !== 'string' || !itemId) return null;
   return prisma.contentItem.findFirst({
@@ -69,27 +89,29 @@ export async function generateImageForItem(actor: ImageActor, itemId: string): P
     return { ok: false, error: 'insufficient_credits', balance, required: IMAGE_GENERATION_COST };
   }
 
-  const image = await generateImageForContentItem({
-    contentItemId: item.id,
-    workspaceId: actor.workspaceId,
-    topic: item.topic,
-    body: item.content ?? '',
-    brandSummary: item.workspace?.brandSummary ?? null,
-  });
+  const image = readGeneratorResult(
+    await generateImageForContentItem({
+      contentItemId: item.id,
+      workspaceId: actor.workspaceId,
+      topic: item.topic,
+      body: item.content ?? '',
+      brandSummary: item.workspace?.brandSummary ?? null,
+    }),
+  );
 
-  if (!image) {
+  if (!image.ok) {
     const { ref } = await recordActionFailure({
       action: 'generateContentImage',
-      error: new Error('content image generation returned no image'),
+      error: new Error(`content image generation failed: ${image.failureCode ?? 'no image'}`),
       workspaceId: actor.workspaceId,
       userId: actor.userId,
-      code: 'PROVIDER_UNAVAILABLE',
+      code: image.cause,
     });
     await writeActivityLog({
       userId: actor.userId,
       workspaceId: actor.workspaceId,
       action: 'CONTENT_IMAGE_FAILED',
-      detail: { itemId: item.id, ref, textOnly: true },
+      detail: { itemId: item.id, ref, cause: image.cause, failureCode: image.failureCode, textOnly: true },
     });
     return { ok: false, error: 'generation_failed', ref };
   }

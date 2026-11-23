@@ -27,7 +27,7 @@ vi.mock('@/lib/activity-log', () => ({ writeActivityLog: logMock }));
 
 import { IMAGE_GENERATION_COST } from '@/lib/credit-costs';
 
-import { generateImageForItem, removeImageForItem, uploadImageForItem } from './content-image-service';
+import { generateImageForItem, readGeneratorResult, removeImageForItem, uploadImageForItem } from './content-image-service';
 
 const actor = { userId: 'u1', workspaceId: 'w1' };
 const item = { id: 'i1', topic: 'Five pricing mistakes', content: 'Body', status: 'READY', channel: 'linkedin', workspace: { brandSummary: {} } };
@@ -86,6 +86,33 @@ describe('generateImageForItem', () => {
     expect(await uploadImageForItem(actor, 'i1', png)).toEqual({ ok: false, error: 'locked' });
     expect(generateMock).not.toHaveBeenCalled();
     expect(prismaMock.contentImage.deleteMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('stubbed generator (B19: the real model is down until the registry fix ships)', () => {
+  it('a coded failure object is a failure, never a picture, and keeps its code', async () => {
+    generateMock.mockResolvedValue({ ok: false, code: 'MODEL_UNAVAILABLE', message: 'model does not exist' });
+    recordFailureMock.mockResolvedValue({ ref: 'CTV-B19X', code: 'PROVIDER_UNAVAILABLE' });
+    expect(await generateImageForItem(actor, 'i1')).toEqual({ ok: false, error: 'generation_failed', ref: 'CTV-B19X' });
+    expect(deductMock).not.toHaveBeenCalled();
+    expect(recordFailureMock).toHaveBeenCalledWith(expect.objectContaining({ code: 'PROVIDER_UNAVAILABLE' }));
+    expect(logMock).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'CONTENT_IMAGE_FAILED', detail: expect.objectContaining({ failureCode: 'MODEL_UNAVAILABLE', textOnly: true }) }),
+    );
+  });
+
+  it('a known cause code passes through to the reference record', async () => {
+    generateMock.mockResolvedValue({ ok: false, cause: 'PROVIDER_RATE_LIMITED' });
+    recordFailureMock.mockResolvedValue({ ref: 'CTV-RATE', code: 'PROVIDER_RATE_LIMITED' });
+    await generateImageForItem(actor, 'i1');
+    expect(recordFailureMock).toHaveBeenCalledWith(expect.objectContaining({ code: 'PROVIDER_RATE_LIMITED' }));
+  });
+
+  it('reads both generator shapes', () => {
+    expect(readGeneratorResult(null)).toEqual({ ok: false, cause: 'PROVIDER_UNAVAILABLE', failureCode: null });
+    expect(readGeneratorResult({ ok: true, id: 'img', altText: 'a', bytes: 9 })).toEqual({ ok: true, id: 'img', altText: 'a', bytes: 9 });
+    expect(readGeneratorResult({ id: 'img', altText: 'a', bytes: 9 }).ok).toBe(true);
+    expect(readGeneratorResult({ ok: false, id: 'img' }).ok).toBe(false);
   });
 });
 
