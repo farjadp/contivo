@@ -51,7 +51,11 @@
       "soonTitle": "בקרוב",
       "soon": {
         "x": "X",
-        "threads": "Threads"
+        "threads": "Threads",
+        "telegram": "Telegram",
+        "wordpress": "WordPress",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
       },
       "backToList": "חזרה לרשימת הפלטפורמות",
       "permissionsTitle": "ההרשאות המבוקשות",
@@ -59,7 +63,17 @@
       "securityNote": "אסימון הגישה שלכם מוצפן ונשמר בצורה מאובטחת. הוא אף פעם לא נחשף לצד הלקוח. אפשר לבטל את הגישה בכל רגע.",
       "preparing": "מכין…",
       "continueOAuth": "המשך ל-OAuth של {platform}",
-      "telegramUnavailable": "עדיין לא הופעל."
+      "telegramUnavailable": "עדיין לא הופעל.",
+      "soonHint": {
+        "building": "בפיתוח.",
+        "meta": "ממתין לבדיקה של Meta.",
+        "telegram": "עדיין לא הופעל כאן."
+      },
+      "notifyMe": "עדכנו אותי",
+      "notifySending": "שומר…",
+      "notifyDone": "נעדכן אתכם",
+      "notifyFailed": "הבקשה לא נשמרה. נסו שוב.",
+      "notifyAria": "עדכנו אותי כש-{platform} יהיה זמין"
     },
     "accounts": {
       "title": "חשבונות מחוברים",

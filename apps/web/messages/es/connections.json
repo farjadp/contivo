@@ -51,7 +51,11 @@
       "soonTitle": "Próximamente",
       "soon": {
         "x": "X",
-        "threads": "Threads"
+        "threads": "Threads",
+        "telegram": "Telegram",
+        "wordpress": "WordPress",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
       },
       "backToList": "Volver a la lista de plataformas",
       "permissionsTitle": "Permisos solicitados",
@@ -59,7 +63,17 @@
       "securityNote": "Tu token de acceso se cifra y se guarda de forma segura. Nunca se expone en el frontend. Puedes revocar el acceso cuando quieras.",
       "preparing": "Preparando…",
       "continueOAuth": "Continuar a OAuth de {platform}",
-      "telegramUnavailable": "Aún no está activado."
+      "telegramUnavailable": "Aún no está activado.",
+      "soonHint": {
+        "building": "En desarrollo.",
+        "meta": "Pendiente de la revisión de Meta.",
+        "telegram": "Aún no está activado aquí."
+      },
+      "notifyMe": "Avísame",
+      "notifySending": "Guardando…",
+      "notifyDone": "Te avisaremos",
+      "notifyFailed": "No se ha guardado. Inténtalo de nuevo.",
+      "notifyAria": "Avísame cuando {platform} esté disponible"
     },
     "accounts": {
       "title": "Cuentas conectadas",
