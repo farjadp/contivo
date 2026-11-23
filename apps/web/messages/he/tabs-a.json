@@ -364,6 +364,18 @@
         "noReason": "לא נרשמה סיבה.",
         "reconnect": "חיבור מחדש בדף החיבורים",
         "connect": "פתיחת החיבורים"
+      },
+      "noConnection": {
+        "title": "חברו את {platform} כדי לפרסם",
+        "body": "שום דבר לא תוזמן. הטקסט שלכם נשמר.",
+        "action": "חיבור {platform}",
+        "open": "לחיבורים",
+        "held": "נשמר, אבל לא תוזמן: חברו קודם את {platform}."
+      },
+      "scheduleRefused": {
+        "quality_gate_blocked": "בדיקת האיכות עצרה את הפוסט. בדקו שוב, או פרסמו בכל זאת.",
+        "not_found": "הפוסט הזה כבר לא קיים. רעננו את הדף.",
+        "failed": "הפוסט לא תוזמן. נסו שוב."
       }
     },
     "calendar": {
@@ -475,6 +487,132 @@
       },
       "writeGenerate": "יצירת תמונה מתוך הטקסט שלי · {cost, number} קרדיטים",
       "writeGenerateHint": "פוסטים בלינקדאין ובטלגרם יכולים לכלול תמונה אחת. תראו אותה בכרטיס הפוסט לפני התזמון, ושם תוכלו להחליף או להסיר אותה."
+    },
+    "firstPost": {
+      "confirm": {
+        "title": "מול מי אתם מתחרים?",
+        "titleFew": "הוסיפו את המתחרים שאתם מכירים",
+        "disclaimer": "נמצאו על ידי בינה מלאכותית בדפי אינטרנט ציבוריים. סמנו רק את האמיתיים.",
+        "disclaimerFew": "בעצמנו מצאנו מעט מדי. הוסיפו לפחות {min, number} לפי כתובת האתר שלהם.",
+        "listLabel": "מתחרים",
+        "sourceTag": "מקור",
+        "aiGuess": "ניחוש של AI",
+        "addedByYou": "נוסף על ידיכם",
+        "picked": "{count, number} נבחרו · כ־{minutes, number} דקות",
+        "pickMore": "בחרו לפחות {min, number} כדי להתחיל.",
+        "start": "כתבו לי את הפוסט הראשון",
+        "starting": "מתחילים…",
+        "add": "הוספת מתחרה שפספסנו",
+        "addLabel": "אתר המתחרה",
+        "addPlaceholder": "competitor.com",
+        "addSubmit": "הוספה",
+        "adding": "מוסיפים וקוראים את האתר…",
+        "addCancel": "ביטול",
+        "writeOwn": "אכתוב בעצמי",
+        "saveFailed": "הבחירה לא נשמרה. נסו שוב."
+      },
+      "progress": {
+        "title": "כותבים את הפוסט הראשון שלכם",
+        "lede": "אפשר לעזוב את הדף. העבודה ממשיכה.",
+        "now": "עכשיו: {step}",
+        "steps": {
+          "matrices": "מפת השוק",
+          "keywords": "נושאים פתוחים",
+          "idea": "הזווית של הפוסט",
+          "draft": "כתיבת הפוסט"
+        },
+        "summary": {
+          "matrices": "{competitors, plural, one {# מתחרה מוקם} other {# מתחרים מוקמו}} על {charts, plural, one {# תרשים} other {# תרשימים}}.",
+          "matricesCharts": "{charts, plural, one {# תרשים מוכן} other {# תרשימים מוכנים}}.",
+          "keywords": "{gaps, plural, one {# נושא שהמתחרים משאירים פתוח} other {# נושאים שהמתחרים משאירים פתוחים}}.",
+          "keywordsTopGap": "נמצאו {gaps, plural, one {# נושא פתוח} other {# נושאים פתוחים}}. הגדול ביותר: {topGap}",
+          "idea": "זווית: {topic}",
+          "draft": "נכתבו {words, plural, one {# מילה} other {# מילים}}.",
+          "skipped": "כבר נעשה קודם."
+        },
+        "status": {
+          "done": "הושלם",
+          "current": "בתהליך",
+          "failed": "לא הושלם",
+          "pending": "ממתין"
+        }
+      },
+      "failed": {
+        "line": {
+          "matrices": "מפת השוק לא הושלמה.",
+          "keywords": "הנושאים הפתוחים לא הושלמו.",
+          "idea": "לא מצאנו זווית.",
+          "draft": "הכתיבה לא הושלמה."
+        },
+        "reason": {
+          "timedOut": "זה לקח יותר מדי זמן ונעצר.",
+          "dispatch": "לא הצלחנו להתחיל. נסו שוב.",
+          "notEnoughEvidence": "לא מצאנו מספיק מידע על המתחרים שלכם ברשת.",
+          "notEnoughAxes": "לא הצלחנו לבנות מספיק תרשימים כדי להשוות אתכם.",
+          "aiUnavailable": "שירות ה־AI לא ענה. נסו שוב בעוד כמה דקות.",
+          "notEnoughCompetitorSignals": "לא הצלחנו לקרוא מספיק מהאתרים של המתחרים. הוסיפו מתחרה נוסף או כתבו בעצמכם.",
+          "generic": "משהו השתבש אצלנו."
+        },
+        "retry": "נסו שוב",
+        "retrying": "מתחילים שוב…",
+        "writeOwn": "אכתוב בעצמי",
+        "report": "דיווח על בעיה"
+      },
+      "draft": {
+        "eyebrow": "הפוסט הראשון שלכם · LinkedIn",
+        "preview": "תצוגה מקדימה · פרופיל אישי",
+        "edit": "עריכה",
+        "otherAngle": "זווית אחרת",
+        "otherAngleBusy": "מתחילים…",
+        "writeOwn": "אכתוב בעצמי",
+        "editorLabel": "טקסט הפוסט",
+        "save": "שמירה",
+        "saving": "שומרים…",
+        "cancel": "ביטול",
+        "saveFailed": "השינויים לא נשמרו. נסו שוב.",
+        "saved": "נשמר.",
+        "missing": "הטיוטה הזו כבר לא קיימת."
+      },
+      "why": {
+        "title": "למה הפוסט הזה",
+        "topGapTag": "נושא פתוח",
+        "topGap": "המתחרים שלכם לא עוסקים בזה: {topGap}",
+        "matrices": "מפת השוק · {charts, plural, one {# תרשים} other {# תרשימים}}",
+        "matricesView": "למפה",
+        "keywords": "מילות מפתח · {competitors, plural, one {# מתחרה} other {# מתחרים}}",
+        "keywordsView": "לנושאים",
+        "aiTag": "ניסוח של AI",
+        "aiWording": "הניסוח הוא של ה־AI, לא מהנתונים שלכם. שנו כל מה שלא נכון."
+      },
+      "publish": {
+        "connectedAs": "LinkedIn מחובר בתור {name}",
+        "publishNow": "פרסום עכשיו",
+        "publishing": "מפרסמים…",
+        "scheduleLater": "תזמון למועד אחר",
+        "whatHappens": "יעלה לאוויר תוך דקה.",
+        "notConnected": "חברו את LinkedIn כדי לפרסם. שום דבר לא יתפרסם עד שתלחצו על פרסום.",
+        "connect": "חיבור LinkedIn",
+        "connecting": "פותחים את LinkedIn…",
+        "noConnection": "חברו את LinkedIn כדי לפרסם. שום דבר לא תוזמן.",
+        "gateBlocked": "בדיקת האיכות עצרה את הפוסט. הסיבות מופיעות מעליו.",
+        "notFound": "הפוסט הזה כבר לא קיים. רעננו את הדף.",
+        "failed": "הפרסום לא התחיל. נסו שוב."
+      },
+      "publishing": {
+        "line": "מפרסמים ב־LinkedIn… פחות מדקה",
+        "slow": "עדיין מפרסמים. הקישור יופיע כאן כש־LinkedIn יאשר."
+      },
+      "published": {
+        "eyebrow": "פורסם · {date}",
+        "eyebrowNoDate": "פורסם",
+        "title": "הפוסט הראשון שלכם באוויר",
+        "view": "צפייה ב־LinkedIn",
+        "copy": "העתקת קישור",
+        "copied": "הקישור הועתק",
+        "noLink": "LinkedIn לא החזיר קישור. הפוסט נמצא בפרופיל שלכם.",
+        "open": "סביבת העבודה שלכם פתוחה עכשיו במלואה.",
+        "toolsLabel": "הכלים שלכם"
+      }
     }
   }
 }

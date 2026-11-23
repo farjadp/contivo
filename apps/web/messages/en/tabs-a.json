@@ -364,6 +364,18 @@
         "noReason": "No reason was recorded.",
         "reconnect": "Reconnect in Connections",
         "connect": "Open Connections"
+      },
+      "noConnection": {
+        "title": "Connect {platform} to publish",
+        "body": "Nothing was scheduled. Your text is saved.",
+        "action": "Connect {platform}",
+        "open": "Open Connections",
+        "held": "Saved, but not scheduled: connect {platform} first."
+      },
+      "scheduleRefused": {
+        "quality_gate_blocked": "The quality check held this post. Check again, or publish anyway.",
+        "not_found": "This post no longer exists. Refresh the page.",
+        "failed": "It wasn't scheduled. Try again."
       }
     },
     "calendar": {
@@ -475,6 +487,132 @@
       },
       "writeGenerate": "Make an image from my text · {cost, number} credits",
       "writeGenerateHint": "LinkedIn and Telegram posts can carry one image. You see it on the post's card before you schedule, and can replace or remove it there."
+    },
+    "firstPost": {
+      "confirm": {
+        "title": "Who do you compete with?",
+        "titleFew": "Add the competitors you know",
+        "disclaimer": "Found by AI on public web pages. Tick only the real ones.",
+        "disclaimerFew": "We found too few on our own. Add at least {min, number} by their website.",
+        "listLabel": "Competitors",
+        "sourceTag": "Source",
+        "aiGuess": "AI guess",
+        "addedByYou": "Added by you",
+        "picked": "{count, number} picked · about {minutes, number} minutes",
+        "pickMore": "Pick at least {min, number} to start.",
+        "start": "Write my first post",
+        "starting": "Starting…",
+        "add": "Add one we missed",
+        "addLabel": "Competitor website",
+        "addPlaceholder": "competitor.com",
+        "addSubmit": "Add",
+        "adding": "Adding and reading their site…",
+        "addCancel": "Cancel",
+        "writeOwn": "Write my own instead",
+        "saveFailed": "That choice wasn't saved. Try again."
+      },
+      "progress": {
+        "title": "Writing your first post",
+        "lede": "You can leave this page. It keeps going.",
+        "now": "Now: {step}",
+        "steps": {
+          "matrices": "Market map",
+          "keywords": "Topic gaps",
+          "idea": "Your post's angle",
+          "draft": "Writing the post"
+        },
+        "summary": {
+          "matrices": "{competitors, plural, one {# competitor} other {# competitors}} placed on {charts, plural, one {# chart} other {# charts}}.",
+          "matricesCharts": "{charts, plural, one {# chart} other {# charts}} ready.",
+          "keywords": "{gaps, plural, one {# topic gap} other {# topic gaps}} your competitors leave open.",
+          "keywordsTopGap": "{gaps, plural, one {# topic gap} other {# topic gaps}} found. The biggest: {topGap}",
+          "idea": "Angle: {topic}",
+          "draft": "{words, plural, one {# word} other {# words}} written.",
+          "skipped": "Already done earlier."
+        },
+        "status": {
+          "done": "Done",
+          "current": "In progress",
+          "failed": "Didn't finish",
+          "pending": "Waiting"
+        }
+      },
+      "failed": {
+        "line": {
+          "matrices": "Market map didn't finish.",
+          "keywords": "Topic gaps didn't finish.",
+          "idea": "Couldn't find an angle.",
+          "draft": "Writing didn't finish."
+        },
+        "reason": {
+          "timedOut": "This took too long and stopped.",
+          "dispatch": "We couldn't start. Try again.",
+          "notEnoughEvidence": "We couldn't find enough about your competitors on the web.",
+          "notEnoughAxes": "We couldn't build enough charts to compare you.",
+          "aiUnavailable": "The AI service didn't answer. Try again in a few minutes.",
+          "notEnoughCompetitorSignals": "We couldn't read enough of your competitors' sites. Add another competitor or write your own.",
+          "generic": "Something went wrong on our side."
+        },
+        "retry": "Try again",
+        "retrying": "Starting again…",
+        "writeOwn": "Write my own instead",
+        "report": "Report a problem"
+      },
+      "draft": {
+        "eyebrow": "Your first post · LinkedIn",
+        "preview": "Preview · personal profile",
+        "edit": "Edit",
+        "otherAngle": "Try another angle",
+        "otherAngleBusy": "Starting…",
+        "writeOwn": "Write my own instead",
+        "editorLabel": "Post text",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "saveFailed": "Your changes weren't saved. Try again.",
+        "saved": "Saved.",
+        "missing": "This draft no longer exists."
+      },
+      "why": {
+        "title": "Why this post",
+        "topGapTag": "Topic gap",
+        "topGap": "Your competitors leave this open: {topGap}",
+        "matrices": "Market map · {charts, plural, one {# chart} other {# charts}}",
+        "matricesView": "See the map",
+        "keywords": "Keyword gaps · {competitors, plural, one {# competitor} other {# competitors}}",
+        "keywordsView": "See the gaps",
+        "aiTag": "AI wording",
+        "aiWording": "The wording is the AI's, not your data. Change anything that's wrong."
+      },
+      "publish": {
+        "connectedAs": "LinkedIn connected as {name}",
+        "publishNow": "Publish now",
+        "publishing": "Publishing…",
+        "scheduleLater": "Schedule for later",
+        "whatHappens": "Live within a minute.",
+        "notConnected": "Connect LinkedIn to publish. Nothing posts until you press Publish.",
+        "connect": "Connect LinkedIn",
+        "connecting": "Opening LinkedIn…",
+        "noConnection": "Connect LinkedIn to publish. Nothing was scheduled.",
+        "gateBlocked": "The quality check held this post. The reasons are above it.",
+        "notFound": "This post no longer exists. Refresh the page.",
+        "failed": "Publishing didn't start. Try again."
+      },
+      "publishing": {
+        "line": "Publishing to LinkedIn… under a minute",
+        "slow": "Still publishing. The link appears here when LinkedIn confirms."
+      },
+      "published": {
+        "eyebrow": "Published · {date}",
+        "eyebrowNoDate": "Published",
+        "title": "Your first post is live",
+        "view": "View on LinkedIn",
+        "copy": "Copy link",
+        "copied": "Link copied",
+        "noLink": "LinkedIn didn't send a link back. The post is on your profile.",
+        "open": "Your workspace is fully open.",
+        "toolsLabel": "Your tools"
+      }
     }
   }
 }
