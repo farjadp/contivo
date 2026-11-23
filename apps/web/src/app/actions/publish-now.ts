@@ -64,6 +64,11 @@ async function scheduleOwnedItem(req: ScheduleRequest): Promise<PublishResult> {
   if (!item) return { ok: false, reason: 'not_found' };
   if (req.refuse.includes(item.status)) return { ok: true, item };
 
+  // Connection first: an override with nothing to publish through must not
+  // write a QUALITY_GATE_OVERRIDDEN audit row for a post that never goes out.
+  const target = await assertPublishTarget(item.workspaceId, item.channel);
+  if (!target.ok) return { ok: false, reason: 'no_connection', platform: target.platform };
+
   let overridden: StoredVerdict | null;
   try {
     overridden = await enforceQualityGate({ item, userId: req.userId, override: req.override });
@@ -71,9 +76,6 @@ async function scheduleOwnedItem(req: ScheduleRequest): Promise<PublishResult> {
     if (error instanceof QualityGateBlockedError) return { ok: false, reason: 'quality_gate_blocked' };
     throw error;
   }
-
-  const target = await assertPublishTarget(item.workspaceId, item.channel);
-  if (!target.ok) return { ok: false, reason: 'no_connection', platform: target.platform };
 
   // Conditional on the status, so an item the scheduler claimed between the
   // read and this write is not put back to SCHEDULED (and published twice).

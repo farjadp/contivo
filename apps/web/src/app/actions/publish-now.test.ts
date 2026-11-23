@@ -119,6 +119,15 @@ describe('publishNow', () => {
     expect(logged('FIRST_POST_PUBLISH_REQUESTED')?.detail).toMatchObject({ override: true });
   });
 
+  it('override without a connection writes nothing, not even the override audit', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue(item({ qualityVerdict: FAILED_VERDICT }));
+    prismaMock.socialConnection.findFirst.mockResolvedValue(null);
+    expect(await publishNow('item-1', { override: true })).toEqual({ ok: false, reason: 'no_connection', platform: 'LINKEDIN' });
+    expect(await schedulePublish({ contentId: 'item-1', platform: 'linkedin', publishDate: '2026-11-24', publishTime: '09:00', timezone: 'UTC', override: true })).toEqual({ ok: false, reason: 'no_connection', platform: 'LINKEDIN' });
+    expect(prismaMock.contentItem.updateMany).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
   it("someone else's item (or a missing one) is not_found, nothing written", async () => {
     prismaMock.contentItem.findFirst.mockResolvedValue(null);
     expect(await publishNow('item-x')).toEqual({ ok: false, reason: 'not_found' });
@@ -215,6 +224,7 @@ describe('schedulePublish', () => {
   it('no connection and a blocked gate are results, as in publishNow', async () => {
     prismaMock.socialConnection.findFirst.mockResolvedValue(null);
     expect(await schedulePublish(payload)).toEqual({ ok: false, reason: 'no_connection', platform: 'LINKEDIN' });
+    prismaMock.socialConnection.findFirst.mockResolvedValue({ id: 'conn-1' });
     prismaMock.contentItem.findFirst.mockResolvedValue(item({ qualityVerdict: FAILED_VERDICT }));
     expect(await schedulePublish(payload)).toEqual({ ok: false, reason: 'quality_gate_blocked' });
     expect(prismaMock.contentItem.updateMany).not.toHaveBeenCalled();
