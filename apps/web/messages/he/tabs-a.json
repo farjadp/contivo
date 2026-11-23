@@ -224,7 +224,7 @@
       "frameworkManual": "מבנה: ידני",
       "ideasLabel": "רעיונות",
       "wordsLabel": "מילים",
-      "needImagesLabel": "צריך תמונות",
+      "needImagesLabel": "להוסיף תמונה",
       "imagesLabel": "תמונות",
       "autoCalendarLabel": "יומן אוטומטי",
       "generationPath": "דרך היצירה",
@@ -238,7 +238,7 @@
       "selectedFramework": "המבנה שנבחר",
       "overallScore": "ציון כולל: {score}/10",
       "fallbackApplied": "הופעלה חלופה",
-      "imagesBadge": "תמונות: {count, number} (הראשונה = תמונת שער)",
+      "imagesBadge": "תמונה: {count, number} לכל פוסט",
       "imagesBadgeNone": "תמונות: לא",
       "calendarAuto": "יומן: הוספה אוטומטית (הדמיה)",
       "calendarManual": "יומן: ידני",
@@ -263,7 +263,8 @@
         "previewFailed": "יצירת התצוגה המקדימה נכשלה.",
         "maxFiles": "אפשר לצרף עד {count, number} קבצים.",
         "readFailed": "לא הצלחנו לקרוא את \"{name}\". השתמשו בקובצי PDF/TXT/MD/CSV/JSON או הדביקו את הטקסט ידנית."
-      }
+      },
+      "imageCostHint": "{cost, number} קרדיטים לתמונה"
     },
     "pipeline": {
       "empty": {
@@ -343,7 +344,7 @@
       "write": {
         "open": "כתיבת פוסט",
         "title": "כתיבת פוסט משלכם",
-        "intro": "הטקסט שלכם, נשמר כ\"מוכן\". אפשר לתזמן אותו כמו כל פוסט אחר. בלי AI ובלי קרדיטים.",
+        "intro": "הטקסט שלכם, נשמר כ\"מוכן\" ולא נכתב מחדש. אפשר לתזמן אותו כמו כל פוסט אחר. רק התמונה האופציונלית צורכת קרדיטים.",
         "channelLabel": "פרסום ב",
         "titleLabel": "כותרת",
         "titlePlaceholder": "הכותרת שהקוראים יראו",
@@ -448,6 +449,36 @@
         "low_score": "הציון שלו נמוך מהרף בבדיקות של הבודק.",
         "other": "הוא לא עבר אחת מבדיקות האיכות."
       }
+    },
+    "image": {
+      "badgeWith": "יש תמונה",
+      "badgeWithout": "אין תמונה",
+      "none": "עדיין אין תמונה",
+      "attachedGenerated": "תמונה צורפה, נוצרה מתוך הפוסט",
+      "attachedUpload": "תמונה צורפה, העלאה שלכם",
+      "textOnlyChannel": "הערוץ הזה מפרסם טקסט בלבד.",
+      "generate": "יצירת תמונה · {cost, number} קרדיטים",
+      "regenerate": "יצירת תמונה חדשה · {cost, number} קרדיטים",
+      "upload": "העלאת תמונה משלי",
+      "replaceUpload": "החלפה בתמונה משלי",
+      "remove": "הסרה",
+      "uploadHint": "PNG או JPG, עד {mb, number} MB.",
+      "generating": "יוצרים את התמונה. זה יכול לקחת עד דקה.",
+      "uploading": "מעלים את התמונה…",
+      "removing": "מסירים את התמונה…",
+      "failed": "אין תמונה: הפוסט יפורסם כטקסט בלבד. מספר אסמכתה {ref}.",
+      "failedNoRef": "אין תמונה: הפוסט יפורסם כטקסט בלבד.",
+      "insufficient": "אין תמונה: נדרשים {required, number} קרדיטים ויש לכם {balance, number}. הפוסט יפורסם כטקסט בלבד.",
+      "locked": "הפוסט כבר פורסם, ולכן התמונה שלו לא משתנה.",
+      "notFound": "הפוסט לא נמצא. רעננו את הדף.",
+      "uploadErrors": {
+        "empty": "הקובץ ריק. בחרו קובץ PNG או JPG אחר.",
+        "too_large": "הקובץ גדול מ-{mb, number} MB. בחרו PNG או JPG קטן יותר.",
+        "wrong_type": "אפשר להשתמש רק בתמונות PNG ו-JPG.",
+        "network": "התמונה לא הועלתה. בדקו את החיבור ונסו שוב."
+      },
+      "writeGenerate": "יצירת תמונה מתוך הטקסט שלי · {cost, number} קרדיטים",
+      "writeGenerateHint": "פוסטים בלינקדאין ובטלגרם יכולים לכלול תמונה אחת. תראו אותה בכרטיס הפוסט לפני התזמון, ושם תוכלו להחליף או להסיר אותה."
     }
   }
 }

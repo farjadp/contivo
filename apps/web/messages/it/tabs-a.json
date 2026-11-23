@@ -224,7 +224,7 @@
       "frameworkManual": "Framework: Manuale",
       "ideasLabel": "Idee",
       "wordsLabel": "Parole",
-      "needImagesLabel": "Servono immagini",
+      "needImagesLabel": "Aggiungi un'immagine",
       "imagesLabel": "Immagini",
       "autoCalendarLabel": "Calendario automatico",
       "generationPath": "Modalità di generazione",
@@ -238,7 +238,7 @@
       "selectedFramework": "Framework selezionato",
       "overallScore": "Punteggio complessivo: {score}/10",
       "fallbackApplied": "Fallback applicato",
-      "imagesBadge": "Immagini: {count, number} (la 1ª è la copertina)",
+      "imagesBadge": "Immagine: {count, number} per post",
       "imagesBadgeNone": "Immagini: No",
       "calendarAuto": "Calendario: inserimento automatico (mock)",
       "calendarManual": "Calendario: manuale",
@@ -263,7 +263,8 @@
         "previewFailed": "Impossibile generare l'anteprima.",
         "maxFiles": "Puoi allegare fino a {count, number} file.",
         "readFailed": "Impossibile leggere \"{name}\". Usa file PDF/TXT/MD/CSV/JSON oppure incolla il testo a mano."
-      }
+      },
+      "imageCostHint": "{cost, number} crediti per immagine"
     },
     "pipeline": {
       "empty": {
@@ -343,7 +344,7 @@
       "write": {
         "open": "Scrivi un post",
         "title": "Scrivi il tuo post",
-        "intro": "Il tuo testo, salvato come Pronto. Programmalo come qualsiasi altro post. Niente AI e nessun credito.",
+        "intro": "Il tuo testo, salvato come Pronto e mai riscritto. Programmalo come qualsiasi altro post. Solo l'immagine facoltativa consuma crediti.",
         "channelLabel": "Pubblica su",
         "titleLabel": "Titolo",
         "titlePlaceholder": "Il titolo che vedono i lettori",
@@ -448,6 +449,36 @@
         "low_score": "Ha ottenuto un punteggio troppo basso nei controlli del revisore.",
         "other": "Non ha superato uno dei controlli qualità."
       }
+    },
+    "image": {
+      "badgeWith": "Immagine",
+      "badgeWithout": "Nessuna immagine",
+      "none": "Ancora nessuna immagine",
+      "attachedGenerated": "Immagine allegata, creata dal post",
+      "attachedUpload": "Immagine allegata, caricata da te",
+      "textOnlyChannel": "Questo canale pubblica solo testo.",
+      "generate": "Crea un'immagine · {cost, number} crediti",
+      "regenerate": "Creane una nuova · {cost, number} crediti",
+      "upload": "Carica la mia",
+      "replaceUpload": "Usa la mia",
+      "remove": "Rimuovi",
+      "uploadHint": "PNG o JPG, fino a {mb, number} MB.",
+      "generating": "Sto creando l'immagine. Può servire fino a un minuto.",
+      "uploading": "Caricamento dell'immagine…",
+      "removing": "Rimozione dell'immagine…",
+      "failed": "Nessuna immagine: questo post sarà pubblicato solo come testo. Riferimento {ref}.",
+      "failedNoRef": "Nessuna immagine: questo post sarà pubblicato solo come testo.",
+      "insufficient": "Nessuna immagine: ne servono {required, number} crediti e ne hai {balance, number}. Questo post sarà pubblicato solo come testo.",
+      "locked": "Questo post è pubblicato, quindi la sua immagine resta così.",
+      "notFound": "Post non trovato. Ricarica la pagina.",
+      "uploadErrors": {
+        "empty": "Il file è vuoto. Scegli un altro PNG o JPG.",
+        "too_large": "Il file supera {mb, number} MB. Scegli un PNG o JPG più leggero.",
+        "wrong_type": "Si possono usare solo immagini PNG e JPG.",
+        "network": "L'immagine non è stata caricata. Controlla la connessione e riprova."
+      },
+      "writeGenerate": "Crea un'immagine dal mio testo · {cost, number} crediti",
+      "writeGenerateHint": "I post LinkedIn e Telegram possono avere un'immagine. La vedi sulla scheda del post prima di programmarlo e lì puoi sostituirla o rimuoverla."
     }
   }
 }

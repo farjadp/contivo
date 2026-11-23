@@ -153,7 +153,15 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     },
     include: {
       contentItems: {
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
+        include: {
+          // Metadata for the pipeline card's picture; the bytes come from /api/content/[id]/image.
+          images: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: { id: true, altText: true, mimeType: true, provider: true },
+          },
+        },
       },
       competitors: {
         orderBy: { createdAt: 'asc' },

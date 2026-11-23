@@ -22,6 +22,9 @@ import { QualityVerdictNotice } from './QualityVerdictNotice';
 import { recheckContentQuality } from '@/app/actions/quality-gate';
 import { isBlockedVerdict } from '@/lib/quality-verdict-shared';
 import { resolvePublishOutcome, type LatestPublishJob } from '@/lib/publish-outcome';
+import { channelCarriesImage } from '@/lib/content-image-rules';
+import type { ContentImageMeta } from '@/lib/content-image-service';
+import { ContentImageControl } from './ContentImageControl';
 
 type SourceFileState = {
   name: string;
@@ -45,6 +48,18 @@ function channelLabel(t: ReturnType<typeof useTranslations>, channel: string) {
 /** Content statuses arrive as raw enum values; unknown ones show the enum. */
 function statusLabel(t: ReturnType<typeof useTranslations>, status: string) {
   return t.has(`contentStatus.${status}`) ? t(`contentStatus.${status}`) : status;
+}
+
+/** The newest picture's metadata from the page's `images` select, if any. */
+function firstImage(item: any): ContentImageMeta | null {
+  const row = Array.isArray(item?.images) ? item.images[0] : null;
+  if (!row?.id) return null;
+  return {
+    id: String(row.id),
+    altText: row.altText ?? null,
+    mimeType: String(row.mimeType || 'image/png'),
+    source: row.provider === 'upload' ? 'upload' : 'generated',
+  };
 }
 
 const MAX_MANUAL_SOURCE_FILES = 3;
@@ -167,8 +182,11 @@ export function PipelineTab({
     });
   }, [items]);
 
-  const handleCreated = (item: any) => {
-    setLocalItems((prev) => [{ ...item, __ownPostCreated: true }, ...prev.filter((entry) => entry.id !== item.id)]);
+  const handleCreated = (item: any, options?: { generateImage?: boolean }) => {
+    setLocalItems((prev) => [
+      { ...item, __ownPostCreated: true, __autoGenerateImage: Boolean(options?.generateImage) },
+      ...prev.filter((entry) => entry.id !== item.id),
+    ]);
     router.refresh();
   };
 
@@ -258,6 +276,8 @@ function PipelineItemCard({
   const format = useFormatter();
   const router = useRouter();
   const [currentItem, setCurrentItem] = useState(item);
+  // Newest picture only (the page selects metadata, never bytes).
+  const [currentImage, setCurrentImage] = useState<ContentImageMeta | null>(() => firstImage(item));
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [editContentText, setEditContentText] = useState('');
@@ -620,6 +640,15 @@ function PipelineItemCard({
          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-moss-muted">
            {t('pipeline.wordsTarget', { count: normalizedTargetWordCount })}
          </span>
+         {channelCarriesImage(currentItem.channel) ? (
+           <span
+             className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest ${
+               currentImage ? 'bg-chalk-sunk text-moss-700' : 'bg-amber-50 text-amber-800'
+             }`}
+           >
+             {currentImage ? t('image.badgeWith') : t('image.badgeWithout')}
+           </span>
+         ) : null}
        </div>
 
        {publishOutcome ? (
@@ -653,6 +682,19 @@ function PipelineItemCard({
             ) : null}
           </div>
         ) : null}
+
+        <div className="mb-4">
+            <ContentImageControl
+              workspaceId={workspace.id}
+              itemId={currentItem.id}
+              channel={currentItem.channel}
+              status={currentItem.status}
+              topic={currentItem.topic}
+              initialImage={currentImage}
+              autoGenerate={Boolean(item.__autoGenerateImage)}
+              onChange={setCurrentImage}
+            />
+        </div>
 
         {['DRAFT', 'GENERATED', 'READY', 'SCHEDULED'].includes(currentItem.status) ? (
           <div className="mb-4 rounded-xl border border-rule bg-chalk p-3">

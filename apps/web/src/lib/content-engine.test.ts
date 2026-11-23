@@ -72,11 +72,14 @@ beforeEach(() => {
     async ({ where }: { where: { id: string; userId: string } }) =>
       where.id === WORKSPACE && where.userId === OWNER ? { id: WORKSPACE } : null,
   );
-  prismaMock.contentItem.create.mockImplementation(async ({ data }: { data: { topic: string; channel: string } }) => ({
-    id: 'item-1',
-    topic: data.topic,
-    channel: data.channel,
-  }));
+  prismaMock.contentItem.create.mockImplementation(
+    async ({ data }: { data: { topic: string; channel: string; status: string } }) => ({
+      id: 'item-1',
+      topic: data.topic,
+      channel: data.channel,
+      status: data.status,
+    }),
+  );
 });
 
 describe('saveIdeaToPipelineCore', () => {
@@ -94,7 +97,8 @@ describe('saveIdeaToPipelineCore', () => {
   it('saves the idea for the workspace owner', async () => {
     const result = await saveIdeaToPipelineCore({ userId: OWNER, workspaceId: WORKSPACE }, idea);
 
-    expect(result).toEqual({ success: true, id: 'item-1' });
+    // channel + status let the Ideation card attach the picture to the saved item.
+    expect(result).toEqual({ success: true, id: 'item-1', channel: 'linkedin', status: 'DRAFT' });
     expect(prismaMock.contentItem.create).toHaveBeenCalledTimes(1);
     expect(prismaMock.contentItem.create.mock.calls[0][0].data).toMatchObject({
       userId: OWNER,
