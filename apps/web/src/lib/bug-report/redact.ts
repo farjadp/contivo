@@ -146,8 +146,10 @@ export function sanitizeClientContext(input: unknown): ClientContext {
     const vp = isRecord(input.viewport) ? input.viewport : {};
     const w = finiteNumber(vp.w);
     const h = finiteNumber(vp.h);
+    const path = cleanRoute(input.path);
     return {
       route: cleanRoute(input.route),
+      ...(path ? { path } : {}),
       locale: typeof input.locale === 'string' && /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})?$/.test(input.locale) ? input.locale : '',
       viewport: {
         w: w !== null && w >= 0 && w <= 20000 ? Math.round(w) : 0,

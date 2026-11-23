@@ -46,3 +46,15 @@ export function readViewedIds(root: Pick<ParentNode, 'querySelector'> | null, wo
   }
   return ids;
 }
+
+/** `/fa/growth/abc` with locale `fa` becomes `/growth/abc`; a path without the prefix is returned as is. */
+export function stripLocale(pathname: string, locale: string): string {
+  const prefix = `/${locale}`;
+  if (pathname === prefix) return '/';
+  return pathname.startsWith(`${prefix}/`) ? pathname.slice(prefix.length) : pathname;
+}
+
+/** Give focus back to whatever opened the dialog, if it is still on the page. */
+export function restoreFocus(opener: { isConnected: boolean; focus: () => void } | null): void {
+  if (opener && opener.isConnected) opener.focus();
+}

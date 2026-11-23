@@ -73,6 +73,7 @@
         "resolvedAt": "טופל",
         "locale": "שפה",
         "route": "עמוד",
+        "path": "נתיב כתובת",
         "appVersion": "גרסת האפליקציה",
         "user": "משתמש",
         "workspace": "סביבת עבודה",

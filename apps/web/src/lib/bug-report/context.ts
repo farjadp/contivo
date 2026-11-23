@@ -11,6 +11,7 @@
 
 import { prisma } from '@/lib/db';
 
+import { resolveAppVersion } from './app-version';
 import { classifyCauseFromStored } from './cause';
 import { redactText, sanitizeClientContext } from './redact';
 import {
@@ -67,7 +68,7 @@ export type ServerContext = {
   failedRuns: FailedRunItem[]; // newest first
   aiProviderEvents: ProviderEventItem[]; // newest first
   activity: ActivityItem[]; // newest first
-  client: Pick<ClientContext, 'route' | 'locale' | 'viewport'> & {
+  client: Pick<ClientContext, 'route' | 'path' | 'locale' | 'viewport'> & {
     breadcrumbs: Breadcrumb[]; // oldest first
     consoleErrors: ConsoleEntry[]; // oldest first
   };
@@ -95,11 +96,6 @@ const ACTIVITY = 20;
 /** A failed run older than this is not offered as "the" cause of a report. */
 const RECENT_FAILURE_MS = 48 * 60 * 60 * 1000;
 const SENTRY_ID = /^[0-9a-f]{32}$/i;
-
-export function shortVersion(sha: string | undefined | null): string | null {
-  const s = (sha ?? '').trim();
-  return s ? s.slice(0, 7) : null;
-}
 
 function isCause(v: unknown): v is CauseCode {
   return typeof v === 'string' && (CAUSE_CODES as readonly string[]).includes(v);
@@ -131,25 +127,32 @@ async function verifyViewedIds(
   const owns = async (section: string, fn: () => Promise<unknown>): Promise<boolean> =>
     safe(section, degraded, async () => Boolean(await fn()), false);
 
-  if (claimed.contentItemId && (await owns('viewedIds', () =>
-      prisma.contentItem.findFirst({ where: { id: claimed.contentItemId, userId }, select: { id: true } })))) {
-    out.contentItemId = claimed.contentItemId;
-  }
-  if (claimed.discoveryRunId && (await owns('viewedIds', () =>
-      prisma.discoveryRun.findFirst({ where: { id: claimed.discoveryRunId, workspace: { userId } }, select: { id: true } })))) {
-    out.discoveryRunId = claimed.discoveryRunId;
-  }
-  if (claimed.matrixRunId && (await owns('viewedIds', () =>
-      prisma.matrixRun.findFirst({ where: { id: claimed.matrixRunId, workspace: { userId } }, select: { id: true } })))) {
-    out.matrixRunId = claimed.matrixRunId;
-  }
-  if (claimed.publishLogId && workspaceId && (await owns('viewedIds', () =>
-      prisma.socialPublishLog.findFirst({
-        where: { id: claimed.publishLogId, job: { workspaceId } },
-        select: { id: true },
-      })))) {
-    out.publishLogId = claimed.publishLogId;
-  }
+  // Independent ownership checks, run together. Each is still scoped to the caller in its query.
+  const [content, discovery, matrix, publish] = await Promise.all([
+    claimed.contentItemId
+      ? owns('viewedIds', () =>
+          prisma.contentItem.findFirst({ where: { id: claimed.contentItemId, userId }, select: { id: true } }))
+      : false,
+    claimed.discoveryRunId
+      ? owns('viewedIds', () =>
+          prisma.discoveryRun.findFirst({ where: { id: claimed.discoveryRunId, workspace: { userId } }, select: { id: true } }))
+      : false,
+    claimed.matrixRunId
+      ? owns('viewedIds', () =>
+          prisma.matrixRun.findFirst({ where: { id: claimed.matrixRunId, workspace: { userId } }, select: { id: true } }))
+      : false,
+    claimed.publishLogId && workspaceId
+      ? owns('viewedIds', () =>
+          prisma.socialPublishLog.findFirst({
+            where: { id: claimed.publishLogId, job: { workspaceId } },
+            select: { id: true },
+          }))
+      : false,
+  ]);
+  if (content) out.contentItemId = claimed.contentItemId;
+  if (discovery) out.discoveryRunId = claimed.discoveryRunId;
+  if (matrix) out.matrixRunId = claimed.matrixRunId;
+  if (publish) out.publishLogId = claimed.publishLogId;
   return out;
 }
 
@@ -304,28 +307,29 @@ export async function buildServerContext(input: BuildServerContextInput): Promis
   const degraded: string[] = [];
   const client = sanitizeClientContext(input.client);
 
+  // Nothing below depends on the workspace except the workspace-scoped reads, so the
+  // user-scoped ones start now and overlap the workspace lookup.
+  const activityP = safe('activity', degraded, () => loadActivity(userId), []);
+  const actionFailedP = ref ? safe('actionFailed', degraded, () => loadActionFailed(userId, ref), null) : Promise.resolve(null);
+
   // Workspace: the explicit argument first, then the one the browser says it was viewing.
-  // Either way it must be the caller's.
-  let workspaceId: string | null = null;
-  for (const candidate of [input.workspaceId, client.viewedIds.workspaceId]) {
-    if (!candidate) continue;
-    const owned = await safe('workspace', degraded, async () =>
-      prisma.workspace.findFirst({ where: { id: candidate, userId }, select: { id: true } }), null);
-    if (owned) {
-      workspaceId = owned.id;
-      break;
-    }
-  }
+  // Either way it must be the caller's. Candidates are checked together; order decides.
+  const candidates = [...new Set([input.workspaceId, client.viewedIds.workspaceId].filter((c): c is string => Boolean(c)))];
+  const owned = await Promise.all(
+    candidates.map((candidate) =>
+      safe('workspace', degraded, async () =>
+        prisma.workspace.findFirst({ where: { id: candidate, userId }, select: { id: true } }), null)),
+  );
+  const workspaceId: string | null = owned.find((w) => w)?.id ?? null;
 
-  const viewedIds = await verifyViewedIds(userId, client.viewedIds, workspaceId, degraded);
-
-  const [failedRuns, aiProviderEvents, activity, actionFailed] = await Promise.all([
+  const [viewedIds, failedRuns, aiProviderEvents, activity, actionFailed] = await Promise.all([
+    verifyViewedIds(userId, client.viewedIds, workspaceId, degraded),
     workspaceId ? safe('failedRuns', degraded, () => loadFailedRuns(workspaceId), []) : Promise.resolve([] as FailedRunItem[]),
     workspaceId
       ? safe('aiProviderEvents', degraded, () => loadProviderEvents(workspaceId), [])
       : Promise.resolve([] as ProviderEventItem[]),
-    safe('activity', degraded, () => loadActivity(userId), []),
-    ref ? safe('actionFailed', degraded, () => loadActionFailed(userId, ref), null) : Promise.resolve(null),
+    activityP,
+    actionFailedP,
   ]);
 
   let causeCode: CauseCode | null = actionFailed?.causeCode ?? null;
@@ -344,7 +348,12 @@ export async function buildServerContext(input: BuildServerContextInput): Promis
   const context: ServerContext = {
     v: 1,
     builtAt: new Date().toISOString(),
-    appVersion: shortVersion(process.env.RAILWAY_GIT_COMMIT_SHA),
+    // Literal property reads so Next inlines APP_COMMIT_SHA from next.config `env`.
+    appVersion: resolveAppVersion({
+      APP_COMMIT_SHA: process.env.APP_COMMIT_SHA,
+      RAILWAY_GIT_COMMIT_SHA: process.env.RAILWAY_GIT_COMMIT_SHA,
+      RAILWAY_DEPLOYMENT_ID: process.env.RAILWAY_DEPLOYMENT_ID,
+    }),
     userId,
     workspaceId,
     ref: actionFailed ? ref : null,
@@ -357,6 +366,7 @@ export async function buildServerContext(input: BuildServerContextInput): Promis
     activity,
     client: {
       route: client.route,
+      ...(client.path ? { path: client.path } : {}),
       locale: client.locale,
       viewport: client.viewport,
       breadcrumbs: client.breadcrumbs,

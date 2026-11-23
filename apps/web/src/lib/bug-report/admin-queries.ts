@@ -192,6 +192,7 @@ export async function getReportDetail(referenceCode: string): Promise<ReportDeta
     message: r.message,
     locale: r.locale,
     route: r.route,
+    path: str(asRecord(ctx.client).path) ?? null,
     appVersion: r.appVersion,
     user: r.user ? { id: r.user.id, email: r.user.email ?? null } : null,
     workspace: r.workspace ? { id: r.workspace.id, name: r.workspace.name ?? null } : null,

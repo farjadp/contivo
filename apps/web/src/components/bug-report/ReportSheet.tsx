@@ -8,6 +8,7 @@ import { submitBugReport } from '@/app/actions/bug-report';
 import { MESSAGE_MAX, type ClientContext } from '@/lib/bug-report/types';
 import { cn } from '@/lib/utils';
 import { RefChip } from './RefChip';
+import { restoreFocus } from './page-signals';
 import { sendReport } from './report-flow';
 
 export type SheetPhase = 'form' | 'sending' | 'sent' | 'error';
@@ -158,6 +159,8 @@ export function ReportSheet({
   const attachedRef = prefillRef ?? fallbackRef;
 
   useEffect(() => {
+    // Remember the opener now; showModal() moves focus into the dialog.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const dialog = dialogRef.current;
     if (dialog && !dialog.open) {
       try {
@@ -166,6 +169,8 @@ export function ReportSheet({
         dialog.setAttribute('open', '');
       }
     }
+    // The sheet unmounts on close: put focus back on the button that opened it.
+    return () => restoreFocus(opener);
   }, []);
 
   async function send() {
@@ -189,6 +194,8 @@ export function ReportSheet({
   return (
     <dialog
       ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => {

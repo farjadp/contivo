@@ -100,6 +100,11 @@ export default async function AdminReportDetailPage({ params }: Props) {
               {report.route ?? '-'}
             </bdi>
           </DetailRow>
+          <DetailRow label={t('detail.path')}>
+            <bdi dir="ltr" className="font-plexmono text-[13px] break-all">
+              {report.path ?? '-'}
+            </bdi>
+          </DetailRow>
           <DetailRow label={t('detail.appVersion')}>
             <bdi dir="ltr" className="font-plexmono text-[13px]">
               {report.appVersion ? report.appVersion.slice(0, 12) : '-'}

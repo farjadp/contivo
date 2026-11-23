@@ -92,3 +92,15 @@ describe('buildClientContext', () => {
     expect(ctx.breadcrumbs).toHaveLength(1);
   });
 });
+
+describe('path', () => {
+  it('sends the real pathname next to the route template, query stripped', () => {
+    const ctx = buildClientContext({ ...base, path: '/growth/clx1/matrices?x=1#h' });
+    expect(ctx.route).toBe('/growth/[id]');
+    expect(ctx.path).toBe('/growth/clx1/matrices');
+  });
+
+  it('omits path when none is given', () => {
+    expect(buildClientContext(base).path).toBeUndefined();
+  });
+});

@@ -100,12 +100,15 @@ function cleanViewedIds(ids: ViewedIds): ViewedIds {
 
 export function buildClientContext(input: {
   route: string;
+  path?: string;
   locale: string;
   viewport: { w: number; h: number };
   viewedIds: ViewedIds;
 }): ClientContext {
+  const path = input.path ? cleanRoute(input.path) : '';
   return {
     route: cleanRoute(input.route),
+    ...(path ? { path } : {}),
     locale: input.locale.slice(0, 8),
     viewport: { w: Math.round(input.viewport.w) || 0, h: Math.round(input.viewport.h) || 0 },
     breadcrumbs: breadcrumbs.map((b) => ({ ...b })),

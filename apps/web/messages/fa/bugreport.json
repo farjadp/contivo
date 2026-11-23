@@ -73,6 +73,7 @@
         "resolvedAt": "زمان رفع",
         "locale": "زبان",
         "route": "صفحه",
+        "path": "مسیر نشانی",
         "appVersion": "نسخهٔ برنامه",
         "user": "کاربر",
         "workspace": "فضای کار",
