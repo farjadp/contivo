@@ -47,6 +47,13 @@
         "actionEnable": "Enable and save the policy",
         "detailOn": "Running",
         "detailOff": "Off"
+      },
+      "firstPost": {
+        "title": "Publish your first post",
+        "why": "One real post, live on your own channel. Everything else in Contivo is there to get you here.",
+        "action": "Write my first post",
+        "detailDone": "Published",
+        "detailTodo": "Nothing published yet"
       }
     },
     "blockers": {

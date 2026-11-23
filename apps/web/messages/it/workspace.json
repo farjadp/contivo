@@ -47,6 +47,13 @@
         "actionEnable": "Attiva e salva le regole",
         "detailOn": "In esecuzione",
         "detailOff": "Spento"
+      },
+      "firstPost": {
+        "title": "Pubblica il tuo primo post",
+        "why": "Un post vero, online sul tuo canale. Tutto il resto di Contivo serve ad arrivare qui.",
+        "action": "Scrivi il tuo primo post",
+        "detailDone": "Pubblicato",
+        "detailTodo": "Ancora niente di pubblicato"
       }
     },
     "blockers": {

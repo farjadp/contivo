@@ -47,6 +47,13 @@
         "actionEnable": "Activa y guarda la política",
         "detailOn": "En marcha",
         "detailOff": "Desactivado"
+      },
+      "firstPost": {
+        "title": "Publica tu primer post",
+        "why": "Un post real, publicado en tu propio canal. Todo lo demás en Contivo sirve para llegar hasta aquí.",
+        "action": "Escribe tu primer post",
+        "detailDone": "Publicado",
+        "detailTodo": "Aún no hay nada publicado"
       }
     },
     "blockers": {

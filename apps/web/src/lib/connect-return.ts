@@ -11,7 +11,7 @@
  * workspace's page, which shows one next action.
  */
 
-import type { Journey, JourneyStep } from '@/lib/workspace-journey';
+import type { JourneyStep } from '@/lib/workspace-journey';
 
 /** Platforms whose connect goes through the provider's consent screen. Mirrors apps/api social/platforms.ts. */
 export const CONNECTED_PLATFORM_NAMES = {
@@ -55,7 +55,7 @@ export type ConnectedNextAction =
  */
 export function connectedNextAction(
   workspaceId: string,
-  journey: Pick<Journey, 'next'>,
+  journey: { next: JourneyStep | null },
   publishedCount: number,
 ): ConnectedNextAction {
   const pipeline = `/growth/${workspaceId}?tab=pipeline`;
