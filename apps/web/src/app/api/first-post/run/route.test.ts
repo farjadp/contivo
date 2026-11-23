@@ -47,7 +47,8 @@ describe('POST /api/first-post/run', () => {
   });
 
   it('401 without a header, with a wrong secret, or without the Bearer prefix', async () => {
-    for (const headers of [{}, { authorization: 'Bearer the-wrong-secret' }, { authorization: SECRET }]) {
+    const cases: Array<Record<string, string>> = [{}, { authorization: 'Bearer the-wrong-secret' }, { authorization: SECRET }];
+    for (const headers of cases) {
       const res = await POST(request(headers));
       expect(res.status).toBe(401);
     }

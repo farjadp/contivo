@@ -211,13 +211,18 @@ describe('collectSiteSignals (Keywords / Offerings site reader)', () => {
   });
 });
 
+// Where the Keywords and Offerings site reads live (relative to src/). The
+// Keywords one moved out of its 'use server' action so the first-post run can
+// call it (lib/competitor-keywords/generate.ts); the guards follow the code.
+const SITE_READERS = ['lib/competitor-keywords/generate.ts', 'app/actions/growth-offerings.ts'];
+
 describe('Keywords and Offerings read competitor sites only through collectSiteSignals', () => {
   // Server actions cannot be unit-tested without a request context, so this
   // pins the wiring itself: neither file may regain its own fetcher, a
   // followed redirect, or an unbounded HTML regex.
-  for (const file of ['growth-keywords.ts', 'growth-offerings.ts']) {
+  for (const file of SITE_READERS) {
     it(file, () => {
-      const source = readFileSync(path.join(__dirname, '../../app/actions', file), 'utf8');
+      const source = readFileSync(path.join(__dirname, '../..', file), 'utf8');
       expect(source).toContain("from '@/lib/competitors/site-signals'");
       expect(source).toMatch(/collectSiteSignals\(/);
       expect(source).not.toMatch(/redirect:\s*'follow'/);
@@ -231,9 +236,9 @@ describe('Keywords and Offerings read competitor sites only through collectSiteS
   // Fix-wave re-review: "Overall time budget for the Keywords and Offerings
   // site reads" — each collection loop must own a wall-clock budget and
   // stop starting new fetches once it is spent, not just cap one fetch.
-  for (const file of ['growth-keywords.ts', 'growth-offerings.ts']) {
+  for (const file of SITE_READERS) {
     it(`${file} gives its site-read loop a named overall budget and honors it in the loop`, () => {
-      const source = readFileSync(path.join(__dirname, '../../app/actions', file), 'utf8');
+      const source = readFileSync(path.join(__dirname, '../..', file), 'utf8');
       // A named, module-scoped budget constant in milliseconds.
       expect(source).toMatch(/const \w*ENRICH_BUDGET_MS\w* = \d[\d_]*;/);
       // The loop checks the deadline before starting each site, not only
