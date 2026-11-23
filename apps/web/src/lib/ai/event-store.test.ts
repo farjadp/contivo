@@ -15,7 +15,16 @@ describe('createPrismaEventStore.latestCriticalSince', () => {
     ]);
     const events = await createPrismaEventStore().latestCriticalSince(new Date(at.getTime() - 900_000));
     expect(events).toEqual([{ provider: 'gemini', errorClass: 'auth', createdAt: at }]);
-    expect(findMany.mock.calls[0][0].where.NOT).toEqual({ message: { startsWith: FORCED_MARKER } });
+    expect(findMany.mock.calls[0][0].where.NOT).toEqual([
+      { message: { startsWith: FORCED_MARKER } },
+      { task: 'content_image' },
+    ]);
+  });
+
+  it('an image model that is gone never cools down OpenAI text (B19)', async () => {
+    findMany.mockResolvedValueOnce([]);
+    await createPrismaEventStore().latestCriticalSince(new Date());
+    expect(findMany.mock.calls.at(-1)![0].where.NOT).toContainEqual({ task: 'content_image' });
   });
 
   it('a forced failure marks its health_changed row too', () => {

@@ -593,7 +593,8 @@
       "balanceUnavailable": "Your credit balance could not be loaded.",
       "runErrors": {
         "OUT_OF_CREDITS": "Stopped: not enough credits for one post. A post needs at least {cost, number} credits.",
-        "OUT_OF_CREDITS_MID_RUN": "Stopped: credits ran out before anything could be scheduled."
+        "OUT_OF_CREDITS_MID_RUN": "Stopped: credits ran out before anything could be scheduled.",
+        "IMAGES_MISSING": "Some drafts have no picture and will publish as text only: the image service failed. We have been alerted."
       }
     }
   }

@@ -99,6 +99,15 @@ describe('classifyCause: other', () => {
 });
 
 describe('classifyCauseFromStored', () => {
+  it('maps an autopilot run that lost its pictures to the image cause (B19)', () => {
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE')).toBe('PROVIDER_AUTH');
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_PROVIDER_OUT_OF_CREDIT')).toBe('PROVIDER_OUT_OF_CREDIT');
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_RATE_LIMITED')).toBe('PROVIDER_RATE_LIMITED');
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_TIMEOUT')).toBe('PROVIDER_TIMEOUT');
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_PROVIDER_UNAVAILABLE')).toBe('PROVIDER_UNAVAILABLE');
+    expect(classifyCauseFromStored('IMAGES_MISSING:IMAGE_REJECTED')).toBe('UNKNOWN');
+  });
+
   it('reads the cooldown reason; ignores not_configured next to a real cause', () => {
     const wrap = (a: string) => `AI_UNAVAILABLE: Matrix AI call x failed: all_unavailable (${a})`;
     expect(classifyCauseFromStored(wrap('openai:cooling_down:billing, anthropic:not_configured'))).toBe('PROVIDER_OUT_OF_CREDIT');

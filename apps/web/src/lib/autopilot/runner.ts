@@ -37,7 +37,7 @@ import {
 } from '@/lib/content-engine';
 
 import { CHANNEL_TO_PLATFORM, WEB_CHANNELS } from './channels';
-import { AUTOPILOT_RUN_ERROR } from './run-errors';
+import { AUTOPILOT_RUN_ERROR, imagesMissingError } from './run-errors';
 import { evaluateDraft } from './quality-gate';
 import { toStoredVerdict } from '@/lib/quality-verdict';
 import { pickPublishSlots } from './schedule';
@@ -320,6 +320,9 @@ async function runPolicyInAiContext(
     let itemsRejected = 0;
     /** Approved by the gate but waiting for the user (requireReview). */
     let itemsHeld = 0;
+    /** Drafts whose picture failed (B19): they go out text only, and the run says so. */
+    let imagesMissing = 0;
+    let lastImageCause: string | null = null;
     const requireReview = policy.requireReview === true;
     /** Set when the balance runs out part-way, so both loops unwind. */
     let outOfCredits = false;
@@ -454,6 +457,13 @@ async function runPolicyInAiContext(
             note('draft_failed', { channel, itemId, topic: idea.topic, error: drafted.error });
             continue;
           }
+          const imageInfo = 'image' in drafted ? (drafted.image as { failed?: boolean; cause?: string; model?: string | null } | null) : null;
+          if (imageInfo?.failed) {
+            imagesMissing += 1;
+            lastImageCause = imageInfo.cause ?? 'IMAGE_UNKNOWN';
+            // "image: failed, text only" — the post still goes ahead.
+            note('image_failed', { channel, itemId, cause: lastImageCause, model: imageInfo.model ?? null, textOnly: true });
+          }
 
           // Charged here rather than after the gate: the draft, humanize pass
           // and image have all run by this point, so the cost is already
@@ -580,11 +590,18 @@ async function runPolicyInAiContext(
     if (itemsHeld > 0) {
       note('held_summary', { held: itemsHeld });
     }
+    if (imagesMissing > 0) {
+      note('image_summary', { textOnly: imagesMissing, cause: lastImageCause });
+    }
     if (itemsScheduled === 0 && itemsHeld === 0) {
       return finish('FAILED', counts, {
         error: 'Nothing could be scheduled this run.',
         rerunHours: FAILURE_RERUN_HOURS,
       });
+    }
+    // A run whose posts lost their picture is a warning, never a plain success.
+    if (imagesMissing > 0) {
+      return finish('PARTIAL', counts, { error: imagesMissingError(lastImageCause ?? 'IMAGE_UNKNOWN') });
     }
     return finish(itemsSkipped > 0 ? 'PARTIAL' : 'SUCCEEDED', counts);
   } catch (err) {

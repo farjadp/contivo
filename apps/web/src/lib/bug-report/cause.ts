@@ -5,6 +5,7 @@
  * it. Duck-typed (no instanceof on SDK classes) so it imports nothing heavy.
  */
 
+import { IMAGE_CAUSE_CODE } from '@/lib/ai/image';
 import { classifyRunError } from '@/lib/competitors/run-errors';
 
 import type { CauseCode } from './types';
@@ -38,6 +39,7 @@ const AI_CLASS: Record<string, CauseCode | null> = {
   refusal: 'UNKNOWN',
   cooling_down: null, // not a cause on its own: the event's `reason` holds it
 };
+
 
 /** Text-only classification shared by thrown messages and stored strings. Null when nothing matches. */
 function classifyText(text: string): CauseCode | null {
@@ -89,6 +91,10 @@ export function classifyCauseFromStored(code: string | null | undefined): CauseC
   if (!text) return null;
 
   if (Object.prototype.hasOwnProperty.call(AI_CLASS, text)) return AI_CLASS[text];
+
+  // Autopilot runs whose drafts lost their picture: "IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE" (B19).
+  const image = /^IMAGES_MISSING:(IMAGE_[A-Z_]+)$/.exec(text);
+  if (image) return (IMAGE_CAUSE_CODE as Record<string, CauseCode>)[image[1]] ?? 'UNKNOWN';
 
   // describeAiFailure writes "provider:class[:reason][:status]" per attempt. Take the highest-signal attempt:
   // a not_configured neighbour must not outvote a real billing/auth/rate-limit failure.

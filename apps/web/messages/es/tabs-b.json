@@ -609,7 +609,8 @@
       "balanceUnavailable": "No se pudo cargar tu saldo de créditos.",
       "runErrors": {
         "OUT_OF_CREDITS": "Detenido: no hay créditos suficientes para una publicación. Una publicación necesita al menos {cost, number} créditos.",
-        "OUT_OF_CREDITS_MID_RUN": "Detenido: los créditos se agotaron antes de poder programar nada."
+        "OUT_OF_CREDITS_MID_RUN": "Detenido: los créditos se agotaron antes de poder programar nada.",
+        "IMAGES_MISSING": "Algunos borradores no tienen imagen y se publicarán solo como texto: falló el servicio de imágenes. Ya nos ha llegado el aviso."
       }
     }
   }

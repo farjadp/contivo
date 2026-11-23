@@ -26,7 +26,7 @@ import {
 } from './types';
 
 export type FailedRunItem = {
-  kind: 'discovery' | 'matrix' | 'publish';
+  kind: 'discovery' | 'matrix' | 'publish' | 'autopilot';
   id: string;
   status: string;
   stage: string | null;
@@ -157,7 +157,7 @@ async function verifyViewedIds(
 }
 
 async function loadFailedRuns(workspaceId: string): Promise<FailedRunItem[]> {
-  const [discovery, matrix, publish] = await Promise.all([
+  const [discovery, matrix, publish, autopilot] = await Promise.all([
     prisma.discoveryRun.findMany({
       where: { workspaceId, status: 'FAILED' },
       orderBy: { startedAt: 'desc' },
@@ -176,6 +176,13 @@ async function loadFailedRuns(workspaceId: string): Promise<FailedRunItem[]> {
       take: FAILED_RUNS,
       select: { id: true, status: true, action: true, createdAt: true, errorMessage: true },
     }),
+    // FAILED, plus PARTIAL runs that carry an error (e.g. IMAGES_MISSING:<cause>, B19).
+    prisma.autopilotRun.findMany({
+      where: { workspaceId, OR: [{ status: 'FAILED' }, { status: 'PARTIAL', error: { not: null } }] },
+      orderBy: { startedAt: 'desc' },
+      take: FAILED_RUNS,
+      select: { id: true, status: true, startedAt: true, error: true },
+    }),
   ]);
   const items: FailedRunItem[] = [
     ...discovery.map((r) => ({
@@ -191,6 +198,14 @@ async function loadFailedRuns(workspaceId: string): Promise<FailedRunItem[]> {
       id: r.id,
       status: r.status,
       stage: r.stage,
+      startedAt: r.startedAt.toISOString(),
+      code: classifyCauseFromStored(r.error),
+    })),
+    ...autopilot.map((r) => ({
+      kind: 'autopilot' as const,
+      id: r.id,
+      status: r.status,
+      stage: r.error?.startsWith('IMAGES_MISSING:') ? 'image' : null,
       startedAt: r.startedAt.toISOString(),
       code: classifyCauseFromStored(r.error),
     })),

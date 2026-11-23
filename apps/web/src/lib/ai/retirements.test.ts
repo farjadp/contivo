@@ -12,6 +12,7 @@ import {
   DEFAULT_OPENAI_MODEL,
   DEFAULT_OPENAI_SEARCH_MODEL,
 } from './models';
+import { DEFAULT_OPENAI_IMAGE_FALLBACKS, DEFAULT_OPENAI_IMAGE_MODEL } from './image';
 import { resetRetirementWarnings, retirementStatus, warnIfRetiring } from './retirements';
 
 beforeEach(() => {
@@ -29,6 +30,10 @@ describe('retirementStatus', () => {
       replacement: 'gpt-6.1-terra',
     });
     expect(retirementStatus('gpt-5-mini', new Date('2026-12-11T00:00:00Z'))).toMatchObject({ status: 'retired' });
+  });
+
+  it('knows gpt-image-1 is gone (the B19 outage)', () => {
+    expect(retirementStatus('gpt-image-1', new Date('2026-11-22T00:00:00Z'))).toMatchObject({ status: 'retired' });
   });
 
   it('matches a dated snapshot to its model and ignores unlisted models', () => {
@@ -63,6 +68,8 @@ describe('default models are not about to shut down', () => {
     ['ANTHROPIC_MODEL', DEFAULT_ANTHROPIC_MODEL],
     ['ANTHROPIC_MODEL_JUDGE', DEFAULT_ANTHROPIC_JUDGE_MODEL],
     ['admin Gemini model', DEFAULT_GEMINI_MODEL],
+    ['OPENAI_IMAGE_MODEL', DEFAULT_OPENAI_IMAGE_MODEL],
+    ...DEFAULT_OPENAI_IMAGE_FALLBACKS.map((m) => ['image fallback', m] as [string, string]),
   ])('%s (%s)', (_name, model) => {
     expect(retirementStatus(model)).toEqual({ status: 'ok' });
   });

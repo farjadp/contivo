@@ -21,6 +21,7 @@ const { prismaMock } = vi.hoisted(() => ({
     discoveryRun: { findFirst: vi.fn(), findMany: vi.fn() },
     matrixRun: { findFirst: vi.fn(), findMany: vi.fn() },
     socialPublishLog: { findFirst: vi.fn(), findMany: vi.fn() },
+    autopilotRun: { findMany: vi.fn() },
     activity_logs: { findMany: vi.fn(), findFirst: vi.fn() },
   },
 }));
@@ -72,6 +73,7 @@ beforeEach(() => {
   prismaMock.matrixRun.findFirst.mockResolvedValue({ id: RUN });
   prismaMock.socialPublishLog.findFirst.mockResolvedValue(null);
   prismaMock.socialPublishLog.findMany.mockResolvedValue([]);
+  prismaMock.autopilotRun.findMany.mockResolvedValue([]);
   prismaMock.activity_logs.findMany.mockResolvedValue([]);
   prismaMock.activity_logs.findFirst.mockResolvedValue(null);
 });
