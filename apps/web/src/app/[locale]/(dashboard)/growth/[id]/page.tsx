@@ -54,6 +54,8 @@ import { AutopilotTab } from './_components/AutopilotTab';
 import { WorkspaceCreditBalance, WorkspaceCreditBanner } from './_components/WorkspaceCredits';
 import { NarrativeTab } from './_components/NarrativeTab';
 import { JourneyGuide } from './_components/JourneyGuide';
+import { ChannelConnectedNotice } from './_components/ChannelConnectedNotice';
+import { CONNECTED_PLATFORM_NAMES, connectedNextAction, parseConnectedPlatform } from '@/lib/connect-return';
 import { LoopRail } from './_components/LoopRail';
 import { LinkedInExpiryBanner } from './_components/LinkedInExpiryBanner';
 import { buildJourney, matrixFacts, tabGate, type WorkspaceFacts } from '@/lib/workspace-journey';
@@ -363,6 +365,29 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   });
   const activeTab = requestedTab === 'progress' && !progressReport ? 'pipeline' : requestedTab;
 
+  // Back from a provider's consent screen (connections/page.tsx sends a
+  // successful connect here). Words resolved now; the component only renders.
+  const connectedPlatform = parseConnectedPlatform(resolvedSearchParams.connected);
+  const connectedNotice = connectedPlatform
+    ? await (async () => {
+        const tc = await getTranslations('connectedNotice');
+        const name = CONNECTED_PLATFORM_NAMES[connectedPlatform];
+        const action = connectedNextAction(workspace.id, journey, journeyFacts.publishedCount);
+        return {
+          title: tc('title', { platform: name }),
+          body: tc(`body.${action.kind}`, { platform: name }),
+          actionLabel:
+            action.kind === 'journey'
+              ? tj(action.step.action.key, action.step.action.values)
+              : tc(`action.${action.kind}`),
+          actionHref: action.kind === 'journey' ? action.step.href : action.href,
+          dismissHref: `/growth/${workspace.id}${resolvedSearchParams.tab ? `?tab=${activeTab}` : ''}`,
+          dismissLabel: tc('dismiss'),
+        };
+      })()
+    : null;
+  const openWritePanel = activeTab === 'pipeline' && resolvedSearchParams.write === '1';
+
   // Funnel signal: which pipeline step was opened, and whether it was gated.
   // Not awaited and never rejects, so it cannot slow or break the render.
   const activeGate = gates[activeTab];
@@ -607,6 +632,9 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
       <WorkspaceCreditBanner workspaceId={workspace.id} />
 
+      {/* ── BACK FROM AN OAUTH CONNECT: one next action ─────────── */}
+      {connectedNotice && <ChannelConnectedNotice {...connectedNotice} />}
+
       {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
       <JourneyGuide workspaceId={workspace.id} journey={journey} />
 
@@ -727,6 +755,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             latestPublishJobs={latestPublishJobs}
             wordCountLimits={wordCountLimits}
             defaultScheduleDelayHours={defaultScheduleDelayHours}
+            openWrite={openWritePanel}
           />
         )}
         {activeTab === 'seo' && (

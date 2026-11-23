@@ -89,5 +89,18 @@
     "expiringTitle": "Tu sesión de <bdi>LinkedIn</bdi> caduca en {days, plural, one {# día} other {# días}}",
     "expiringBody": "Vuelve a conectar <bdi>{account}</bdi> ahora para que las publicaciones programadas sigan saliendo. Una sesión de <bdi>LinkedIn</bdi> dura {period, number} días.",
     "cta": "Volver a conectar"
+  },
+  "connectedNotice": {
+    "title": "{platform} conectado",
+    "body": {
+      "firstPost": "Ahora Contivo puede publicar en {platform} por ti. Escribe tu primera publicación y publícala.",
+      "journey": "Ahora Contivo puede publicar en {platform} por ti. Sigue con el próximo paso de la configuración.",
+      "pipeline": "Ahora Contivo puede publicar en {platform} por ti. La configuración está completa."
+    },
+    "action": {
+      "firstPost": "Publica tu primera publicación",
+      "pipeline": "Abrir el pipeline"
+    },
+    "dismiss": "Cerrar"
   }
 }

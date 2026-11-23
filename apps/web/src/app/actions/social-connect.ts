@@ -111,6 +111,8 @@ export interface FinalizeConnectOutcome {
    * signed-in user's own workspaces before showing it.
    */
   workspaceId?: string;
+  /** The platform the API says it connected; checked against the known list before use. */
+  platform?: string;
 }
 
 /**
@@ -137,9 +139,14 @@ export async function finalizeSocialConnect(ticket: string): Promise<FinalizeCon
       cache: 'no-store',
     });
     if (res.ok) {
-      const body = (await res.json().catch(() => null)) as { workspaceId?: unknown } | null;
+      const body = (await res.json().catch(() => null)) as { workspaceId?: unknown; platform?: unknown } | null;
       const workspaceId = typeof body?.workspaceId === 'string' && body.workspaceId ? body.workspaceId : undefined;
-      return workspaceId ? { result: 'ok', workspaceId } : { result: 'ok' };
+      const platform = typeof body?.platform === 'string' && body.platform ? body.platform : undefined;
+      return {
+        result: 'ok',
+        ...(workspaceId ? { workspaceId } : {}),
+        ...(platform ? { platform } : {}),
+      };
     }
     if (res.status === 403) return { result: 'foreign' };
     console.error(`Social connect finalize failed: HTTP ${res.status}`);

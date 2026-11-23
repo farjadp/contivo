@@ -89,5 +89,18 @@
     "expiringTitle": "ورود شما به <bdi>LinkedIn</bdi> تا {days, plural, other {# روز}} دیگر منقضی می‌شود",
     "expiringBody": "همین حالا حساب <bdi>{account}</bdi> را دوباره وصل کنید تا پست‌های زمان‌بندی‌شده بی‌وقفه منتشر شوند. هر ورود به <bdi>LinkedIn</bdi> {period, number} روز اعتبار دارد.",
     "cta": "اتصال دوباره"
+  },
+  "connectedNotice": {
+    "title": "{platform} وصل شد",
+    "body": {
+      "firstPost": "از حالا Contivo می‌تواند به جای شما در {platform} پست بگذارد. اولین پستتان را بنویسید و منتشرش کنید.",
+      "journey": "از حالا Contivo می‌تواند به جای شما در {platform} پست بگذارد. برویم سراغ قدم بعدیِ راه‌اندازی.",
+      "pipeline": "از حالا Contivo می‌تواند به جای شما در {platform} پست بگذارد. راه‌اندازی کامل است."
+    },
+    "action": {
+      "firstPost": "اولین پستتان را منتشر کنید",
+      "pipeline": "رفتن به پایپ‌لاین"
+    },
+    "dismiss": "بستن"
   }
 }
