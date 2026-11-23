@@ -21,6 +21,7 @@ import { prisma } from '@/lib/db';
 import { loadFirstPostState, type FirstPostLoad } from '@/lib/first-post/load';
 import { claimRun, insertRunStarted, nextAttempt, writeStepRow, type RunKind } from '@/lib/first-post/run-log';
 import {
+  FIRST_POST_DRAFT_EDITED,
   FIRST_POST_OTHER_ANGLE,
   FIRST_POST_OTHER_ANGLE_LIMIT,
   type FirstPostStep,
@@ -153,4 +154,42 @@ export async function firstPostOtherAngle(workspaceId: string): Promise<FirstPos
     });
     return dispatch(owner, started.runId, 'otherAngle');
   });
+}
+
+/** A character count as a non-negative integer, or null when it is not a number. */
+function charCount(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) return null;
+  return Math.round(value);
+}
+
+/**
+ * Funnel (spec §7): the first-post draft was edited and saved. Lengths only,
+ * never the text. A missing session, a bad id, someone else's item or a bad
+ * count is a silent no-op; the caller does not wait on it and it never throws.
+ */
+export async function logFirstPostDraftEdit(contentId: string, charsBefore: number, charsAfter: number): Promise<void> {
+  try {
+    const session = await getSession();
+    if (!session) return;
+    if (typeof contentId !== 'string' || !contentId) return;
+    const before = charCount(charsBefore);
+    const after = charCount(charsAfter);
+    if (before === null || after === null) return;
+
+    const userId = session.userId as string;
+    const item = await prisma.contentItem.findFirst({
+      where: { id: contentId, userId },
+      select: { id: true, workspaceId: true },
+    });
+    if (!item?.workspaceId) return;
+
+    await writeActivityLog({
+      userId,
+      workspaceId: item.workspaceId,
+      action: FIRST_POST_DRAFT_EDITED,
+      detail: { contentId: item.id, charsBefore: before, charsAfter: after },
+    });
+  } catch (error) {
+    console.error('logFirstPostDraftEdit failed:', error);
+  }
 }

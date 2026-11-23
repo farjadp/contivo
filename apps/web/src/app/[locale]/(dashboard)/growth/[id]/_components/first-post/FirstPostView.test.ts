@@ -20,6 +20,7 @@ vi.mock('@/app/actions/first-post', () => ({
   startFirstPost: vi.fn(),
   getFirstPostState: vi.fn(),
   firstPostOtherAngle: vi.fn(),
+  logFirstPostDraftEdit: vi.fn(),
 }));
 vi.mock('@/app/actions/publish-now', () => ({ publishNow: vi.fn(), schedulePublish: vi.fn(), getPublishProgress: vi.fn() }));
 vi.mock('@/app/actions/next-step', () => ({ recordNextStepClick: vi.fn() }));

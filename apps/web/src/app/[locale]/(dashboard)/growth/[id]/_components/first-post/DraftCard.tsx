@@ -14,7 +14,7 @@ import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 
 import { updateContentAndSchedule } from '@/app/actions/calendar';
-import { firstPostOtherAngle } from '@/app/actions/first-post';
+import { firstPostOtherAngle, logFirstPostDraftEdit } from '@/app/actions/first-post';
 import { recordNextStepClick } from '@/app/actions/next-step';
 import { publishNow } from '@/app/actions/publish-now';
 import { recheckContentQuality } from '@/app/actions/quality-gate';
@@ -156,7 +156,10 @@ export function DraftCard({
         publishTime: '',
         timezone: publishTimezone(),
       });
-      setContent(typeof updated?.content === 'string' ? updated.content : editText);
+      const saved = typeof updated?.content === 'string' ? updated.content : editText;
+      // Funnel: lengths only, never the text. Not awaited; a lost row never blocks the save.
+      logFirstPostDraftEdit(draft.id, content.length, saved.length).catch(() => undefined);
+      setContent(saved);
       if (updated && 'qualityVerdict' in updated) setVerdict(updated.qualityVerdict);
       setEditing(false);
       setNotice({ tone: 'ok', text: t('saved') });

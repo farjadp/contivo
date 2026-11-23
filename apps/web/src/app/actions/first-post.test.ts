@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
-  prismaMock: { workspace: { findFirst: vi.fn() } },
+  prismaMock: { workspace: { findFirst: vi.fn() }, contentItem: { findFirst: vi.fn() } },
   sessionMock: { getSession: vi.fn() },
   loadMock: { loadFirstPostState: vi.fn() },
   runLog: { insertRunStarted: vi.fn(), nextAttempt: vi.fn(), claimRun: vi.fn(), writeStepRow: vi.fn() },
@@ -17,7 +17,7 @@ vi.mock('@/lib/background-run', () => h.backgroundRun);
 vi.mock('@/lib/activity-log', () => h.activityLog);
 vi.mock('@/lib/action-errors', () => ({ actionError: vi.fn(async (key: string) => key) }));
 
-import { firstPostOtherAngle, getFirstPostState, startFirstPost } from './first-post';
+import { firstPostOtherAngle, getFirstPostState, logFirstPostDraftEdit, startFirstPost } from './first-post';
 
 const WHY = { matrixCharts: 0, matricesReady: false, keywordCompetitors: 0, gaps: 0, topGap: null };
 
@@ -210,5 +210,56 @@ describe('firstPostOtherAngle', () => {
     await firstPostOtherAngle('ws1');
     spy.mockRestore();
     expect(h.runLog.writeStepRow.mock.calls[0][0].detail).toEqual({ runId: 'fpr_ws1_1', step: 'idea', errorKind: 'dispatch' });
+  });
+});
+
+describe('logFirstPostDraftEdit', () => {
+  it('writes FIRST_POST_DRAFT_EDITED with ids and lengths only, item looked up by { id, userId }', async () => {
+    h.prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws1' });
+
+    await logFirstPostDraftEdit('item-1', 812, 640);
+
+    expect(h.prismaMock.contentItem.findFirst).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'item-1', userId: 'u1' } }),
+    );
+    expect(h.activityLog.writeActivityLog).toHaveBeenCalledWith({
+      userId: 'u1',
+      workspaceId: 'ws1',
+      action: 'FIRST_POST_DRAFT_EDITED',
+      detail: { contentId: 'item-1', charsBefore: 812, charsAfter: 640 },
+    });
+  });
+
+  it('rounds the counts to integers', async () => {
+    h.prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws1' });
+    await logFirstPostDraftEdit('item-1', 10.4, 11.6);
+    expect(h.activityLog.writeActivityLog.mock.calls[0][0].detail).toEqual({
+      contentId: 'item-1',
+      charsBefore: 10,
+      charsAfter: 12,
+    });
+  });
+
+  it("is a no-op for no session, a bad id, someone else's item and bad counts", async () => {
+    h.sessionMock.getSession.mockResolvedValueOnce(null);
+    await logFirstPostDraftEdit('item-1', 1, 2);
+    expect(h.prismaMock.contentItem.findFirst).not.toHaveBeenCalled();
+
+    await logFirstPostDraftEdit('', 1, 2);
+    await logFirstPostDraftEdit('item-1', Number.NaN, 2);
+    await logFirstPostDraftEdit('item-1', 1, -3);
+    expect(h.prismaMock.contentItem.findFirst).not.toHaveBeenCalled();
+
+    h.prismaMock.contentItem.findFirst.mockResolvedValue(null);
+    await logFirstPostDraftEdit('item-x', 1, 2);
+    expect(h.activityLog.writeActivityLog).not.toHaveBeenCalled();
+  });
+
+  it('never throws on a database error', async () => {
+    h.prismaMock.contentItem.findFirst.mockRejectedValue(new Error('db down'));
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    await expect(logFirstPostDraftEdit('item-1', 1, 2)).resolves.toBeUndefined();
+    expect(h.activityLog.writeActivityLog).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 });
