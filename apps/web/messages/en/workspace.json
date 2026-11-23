@@ -89,5 +89,18 @@
     "expiringTitle": "Your <bdi>LinkedIn</bdi> sign-in ends in {days, plural, one {# day} other {# days}}",
     "expiringBody": "Reconnect <bdi>{account}</bdi> now so scheduled posts keep publishing. A <bdi>LinkedIn</bdi> sign-in lasts {period, number} days.",
     "cta": "Reconnect"
+  },
+  "connectedNotice": {
+    "title": "{platform} connected",
+    "body": {
+      "firstPost": "Contivo can now publish to {platform} for you. Write your first post and publish it.",
+      "journey": "Contivo can now publish to {platform} for you. Next, carry on with your setup.",
+      "pipeline": "Contivo can now publish to {platform} for you. Your setup is complete."
+    },
+    "action": {
+      "firstPost": "Publish your first post",
+      "pipeline": "Open your pipeline"
+    },
+    "dismiss": "Close"
   }
 }

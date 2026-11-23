@@ -160,6 +160,7 @@ export function PipelineTab({
   latestPublishJobs = {},
   wordCountLimits,
   defaultScheduleDelayHours,
+  openWrite = false,
 }: {
   workspace: any;
   items: any[];
@@ -167,11 +168,17 @@ export function PipelineTab({
   latestPublishJobs?: Record<string, LatestPublishJob>;
   wordCountLimits: ContentWordCountLimits;
   defaultScheduleDelayHours: number;
+  /** Open the "write your own post" editor at once (?write=1, the post-connect next step). */
+  openWrite?: boolean;
 }) {
   const t = useTranslations('tabsA.pipeline');
   const router = useRouter();
   const [localItems, setLocalItems] = useState<any[]>(items);
-  const [isWriteOpen, setIsWriteOpen] = useState(false);
+  const [isWriteOpen, setIsWriteOpen] = useState(openWrite);
+  // A client navigation to ?write=1 while this tab is already mounted.
+  useEffect(() => {
+    if (openWrite) setIsWriteOpen(true);
+  }, [openWrite]);
 
   // A refresh brings the server's list; keep any just-created item the server has not returned yet.
   useEffect(() => {

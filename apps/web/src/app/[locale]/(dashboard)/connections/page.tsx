@@ -27,6 +27,7 @@ import { SocialChannelsTab } from './_components/SocialChannelsTab';
 import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
 import { finalizeSocialConnect } from '@/app/actions/social-connect';
+import { connectReturnHref, parseConnectedPlatform } from '@/lib/connect-return';
 import {
   getPublishJobs,
   getSocialConnections,
@@ -67,7 +68,16 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   // page fell back to the oldest workspace, and "Account connected" appeared
   // next to that workspace's own, possibly expired, connection.
   if (params.pending) {
-    const { result, workspaceId: connectedTo } = await finalizeSocialConnect(params.pending);
+    const { result, workspaceId: connectedTo, platform } = await finalizeSocialConnect(params.pending);
+    // Connected, and we know where: back to that workspace's setup chain,
+    // which shows the one next step. Only a workspace this user owns — the
+    // API's answer is a hint, the lookup is the check.
+    if (result === 'ok' && connectedTo) {
+      const { workspace: owned } = await resolveWorkspaceScope(session.userId as string, connectedTo, undefined);
+      if (owned?.id === connectedTo) {
+        redirect({ href: connectReturnHref(connectedTo, parseConnectedPlatform(platform)), locale: await getLocale() });
+      }
+    }
     redirect({
       href: {
         pathname: '/connections',

@@ -247,6 +247,7 @@ export function CompetitiveMatricesTab({
             initialMeta={discoveryMeta}
             initialArchive={discoveryArchive}
             initialMarket={targetMarket}
+            onCompetitorsChanged={() => void fetchStatus().catch((refreshError) => console.error(refreshError))}
           />
         </div>
       </section>

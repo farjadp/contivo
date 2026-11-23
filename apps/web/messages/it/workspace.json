@@ -89,5 +89,18 @@
     "expiringTitle": "L'accesso a <bdi>LinkedIn</bdi> scade tra {days, plural, one {# giorno} other {# giorni}}",
     "expiringBody": "Ricollega <bdi>{account}</bdi> ora perché i post programmati continuino a uscire. Un accesso a <bdi>LinkedIn</bdi> dura {period, number} giorni.",
     "cta": "Ricollega"
+  },
+  "connectedNotice": {
+    "title": "{platform} collegato",
+    "body": {
+      "firstPost": "Ora Contivo può pubblicare su {platform} al posto tuo. Scrivi il tuo primo post e pubblicalo.",
+      "journey": "Ora Contivo può pubblicare su {platform} al posto tuo. Prosegui con il prossimo passo della configurazione.",
+      "pipeline": "Ora Contivo può pubblicare su {platform} al posto tuo. La configurazione è completa."
+    },
+    "action": {
+      "firstPost": "Pubblica il tuo primo post",
+      "pipeline": "Apri la pipeline"
+    },
+    "dismiss": "Chiudi"
   }
 }

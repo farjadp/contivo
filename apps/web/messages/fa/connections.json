@@ -51,7 +51,11 @@
       "soonTitle": "به‌زودی",
       "soon": {
         "x": "ایکس",
-        "threads": "تردز"
+        "threads": "تردز",
+        "telegram": "تلگرام",
+        "wordpress": "وردپرس",
+        "facebook": "فیس‌بوک",
+        "instagram": "اینستاگرام"
       },
       "backToList": "بازگشت به فهرست پلتفرم‌ها",
       "permissionsTitle": "دسترسی‌های درخواستی",
@@ -59,7 +63,17 @@
       "securityNote": "توکن دسترسی شما رمزگذاری و ایمن ذخیره می‌شود و هیچ‌وقت در سمت مرورگر قرار نمی‌گیرد. هر زمان بخواهید می‌توانید دسترسی را لغو کنید.",
       "preparing": "در حال آماده‌سازی…",
       "continueOAuth": "ادامه به OAuth {platform}",
-      "telegramUnavailable": "هنوز فعال نشده است."
+      "telegramUnavailable": "هنوز فعال نشده است.",
+      "soonHint": {
+        "building": "در حال ساخت است.",
+        "meta": "منتظر تأیید متا هستیم.",
+        "telegram": "اینجا هنوز فعال نشده است."
+      },
+      "notifyMe": "خبرم کنید",
+      "notifySending": "در حال ثبت…",
+      "notifyDone": "خبرتان می‌کنیم",
+      "notifyFailed": "ثبت نشد. دوباره امتحان کنید.",
+      "notifyAria": "وقتی {platform} آماده شد، خبرم کنید"
     },
     "accounts": {
       "title": "حساب‌های متصل",

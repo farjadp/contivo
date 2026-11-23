@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from 'next-intl';
 import { Loader2, Sparkles } from 'lucide-react';
 
 import { generateWorkspaceCompetitorKeywords } from '@/app/actions/growth-keywords';
+import { useRouter } from '@/i18n/navigation';
 import { CompetitorBasisNote } from './CompetitorBits';
 
 type KeywordCluster = {
@@ -100,6 +101,7 @@ export function CompetitorKeywordsTab({
 }) {
   const t = useTranslations('tabsB.keywords');
   const format = useFormatter();
+  const router = useRouter();
   const [payload, setPayload] = useState<KeywordsPayload | null>(initialPayload);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,6 +131,10 @@ export function CompetitorKeywordsTab({
         setPayload(next);
         setSelectedDomain(next.competitors?.[0]?.domain || '');
         setSuccess(t('generated'));
+        // The setup guide and tab gates above this tab are server-rendered
+        // from the saved analysis; without a refresh they still say
+        // "Not analysed yet" until a reload.
+        router.refresh();
       }
     } catch (generateError) {
       console.error(generateError);

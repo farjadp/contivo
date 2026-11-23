@@ -43,12 +43,12 @@ describe('finalizeSocialConnect', () => {
     fetchMock.mockResolvedValue(
       new Response(JSON.stringify({ platform: 'linkedin', accounts: 1, workspaceId: 'ws-9' }), { status: 200 }),
     );
-    expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'ok', workspaceId: 'ws-9' });
+    expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'ok', workspaceId: 'ws-9', platform: 'linkedin' });
   });
 
   it('still reports ok when an older API sends no workspace or a non-JSON body', async () => {
     fetchMock.mockResolvedValueOnce(new Response('{"platform":"linkedin"}', { status: 200 }));
-    expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'ok' });
+    expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'ok', platform: 'linkedin' });
     fetchMock.mockResolvedValueOnce(new Response('not json', { status: 200 }));
     expect(await finalizeSocialConnect('tkt')).toEqual({ result: 'ok' });
   });

@@ -12,17 +12,22 @@
  * the bot, pick the channel in Telegram, type back the code). `initialPlatform`
  * opens straight on a platform, for Reconnect on a TELEGRAM row.
  *
- * Only live channels are connectable; the rest are listed as coming soon.
+ * Only live channels are connectable. Every other planned network is listed
+ * as "coming soon" with a "notify me" button that records demand (23 Nov,
+ * strategy/2026-11-23-first-post-path.md section A). Telegram is connectable
+ * only where the API has its bot token; elsewhere it is coming soon too.
  */
 
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
-import { X, Linkedin, Twitter, AtSign, Info, ChevronRight, Send } from 'lucide-react';
+import { X, Linkedin, Twitter, AtSign, Info, ChevronRight, Send, Facebook, Instagram, Newspaper, Bell, Check } from 'lucide-react';
 
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
 import { getConfiguredPlatforms, type PlatformConfig } from '@/app/actions/social-config';
+import { listChannelNotices, requestChannelNotice } from '@/app/actions/channel-interest';
+import { COMING_SOON_NETWORKS, type ComingSoonNetwork } from '@/lib/channel-interest';
 import { markConnectAttempt } from '@/lib/connect-attempt';
 
 import { TelegramConnectPanel } from './TelegramConnectPanel';
@@ -81,11 +86,25 @@ const PLATFORMS: {
   },
 ];
 
-/** Being built (publishing-channels program). Shown, never clickable. */
-const COMING_SOON: { key: string; Icon: React.ElementType }[] = [
-  { key: 'x', Icon: Twitter },
-  { key: 'threads', Icon: AtSign },
-];
+/** Planned networks: shown so nobody hunts for them, never connectable from here. */
+const SOON_ICONS: Record<ComingSoonNetwork, React.ElementType> = {
+  telegram: Send,
+  x: Twitter,
+  wordpress: Newspaper,
+  facebook: Facebook,
+  instagram: Instagram,
+  threads: AtSign,
+};
+
+/** Why each one is not here yet: Meta's networks wait on its app review. */
+const SOON_HINT: Record<ComingSoonNetwork, 'telegram' | 'building' | 'meta'> = {
+  telegram: 'telegram',
+  x: 'building',
+  wordpress: 'building',
+  facebook: 'meta',
+  instagram: 'meta',
+  threads: 'meta',
+};
 
 /** Network names stay Latin; isolating them keeps Persian punctuation on its own side. */
 const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
@@ -100,13 +119,53 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
   // Null means "we could not ask" — the API being down is not the same as a
   // platform being unconfigured, so the UI stays neutral rather than accusing.
   const [config, setConfig] = useState<PlatformConfig | null>(null);
+  // Until the API answers, Telegram's place (live or coming soon) is unknown;
+  // showing it in one list and moving it to the other reads as a glitch.
+  const [configLoaded, setConfigLoaded] = useState(false);
+
+  // Networks this workspace already asked to hear about, and the one being sent.
+  const [notified, setNotified] = useState<Set<ComingSoonNetwork>>(new Set());
+  const [notifying, setNotifying] = useState<ComingSoonNetwork | null>(null);
+  const [notifyError, setNotifyError] = useState<ComingSoonNetwork | null>(null);
 
   useEffect(() => {
-    void getConfiguredPlatforms().then(setConfig);
+    void getConfiguredPlatforms()
+      .then(setConfig)
+      .finally(() => setConfigLoaded(true));
   }, []);
+
+  useEffect(() => {
+    if (!workspaceId) return;
+    void listChannelNotices(workspaceId).then((networks) => setNotified(new Set(networks)));
+  }, [workspaceId]);
 
   /** The API names platforms `linkedin`/`x`/`facebook`/`tiktok`/`telegram`. */
   const isUnavailable = (id: Platform) => config != null && config[id.toLowerCase()] === false;
+
+  // Telegram without a bot token cannot be connected here: list it as coming
+  // soon, where its demand is counted, instead of a dead live tile.
+  const telegramSoon = isUnavailable('TELEGRAM') && initialPlatform !== 'TELEGRAM';
+  const telegramPending = !configLoaded && initialPlatform !== 'TELEGRAM';
+  const livePlatforms = PLATFORMS.filter((p) => !(p.id === 'TELEGRAM' && (telegramSoon || telegramPending)));
+  const soonNetworks = COMING_SOON_NETWORKS.filter((n) => n !== 'telegram' || telegramSoon);
+
+  const notify = async (network: ComingSoonNetwork) => {
+    setNotifying(network);
+    setNotifyError(null);
+    try {
+      const result = await requestChannelNotice(workspaceId, network);
+      if ('error' in result) {
+        setNotifyError(network);
+        return;
+      }
+      setNotified((prev) => new Set(prev).add(network));
+    } catch (error) {
+      console.error(error);
+      setNotifyError(network);
+    } finally {
+      setNotifying(null);
+    }
+  };
 
   // The API's /connect route is opened by the browser, so it cannot carry an
   // auth header. Mint a short-lived signed link first, then navigate to it.
@@ -157,7 +216,7 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
           {!selected ? (
             /* Platform picker */
             <div className="space-y-3">
-              {PLATFORMS.map((p) => {
+              {livePlatforms.map((p) => {
                 const PIcon = p.Icon;
                 const unavailable = isUnavailable(p.id);
                 const label = t(`platforms.${p.key}Label`);
@@ -194,21 +253,53 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
                 );
               })}
 
-              {/* Coming soon: listed so nobody hunts for them, never clickable */}
+              {/* Coming soon: every planned network, each with "notify me" */}
               <div className="pt-2">
                 <p className="text-xs font-semibold text-moss-muted mb-2 uppercase tracking-wide">
                   {t('soonTitle')}
                 </p>
-                <ul className="flex flex-wrap gap-2" aria-label={t('soonTitle')}>
-                  {COMING_SOON.map(({ key, Icon }) => (
-                    <li
-                      key={key}
-                      className="flex items-center gap-2 rounded-full border border-dashed border-rule bg-chalk px-3 py-1.5 text-xs text-moss-muted select-none"
-                    >
-                      <Icon className="w-3.5 h-3.5" aria-hidden />
-                      <span className="font-semibold">{t(`soon.${key}`)}</span>
-                    </li>
-                  ))}
+                <ul className="space-y-2" aria-label={t('soonTitle')}>
+                  {soonNetworks.map((network) => {
+                    const Icon = SOON_ICONS[network];
+                    const name = t(`soon.${network}`);
+                    const done = notified.has(network);
+                    const busy = notifying === network;
+                    return (
+                      <li
+                        key={network}
+                        className="flex items-center gap-3 rounded-2xl border border-dashed border-rule bg-chalk px-4 py-3"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-chalk-sunk flex items-center justify-center shrink-0 text-moss-muted">
+                          <Icon className="w-4 h-4" aria-hidden />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-moss-muted">{name}</p>
+                          {notifyError === network ? (
+                            <p className="text-xs text-red-600 mt-0.5">{t('notifyFailed')}</p>
+                          ) : (
+                            <p className="text-xs text-moss-muted mt-0.5">{t(`soonHint.${SOON_HINT[network]}`)}</p>
+                          )}
+                        </div>
+                        {done ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-moss-700">
+                            <Check className="w-3.5 h-3.5" aria-hidden />
+                            {t('notifyDone')}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => void notify(network)}
+                            disabled={busy || !workspaceId}
+                            aria-label={t('notifyAria', { platform: name })}
+                            className="inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-xl border border-rule-strong bg-chalk-raised px-3 py-1.5 text-xs font-semibold text-moss transition-colors hover:border-moss disabled:opacity-60"
+                          >
+                            <Bell className="w-3.5 h-3.5" aria-hidden />
+                            {busy ? t('notifySending') : t('notifyMe')}
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             </div>

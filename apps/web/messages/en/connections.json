@@ -51,7 +51,11 @@
       "soonTitle": "Coming soon",
       "soon": {
         "x": "X",
-        "threads": "Threads"
+        "threads": "Threads",
+        "telegram": "Telegram",
+        "wordpress": "WordPress",
+        "facebook": "Facebook",
+        "instagram": "Instagram"
       },
       "backToList": "Back to platform list",
       "permissionsTitle": "Permissions requested",
@@ -59,7 +63,17 @@
       "securityNote": "Your access token is encrypted and stored securely. It is never exposed to the frontend. You can revoke access at any time.",
       "preparing": "Preparing…",
       "continueOAuth": "Continue to {platform} OAuth",
-      "telegramUnavailable": "Not switched on yet."
+      "telegramUnavailable": "Not switched on yet.",
+      "soonHint": {
+        "building": "Being built.",
+        "meta": "Waiting for Meta's app review.",
+        "telegram": "Not switched on here yet."
+      },
+      "notifyMe": "Notify me",
+      "notifySending": "Saving…",
+      "notifyDone": "We'll let you know",
+      "notifyFailed": "That did not save. Try again.",
+      "notifyAria": "Notify me when {platform} is ready"
     },
     "accounts": {
       "title": "Connected Accounts",
