@@ -118,8 +118,8 @@ export type ConnectFix = { kind: 'oauth'; platform: OAuthPlatform } | { kind: 'c
  * What the "connect to publish" button does for a refused publish: start the
  * provider's OAuth when the web can, otherwise open the right Connections tab.
  */
-export function connectFix(platform: string | undefined, channel: string): ConnectFix {
-  if (channel === 'blog') return { kind: 'connections', tab: 'websites' };
+export function connectFix(platform: string | null | undefined, channel: string): ConnectFix {
+  if (channel === 'blog' || platform === 'SITE') return { kind: 'connections', tab: 'websites' };
   const name = (platform || CHANNEL_PLATFORM[channel] || channel).toLowerCase();
   if ((OAUTH_PLATFORMS as readonly string[]).includes(name) && canStartConnectFlow(name)) {
     return { kind: 'oauth', platform: name as OAuthPlatform };

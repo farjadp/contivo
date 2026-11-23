@@ -139,6 +139,8 @@ describe('connectFix', () => {
   it('sends everything else to Connections', () => {
     expect(connectFix('TELEGRAM', 'telegram')).toEqual({ kind: 'connections', tab: 'social' });
     expect(connectFix(undefined, 'blog')).toEqual({ kind: 'connections', tab: 'websites' });
+    expect(connectFix('SITE', 'blog')).toEqual({ kind: 'connections', tab: 'websites' });
+    expect(connectFix(null, 'linkedin')).toEqual({ kind: 'oauth', platform: 'linkedin' });
   });
 });
 

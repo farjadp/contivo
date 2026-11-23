@@ -163,7 +163,7 @@ function publishTimezoneDefault(): string {
  * swallowed into console.error, so the button simply did nothing.
  */
 type PublishRefusal =
-  | { kind: 'no_connection'; platform?: string; held?: true }
+  | { kind: 'no_connection'; platform?: string | null; held?: true }
   | { kind: 'quality_gate_blocked' | 'not_found' | 'failed' };
 
 /** Network names stay Latin in every locale. */
@@ -178,7 +178,7 @@ const CONNECT_PLATFORM_LABELS: Record<string, string> = {
 
 function refusalFromResult(res: unknown): PublishRefusal | null {
   if (!res || typeof res !== 'object') return { kind: 'failed' };
-  const r = res as { ok?: boolean; reason?: string; platform?: string };
+  const r = res as { ok?: boolean; reason?: string; platform?: string | null };
   if (r.ok === true) return null;
   if (r.reason === 'no_connection') return { kind: 'no_connection', platform: r.platform };
   if (r.reason === 'quality_gate_blocked' || r.reason === 'not_found') return { kind: r.reason };
@@ -532,7 +532,7 @@ function PipelineItemCard({
       setIsPreviewOpen(false);
       // W2: the text is saved, the schedule is held until a channel is connected.
       setPublishRefusal(
-        (updated as { held?: unknown }).held === 'no_connection'
+        ('held' in updated ? updated.held : undefined) === 'no_connection'
           ? { kind: 'no_connection', platform: currentItem.channel, held: true }
           : null,
       );
