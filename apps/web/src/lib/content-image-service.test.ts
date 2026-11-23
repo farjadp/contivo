@@ -108,6 +108,15 @@ describe('stubbed generator (B19: the real model is down until the registry fix 
     expect(recordFailureMock).toHaveBeenCalledWith(expect.objectContaining({ code: 'PROVIDER_RATE_LIMITED' }));
   });
 
+  it('B19 shape: the shared cause is recorded, the specific IMAGE_* code is logged', () => {
+    expect(readGeneratorResult({ ok: false, code: 'IMAGE_MODEL_UNAVAILABLE', cause: 'PROVIDER_AUTH', model: 'gpt-image-2.5-flare' })).toEqual({
+      ok: false,
+      cause: 'PROVIDER_AUTH',
+      failureCode: 'IMAGE_MODEL_UNAVAILABLE',
+    });
+    expect(readGeneratorResult({ ok: false, cause: 'PROVIDER_TIMEOUT' })).toEqual({ ok: false, cause: 'PROVIDER_TIMEOUT', failureCode: 'PROVIDER_TIMEOUT' });
+  });
+
   it('reads both generator shapes', () => {
     expect(readGeneratorResult(null)).toEqual({ ok: false, cause: 'PROVIDER_UNAVAILABLE', failureCode: null });
     expect(readGeneratorResult({ ok: true, id: 'img', altText: 'a', bytes: 9 })).toEqual({ ok: true, id: 'img', altText: 'a', bytes: 9 });
