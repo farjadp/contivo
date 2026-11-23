@@ -17,7 +17,7 @@
 
 import { countCompetitors } from '@/lib/competitor-counts';
 import { prisma } from '@/lib/db';
-import { loadFirstPostState, type LoadedFirstPost } from '@/lib/first-post/load';
+import { loadFirstPostState, type FirstPostLoad } from '@/lib/first-post/load';
 import { loadGuidedMode, readKillSwitch } from '@/lib/first-post/mode';
 import type { NextStepSurface } from '@/lib/first-post/types';
 import type { NextStepInput } from '@/lib/next-step';
@@ -27,7 +27,7 @@ export type NextStepLoad = {
   /** Everything buildNextStep needs except `onFirstPostTab`, which only the page knows. */
   input: Omit<NextStepInput, 'onFirstPostTab'>;
   /** The full first-post read (draft, why facts), for the workspace page's FirstPostView. */
-  firstPost: LoadedFirstPost | null;
+  firstPost: FirstPostLoad | null;
 };
 
 type WorkspaceRow = {
@@ -123,7 +123,7 @@ export async function loadNextStepInput(
     workspaceId ? loadWorkspaceFacts(userId, workspaceId) : Promise.resolve(null),
   ]);
 
-  let firstPost: LoadedFirstPost | null = null;
+  let firstPost: FirstPostLoad | null = null;
   if (facts && (guided || WORKSPACE_SURFACES.includes(surface))) {
     if (guided) {
       // The bar is the guided user's only way forward: a wrong step is worse than an error page.

@@ -73,7 +73,7 @@ export function FirstPostView(props: FirstPostViewProps) {
         const res = await getFirstPostState(workspaceId);
         if (cancelled) return;
         if (!('error' in res)) {
-          setPolled({ ...res, linkedIn: res.linkedIn ?? props.linkedIn });
+          setPolled({ ...res, linkedIn: res.facts.linkedIn });
           if (res.state.phase !== 'running') {
             router.refresh();
             return;
@@ -89,8 +89,6 @@ export function FirstPostView(props: FirstPostViewProps) {
       cancelled = true;
       clearTimeout(timer);
     };
-    // props.linkedIn is only a fallback for an older action shape.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, workspaceId, router]);
 
   // Publishing: every 3 s for 3 min, then every 15 s, until it is live or failed.
