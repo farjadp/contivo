@@ -137,3 +137,30 @@ export async function nextAttempt(workspaceId: string): Promise<number> {
 export async function countOtherAngles(workspaceId: string): Promise<number> {
   return prisma.activity_logs.count({ where: { workspace_id: workspaceId, action: FIRST_POST_OTHER_ANGLE } });
 }
+
+/**
+ * Not a state row (deriveFirstPostState never reads it): it makes the run
+ * itself single-flight. The run claims before doing any work, so a second
+ * dispatch of the same run does nothing; a failed dispatch claims too, and
+ * fails the run only when it won the claim (then nobody is running it).
+ */
+export const FIRST_POST_RUN_CLAIMED = 'FIRST_POST_RUN_CLAIMED';
+
+/** True when this caller now owns the run; false when someone already claimed it. */
+export async function claimRun(input: { runId: string; userId: string; workspaceId: string }): Promise<boolean> {
+  try {
+    await prisma.activity_logs.create({
+      data: {
+        id: `${input.runId}:claim`,
+        user_id: input.userId,
+        workspace_id: input.workspaceId,
+        action: FIRST_POST_RUN_CLAIMED,
+        detail: { runId: input.runId },
+      },
+    });
+    return true;
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return false;
+    throw error;
+  }
+}

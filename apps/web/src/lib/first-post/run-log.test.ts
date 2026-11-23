@@ -10,6 +10,7 @@ const { prismaMock } = vi.hoisted(() => ({
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 
 import {
+  claimRun,
   countOtherAngles,
   insertRunStarted,
   nextAttempt,
@@ -164,5 +165,28 @@ describe('reads', () => {
     expect(prismaMock.activity_logs.count).toHaveBeenCalledWith({
       where: { workspace_id: 'ws1', action: 'FIRST_POST_OTHER_ANGLE' },
     });
+  });
+});
+
+describe('claimRun', () => {
+  it('inserts one claim row per run; the first caller wins', async () => {
+    expect(await claimRun({ runId: 'fpr_ws1_1', userId: 'u1', workspaceId: 'ws1' })).toBe(true);
+    expect(prismaMock.activity_logs.create).toHaveBeenCalledWith({
+      data: {
+        id: 'fpr_ws1_1:claim',
+        user_id: 'u1',
+        workspace_id: 'ws1',
+        action: 'FIRST_POST_RUN_CLAIMED',
+        detail: { runId: 'fpr_ws1_1' },
+      },
+    });
+
+    prismaMock.activity_logs.create.mockRejectedValue(p2002());
+    expect(await claimRun({ runId: 'fpr_ws1_1', userId: 'u1', workspaceId: 'ws1' })).toBe(false);
+  });
+
+  it('throws any other database error', async () => {
+    prismaMock.activity_logs.create.mockRejectedValue(new Error('db down'));
+    await expect(claimRun({ runId: 'r', userId: 'u1', workspaceId: 'ws1' })).rejects.toThrow('db down');
   });
 });
