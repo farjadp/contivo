@@ -41,7 +41,13 @@ export function connectReturnHref(workspaceId: string, platform: ConnectedPlatfo
 }
 
 export type ConnectedNextAction =
-  /** Nothing published yet and a first-post draft is waiting: open it in its publish state. */
+  /**
+   * Nothing published yet and a first-post draft is waiting. Its button
+   * ("Publish this post") is open mode's only: in guided mode the notice is
+   * the bar's compact confirmation and the bar's "Publish now" is the one
+   * button. Open mode has no first-post tab (resolveWorkspaceTab), so it
+   * opens the pipeline, where the draft is an item with its own publish.
+   */
   | { kind: 'firstPostDraft'; href: string }
   /** Nothing published yet: the shortest way to a first post is writing one. */
   | { kind: 'firstPost'; href: string }
@@ -65,7 +71,7 @@ export function connectedNextAction(
 ): ConnectedNextAction {
   const pipeline = `/growth/${workspaceId}?tab=pipeline`;
   if (publishedCount <= 0 && firstPostDraftId) {
-    return { kind: 'firstPostDraft', href: `/growth/${workspaceId}?tab=first-post` };
+    return { kind: 'firstPostDraft', href: pipeline };
   }
   if (publishedCount <= 0) return { kind: 'firstPost', href: `${pipeline}&write=1` };
   if (journey.next && journey.next.id !== 'channel') return { kind: 'journey', step: journey.next };

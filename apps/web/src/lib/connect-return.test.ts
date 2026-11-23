@@ -60,10 +60,11 @@ describe('connectedNextAction', () => {
     expect(connectedNextAction('w1', { next: null }, 2).kind).toBe('pipeline');
   });
 
-  it('opens the first-post draft when one is waiting and nothing is published', () => {
+  it('offers "Publish this post" on the pipeline when a first-post draft is waiting and nothing is published', () => {
+    // Open mode only shows this button, and open mode has no first-post tab.
     expect(connectedNextAction('w1', { next: step('market') }, 0, 'ci1')).toEqual({
       kind: 'firstPostDraft',
-      href: '/growth/w1?tab=first-post',
+      href: '/growth/w1?tab=pipeline',
     });
   });
 
