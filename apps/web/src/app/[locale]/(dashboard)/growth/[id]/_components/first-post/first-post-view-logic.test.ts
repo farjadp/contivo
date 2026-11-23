@@ -18,6 +18,7 @@ import {
   canWriteFirstPost,
   connectFix,
   countWords,
+  competitorLine,
   evidenceLine,
   initialTicked,
   isPublishSlow,
@@ -38,6 +39,7 @@ const competitor = (id: string, userDecision: string | null, evidence: EvidenceI
   domain: `${id}.example`,
   userDecision,
   evidence,
+  source: 'evidence',
 });
 
 describe('evidenceLine', () => {
@@ -58,6 +60,23 @@ describe('evidenceLine', () => {
       host: 'ok.example',
     });
     expect(evidenceLine([ev('citation', 'javascript:alert(1)')])).toEqual({ kind: 'aiGuess' });
+  });
+});
+
+describe('competitorLine', () => {
+  it('a manual row says "Added by you", whatever evidence it carries', () => {
+    expect(competitorLine({ source: 'manual', evidence: [] })).toEqual({ kind: 'manual' });
+    expect(competitorLine({ source: 'manual', evidence: [ev('citation', 'https://news.example/a')] })).toEqual({
+      kind: 'manual',
+    });
+  });
+
+  it('any other row shows its evidence line', () => {
+    expect(competitorLine({ source: 'evidence', evidence: [ev('citation', 'https://news.example/a')] })).toEqual({
+      kind: 'source',
+      host: 'news.example',
+    });
+    expect(competitorLine({ source: 'initialGuess', evidence: [] })).toEqual({ kind: 'aiGuess' });
   });
 });
 

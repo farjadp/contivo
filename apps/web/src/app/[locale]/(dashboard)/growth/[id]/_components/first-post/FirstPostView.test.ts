@@ -40,8 +40,9 @@ const base: Omit<FirstPostViewProps, 'state'> = {
       domain: 'coremotion.example',
       userDecision: 'ACCEPTED',
       evidence: [{ id: 'e1', kind: 'citation', url: 'https://www.directory.example/physio' }],
+      source: 'evidence',
     },
-    { id: 'c2', name: 'PhysioNow', domain: 'physionow.example', userDecision: 'PENDING', evidence: [] },
+    { id: 'c2', name: 'PhysioNow', domain: 'physionow.example', userDecision: 'PENDING', evidence: [], source: 'initialGuess' },
   ],
   linkedIn: { connected: false },
   draft: { id: 'ci_1', content: 'Most people who stop physio…', topic: 'Week three', qualityVerdict: null },
@@ -118,6 +119,20 @@ describe('confirm', () => {
     expect(html.match(/checked=""/g)).toHaveLength(1);
     expect(html).toContain('directory.example');
     expect(html).toContain('AI guess');
+  });
+
+  it('a row the user added says "Added by you" after a reload, in every locale', () => {
+    const manual = {
+      id: 'c3',
+      name: 'Stride Physio',
+      domain: 'stride.example',
+      userDecision: 'ACCEPTED',
+      evidence: [],
+      source: 'manual' as const,
+    };
+    const html = render(STATES.confirm, 'en', { competitors: [...base.competitors, manual] });
+    expect(html.match(/Added by you/g)).toHaveLength(1);
+    expect(render(STATES.confirm, 'fa', { competitors: [manual] })).toContain(faTabs.tabsA.firstPost.confirm.addedByYou);
   });
 
   it('keeps "Write my first post" disabled below 2 ticks', () => {

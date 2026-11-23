@@ -52,6 +52,14 @@ export function evidenceLine(evidence: EvidenceItem[]): EvidenceLine {
   return { kind: 'aiGuess' };
 }
 
+export type CompetitorLine = { kind: 'manual' } | EvidenceLine;
+
+/** A row the user added says "Added by you"; any other row shows its evidence line. */
+export function competitorLine(c: Pick<FirstPostCompetitor, 'source' | 'evidence'>): CompetitorLine {
+  if (c.source === 'manual') return { kind: 'manual' };
+  return evidenceLine(c.evidence);
+}
+
 /** Nothing is ticked in advance except the user's own earlier ACCEPTED decisions. */
 export function initialTicked(competitors: FirstPostCompetitor[]): Set<string> {
   return new Set(competitors.filter((c) => c.userDecision === 'ACCEPTED').map((c) => c.id));

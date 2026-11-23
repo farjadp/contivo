@@ -24,7 +24,7 @@ import {
   MIN_COMPETITORS,
   addTicked,
   canWriteFirstPost,
-  evidenceLine,
+  competitorLine,
   initialTicked,
   needsManualAdd,
   removeTicked,
@@ -49,7 +49,6 @@ export function CompetitorConfirm({
   const few = needsManualAdd(competitors);
 
   const [rows, setRows] = useState<FirstPostCompetitor[]>(competitors);
-  const [manualIds, setManualIds] = useState<ReadonlySet<string>>(new Set());
   const [ticked, setTicked] = useState<ReadonlySet<string>>(() => initialTicked(competitors));
   const [saving, setSaving] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -89,8 +88,10 @@ export function CompetitorConfirm({
       }
       const c = res.competitor;
       // addManualCompetitor saves the row as ACCEPTED: the user typed it.
-      setRows((prev) => [...prev, { id: c.id, name: c.name, domain: c.domain, userDecision: 'ACCEPTED', evidence: c.evidence }]);
-      setManualIds((prev) => addTicked(prev, c.id));
+      setRows((prev) => [
+        ...prev,
+        { id: c.id, name: c.name, domain: c.domain, userDecision: 'ACCEPTED', evidence: c.evidence, source: 'manual' },
+      ]);
       setTicked((prev) => addTicked(prev, c.id));
       setDomain('');
       addInput.current?.focus();
@@ -138,7 +139,7 @@ export function CompetitorConfirm({
           <legend className="sr-only">{t('listLabel')}</legend>
           <ul>
             {rows.map((row) => {
-              const line = evidenceLine(row.evidence);
+              const line = competitorLine(row);
               const checked = ticked.has(row.id);
               const inputId = `first-post-competitor-${row.id}`;
               return (
@@ -164,7 +165,7 @@ export function CompetitorConfirm({
                         {row.name}
                       </span>
                       <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-moss-muted">
-                        {manualIds.has(row.id) ? (
+                        {line.kind === 'manual' ? (
                           <span className={sourceTag}>{t('addedByYou')}</span>
                         ) : line.kind === 'source' ? (
                           <>

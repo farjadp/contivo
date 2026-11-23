@@ -10,6 +10,7 @@
  * is safe in server and client components alike.
  */
 
+import type { CompetitorOrigin } from '@/lib/competitors/selection';
 import type { EvidenceItem } from '@/lib/competitors/types';
 import type { PublishRefusal } from '@/lib/first-post/publish-refusal';
 import type { Msg } from '@/lib/workspace-journey';
@@ -280,6 +281,12 @@ export type FirstPostCompetitor = {
    * splitEvidence: the first source's host, or "AI guess" when there is none.
    */
   evidence: EvidenceItem[];
+  /**
+   * competitorOrigin of the row (Competitor.source = 'MANUAL' → 'manual';
+   * a discoveryRunId → 'evidence'; else 'initialGuess'). A manual row shows
+   * "Added by you" instead of its evidence line, on every load.
+   */
+  source: CompetitorOrigin;
 };
 
 export type FirstPostDraft = {

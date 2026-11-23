@@ -45,14 +45,36 @@ describe('resolveWorkspaceTab', () => {
 describe('toFirstPostCompetitors', () => {
   it('drops rejected rows and keeps only a stored evidence array', () => {
     const rows = [
-      { id: 'a', name: 'A', domain: 'a.com', userDecision: 'ACCEPTED', evidence: [{ kind: 'source', url: 'https://a.com' }] },
-      { id: 'b', name: 'B', domain: null, userDecision: 'REJECTED', evidence: [] },
-      { id: 'c', name: 'C', domain: 'c.com', userDecision: null, evidence: { junk: true } },
+      {
+        id: 'a',
+        name: 'A',
+        domain: 'a.com',
+        userDecision: 'ACCEPTED',
+        evidence: [{ kind: 'source', url: 'https://a.com' }],
+        source: 'AI',
+        discoveryRunId: 'run-1',
+      },
+      { id: 'b', name: 'B', domain: null, userDecision: 'REJECTED', evidence: [], source: 'AI', discoveryRunId: null },
+      { id: 'c', name: 'C', domain: 'c.com', userDecision: null, evidence: { junk: true }, source: 'AI', discoveryRunId: null },
     ];
     expect(toFirstPostCompetitors(rows)).toEqual([
-      { id: 'a', name: 'A', domain: 'a.com', userDecision: 'ACCEPTED', evidence: [{ kind: 'source', url: 'https://a.com' }] },
-      { id: 'c', name: 'C', domain: 'c.com', userDecision: null, evidence: [] },
+      {
+        id: 'a',
+        name: 'A',
+        domain: 'a.com',
+        userDecision: 'ACCEPTED',
+        evidence: [{ kind: 'source', url: 'https://a.com' }],
+        source: 'evidence',
+      },
+      { id: 'c', name: 'C', domain: 'c.com', userDecision: null, evidence: [], source: 'initialGuess' },
     ]);
+  });
+
+  it('marks rows the user added (Competitor.source MANUAL) as manual, on every load', () => {
+    const [row] = toFirstPostCompetitors([
+      { id: 'm', name: 'M', domain: 'm.com', userDecision: 'ACCEPTED', evidence: [], source: 'MANUAL', discoveryRunId: null },
+    ]);
+    expect(row.source).toBe('manual');
   });
 });
 

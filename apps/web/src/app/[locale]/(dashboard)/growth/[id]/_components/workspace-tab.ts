@@ -5,6 +5,7 @@
 
 import { writeActivityLog } from '@/lib/activity-log';
 import { prisma } from '@/lib/db';
+import { competitorOrigin } from '@/lib/competitors/selection';
 import type { EvidenceItem } from '@/lib/competitors/types';
 import { FIRST_DRAFT_SEEN, type FirstPostCompetitor } from '@/lib/first-post/types';
 
@@ -48,6 +49,8 @@ type CompetitorRow = {
   domain: string | null;
   userDecision: string | null;
   evidence: unknown;
+  source: string | null;
+  discoveryRunId: string | null;
 };
 
 /** The rows the confirm step can tick: everything not rejected, in stored order. */
@@ -60,6 +63,7 @@ export function toFirstPostCompetitors(rows: CompetitorRow[]): FirstPostCompetit
       domain: c.domain,
       userDecision: c.userDecision,
       evidence: Array.isArray(c.evidence) ? (c.evidence as EvidenceItem[]) : [],
+      source: competitorOrigin(c),
     }));
 }
 
