@@ -84,10 +84,6 @@
       "statContent": "Contenuti",
       "statDiscoveryRuns": "Ricerche",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "Chiamate AI",
-      "statAiTokens": "Token AI",
-      "statEstCost": "Costo stimato",
-      "trackedNote": "solo moduli monitorati",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Brand Memory",

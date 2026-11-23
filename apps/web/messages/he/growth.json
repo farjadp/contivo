@@ -84,10 +84,6 @@
       "statContent": "תוכן",
       "statDiscoveryRuns": "חיפושי מתחרים",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "קריאות AI",
-      "statAiTokens": "טוקנים של AI",
-      "statEstCost": "עלות משוערת",
-      "trackedNote": "רק מודולים במעקב",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "זיכרון המותג",

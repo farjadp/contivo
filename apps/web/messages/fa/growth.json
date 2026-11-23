@@ -84,10 +84,6 @@
       "statContent": "محتوا",
       "statDiscoveryRuns": "اجراهای کشف",
       "statDiscoveryValue": "{used, number} از {total, number}",
-      "statAiCalls": "فراخوانی‌های هوش مصنوعی",
-      "statAiTokens": "توکن‌های هوش مصنوعی",
-      "statEstCost": "هزینهٔ تخمینی",
-      "trackedNote": "فقط بخش‌های رصدشده",
       "tabTitleGated": "{helper}؛ {gate}",
       "tabs": {
         "strategyLabel": "حافظهٔ برند",

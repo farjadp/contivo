@@ -84,10 +84,6 @@
       "statContent": "Contenido",
       "statDiscoveryRuns": "Búsquedas de competidores",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "Llamadas a la IA",
-      "statAiTokens": "Tokens de IA",
-      "statEstCost": "Coste est.",
-      "trackedNote": "solo módulos con seguimiento",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Memoria de marca",
