@@ -273,3 +273,44 @@ describe('runner: out of credits', () => {
     expect(storedError()).toBe(AUTOPILOT_RUN_ERROR.OUT_OF_CREDITS_MID_RUN);
   });
 });
+
+describe('runner: images (B19)', () => {
+  it('a draft whose picture failed is logged "image_failed, text only" and the run is a warning, not SUCCEEDED', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(true));
+    evaluateDraftMock.mockResolvedValue(APPROVED);
+    engine.generateDraftForItem.mockResolvedValue({
+      item: { content: 'A finished draft body.' },
+      image: { imageId: null, failed: true, cause: 'IMAGE_MODEL_UNAVAILABLE', model: 'gpt-image-2.5-sunburst', textOnly: true },
+    });
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('PARTIAL');
+    expect(result.reason).toBe('IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE');
+    expect(runLog().find((e) => e.step === 'image_failed')).toMatchObject({
+      itemId: 'item-1',
+      cause: 'IMAGE_MODEL_UNAVAILABLE',
+      textOnly: true,
+    });
+    expect(runLog().find((e) => e.step === 'image_summary')).toMatchObject({ textOnly: 1 });
+    // The draft itself still goes ahead.
+    expect(runLog().some((e) => e.step === 'held_for_review')).toBe(true);
+    const stored = prismaMock.autopilotRun.update.mock.calls.at(-1)![0].data;
+    expect(stored).toMatchObject({ status: 'PARTIAL', error: 'IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE' });
+  });
+
+  it('a draft with its picture leaves the run SUCCEEDED', async () => {
+    prismaMock.autopilotPolicy.findUnique.mockResolvedValue(policy(false));
+    evaluateDraftMock.mockResolvedValue(APPROVED);
+    engine.generateDraftForItem.mockResolvedValue({
+      item: { content: 'A finished draft body.' },
+      image: { imageId: 'img-1', bytes: 10, altText: 'x', model: 'gpt-image-2.5-flare' },
+    });
+
+    const result = await runPolicy('agent-1');
+
+    expect(result.status).toBe('SUCCEEDED');
+    expect(runLog().some((e) => e.step === 'image_failed')).toBe(false);
+    expect(runLog().find((e) => e.step === 'scheduled')).toMatchObject({ image: true });
+  });
+});

@@ -56,6 +56,7 @@ const { db, sessionMock, logMock } = vi.hoisted(() => {
         findMany: async ({ where }: { where: { workspaceId: string } }) => failedRuns.filter((r) => r.workspaceId === where.workspaceId),
       },
       socialPublishLog: { findFirst: async () => null, findMany: async () => [] },
+      autopilotRun: { findMany: async () => [] },
       aiProviderEvent: { findMany: async () => [] },
       activity_logs: { findMany: async () => [], findFirst: async () => null },
     },

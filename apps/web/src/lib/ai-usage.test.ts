@@ -1,3 +1,4 @@
+import { DEFAULT_OPENAI_IMAGE_FALLBACKS, DEFAULT_OPENAI_IMAGE_MODEL } from './ai/image';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // One ai_usage_logs row per model call, and the logging can never break the
@@ -161,10 +162,17 @@ describe('pricing', () => {
     ['anthropic judge', DEFAULT_ANTHROPIC_JUDGE_MODEL],
     // gemini-3.7-flash is routed by Google and reports gemini-3.8-flash.
     ['gemini (as reported)', 'gemini-3.8-flash'],
+    ['openai image', DEFAULT_OPENAI_IMAGE_MODEL],
+    ...DEFAULT_OPENAI_IMAGE_FALLBACKS.map((m) => ['openai image fallback', m] as [string, string]),
   ])('a non-empty %s call (%s) gets a cost above zero', (_label, model) => {
     const cost = estimateCostUsd(model, usage);
     expect(cost).not.toBeNull();
     expect(cost!).toBeGreaterThan(0);
+  });
+
+  it('a 1024x1024 medium image on the default model costs what the live eval measured', () => {
+    // 22 Nov, production key: 45-55 text tokens in, 439 image tokens out.
+    expect(estimateCostUsd(DEFAULT_OPENAI_IMAGE_MODEL, { promptTokens: 50, completionTokens: 439, totalTokens: 489 })).toBeCloseTo(0.01342, 5);
   });
 
   it('the anthropic backfill script prices every Claude model exactly like the app', async () => {

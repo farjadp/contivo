@@ -15,9 +15,9 @@
 import { parseOpenAiImageUsage, recordAiUsage, resolveResponseModel } from '@/lib/ai-usage';
 import { prisma } from '@/lib/db';
 import { runAiTask } from '@/lib/ai';
+import { generateOpenAiImage, type ImageCause, type ImageDeps } from '@/lib/ai/image';
 
-const IMAGE_MODEL = 'gpt-image-1';
-const IMAGE_SIZE = '1024x1024';
+export type { ImageCause } from '@/lib/ai/image';
 
 export type GeneratedImage = {
   id: string;
@@ -83,48 +83,59 @@ Return JSON only: {"prompt": "...", "alt": "..."}`,
   };
 }
 
-/**
- * Generates an image for a content item and stores it. Returns null on any
- * failure — a post without artwork is still publishable, so image trouble must
- * never block the pipeline.
- */
-export async function generateImageForContentItem(input: {
+export type ImageInput = {
   contentItemId: string;
   workspaceId: string;
+  userId?: string;
   topic: string;
   body: string;
   brandSummary: unknown;
-}): Promise<GeneratedImage | null> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
+};
 
+export type ImageOutcome =
+  | { ok: true; image: GeneratedImage; model: string }
+  | { ok: false; cause: ImageCause; model: string | null; message: string };
+
+/**
+ * Generates an image for a content item and stores it. A post without artwork
+ * is still publishable, so image trouble never blocks the pipeline — but it is
+ * never silent either: the outcome carries a coded cause, every failed attempt
+ * is an ai_provider_events row, and a failed generation writes a zero-cost
+ * `content_image_failed` usage row, so the cost table shows the attempt.
+ */
+export async function generateImageOutcome(input: ImageInput, deps: ImageDeps = {}): Promise<ImageOutcome> {
+  let lastModel: string | null = null;
   try {
     const { prompt, altText } = await buildImageBrief(input);
 
-    const res = await fetch('https://api.openai.com/v1/images/generations', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: IMAGE_MODEL, prompt, size: IMAGE_SIZE, n: 1 }),
-      signal: AbortSignal.timeout(180_000),
-    });
+    const result = await generateOpenAiImage(
+      { prompt, workspaceId: input.workspaceId, userId: input.userId ?? null },
+      deps,
+    );
+    lastModel = result.model;
 
-    if (!res.ok) {
-      console.error('[content-image] generation failed', res.status, (await res.text()).slice(0, 300));
-      return null;
+    if (!result.ok) {
+      void recordAiUsage({
+        provider: 'openai',
+        model: result.model ?? 'none',
+        feature: 'content_image_failed',
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        workspaceId: input.workspaceId,
+        userId: input.userId,
+      });
+      return { ok: false, cause: result.cause, model: result.model, message: result.message };
     }
 
-    const data = await res.json();
     void recordAiUsage({
       provider: 'openai',
-      model: resolveResponseModel(data, IMAGE_MODEL),
+      model: resolveResponseModel(result.body, result.model),
       feature: 'content_image',
-      usage: parseOpenAiImageUsage(data),
+      usage: parseOpenAiImageUsage(result.body),
       workspaceId: input.workspaceId,
+      userId: input.userId,
     });
-    const b64 = data?.data?.[0]?.b64_json;
-    if (!b64 || typeof b64 !== 'string') return null;
 
-    const buffer = Buffer.from(b64, 'base64');
+    const buffer = Buffer.from(result.b64, 'base64');
 
     // One image per item: replace rather than accumulate on regeneration.
     await prisma.contentImage.deleteMany({ where: { contentItemId: input.contentItemId } });
@@ -143,9 +154,20 @@ export async function generateImageForContentItem(input: {
       select: { id: true },
     });
 
-    return { id: row.id, prompt, altText, bytes: buffer.byteLength };
+    return { ok: true, model: result.model, image: { id: row.id, prompt, altText, bytes: buffer.byteLength } };
   } catch (err) {
-    console.error('[content-image] error', err instanceof Error ? err.message : err);
-    return null;
+    // Storing the picture failed (DB), not the provider.
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[content-image] error', message);
+    return { ok: false, cause: 'IMAGE_STORE_FAILED', model: lastModel, message: `stored no image: ${message.slice(0, 200)}` };
   }
+}
+
+/**
+ * The image or null. Kept for callers that only need the picture; the cause
+ * is still logged and recorded by generateImageOutcome.
+ */
+export async function generateImageForContentItem(input: ImageInput): Promise<GeneratedImage | null> {
+  const outcome = await generateImageOutcome(input);
+  return outcome.ok ? outcome.image : null;
 }

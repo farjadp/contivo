@@ -219,8 +219,10 @@ export function createPrismaEventStore(): AiProviderEventStore {
             { eventType: 'attempt_failed', errorClass: { in: ['billing', 'auth', 'model_gone'] } },
             { eventType: 'health_changed', errorClass: { in: ['billing', 'auth', 'model_gone', 'recovered'] } },
           ],
-          // A forced (AI_FORCE_FAIL) failure must never come back as a real cool-down.
-          NOT: { message: { startsWith: FORCED_MARKER } },
+          // A forced (AI_FORCE_FAIL) failure must never come back as a real cool-down,
+          // and an image model that is gone (task content_image, lib/ai/image.ts)
+          // says nothing about OpenAI's text models.
+          NOT: [{ message: { startsWith: FORCED_MARKER } }, { task: 'content_image' }],
         },
         orderBy: { createdAt: 'desc' },
         take: 50,

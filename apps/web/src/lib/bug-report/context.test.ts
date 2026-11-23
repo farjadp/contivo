@@ -7,6 +7,7 @@ const { prismaMock } = vi.hoisted(() => ({
     discoveryRun: { findFirst: vi.fn(), findMany: vi.fn() },
     matrixRun: { findFirst: vi.fn(), findMany: vi.fn() },
     socialPublishLog: { findFirst: vi.fn(), findMany: vi.fn() },
+    autopilotRun: { findMany: vi.fn() },
     aiProviderEvent: { findMany: vi.fn() },
     activity_logs: { findMany: vi.fn(), findFirst: vi.fn() },
   },
@@ -39,12 +40,23 @@ beforeEach(() => {
   prismaMock.matrixRun.findMany.mockResolvedValue([]);
   prismaMock.socialPublishLog.findFirst.mockResolvedValue(null);
   prismaMock.socialPublishLog.findMany.mockResolvedValue([]);
+  prismaMock.autopilotRun.findMany.mockResolvedValue([]);
   prismaMock.aiProviderEvent.findMany.mockResolvedValue([]);
   prismaMock.activity_logs.findMany.mockResolvedValue([]);
   prismaMock.activity_logs.findFirst.mockResolvedValue(null);
 });
 
 describe('buildServerContext', () => {
+  it('lists an autopilot run whose drafts lost their picture, with the image cause (B19)', async () => {
+    prismaMock.autopilotRun.findMany.mockResolvedValue([
+      { id: 'run-img', status: 'PARTIAL', startedAt: new Date('2026-11-23T01:45:00Z'), error: 'IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE' },
+    ]);
+    const { context } = await buildServerContext({ userId: USER, client: client({ workspaceId: WS }) });
+    expect(context.failedRuns).toContainEqual(
+      expect.objectContaining({ kind: 'autopilot', id: 'run-img', status: 'PARTIAL', stage: 'image', code: 'PROVIDER_AUTH' }),
+    );
+  });
+
   it('names the real cause of a failed matrix run from its stored code (never the raw error)', async () => {
     const RAW = 'JUDGE_UNAVAILABLE: Judge batch failed: 429 You exceeded your current quota insufficient_quota sk-proj-SECRET';
     prismaMock.matrixRun.findMany.mockResolvedValue([

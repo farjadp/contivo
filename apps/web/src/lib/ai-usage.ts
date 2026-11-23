@@ -119,7 +119,11 @@ export function resolveResponseModel(body: unknown, requested: string): string {
 //   gpt-5-mini  $0.25 in / $2.00 out (shutdown 2026-12-11)
 //   gpt-6.2-sol $2.00 in / $10.00 out (checked 2026-11-22; prompts > 272K: $4 / $15)
 //   Web search tool (Responses API): $10.00 / 1k calls + content tokens at model rates
-//   NOT priced: gpt-image-1 (no longer on the page; only gpt-image-1.5 / -mini are)
+//   gpt-image-2.5-flare / -sunburst, gpt-image-2.6-flare / -sunburst (checked 2026-11-22):
+//     $5.00 text in / $30.00 image out. 1024x1024 medium: 2.5 = 439 output
+//     tokens ≈ $0.013, 2.6 = 1,449 ≈ $0.044 (live, 22 Nov).
+//   NOT priced: gpt-image-1 (shut down 2026-10-23), gpt-image-1.5 / -1-mini /
+//     chatgpt-image-latest / gpt-image-2 (all deprecated; never called)
 //
 // Gemini — https://ai.google.dev/gemini-api/docs/pricing (checked 2026-11-21)
 //   gemini-2.5-pro  $1.25 in / $10.00 out (prompts <= 200k), $2.50 / $15.00 above;
@@ -172,6 +176,13 @@ const PRICES: Record<string, PricePeriod[]> = {
   'gemini-3.1-flash-lite': [{ inputPerM: 0.25, outputPerM: 1.5 }],
   'claude-sonnet-5-5': [{ inputPerM: 2, outputPerM: 10 }],
   'claude-opus-5-5': [{ inputPerM: 4, outputPerM: 20 }],
+  // Images: text input $5 / image output $30 per 1M. We send text prompts only,
+  // so input is text tokens and output is image tokens (usage.input_tokens /
+  // usage.output_tokens on the response).
+  'gpt-image-2.5-flare': [{ inputPerM: 5, outputPerM: 30 }],
+  'gpt-image-2.5-sunburst': [{ inputPerM: 5, outputPerM: 30 }],
+  'gpt-image-2.6-flare': [{ inputPerM: 5, outputPerM: 30 }],
+  'gpt-image-2.6-sunburst': [{ inputPerM: 5, outputPerM: 30 }],
 };
 
 /** Web search: $10.00 per 1,000 calls on OpenAI and on Claude (pricing notes above). */

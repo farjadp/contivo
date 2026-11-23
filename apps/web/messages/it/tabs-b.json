@@ -593,7 +593,8 @@
       "balanceUnavailable": "Non è stato possibile caricare il saldo dei crediti.",
       "runErrors": {
         "OUT_OF_CREDITS": "Interrotto: crediti insufficienti per un post. Un post richiede almeno {cost, number} crediti.",
-        "OUT_OF_CREDITS_MID_RUN": "Interrotto: i crediti sono finiti prima che si potesse programmare qualcosa."
+        "OUT_OF_CREDITS_MID_RUN": "Interrotto: i crediti sono finiti prima che si potesse programmare qualcosa.",
+        "IMAGES_MISSING": "Alcune bozze non hanno un'immagine e verranno pubblicate solo come testo: il servizio immagini non ha funzionato. Siamo già stati avvisati."
       }
     }
   }

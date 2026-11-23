@@ -37,7 +37,7 @@ import {
   logFrameworkMetadata,
 } from '@/lib/framework-metadata-log';
 import { humanizeDraft } from '@/lib/humanize';
-import { generateImageForContentItem } from '@/lib/content-image';
+import { generateImageOutcome } from '@/lib/content-image';
 import { adjustWordCountForLanguage, asContentLanguage } from '@/lib/content-language';
 import { POST_BODY_MAX } from '@/lib/content-slug';
 import { textForChannel } from '@/lib/social-text';
@@ -893,19 +893,21 @@ export async function generateDraftForItem(
       },
     });
 
-    // Artwork is best-effort: a post without an image still publishes.
+    // Artwork is best-effort: a post without an image still publishes, but a
+    // missing image carries its cause so callers can say so (B19).
     let imageInfo: Record<string, unknown> | null = null;
     if (options.withImage) {
-      const image = await generateImageForContentItem({
+      const image = await generateImageOutcome({
         contentItemId: updated.id,
         workspaceId,
+        userId,
         topic: updated.topic,
         body: finalBody,
         brandSummary,
       });
-      imageInfo = image
-        ? { imageId: image.id, bytes: image.bytes, altText: image.altText }
-        : { imageId: null, failed: true };
+      imageInfo = image.ok
+        ? { imageId: image.image.id, bytes: image.image.bytes, altText: image.image.altText, model: image.model }
+        : { imageId: null, failed: true, cause: image.cause, model: image.model, textOnly: true };
     }
 
     await writeActivityLog({

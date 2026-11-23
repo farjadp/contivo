@@ -15,7 +15,19 @@ export const AUTOPILOT_RUN_ERROR = {
   OUT_OF_CREDITS: 'OUT_OF_CREDITS',
   /** The balance ran out during the run, before anything was scheduled. */
   OUT_OF_CREDITS_MID_RUN: 'OUT_OF_CREDITS_MID_RUN',
+  /**
+   * Drafts were written but their picture failed, so they go out text only
+   * (B19). Stored as `IMAGES_MISSING:<ImageCause>`, e.g.
+   * `IMAGES_MISSING:IMAGE_MODEL_UNAVAILABLE`; the run log has one
+   * `image_failed` step per draft.
+   */
+  IMAGES_MISSING: 'IMAGES_MISSING',
 } as const;
+
+/** The stored run error for drafts that lost their picture. */
+export function imagesMissingError(cause: string): string {
+  return `${AUTOPILOT_RUN_ERROR.IMAGES_MISSING}:${cause}`;
+}
 
 export type AutopilotRunErrorCode = (typeof AUTOPILOT_RUN_ERROR)[keyof typeof AUTOPILOT_RUN_ERROR];
 
@@ -36,6 +48,7 @@ export function autopilotRunErrorCode(raw: string | null | undefined): Autopilot
   const text = raw?.trim();
   if (!text) return null;
   if (CODES.has(text)) return text as AutopilotRunErrorCode;
+  if (text.startsWith(`${AUTOPILOT_RUN_ERROR.IMAGES_MISSING}:`)) return AUTOPILOT_RUN_ERROR.IMAGES_MISSING;
   for (const [pattern, code] of LEGACY) {
     if (pattern.test(text)) return code;
   }

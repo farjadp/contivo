@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import en from '../../../messages/en/tabs-b.json';
 import fa from '../../../messages/fa/tabs-b.json';
 import it_ from '../../../messages/it/tabs-b.json';
-import { AUTOPILOT_RUN_ERROR, autopilotRunErrorCode } from './run-errors';
+import { AUTOPILOT_RUN_ERROR, autopilotRunErrorCode, imagesMissingError } from './run-errors';
 
 describe('autopilotRunErrorCode', () => {
   it('passes the stable codes through', () => {
@@ -26,6 +26,11 @@ describe('autopilotRunErrorCode', () => {
 
   it('maps the legacy InsufficientCreditsError message', () => {
     expect(autopilotRunErrorCode('Insufficient credits. You have 4 but this needs 7.')).toBe('OUT_OF_CREDITS_MID_RUN');
+  });
+
+  it('reads IMAGES_MISSING with its image cause as one code (B19)', () => {
+    expect(autopilotRunErrorCode(imagesMissingError('IMAGE_MODEL_UNAVAILABLE'))).toBe('IMAGES_MISSING');
+    expect(imagesMissingError('IMAGE_PROVIDER_OUT_OF_CREDIT')).toBe('IMAGES_MISSING:IMAGE_PROVIDER_OUT_OF_CREDIT');
   });
 
   it('returns null for anything else so the raw text is shown', () => {

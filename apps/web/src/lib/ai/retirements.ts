@@ -21,6 +21,12 @@ export const MODEL_SHUTDOWNS: Readonly<Record<string, { shutdown: string; replac
   'gpt-5-mini': { shutdown: '2026-12-11', replacement: 'gpt-6.1-terra' },
   'gpt-5.4-nano': { shutdown: '2027-04-01', replacement: 'gpt-6-luna' },
   'gpt-4.1': { shutdown: '2027-01-14' },
+  // Images (same page). Listed so a misconfigured OPENAI_IMAGE_MODEL alerts.
+  'gpt-image-1': { shutdown: '2026-10-23', replacement: 'gpt-image-2.5-flare' },
+  'gpt-image-1.5': { shutdown: '2026-12-01', replacement: 'gpt-image-2.6-flare' },
+  'gpt-image-1-mini': { shutdown: '2026-12-01', replacement: 'gpt-image-2.6-flare' },
+  'chatgpt-image-latest': { shutdown: '2026-12-01', replacement: 'gpt-image-2.6-flare' },
+  'gpt-image-2': { shutdown: '2027-02-10', replacement: 'gpt-image-2.6-flare' },
 };
 
 export const RETIREMENT_WARNING_DAYS = 14;

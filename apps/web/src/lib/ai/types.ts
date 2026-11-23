@@ -15,7 +15,8 @@ export const PROVIDER_IDS: readonly ProviderId[] = ['openai', 'anthropic', 'gemi
 /**
  * Every task that goes through the layer. The value is also written to
  * `ai_usage_logs.feature` and `ai_provider_events.task`.
- * Images are out of scope (OpenAI direct).
+ * Images do not go through runAiTask; they have their own model list, causes
+ * and events in ./image.ts (B19).
  */
 export const AI_TASKS = [
   'competitor_web_search',
