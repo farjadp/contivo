@@ -25,7 +25,7 @@ export type MatrixOwned = {
   workspace: Pick<Workspace, 'id' | 'brandSummary' | 'contentLanguage'>;
 };
 
-/** Keys of `messages/*\/errors.json`. Translated by the action, never here. */
+/** Keys of `messages/<locale>/errors.json`. Translated by the action, never here. */
 export type CreateMatrixRunResult =
   | { ok: true; runId: string }
   | { ok: false; errorKey: 'matrixAlreadyRunning' | 'needTwoReviewedMatrices' | 'matrixNeedsBrandSummary' };

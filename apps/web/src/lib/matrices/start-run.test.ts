@@ -18,7 +18,7 @@ vi.mock('@/lib/matrices/pipeline', () => pipelineMock);
 
 import { createMatrixRunRow, dispatchMatrixRun } from './start-run';
 
-const workspace = { id: 'ws-1', contentLanguage: 'FA', brandSummary: { summary: 'We sell things' } };
+const workspace = { id: 'ws-1', contentLanguage: 'FA' as const, brandSummary: { summary: 'We sell things' } };
 const owned = { userId: 'user-1', workspace };
 
 function competitor(id: string) {
