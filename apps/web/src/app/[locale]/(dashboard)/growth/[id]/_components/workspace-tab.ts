@@ -3,7 +3,8 @@
  * so they can be tested (spec first-post B D2, §7, finding E of T1).
  */
 
-import { writeActivityLog } from '@/lib/activity-log';
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import { competitorOrigin } from '@/lib/competitors/selection';
 import type { EvidenceItem } from '@/lib/competitors/types';
@@ -67,11 +68,17 @@ export function toFirstPostCompetitors(rows: CompetitorRow[]): FirstPostCompetit
     }));
 }
 
+/** The one FIRST_DRAFT_SEEN row a workspace can have: its id is the lock. */
+export function firstDraftSeenId(workspaceId: string): string {
+  return `fds_${workspaceId}`;
+}
+
 /**
  * FIRST_DRAFT_SEEN, once per workspace (spec §7): ids and the verdict only.
- * Never throws; the page does not await it. Two renders in the same instant
- * could both write; the funnel query counts workspaces, so a duplicate row
- * does not change the number.
+ * Race-safe: the row id is `fds_<workspaceId>`, so a second write (another
+ * render, another tab) hits P2002 and is read as "already seen", the same
+ * pattern as the run lock in lib/first-post/run-log.ts. Never throws; the
+ * page does not await it.
  */
 export async function recordFirstDraftSeen(
   userId: string,
@@ -79,18 +86,17 @@ export async function recordFirstDraftSeen(
   draft: { contentItemId: string; approved: boolean },
 ): Promise<void> {
   try {
-    const existing = await prisma.activity_logs.findFirst({
-      where: { workspace_id: workspaceId, action: FIRST_DRAFT_SEEN },
-      select: { id: true },
-    });
-    if (existing) return;
-    await writeActivityLog({
-      userId,
-      workspaceId,
-      action: FIRST_DRAFT_SEEN,
-      detail: { contentItemId: draft.contentItemId, approved: draft.approved },
+    await prisma.activity_logs.create({
+      data: {
+        id: firstDraftSeenId(workspaceId),
+        user_id: userId,
+        workspace_id: workspaceId,
+        action: FIRST_DRAFT_SEEN,
+        detail: { contentItemId: draft.contentItemId, approved: draft.approved },
+      },
     });
   } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') return;
     console.error('recordFirstDraftSeen failed:', error);
   }
 }

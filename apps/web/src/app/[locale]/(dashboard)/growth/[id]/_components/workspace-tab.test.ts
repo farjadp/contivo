@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const m = vi.hoisted(() => ({ findFirst: vi.fn(), write: vi.fn() }));
-vi.mock('@/lib/db', () => ({ prisma: { activity_logs: { findFirst: m.findFirst } } }));
-vi.mock('@/lib/activity-log', () => ({ writeActivityLog: m.write }));
+import { Prisma } from '@prisma/client';
+
+const m = vi.hoisted(() => ({ create: vi.fn() }));
+vi.mock('@/lib/db', () => ({ prisma: { activity_logs: { create: m.create } } }));
 
 import { recordFirstDraftSeen, resolveWorkspaceTab, toFirstPostCompetitors } from './workspace-tab';
 
@@ -81,31 +82,44 @@ describe('toFirstPostCompetitors', () => {
 describe('recordFirstDraftSeen', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('writes FIRST_DRAFT_SEEN with ids only when the workspace has none', async () => {
-    m.findFirst.mockResolvedValue(null);
+  const p2002 = () =>
+    new Prisma.PrismaClientKnownRequestError('Unique constraint failed on the fields: (`id`)', {
+      code: 'P2002',
+      clientVersion: 'test',
+    });
+
+  it('inserts FIRST_DRAFT_SEEN under the workspace\'s deterministic id, ids only, no read first', async () => {
+    m.create.mockResolvedValue({});
     await recordFirstDraftSeen('u1', 'ws1', { contentItemId: 'c1', approved: true });
-    expect(m.findFirst).toHaveBeenCalledWith({
-      where: { workspace_id: 'ws1', action: 'FIRST_DRAFT_SEEN' },
-      select: { id: true },
-    });
-    expect(m.write).toHaveBeenCalledWith({
-      userId: 'u1',
-      workspaceId: 'ws1',
-      action: 'FIRST_DRAFT_SEEN',
-      detail: { contentItemId: 'c1', approved: true },
+    expect(m.create).toHaveBeenCalledWith({
+      data: {
+        id: 'fds_ws1',
+        user_id: 'u1',
+        workspace_id: 'ws1',
+        action: 'FIRST_DRAFT_SEEN',
+        detail: { contentItemId: 'c1', approved: true },
+      },
     });
   });
 
-  it('writes nothing the second time', async () => {
-    m.findFirst.mockResolvedValue({ id: 'row' });
-    await recordFirstDraftSeen('u1', 'ws1', { contentItemId: 'c1', approved: false });
-    expect(m.write).not.toHaveBeenCalled();
+  it('two renders at once: the second insert hits P2002 and is "already seen", silently', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    m.create.mockResolvedValueOnce({}).mockRejectedValueOnce(p2002());
+    await Promise.all([
+      recordFirstDraftSeen('u1', 'ws1', { contentItemId: 'c1', approved: true }),
+      recordFirstDraftSeen('u1', 'ws1', { contentItemId: 'c1', approved: true }),
+    ]);
+    expect(m.create).toHaveBeenCalledTimes(2);
+    expect(m.create.mock.calls.map((c) => c[0].data.id)).toEqual(['fds_ws1', 'fds_ws1']);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
 
-  it('never throws', async () => {
-    m.findFirst.mockRejectedValue(new Error('db down'));
+  it('never throws on any other error, and logs it', async () => {
+    m.create.mockRejectedValue(new Error('db down'));
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     await expect(recordFirstDraftSeen('u1', 'ws1', { contentItemId: 'c1', approved: true })).resolves.toBeUndefined();
+    expect(spy).toHaveBeenCalled();
     spy.mockRestore();
   });
 });
