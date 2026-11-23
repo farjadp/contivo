@@ -24,7 +24,16 @@
 export const AI_OPERATION_COST = {
   AUTOPILOT_IDEATION: 2,
   AUTOPILOT_DRAFT_ATTEMPT: 7,
+  /**
+   * One picture a person asked for (Ideation, Write a post, the pipeline
+   * card). Autopilot's picture is inside AUTOPILOT_DRAFT_ATTEMPT. Charged only
+   * when the picture is stored: a failed generation costs nothing.
+   */
+  IMAGE_GENERATION: 3,
 } as const;
+
+/** What one generated picture costs, for the labels next to every image option. */
+export const IMAGE_GENERATION_COST = AI_OPERATION_COST.IMAGE_GENERATION;
 
 export type AiOperation = keyof typeof AI_OPERATION_COST;
 

@@ -6,6 +6,8 @@ import { FilePenLine, Loader2, Save, X } from 'lucide-react';
 import type { ContentItem } from '@prisma/client';
 
 import { createOwnPost } from '@/app/actions/own-post';
+import { channelCarriesImage } from '@/lib/content-image-rules';
+import { IMAGE_GENERATION_COST } from '@/lib/credit-costs';
 import {
   normalizeSlugInput,
   POST_BODY_MAX,
@@ -43,7 +45,8 @@ export function WritePostPanel({
   onClose,
 }: {
   workspaceId: string;
-  onCreated: (item: ContentItem) => void;
+  /** generateImage: the card makes the picture from the saved text and shows it before scheduling. */
+  onCreated: (item: ContentItem, options?: { generateImage?: boolean }) => void;
   onClose: () => void;
 }) {
   const t = useTranslations('tabsA');
@@ -51,6 +54,8 @@ export function WritePostPanel({
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [content, setContent] = useState('');
+  // Optional and off: the person wrote this post, the picture is their call.
+  const [withImage, setWithImage] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<{ field: Field; message: string } | null>(null);
 
@@ -76,7 +81,7 @@ export function WritePostPanel({
         slug: channel === 'blog' && trimmedSlug ? trimmedSlug : undefined,
       });
       if (result.ok) {
-        onCreated(result.item);
+        onCreated(result.item, { generateImage: withImage && channelCarriesImage(channel) });
         onClose();
         return;
       }
@@ -217,6 +222,23 @@ export function WritePostPanel({
           {fieldError('body')}
         </div>
       </div>
+
+      {channelCarriesImage(channel) ? (
+        <div className="mt-4 rounded-xl border border-rule bg-chalk px-3 py-2.5">
+          <label className="flex cursor-pointer items-start gap-2.5 text-sm text-moss">
+            <input
+              type="checkbox"
+              checked={withImage}
+              onChange={(event) => setWithImage(event.target.checked)}
+              className="mt-0.5 h-4 w-4 shrink-0"
+            />
+            <span>
+              <span className="block font-bold">{t('image.writeGenerate', { cost: IMAGE_GENERATION_COST })}</span>
+              <span className="mt-0.5 block text-xs text-moss-muted">{t('image.writeGenerateHint')}</span>
+            </span>
+          </label>
+        </div>
+      ) : null}
 
       {fieldError('form')}
 
