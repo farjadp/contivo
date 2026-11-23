@@ -69,6 +69,9 @@ describe('briefProblem (relevance guard)', () => {
     const fa = ctx({ body: 'پیش از دادن پیشنهاد خرید، در بازدید از خانه این موارد را بررسی کنید.', topic: 'بازدید خانه', style: 'photo' });
     expect(briefProblem({ subject: 'family touring a house', prompt: 'A young family walking through a sunlit living room during an open house, checking the windows.' }, fa)).toBeNull();
   });
+  it('skips the overlap check when the post has no content words to compare', () => {
+    expect(briefProblem({ subject: 'baker', prompt: 'A baker shaping dough on a floured counter, morning light.' }, ctx({ topic: 't', body: 'b' }))).toBeNull();
+  });
   it('lets an explicit abstract style through', () => {
     expect(briefProblem({ subject: 'drafts', prompt: 'Abstract shapes standing for drafts that get details wrong, limited palette.' }, ctx({ style: 'abstract' }))).toBeNull();
   });

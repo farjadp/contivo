@@ -82,7 +82,9 @@ describe('content image prompt', () => {
     vi.stubEnv('OPENAI_API_KEY', 'test');
     const fetchMock = vi.fn(async () => new Response('down', { status: 500 }));
     vi.stubGlobal('fetch', fetchMock);
-    runAiTaskMock.mockResolvedValue(ok({ prompt: 'A single green line rising across a navy field, flat vector', alt: 'A rising line' }));
+    runAiTaskMock.mockResolvedValue(
+      ok({ subject: 'baker shaping dough', setting: 'small bakery', prompt: 'A baker shaping dough on a floured counter in a small bakery, morning light. No text.', alt: 'A baker' }),
+    );
 
     await generateImageForContentItem({ contentItemId: 'i', workspaceId: 'ws-1', topic: 't', body: 'b', brandSummary: {} });
 
@@ -90,7 +92,7 @@ describe('content image prompt', () => {
     expect(runAiTaskMock.mock.calls[0][2]).toEqual({ workspaceId: 'ws-1' });
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://api.openai.com/v1/images/generations');
-    expect(JSON.parse(String(init.body)).prompt).toBe('A single green line rising across a navy field, flat vector');
+    expect(JSON.parse(String(init.body)).prompt).toBe('A baker shaping dough on a floured counter in a small bakery, morning light. No text.');
   });
 });
 

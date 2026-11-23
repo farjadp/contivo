@@ -135,6 +135,7 @@ export function briefProblem(brief: BriefJson | undefined, ctx: BriefContext): s
   const nonLatin = (postText.match(/[؀-ۿ֐-׿]/g) ?? []).length;
   if (latin > nonLatin) {
     const post = contentWords(postText);
+    if (post.size === 0) return null; // nothing to compare against
     const shared = [...contentWords(`${subject} ${String(brief?.setting ?? '')} ${prompt}`)].filter((w) => post.has(w));
     if (shared.length === 0) return 'it shared no subject with the post';
   }
