@@ -61,7 +61,7 @@ Hard cap 32 kB per report, enforced server-side by dropping oldest list items.
 Opt-in attach of text is **not in v1**.
 
 ### 4. Storage
-Table `bug_reports` (additive migration `20261123090000_bug_reports`):
+Table `bug_reports` (additive migration `20261123100000_bug_reports`):
 `id`, `referenceCode` unique, `userId` nullable FK **ON DELETE SET NULL**, `workspaceId` nullable
 FK SET NULL, `message`, `locale`, `route`, `appVersion`, `context` Json, `status`
 (`NEW|SEEN|FIXED|WONTFIX`), `fingerprint`, `createdAt`, `resolvedAt`; indexes `(status, createdAt)`,

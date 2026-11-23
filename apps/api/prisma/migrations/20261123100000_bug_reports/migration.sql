@@ -7,7 +7,7 @@
 --
 -- Rollback (loses every stored bug report):
 --   DROP TABLE "bug_reports";
---   DELETE FROM "_prisma_migrations" WHERE migration_name = '20261123090000_bug_reports';
+--   DELETE FROM "_prisma_migrations" WHERE migration_name = '20261123100000_bug_reports';
 
 -- CreateTable
 CREATE TABLE "bug_reports" (

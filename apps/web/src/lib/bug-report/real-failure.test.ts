@@ -15,7 +15,7 @@ import { loadFixture } from '@/lib/ai/__fixtures__/load';
 
 const { prismaMock } = vi.hoisted(() => ({
   prismaMock: {
-    aiProviderEvent: { create: vi.fn(async (_arg?: unknown) => ({})), findMany: vi.fn(async () => []) },
+    aiProviderEvent: { create: vi.fn(async () => ({})), findMany: vi.fn(async () => []) },
     workspace: { findFirst: vi.fn() },
     contentItem: { findFirst: vi.fn() },
     discoveryRun: { findFirst: vi.fn(), findMany: vi.fn() },
