@@ -2,7 +2,8 @@
 
 
 import { FileText, MoreHorizontal, Calendar, FilePenLine, Loader2, Sparkles, X, Paperclip, Send, Save, PenLine } from 'lucide-react';
-import { updateContentStatus, scheduleContentItem, updateContentAndSchedule } from '@/app/actions/calendar';
+import { updateContentStatus, updateContentAndSchedule } from '@/app/actions/calendar';
+import { schedulePublish } from '@/app/actions/publish-now';
 import { updateOwnPostMeta, updatePublishedPost } from '@/app/actions/own-post';
 import { Link, useRouter } from '@/i18n/navigation';
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
@@ -25,6 +26,8 @@ import { resolvePublishOutcome, type LatestPublishJob } from '@/lib/publish-outc
 import { channelCarriesImage } from '@/lib/content-image-rules';
 import type { ContentImageMeta } from '@/lib/content-image-service';
 import { ContentImageControl } from './ContentImageControl';
+import { ConnectFixButton } from './first-post/PublishPanel';
+import { connectFix } from './first-post/first-post-view-logic';
 
 type SourceFileState = {
   name: string;
@@ -152,6 +155,72 @@ function publishTimezoneDefault(): string {
   } catch {
     return 'America/Toronto';
   }
+}
+
+/**
+ * Why a publish or schedule did not happen (W2). The server refuses without
+ * scheduling and says so as a value; before, every refusal was a thrown error
+ * swallowed into console.error, so the button simply did nothing.
+ */
+type PublishRefusal =
+  | { kind: 'no_connection'; platform?: string; held?: true }
+  | { kind: 'quality_gate_blocked' | 'not_found' | 'failed' };
+
+/** Network names stay Latin in every locale. */
+const CONNECT_PLATFORM_LABELS: Record<string, string> = {
+  linkedin: 'LinkedIn',
+  twitter: 'X',
+  x: 'X',
+  telegram: 'Telegram',
+  threads: 'Threads',
+  instagram: 'Instagram',
+};
+
+function refusalFromResult(res: unknown): PublishRefusal | null {
+  if (!res || typeof res !== 'object') return { kind: 'failed' };
+  const r = res as { ok?: boolean; reason?: string; platform?: string };
+  if (r.ok === true) return null;
+  if (r.reason === 'no_connection') return { kind: 'no_connection', platform: r.platform };
+  if (r.reason === 'quality_gate_blocked' || r.reason === 'not_found') return { kind: r.reason };
+  return { kind: 'failed' };
+}
+
+function PublishRefusalNotice({
+  refusal,
+  channel,
+  workspaceId,
+}: {
+  refusal: PublishRefusal;
+  channel: string;
+  workspaceId: string;
+}) {
+  const tabs = useTranslations('tabsA');
+  const t = useTranslations('tabsA.pipeline');
+  if (refusal.kind !== 'no_connection') {
+    return (
+      <p role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-900">
+        {t(`scheduleRefused.${refusal.kind}`)}
+      </p>
+    );
+  }
+  const fix = connectFix(refusal.platform, channel);
+  const key = (refusal.platform || channel).toLowerCase();
+  const platform = CONNECT_PLATFORM_LABELS[key] ?? CONNECT_PLATFORM_LABELS[channel] ?? channelLabel(tabs, channel);
+  return (
+    <div role="alert" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+      <p className="font-bold">{refusal.held ? t('noConnection.held', { platform }) : t('noConnection.title', { platform })}</p>
+      {refusal.held ? null : <p className="mt-1">{t('noConnection.body')}</p>}
+      <div className="mt-2">
+        <ConnectFixButton
+          fix={fix}
+          workspaceId={workspaceId}
+          label={fix.kind === 'oauth' ? t('noConnection.action', { platform }) : t('noConnection.open')}
+          busyLabel={t('noConnection.action', { platform })}
+          className="inline-flex items-center gap-1 rounded-lg bg-moss px-3 py-1.5 font-semibold text-chalk hover:bg-moss-700 disabled:opacity-60"
+        />
+      </div>
+    </div>
+  );
 }
 
 export function PipelineTab({
@@ -292,6 +361,7 @@ function PipelineItemCard({
   const [editSlug, setEditSlug] = useState('');
   const [editError, setEditError] = useState<{ field: 'title' | 'slug' | 'body' | 'form'; message: string } | null>(null);
   const [isSavingEdits, setIsSavingEdits] = useState(false);
+  const [publishRefusal, setPublishRefusal] = useState<PublishRefusal | null>(null);
   const [showManualSource, setShowManualSource] = useState(true);
   const [manualSourceNotes, setManualSourceNotes] = useState('');
   const [manualSourceFiles, setManualSourceFiles] = useState<SourceFileState[]>([]);
@@ -460,6 +530,12 @@ function PipelineItemCard({
       });
       setCurrentItem(updated);
       setIsPreviewOpen(false);
+      // W2: the text is saved, the schedule is held until a channel is connected.
+      setPublishRefusal(
+        (updated as { held?: unknown }).held === 'no_connection'
+          ? { kind: 'no_connection', platform: currentItem.channel, held: true }
+          : null,
+      );
       if (editScheduleRequested && updated.status === 'SCHEDULED') {
         router.push({ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'calendar' } });
       }
@@ -577,20 +653,26 @@ function PipelineItemCard({
     e.preventDefault();
     if (!publishDate || !publishTime) return;
     setIsScheduling(true);
+    setPublishRefusal(null);
     try {
-      const updated = await scheduleContentItem({
+      const res = await schedulePublish({
         contentId: currentItem.id,
         platform: currentItem.channel,
         publishDate,
         publishTime,
         timezone: publishTimezone,
       });
-      setCurrentItem(updated);
-      // toast.success('Content generated and scheduled'); // This line was not in the original code, adding it as per instruction
+      const refusal = refusalFromResult(res);
       setIsScheduleModalOpen(false);
+      if (refusal) {
+        setPublishRefusal(refusal);
+        return;
+      }
+      if ('item' in res && res.item) setCurrentItem(res.item);
       router.push({ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'calendar' } });
-    } catch (e: any) { // Changed 'e' to 'err: any' as per instruction
+    } catch (e) {
       console.error('Failed to schedule', e);
+      setPublishRefusal({ kind: 'failed' });
     } finally {
       setIsScheduling(false);
     }
@@ -599,20 +681,26 @@ function PipelineItemCard({
   const handleQuickScheduleApply = async () => {
     if (!publishDate || !publishTime) return;
     setIsScheduling(true);
+    setPublishRefusal(null);
     try {
-      const updated = await scheduleContentItem({
+      const res = await schedulePublish({
         contentId: currentItem.id,
         platform: currentItem.channel,
         publishDate,
         publishTime,
         timezone: publishTimezone,
       });
-      setCurrentItem(updated);
-      // toast.success('Generated and scheduled successfully'); // This line was not in the original code, adding it as per instruction
+      const refusal = refusalFromResult(res);
+      if (refusal) {
+        setPublishRefusal(refusal);
+        return;
+      }
+      if ('item' in res && res.item) setCurrentItem(res.item);
       setHasCustomSchedule(false);
       router.push({ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'calendar' } });
-    } catch (e) { // The instruction had a syntax error here: `} else {catch (e) {` which I'm correcting to `} catch (e) {`
+    } catch (e) {
       console.error('Failed to apply quick schedule', e);
+      setPublishRefusal({ kind: 'failed' });
     } finally {
       setIsScheduling(false);
     }
@@ -660,6 +748,10 @@ function PipelineItemCard({
 
        {publishOutcome ? (
          <PublishOutcomeNotice outcome={publishOutcome} workspaceId={workspace.id} />
+       ) : null}
+
+       {publishRefusal ? (
+         <PublishRefusalNotice refusal={publishRefusal} channel={currentItem.channel} workspaceId={workspace.id} />
        ) : null}
 
        {['GENERATED', 'READY', 'SCHEDULED', 'DRAFT'].includes(currentItem.status) ? (
