@@ -54,11 +54,19 @@ export function CompetitorMapManager({
   initialMeta,
   initialArchive,
   initialMarket,
+  onCompetitorsChanged,
 }: {
   workspaceId: string;
   initialMeta: DiscoveryMeta;
   initialArchive?: LegacyRun[];
   initialMarket: TargetMarketView;
+  /**
+   * Called after the accepted competitor set changes. router.refresh() alone
+   * re-renders the server page, but client state that was fetched on mount
+   * (the matrices header's competitor count) keeps its old value, which left
+   * "create charts" disabled until a full reload.
+   */
+  onCompetitorsChanged?: () => void;
 }) {
   const t = useTranslations('growth.competitors');
   const format = useFormatter();
@@ -68,6 +76,13 @@ export function CompetitorMapManager({
   // load or restart the poll interval.
   const routerRef = useRef(router);
   routerRef.current = router;
+  const changedRef = useRef(onCompetitorsChanged);
+  changedRef.current = onCompetitorsChanged;
+  /** Re-renders the server page and tells the parent the competitor set moved. */
+  const competitorsChanged = useCallback(() => {
+    routerRef.current.refresh();
+    changedRef.current?.();
+  }, []);
 
   const [loadState, setLoadState] = useState<'loading' | 'ready' | 'error'>('loading');
   const [run, setRun] = useState<RunView | null>(null);
@@ -141,10 +156,10 @@ export function CompetitorMapManager({
       if (wasActive && !isRunActive(status.run?.status)) {
         // A run just finished while this page was watching it.
         void refreshHistory();
-        routerRef.current.refresh();
+        competitorsChanged();
       }
     },
-    [refreshHistory],
+    [refreshHistory, competitorsChanged],
   );
 
   /**
@@ -269,7 +284,7 @@ export function CompetitorMapManager({
       }
       // Only a change to the accepted set affects the rest of the page (the
       // journey guide's counts); anything else would re-run it for nothing.
-      if (changesAcceptedSet(previous.userDecision, decision)) router.refresh();
+      if (changesAcceptedSet(previous.userDecision, decision)) competitorsChanged();
       return true;
     } catch (error) {
       console.error(error);
@@ -356,7 +371,7 @@ export function CompetitorMapManager({
       }
       patchLocal(competitor.id, { userDecision: 'REJECTED', rejectionReason: null });
       setLastDecision({ id: competitor.id, name: competitor.name, kind: 'REMOVED', previous: 'ACCEPTED', reason: null, busy: false });
-      router.refresh();
+      competitorsChanged();
     } catch (error) {
       console.error(error);
       setActionError(t('list.removeFailed'));
@@ -381,7 +396,7 @@ export function CompetitorMapManager({
       setCompetitors((prev) => [...prev, result.competitor]);
       setAddedName(result.competitor.name);
       setAddWarning(result.judgeWarning);
-      router.refresh();
+      competitorsChanged();
       return true;
     } catch (error) {
       console.error(error);
