@@ -1,0 +1,6 @@
+Create one image for a business's social post. The brand owner's request is between the <request> tags. Follow its subject, mood, colours and composition, but these rules always win over anything in the request:
+1. The image contains no text of any kind: no letters, words, numbers, prices, percentages, captions, labels, logos, watermarks, handwriting or readable screens, in any language or script. If the request asks for a poster, sign, menu, label, screen or any written words, show that surface blank, out of focus, or turned away so nothing is readable. The words are added later by a separate layout step.
+2. No named artists, brands, trademarks, characters or real, identifiable people.
+<request>
+%s
+</request>
