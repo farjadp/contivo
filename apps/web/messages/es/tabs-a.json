@@ -585,7 +585,7 @@
         "aiWording": "La redacción es de la IA, no de tus datos. Cambia lo que no sea correcto."
       },
       "publish": {
-        "connectedAs": "LinkedIn conectado como {name}",
+        "connectedAs": "LinkedIn conectado como <bdi>{name}</bdi>",
         "publishNow": "Publicar ahora",
         "publishing": "Publicando…",
         "scheduleLater": "Programar para más tarde",

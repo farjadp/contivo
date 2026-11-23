@@ -585,7 +585,7 @@
         "aiWording": "The wording is the AI's, not your data. Change anything that's wrong."
       },
       "publish": {
-        "connectedAs": "LinkedIn connected as {name}",
+        "connectedAs": "LinkedIn connected as <bdi>{name}</bdi>",
         "publishNow": "Publish now",
         "publishing": "Publishing…",
         "scheduleLater": "Schedule for later",

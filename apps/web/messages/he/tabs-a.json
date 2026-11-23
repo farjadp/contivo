@@ -585,7 +585,7 @@
         "aiWording": "הניסוח הוא של ה־AI, לא מהנתונים שלכם. שנו כל מה שלא נכון."
       },
       "publish": {
-        "connectedAs": "LinkedIn מחובר בתור {name}",
+        "connectedAs": "LinkedIn מחובר בתור <bdi>{name}</bdi>",
         "publishNow": "פרסום עכשיו",
         "publishing": "מפרסמים…",
         "scheduleLater": "תזמון למועד אחר",
