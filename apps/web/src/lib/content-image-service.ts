@@ -67,7 +67,9 @@ export function readGeneratorResult(
   }
   const named = [r?.cause, r?.code].find((v): v is string => typeof v === 'string' && v.length > 0) ?? null;
   const cause = named && (CAUSE_CODES as readonly string[]).includes(named) ? (named as CauseCode) : 'PROVIDER_UNAVAILABLE';
-  return { ok: false, cause, failureCode: named };
+  // The generator's own code (IMAGE_MODEL_UNAVAILABLE…) is the specific one: keep it over the shared cause.
+  const failureCode = typeof r?.code === 'string' && r.code ? r.code : named;
+  return { ok: false, cause, failureCode };
 }
 
 async function findItem(actor: ImageActor, itemId: string) {
