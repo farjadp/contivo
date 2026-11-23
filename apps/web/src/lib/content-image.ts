@@ -16,6 +16,17 @@ import { parseOpenAiImageUsage, recordAiUsage, resolveResponseModel } from '@/li
 import { prisma } from '@/lib/db';
 import { runAiTask } from '@/lib/ai';
 import { generateOpenAiImage, IMAGE_CAUSE_CODE, type ImageCause, type ImageDeps } from '@/lib/ai/image';
+import {
+  briefProblem,
+  buildBriefPrompt,
+  compositionFor,
+  fallbackBrief,
+  readBrand,
+  styleForIndustry,
+  type BriefContext,
+  type BriefJson,
+  type ImageStyle,
+} from '@/lib/content-image-brief';
 import type { CauseCode } from '@/lib/bug-report/types';
 
 export type { ImageCause } from '@/lib/ai/image';
@@ -28,60 +39,67 @@ export type GeneratedImage = {
 };
 
 /**
- * Turns a post into an art-direction brief. Deliberately steers away from the
- * two failure modes of AI social imagery: text baked into the picture, and
- * generic robot/glowing-brain clip art.
+ * Turns a post into an art-direction brief that shows something concrete from
+ * the post (content-image-brief.ts). A brief that reads as generic or
+ * abstract is rewritten once; if it still fails, or the model is down, the
+ * fallback is built from the post's own subject.
  */
-async function buildImageBrief(input: {
+export async function buildImageBrief(input: {
   topic: string;
   body: string;
   brandSummary: unknown;
   workspaceId?: string;
-}): Promise<{ prompt: string; altText: string }> {
-  const brand = input.brandSummary as any;
-  const fallbackPrompt =
-    'Minimal flat vector illustration, deep navy background, a single bright green ascending line with three node points, generous negative space, editorial business style, no text, no letters, no logos, no people';
-
-  const result = await runAiTask(
-    'image_prompt',
-    {
-      system: 'You are an art director for editorial illustration. Return only valid JSON.',
-      output: { kind: 'json_object' },
-      timeoutMs: 60_000,
-      prompt: `Art-direct one image for this social post.
-
-Industry: ${brand?.industry ?? 'business services'}
-Post topic: ${input.topic}
-Post: """${String(input.body).slice(0, 1200)}"""
-
-Produce an image prompt for a flat, editorial, abstract illustration that represents the post's core idea as a visual metaphor.
-
-Hard rules for the prompt:
-- Absolutely no text, letters, numbers, words or logos in the image.
-- No stock-AI cliches: no robots, no glowing brains, no humanoid androids, no circuit-board overlays, no handshakes.
-- Abstract or diagrammatic, not literal people at desks.
-- Named palette, high contrast, lots of negative space, single focal idea.
-- One sentence, under 60 words.
-
-Also write alt text: one factual sentence describing what the image shows, for a screen reader.
-
-Return JSON only: {"prompt": "...", "alt": "..."}`,
-    },
-    { workspaceId: input.workspaceId },
-  );
-  if (!result.ok) {
-    // The image is decoration: a post without a tailored brief still gets the
-    // neutral house illustration below, never invented post content.
-    console.error(`[content-image] image prompt AI ${result.kind} (first error: ${result.firstErrorClass}); using the neutral brief`);
-  }
-  const brief = (result.ok ? result.json : undefined) as { prompt?: unknown; alt?: unknown } | undefined;
-
-  const prompt = String(brief?.prompt || '').trim();
-  const alt = String(brief?.alt || '').trim();
-  return {
-    prompt: prompt && prompt.length > 20 ? prompt : fallbackPrompt,
-    altText: alt || `Abstract illustration representing ${input.topic}`,
+  style?: ImageStyle;
+  /** Seed for the framing; the content item id in production. */
+  seed?: string;
+}): Promise<{ prompt: string; altText: string; style: ImageStyle; source: 'model' | 'model_retry' | 'fallback' }> {
+  const { industry, audience } = readBrand(input.brandSummary);
+  const ctx: BriefContext = {
+    topic: String(input.topic ?? ''),
+    body: String(input.body ?? ''),
+    industry,
+    audience,
+    style: input.style ?? styleForIndustry(industry),
+    composition: compositionFor(input.seed ?? String(input.topic ?? '')),
   };
+
+  const ask = async (feedback?: string): Promise<BriefJson | undefined> => {
+    const result = await runAiTask(
+      'image_prompt',
+      {
+        system: 'You are a photo editor and art director for a business publication. Return only valid JSON.',
+        output: { kind: 'json_object' },
+        timeoutMs: 60_000,
+        prompt: buildBriefPrompt(ctx, feedback),
+      },
+      { workspaceId: input.workspaceId },
+    );
+    if (!result.ok) {
+      console.error(`[content-image] image prompt AI ${result.kind} (first error: ${result.firstErrorClass}); using the post-based fallback`);
+      return undefined;
+    }
+    return result.json as BriefJson | undefined;
+  };
+
+  const first = await ask();
+  if (first === undefined) return { ...fallbackBrief(ctx), style: ctx.style, source: 'fallback' };
+  const problem = briefProblem(first, ctx);
+  if (!problem) return { ...toBrief(first, ctx), style: ctx.style, source: 'model' };
+
+  const second = await ask(problem);
+  if (second !== undefined && !briefProblem(second, ctx)) {
+    return { ...toBrief(second, ctx), style: ctx.style, source: 'model_retry' };
+  }
+  console.error(`[content-image] image brief still generic after one rewrite (${problem}); using the post-based fallback`);
+  return { ...fallbackBrief(ctx, second ?? first), style: ctx.style, source: 'fallback' };
+}
+
+function toBrief(brief: BriefJson, ctx: BriefContext): { prompt: string; altText: string } {
+  const prompt = String(brief.prompt ?? '').trim();
+  const alt = String(brief.alt ?? '').trim();
+  // The no-text rule is restated on every prompt: the model's own brief may drop it.
+  const guarded = /no text/i.test(prompt) ? prompt : `${prompt} No text, letters, numbers or logos anywhere.`;
+  return { prompt: guarded, altText: alt || fallbackBrief(ctx, brief).altText };
 }
 
 export type ImageInput = {
@@ -107,7 +125,7 @@ export type ImageOutcome =
 export async function generateImageOutcome(input: ImageInput, deps: ImageDeps = {}): Promise<ImageOutcome> {
   let lastModel: string | null = null;
   try {
-    const { prompt, altText } = await buildImageBrief(input);
+    const { prompt, altText } = await buildImageBrief({ ...input, seed: input.contentItemId });
 
     const result = await generateOpenAiImage(
       { prompt, workspaceId: input.workspaceId, userId: input.userId ?? null },

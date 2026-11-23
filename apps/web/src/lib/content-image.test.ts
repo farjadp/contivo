@@ -19,7 +19,10 @@ const input = { contentItemId: 'item-1', workspaceId: 'ws-1', userId: 'u-1', top
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
-  runAiTask.mockResolvedValue({ ok: true, json: { prompt: 'A flat navy illustration with one green line rising', alt: 'A green line' } });
+  runAiTask.mockResolvedValue({
+    ok: true,
+    json: { subject: 'founder sorting plans', setting: 'small office', prompt: 'A founder at a desk sorting printed plans for the week, natural window light.', alt: 'A green line' },
+  });
   prismaMock.contentImage.create.mockResolvedValue({ id: 'img-1' });
 });
 
@@ -88,5 +91,34 @@ describe('generateImageOutcome', () => {
     expect(read).toMatchObject({ ok: false, cause: 'PROVIDER_AUTH' });
     // PR #67 makes failureCode prefer `code`; either order must land cleanly.
     expect(['IMAGE_MODEL_UNAVAILABLE', 'PROVIDER_AUTH']).toContain((read as { failureCode: string | null }).failureCode);
+  });
+});
+
+describe('buildImageBrief', () => {
+  it('rewrites a generic brief once, with the reason, and keeps the rewrite', async () => {
+    const { buildImageBrief } = await import('./content-image');
+    runAiTask
+      .mockResolvedValueOnce({ ok: true, json: { subject: 'geometric funnel', prompt: 'Bauhaus geometric funnel of circles and triangles, navy.', alt: 'x' } })
+      .mockResolvedValueOnce({ ok: true, json: { subject: 'founder sorting plans', setting: 'office', prompt: 'A founder sorting printed plans at a desk, natural light.', alt: 'A founder' } });
+    const b = await buildImageBrief({ topic: 'Plans', body: 'Body', brandSummary: { industry: 'B2B SaaS' } });
+    expect(b).toMatchObject({ source: 'model_retry', style: 'illustration', altText: 'A founder' });
+    expect(String(runAiTask.mock.calls[1][1].prompt)).toMatch(/previous brief was rejected: it was abstract/);
+    expect(b.prompt).toMatch(/No text/);
+  });
+
+  it('falls back to the post subject after a second generic brief, or when the model is down', async () => {
+    const { buildImageBrief } = await import('./content-image');
+    runAiTask.mockResolvedValue({ ok: true, json: { subject: 'shapes', prompt: 'Abstract shapes and gradients on navy, minimal.', alt: 'x' } });
+    const b = await buildImageBrief({ topic: 'Getting your flu shot', body: 'Book a walk-in slot.', brandSummary: { industry: 'Medical clinic' } });
+    expect(b).toMatchObject({ source: 'fallback', style: 'photo' });
+    expect(b.prompt).toMatch(/Getting your flu shot/);
+    expect(runAiTask).toHaveBeenCalledTimes(2);
+
+    runAiTask.mockReset();
+    runAiTask.mockResolvedValue({ ok: false, kind: 'all_unavailable', firstErrorClass: 'server' });
+    const down = await buildImageBrief({ topic: 'Getting your flu shot', body: 'x', brandSummary: {} });
+    expect(down).toMatchObject({ source: 'fallback' });
+    expect(down.prompt).not.toMatch(/navy/);
+    expect(runAiTask).toHaveBeenCalledTimes(1);
   });
 });
