@@ -99,6 +99,19 @@ describe('classifyCause: other', () => {
 });
 
 describe('classifyCauseFromStored', () => {
+  it('reads the cooldown reason; ignores not_configured next to a real cause', () => {
+    const wrap = (a: string) => `AI_UNAVAILABLE: Matrix AI call x failed: all_unavailable (${a})`;
+    expect(classifyCauseFromStored(wrap('openai:cooling_down:billing, anthropic:not_configured'))).toBe('PROVIDER_OUT_OF_CREDIT');
+    expect(classifyCauseFromStored(wrap('anthropic:not_configured, openai:billing:429'))).toBe('PROVIDER_OUT_OF_CREDIT');
+    expect(classifyCauseFromStored(wrap('openai:timeout, gemini:auth:401'))).toBe('PROVIDER_AUTH');
+    expect(classifyCauseFromStored(wrap('openai:timeout, anthropic:not_configured'))).toBe('PROVIDER_TIMEOUT');
+    expect(classifyCauseFromStored(wrap('openai:rate_limit:429, anthropic:not_configured'))).toBe('PROVIDER_RATE_LIMITED');
+  });
+  it('old rows without a reason still parse', () => {
+    expect(classifyCauseFromStored('AI_UNAVAILABLE: x: all_unavailable (anthropic:not_configured)')).toBe('PROVIDER_AUTH');
+    expect(classifyCauseFromStored('AI_UNAVAILABLE: x: all_unavailable (openai:billing:429, anthropic:not_configured)')).toBe('PROVIDER_OUT_OF_CREDIT');
+    expect(classifyCauseFromStored('AI_UNAVAILABLE: x: all_unavailable (openai:cooling_down, anthropic:not_configured)')).toBe('PROVIDER_AUTH');
+  });
   it('null for empty and unrecognised', () => {
     expect(classifyCauseFromStored(null)).toBeNull();
     expect(classifyCauseFromStored(undefined)).toBeNull();

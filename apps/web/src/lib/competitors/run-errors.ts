@@ -68,7 +68,7 @@ export type AiFailureLike = {
   kind: string;
   firstErrorClass: string;
   allRateLimited: boolean;
-  attempts: ReadonlyArray<{ provider: string; errorClass: string; status?: number }>;
+  attempts: ReadonlyArray<{ provider: string; errorClass: string; status?: number; reason?: string }>;
 };
 
 /**
@@ -83,13 +83,14 @@ export function isAiUnavailableFailure(failure: AiFailureLike): boolean {
 
 /**
  * One line describing a failed chain, for `DiscoveryRun.error`/sourceStats:
- * provider:class[:status] per attempt, never the raw upstream body.
+ * provider:class[:reason][:status] per attempt, never the raw upstream body.
  * Prefixed with AI_UNAVAILABLE when `isAiUnavailableFailure`; an
  * all-rate-limited chain says "rate limited" so it classifies as rateLimited.
  */
 export function describeAiFailure(label: string, failure: AiFailureLike): string {
   const attempts = failure.attempts
-    .map((a) => [a.provider, a.errorClass, a.status].filter((part) => part !== undefined && part !== '').join(':'))
+    // A cooling_down attempt keeps why ("openai:cooling_down:billing"), so the cause survives the cooldown.
+    .map((a) => [a.provider, a.errorClass, a.errorClass === 'cooling_down' ? a.reason : undefined, a.status].filter((part) => part !== undefined && part !== '').join(':'))
     .join(', ');
   const detail = `${label}: ${failure.kind} (${attempts || failure.firstErrorClass})`;
   if (isAiUnavailableFailure(failure)) return withRunErrorCode(RUN_ERROR.AI_UNAVAILABLE, detail);

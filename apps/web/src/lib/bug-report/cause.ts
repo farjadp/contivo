@@ -56,6 +56,29 @@ function classifyText(text: string): CauseCode | null {
 // Stored strings
 // ---------------------------------------------------------------------------
 
+const ATTEMPT_RE = /\b(?:openai|anthropic|gemini)[\w-]*:(billing|auth|model_gone|not_configured|cooling_down|rate_limit|overloaded|server|network|timeout)(?::(billing|auth|model_gone|rate_limit|overloaded|server|network|timeout))?/gi;
+
+/** Higher wins: billing > auth > rate limit > timeout > unavailable > not configured. */
+const CAUSE_RANK: CauseCode[] = ['PROVIDER_OUT_OF_CREDIT', 'PROVIDER_AUTH', 'PROVIDER_RATE_LIMITED', 'PROVIDER_TIMEOUT', 'PROVIDER_UNAVAILABLE'];
+
+function causesFromAttempts(text: string): Array<{ cause: CauseCode; configured: boolean }> {
+  const out: Array<{ cause: CauseCode; configured: boolean }> = [];
+  for (const m of text.matchAll(ATTEMPT_RE)) {
+    const klass = m[1].toLowerCase();
+    // An old row "openai:cooling_down" has no reason: nothing to say about it.
+    const effective = klass === 'cooling_down' ? (m[2] ? m[2].toLowerCase() : null) : klass;
+    const cause = effective ? AI_CLASS[effective] : null;
+    if (cause) out.push({ cause, configured: effective !== 'not_configured' });
+  }
+  return out;
+}
+
+function strongest(found: Array<{ cause: CauseCode; configured: boolean }>): CauseCode {
+  const real = found.filter((f) => f.configured);
+  if (real.length === 0) return found[0].cause;
+  return [...real].sort((x, y) => CAUSE_RANK.indexOf(x.cause) - CAUSE_RANK.indexOf(y.cause))[0].cause;
+}
+
 /**
  * The cause for a string stored in discovery_runs.error / matrix_runs.error /
  * ai_provider_events.errorClass. Null when it carries no recognisable cause
@@ -67,9 +90,10 @@ export function classifyCauseFromStored(code: string | null | undefined): CauseC
 
   if (Object.prototype.hasOwnProperty.call(AI_CLASS, text)) return AI_CLASS[text];
 
-  // describeAiFailure writes "provider:class[:status]" per attempt; the first real class is the cause.
-  const attemptClass = text.match(/\b(?:openai|anthropic|gemini)(?:[\w-]*):(billing|auth|model_gone|not_configured)\b/i);
-  if (attemptClass) return AI_CLASS[attemptClass[1].toLowerCase()];
+  // describeAiFailure writes "provider:class[:reason][:status]" per attempt. Take the highest-signal attempt:
+  // a not_configured neighbour must not outvote a real billing/auth/rate-limit failure.
+  const attempts = causesFromAttempts(text);
+  if (attempts.length) return strongest(attempts);
 
   const kind = classifyRunError(text);
   const direct = classifyText(text);

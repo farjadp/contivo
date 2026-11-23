@@ -1,4 +1,5 @@
 import { runAiTask, type AiTask } from '@/lib/ai';
+import { getAiContext } from '@/lib/ai-usage';
 import { tokensFromUsage } from '@/lib/competitors/queries';
 import { describeAiFailure } from '@/lib/competitors/run-errors';
 
@@ -45,13 +46,18 @@ export async function callStructured<T>(args: {
   let result: Awaited<ReturnType<typeof runAiTask>>;
   try {
     // Usage is recorded by the layer under `task` and the provider that answered.
-    result = await runAiTask(task, {
-      system: args.system,
-      prompt: args.user,
-      output: { kind: 'json_schema', name: args.name, schema: args.schema },
-      temperature: 0.2,
-      timeoutMs: MATRIX_REQUEST_TIMEOUT_MS,
-    });
+    result = await runAiTask(
+      task,
+      {
+        system: args.system,
+        prompt: args.user,
+        output: { kind: 'json_schema', name: args.name, schema: args.schema },
+        temperature: 0.2,
+        timeoutMs: MATRIX_REQUEST_TIMEOUT_MS,
+      },
+      // The run's owner, set by the matrix pipeline; without it ai_provider_events rows carry no workspace.
+      getAiContext(),
+    );
   } catch (error) {
     throw new MatrixAiError(`Matrix AI request threw: ${(error as Error).message}`);
   }

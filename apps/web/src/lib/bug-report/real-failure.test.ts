@@ -139,7 +139,7 @@ describe('a real out-of-credit failure becomes a report that names the cause', (
   // GAP 1 (real, found by running it): provider health puts OpenAI in a 15-minute cooldown after a billing
   // failure, and every run in that window stores "openai:cooling_down" with the reason dropped by
   // describeAiFailure. cause.ts then reads the neighbouring "anthropic:not_configured" as PROVIDER_AUTH.
-  it.fails('a run that fails while the provider is cooling down from a billing error is still out-of-credit', async () => {
+  it('a run that fails while the provider is cooling down from a billing error is still out-of-credit', async () => {
     await storedMatrixError(); // opens the cooldown
     const second = await storedMatrixError();
     expect(second).toContain('cooling_down');
@@ -149,7 +149,7 @@ describe('a real out-of-credit failure becomes a report that names the cause', (
 
   // GAP 2 (real): matrices/openai.ts calls runAiTask without a context, so its ai_provider_events rows carry no
   // workspaceId and the report's aiProviderEvents (filtered by workspace) is empty for every matrix failure.
-  it.fails('the provider event written for a matrix failure carries the run workspace', async () => {
+  it('the provider event written for a matrix failure carries the run workspace', async () => {
     const { runWithAiContext } = await import('@/lib/ai-usage');
     await runWithAiContext({ userId: USER, workspaceId: WS }, () => storedMatrixError());
     const rows = prismaMock.aiProviderEvent.create.mock.calls.map((c) => (c as unknown as [{ data: { workspaceId: string | null } }])[0].data);
