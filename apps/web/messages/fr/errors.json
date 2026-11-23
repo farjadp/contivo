@@ -135,6 +135,12 @@
     },
     "creditRequestFailed": "Votre demande n’a pas pu être envoyée. Veuillez réessayer.",
     "bugReportRateLimited": "Vous avez envoyé plusieurs signalements au cours de la dernière heure. Réessayez un peu plus tard.",
-    "bugReportFailed": "Nous n'avons pas pu enregistrer votre signalement. Réessayez."
+    "bugReportFailed": "Nous n'avons pas pu enregistrer votre signalement. Réessayez.",
+    "firstPostAlreadyRunning": "Nous rédigeons déjà votre premier post. Il apparaîtra ici dès qu'il sera prêt.",
+    "firstPostDispatchFailed": "Impossible de démarrer. Réessayez.",
+    "firstPostOtherAngleLimit": "Vous avez utilisé tous les autres angles pour cet espace de travail. Modifiez ce brouillon ou rédigez votre propre post.",
+    "firstPostRetryLimit": "Cette étape a échoué deux fois. Rédigez votre propre post ou signalez le problème.",
+    "firstPostDraftExists": "Votre premier post est déjà rédigé. Ouvrez-le pour le lire ou le modifier.",
+    "firstPostNoDraft": "Il n'y a pas encore de brouillon pour le premier post."
   }
 }

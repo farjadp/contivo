@@ -135,6 +135,12 @@
     },
     "creditRequestFailed": "Your request could not be sent. Please try again.",
     "bugReportRateLimited": "You have sent several reports in the last hour. Please try again a little later.",
-    "bugReportFailed": "We could not save your report. Please try again."
+    "bugReportFailed": "We could not save your report. Please try again.",
+    "firstPostAlreadyRunning": "Your first post is already being written. It appears here when it's ready.",
+    "firstPostDispatchFailed": "We couldn't start. Try again.",
+    "firstPostOtherAngleLimit": "You've used every other angle for this workspace. Edit this draft or write your own post.",
+    "firstPostRetryLimit": "This step didn't finish twice. Write your own post instead, or report the problem.",
+    "firstPostDraftExists": "Your first post is already written. Open it to read or edit it.",
+    "firstPostNoDraft": "There's no first-post draft yet."
   }
 }

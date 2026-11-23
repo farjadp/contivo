@@ -135,6 +135,12 @@
     },
     "creditRequestFailed": "请求未能发送，请重试。",
     "bugReportRateLimited": "你在过去一小时内已提交多份反馈，请稍后再试。",
-    "bugReportFailed": "我们没能保存你的反馈，请重试。"
+    "bugReportFailed": "我们没能保存你的反馈，请重试。",
+    "firstPostAlreadyRunning": "你的第一篇帖子正在撰写中，完成后会显示在这里。",
+    "firstPostDispatchFailed": "无法开始，请重试。",
+    "firstPostOtherAngleLimit": "这个工作区的其他角度已经用完了。你可以编辑这份草稿，或自己写一篇。",
+    "firstPostRetryLimit": "这一步已经两次没有完成。你可以自己写一篇，或者报告这个问题。",
+    "firstPostDraftExists": "你的第一篇帖子已经写好了，打开它即可阅读或编辑。",
+    "firstPostNoDraft": "还没有第一篇帖子的草稿。"
   }
 }
