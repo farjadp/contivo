@@ -84,10 +84,9 @@ describe('generateImageOutcome', () => {
   it("content-image-service's reader records the retired model as PROVIDER_AUTH with the image code (PR #65 contract)", async () => {
     const { readGeneratorResult } = await import('./content-image-service');
     generateOpenAiImage.mockResolvedValue({ ok: false, cause: 'IMAGE_MODEL_UNAVAILABLE', model: 'x', attempts: [], message: 'gone' });
-    expect(readGeneratorResult(await generateImageForContentItem(input))).toEqual({
-      ok: false,
-      cause: 'PROVIDER_AUTH',
-      failureCode: 'PROVIDER_AUTH',
-    });
+    const read = readGeneratorResult(await generateImageForContentItem(input));
+    expect(read).toMatchObject({ ok: false, cause: 'PROVIDER_AUTH' });
+    // PR #67 makes failureCode prefer `code`; either order must land cleanly.
+    expect(['IMAGE_MODEL_UNAVAILABLE', 'PROVIDER_AUTH']).toContain((read as { failureCode: string | null }).failureCode);
   });
 });
