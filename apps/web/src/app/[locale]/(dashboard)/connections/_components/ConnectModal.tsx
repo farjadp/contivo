@@ -119,6 +119,9 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
   // Null means "we could not ask" — the API being down is not the same as a
   // platform being unconfigured, so the UI stays neutral rather than accusing.
   const [config, setConfig] = useState<PlatformConfig | null>(null);
+  // Until the API answers, Telegram's place (live or coming soon) is unknown;
+  // showing it in one list and moving it to the other reads as a glitch.
+  const [configLoaded, setConfigLoaded] = useState(false);
 
   // Networks this workspace already asked to hear about, and the one being sent.
   const [notified, setNotified] = useState<Set<ComingSoonNetwork>>(new Set());
@@ -126,7 +129,9 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
   const [notifyError, setNotifyError] = useState<ComingSoonNetwork | null>(null);
 
   useEffect(() => {
-    void getConfiguredPlatforms().then(setConfig);
+    void getConfiguredPlatforms()
+      .then(setConfig)
+      .finally(() => setConfigLoaded(true));
   }, []);
 
   useEffect(() => {
@@ -140,7 +145,8 @@ export function ConnectModal({ onClose, workspaceId, initialPlatform }: ConnectM
   // Telegram without a bot token cannot be connected here: list it as coming
   // soon, where its demand is counted, instead of a dead live tile.
   const telegramSoon = isUnavailable('TELEGRAM') && initialPlatform !== 'TELEGRAM';
-  const livePlatforms = PLATFORMS.filter((p) => !(p.id === 'TELEGRAM' && telegramSoon));
+  const telegramPending = !configLoaded && initialPlatform !== 'TELEGRAM';
+  const livePlatforms = PLATFORMS.filter((p) => !(p.id === 'TELEGRAM' && (telegramSoon || telegramPending)));
   const soonNetworks = COMING_SOON_NETWORKS.filter((n) => n !== 'telegram' || telegramSoon);
 
   const notify = async (network: ComingSoonNetwork) => {
