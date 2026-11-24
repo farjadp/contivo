@@ -215,6 +215,24 @@ describe('editor save never schedules by itself', () => {
     expect(activityLogMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_EDITED' }));
   });
 
+  it('a text edit of a gated draft with no schedule asked logs no held flag (B7)', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status: 'GENERATED', channel: 'linkedin', content: 'Old', qualityVerdict: { approved: true },
+    });
+    await updateContentAndSchedule(payload({ content: 'New', publishDate: '', publishTime: '' }));
+    const detail = activityLogMock.mock.calls[0][0].detail;
+    expect(activityLogMock.mock.calls[0][0].action).toBe('CONTENT_EDITED');
+    expect(detail.held).toBeUndefined();
+  });
+
+  it('a text edit that pulls a gated SCHEDULED item back still says held', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status: 'SCHEDULED', channel: 'linkedin', content: 'Old', qualityVerdict: { approved: true },
+    });
+    await updateContentAndSchedule(payload({ content: 'New', publishDate: '', publishTime: '' }));
+    expect(activityLogMock.mock.calls[0][0].detail.held).toBe(true);
+  });
+
   it('logs CONTENT_EDITED_AND_SCHEDULED only when a schedule was set', async () => {
     item('READY');
     await updateContentAndSchedule(payload({ content: 'Fixed typo' }));

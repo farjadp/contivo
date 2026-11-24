@@ -206,7 +206,9 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
         platform: payload.platform,
         scheduledAtUtc: scheduled ? scheduledAtUtc?.toISOString() : undefined,
         timezone: scheduled ? payload.timezone : undefined,
-        held: hold || undefined,
+        // Held = a schedule was asked for, or one was taken away. A plain text
+        // edit of a GENERATED draft resets its verdict but holds nothing (B7).
+        held: hold && (wantsSchedule || wasForward) ? true : undefined,
         heldReason,
       },
     });
