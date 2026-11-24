@@ -258,6 +258,37 @@ describe('W2: no schedule without a connection', () => {
     expect(activityLogMock).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_SCHEDULED' }));
   });
 
+  it('updateContentStatus SCHEDULED without a connection is refused and writes nothing', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    const err = await updateContentStatus('item-1', 'SCHEDULED').catch((e: unknown) => e);
+    expect((err as { code?: string }).code).toBe('no_connection');
+    expect(targetMock).toHaveBeenCalledWith('ws-1', 'linkedin');
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+  });
+
+  it('updateContentStatus READY or back to DRAFT never asks for a connection', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    await updateContentStatus('item-1', 'READY');
+    await updateContentStatus('item-1', 'DRAFT');
+    expect(targetMock).not.toHaveBeenCalled();
+  });
+
+  it('a blocked item without a connection is refused for the connection first, so "Publish anyway" stamps nothing', async () => {
+    item({ qualityVerdict: { approved: false, rejectedBy: 'low_score', reasons: [], judgeModel: 'm', source: 'pipeline' } });
+    targetMock.mockResolvedValue(missing);
+    for (const run of [
+      () => scheduleContentItem({ ...schedule, override: true }),
+      () => updateContentStatus('item-1', 'SCHEDULED', { override: true }),
+    ]) {
+      const err = await run().catch((e: unknown) => e);
+      expect((err as { code?: string }).code).toBe('no_connection');
+    }
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'QUALITY_GATE_OVERRIDDEN' }));
+  });
+
   it('save & schedule without a connection saves the text, holds the schedule, and says why', async () => {
     item({ content: 'Old body' });
     targetMock.mockResolvedValue(missing);

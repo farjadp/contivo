@@ -61,16 +61,18 @@ export async function scheduleContentItem(payload: SchedulePayload) {
   if (!scheduledAtUtc) throw new Error('Could not read that publish date and time.');
 
   const item = await loadOwnedItem(payload.contentId, session.userId);
-  const overridden = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
 
   /*
     W2: nothing is scheduled that nothing can publish. Still a throw here, for
     the existing callers; the message is the code because Next redacts thrown
     messages in production. New callers use schedulePublish (actions/publish-now.ts),
-    which returns the refusal instead.
+    which returns the refusal instead. Checked before the gate, like publishNow,
+    so a "Publish anyway" that cannot publish stamps and audits nothing.
   */
   const target = await assertPublishTarget(item.workspaceId, item.channel);
   if (!target.ok) throw new PublishTargetMissingError(target.platform);
+
+  const overridden = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
 
   const updatedContent = await prisma.contentItem.update({
     where: {
@@ -226,6 +228,11 @@ export async function updateContentStatus(contentId: string, status: string, opt
   let overridden: StoredVerdict | null = null;
   if (GATED_STATUSES.has(status)) {
     const item = await loadOwnedItem(contentId, session.userId);
+    // W2: SCHEDULED is a promise to publish; refuse it when nothing can (connection first, as above).
+    if (status === 'SCHEDULED') {
+      const target = await assertPublishTarget(item.workspaceId, item.channel);
+      if (!target.ok) throw new PublishTargetMissingError(target.platform);
+    }
     overridden = await enforceQualityGate({ item, userId: session.userId, override: options.override });
   }
 
