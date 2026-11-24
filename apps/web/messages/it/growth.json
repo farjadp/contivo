@@ -113,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "La ricerca dei concorrenti non ha dato risultati: il provider AI non era disponibile. Puoi riprovare da Market Matrices."
+        "competitorDiscoveryEmpty": "La ricerca dei concorrenti non ha dato risultati: il provider AI non era disponibile. Puoi riprovare da Market Matrices.",
+        "siteUnreadable": "Non è stato possibile leggere il sito.",
+        "brandExtractionEmpty": "La lettura del brand dal sito non ha restituito nulla."
       },
       "loop": {
         "label": "Fasi del workspace",

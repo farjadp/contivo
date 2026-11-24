@@ -141,6 +141,8 @@
     "firstPostOtherAngleLimit": "Vous avez utilisé tous les autres angles pour cet espace de travail. Modifiez ce brouillon ou rédigez votre propre post.",
     "firstPostRetryLimit": "Cette étape a échoué deux fois. Rédigez votre propre post ou signalez le problème.",
     "firstPostDraftExists": "Votre premier post est déjà rédigé. Ouvrez-le pour le lire ou le modifier.",
-    "firstPostNoDraft": "Il n'y a pas encore de brouillon pour le premier post."
+    "firstPostNoDraft": "Il n'y a pas encore de brouillon pour le premier post.",
+    "siteUnreadable": "Nous n'avons pas pu lire {url}. Vérifiez que l'adresse est publique et accessible, puis réessayez.",
+    "brandReadFailed": "Le service d'IA n'a pas répondu pendant la lecture de votre site. Rien n'a été enregistré ; réessayez dans un instant."
   }
 }

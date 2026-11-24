@@ -141,6 +141,8 @@
     "firstPostOtherAngleLimit": "Hai già usato tutti gli altri punti di vista per questo workspace. Modifica questa bozza o scrivi tu il post.",
     "firstPostRetryLimit": "Questo passaggio non è andato a buon fine due volte. Scrivi tu il post oppure segnala il problema.",
     "firstPostDraftExists": "Il tuo primo post è già scritto. Aprilo per leggerlo o modificarlo.",
-    "firstPostNoDraft": "Non c'è ancora una bozza del primo post."
+    "firstPostNoDraft": "Non c'è ancora una bozza del primo post.",
+    "siteUnreadable": "Non siamo riusciti a leggere {url}. Controlla che l'indirizzo sia pubblico e raggiungibile, poi riprova.",
+    "brandReadFailed": "Il servizio di IA non ha risposto durante la lettura del sito. Non è stato salvato nulla: riprova tra poco."
   }
 }

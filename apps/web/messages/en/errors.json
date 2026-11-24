@@ -141,6 +141,8 @@
     "firstPostOtherAngleLimit": "You've used every other angle for this workspace. Edit this draft or write your own post.",
     "firstPostRetryLimit": "This step didn't finish twice. Write your own post instead, or report the problem.",
     "firstPostDraftExists": "Your first post is already written. Open it to read or edit it.",
-    "firstPostNoDraft": "There's no first-post draft yet."
+    "firstPostNoDraft": "There's no first-post draft yet.",
+    "siteUnreadable": "We could not read {url}. Check the address is public and reachable, then try again.",
+    "brandReadFailed": "The AI provider did not respond while reading your site. Nothing was saved from this attempt — try again in a moment."
   }
 }

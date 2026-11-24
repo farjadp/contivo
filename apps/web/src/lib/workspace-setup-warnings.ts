@@ -30,8 +30,23 @@ export const COMPETITOR_DISCOVERY_WARNING = 'competitorDiscoveryEmpty';
 const LEGACY_COMPETITOR_DISCOVERY_WARNING =
   'Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices.';
 
+/** The website could not be scraped, or the brand read from it came back empty. */
+export const SITE_UNREADABLE_WARNING = 'siteUnreadable';
+export const BRAND_EXTRACTION_EMPTY_WARNING = 'brandExtractionEmpty';
+
+/** English sentences older builds stored, read as their codes (B3). */
+const LEGACY_SENTENCES: Record<string, string> = {
+  [LEGACY_COMPETITOR_DISCOVERY_WARNING]: COMPETITOR_DISCOVERY_WARNING,
+  'Could not read the website.': SITE_UNREADABLE_WARNING,
+  'Brand extraction returned nothing.': BRAND_EXTRACTION_EMPTY_WARNING,
+};
+
 /** Codes this build knows how to render; anything else is shown verbatim. */
-export const SETUP_WARNING_CODES = [COMPETITOR_DISCOVERY_WARNING] as const;
+export const SETUP_WARNING_CODES = [
+  COMPETITOR_DISCOVERY_WARNING,
+  SITE_UNREADABLE_WARNING,
+  BRAND_EXTRACTION_EMPTY_WARNING,
+] as const;
 export type SetupWarningCode = (typeof SETUP_WARNING_CODES)[number];
 
 export function isSetupWarningCode(value: string): value is SetupWarningCode {
@@ -51,6 +66,6 @@ export function activeSetupWarnings(
     .filter((w): w is string => typeof w === 'string')
     // Normalise the legacy sentence to its code, so the resolved-by-progress
     // rule below and the translation lookup both see one value.
-    .map((w) => (w === LEGACY_COMPETITOR_DISCOVERY_WARNING ? COMPETITOR_DISCOVERY_WARNING : w))
+    .map((w) => LEGACY_SENTENCES[w] ?? w)
     .filter((w) => !(w === COMPETITOR_DISCOVERY_WARNING && facts.competitorCount > 0));
 }

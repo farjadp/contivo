@@ -113,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "חיפוש המתחרים חזר ריק — ספק ה-AI לא היה זמין. אפשר לנסות שוב ממטריצות השוק."
+        "competitorDiscoveryEmpty": "חיפוש המתחרים חזר ריק — ספק ה-AI לא היה זמין. אפשר לנסות שוב ממטריצות השוק.",
+        "siteUnreadable": "לא הצלחנו לקרוא את האתר.",
+        "brandExtractionEmpty": "קריאת המותג מהאתר לא החזירה דבר."
       },
       "loop": {
         "label": "שלבי סביבת העבודה",

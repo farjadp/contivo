@@ -113,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "La búsqueda de competidores no devolvió resultados porque el proveedor de IA no estaba disponible. Puedes reintentarla desde Matrices de mercado."
+        "competitorDiscoveryEmpty": "La búsqueda de competidores no devolvió resultados porque el proveedor de IA no estaba disponible. Puedes reintentarla desde Matrices de mercado.",
+        "siteUnreadable": "No se pudo leer el sitio web.",
+        "brandExtractionEmpty": "La lectura de la marca desde el sitio no devolvió nada."
       },
       "loop": {
         "label": "Etapas del workspace",

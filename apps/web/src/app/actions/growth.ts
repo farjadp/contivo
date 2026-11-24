@@ -7,7 +7,11 @@ import { scrapeUrl, analyzeWebsiteWithGemini, discoverCompetitorsWithGemini } fr
 import { writeActivityLog } from '@/lib/activity-log';
 import { runWithAiContext, setAiContext } from '@/lib/ai-usage';
 import { createWorkspaceProgressBaseline } from '@/lib/workspace-progress';
-import { COMPETITOR_DISCOVERY_WARNING } from '@/lib/workspace-setup-warnings';
+import {
+  BRAND_EXTRACTION_EMPTY_WARNING,
+  COMPETITOR_DISCOVERY_WARNING,
+  SITE_UNREADABLE_WARNING,
+} from '@/lib/workspace-setup-warnings';
 import { getLocale } from 'next-intl/server';
 import { asContentLanguage } from '@/lib/content-language';
 import { contentLanguageForLocale } from '@/lib/content-language';
@@ -144,10 +148,11 @@ async function enrichWorkspaceInAiContext(workspaceId: string): Promise<Enrichme
   }
 
   if (!scrapedText) {
-    await recordExtractionState(workspace, 'FAILED', ['Could not read the website.']);
+    // Codes in the row, words in the reader's language (B3: these were English on fa pages).
+    await recordExtractionState(workspace, 'FAILED', [SITE_UNREADABLE_WARNING]);
     return {
       ok: false,
-      error: `We could not read ${url}. Check the address is public and reachable, then try again.`,
+      error: await actionError('siteUnreadable', { url }),
       warnings: [],
       competitorsFound: 0,
     };
@@ -183,11 +188,10 @@ async function enrichWorkspaceInAiContext(workspaceId: string): Promise<Enrichme
   }
 
   if (!brandSummary) {
-    await recordExtractionState(workspace, 'FAILED', ['Brand extraction returned nothing.']);
+    await recordExtractionState(workspace, 'FAILED', [BRAND_EXTRACTION_EMPTY_WARNING]);
     return {
       ok: false,
-      error:
-        'The AI provider did not respond while reading your site. Nothing was saved from this attempt — try again in a moment.',
+      error: await actionError('brandReadFailed'),
       warnings: [],
       competitorsFound: 0,
     };

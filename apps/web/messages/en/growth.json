@@ -113,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices."
+        "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices.",
+        "siteUnreadable": "Could not read the website.",
+        "brandExtractionEmpty": "Reading the brand from the website returned nothing."
       },
       "loop": {
         "label": "Workspace stages",
