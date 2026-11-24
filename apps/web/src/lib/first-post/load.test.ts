@@ -95,6 +95,45 @@ describe('loadFirstPostState', () => {
     expect(result.otherAnglesUsed).toBe(2);
   });
 
+  it('the draft is "approved" by its stored verdict now, not the run row (Check again / edit / Publish anyway move it)', async () => {
+    const rows = [
+      FINISHED_ROWS[0],
+      { ...FINISHED_ROWS[1], detail: { runId: 'fpr_ws1_1', contentItemId: 'item-1', approved: false } },
+    ];
+    runLogMock.readRunRows.mockResolvedValue(rows);
+    const item = (qualityVerdict: unknown) => [
+      { id: 'item-1', status: 'GENERATED', publishedAtUtc: null, content: 'Post', topic: 't', qualityVerdict },
+    ];
+
+    prismaMock.contentItem.findMany.mockResolvedValue(item({ approved: true }));
+    expect((await loadFirstPostState('u1', 'ws1')).state).toMatchObject({ phase: 'draft', approved: true });
+
+    prismaMock.contentItem.findMany.mockResolvedValue(item({ approved: false, rejectedBy: 'low_score' }));
+    expect((await loadFirstPostState('u1', 'ws1')).state).toMatchObject({ phase: 'draft', approved: false });
+
+    prismaMock.contentItem.findMany.mockResolvedValue(item({ approved: false, rejectedBy: 'low_score', override: { by: 'u1' } }));
+    expect((await loadFirstPostState('u1', 'ws1')).state).toMatchObject({ phase: 'draft', approved: true });
+  });
+
+  it("'Why this post' names the gap the current draft is about, or none, never a stale top gap", async () => {
+    runLogMock.readRunRows.mockResolvedValue(FINISHED_ROWS);
+    const item = (topic: string) => [
+      { id: 'item-1', status: 'GENERATED', publishedAtUtc: null, content: 'Post', topic, qualityVerdict: null },
+    ];
+    prismaMock.workspace.findFirst.mockResolvedValue({
+      audienceInsights: {
+        competitiveMatrices: MATRICES,
+        competitorKeywordsIntel: { competitors: [{}, {}], content_gaps: [{ topic: 'Audit checklists' }, { topic: 'Remote onboarding' }] },
+      },
+    });
+
+    prismaMock.contentItem.findMany.mockResolvedValue(item('Remote onboarding that sticks'));
+    expect((await loadFirstPostState('u1', 'ws1')).why.topGap).toBe('Remote onboarding');
+
+    prismaMock.contentItem.findMany.mockResolvedValue(item('Why our founders still answer support'));
+    expect((await loadFirstPostState('u1', 'ws1')).why.topGap).toBeNull();
+  });
+
   it('a published item: the newest publish job gives the URL, through safePostUrl', async () => {
     runLogMock.readRunRows.mockResolvedValue(FINISHED_ROWS);
     prismaMock.contentItem.findMany.mockResolvedValue([

@@ -11,10 +11,12 @@
  */
 import { COUNTED_COMPETITOR_WHERE } from '@/lib/competitor-counts';
 import { prisma } from '@/lib/db';
+import { isBlockedVerdict } from '@/lib/quality-verdict-shared';
 import { matricesGate } from '@/lib/report-readiness';
 
 import { countOtherAngles, readRunRows } from './run-log';
 import { deriveFirstPostState } from './state';
+import { matchTopicGap } from './topic-gap';
 import {
   FIRST_POST_RUN_FINISHED,
   type FirstPostDraft,
@@ -37,14 +39,21 @@ export type FirstPostLoad = {
 const asRecord = (value: unknown): Record<string, any> | null =>
   value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, any>) : null;
 
-/** Stored facts only: a missing value is 0 or null, never a guess. */
-export function whyFactsFrom(audienceInsights: unknown): FirstPostWhyFacts {
+/**
+ * Stored facts only: a missing value is 0 or null, never a guess. With a
+ * draft topic, `topGap` is the stored gap that draft is about (or null), so
+ * "Try another angle" never keeps a gap the new post is not about.
+ */
+export function whyFactsFrom(audienceInsights: unknown, draftTopic?: string | null): FirstPostWhyFacts {
   const insights = asRecord(audienceInsights) ?? {};
   const matrices = insights.competitiveMatrices;
   const keywords = asRecord(insights.competitorKeywordsIntel);
   const charts = asRecord(matrices)?.charts;
   const gaps = Array.isArray(keywords?.content_gaps) ? keywords.content_gaps : [];
-  const topGap = typeof gaps[0]?.topic === 'string' && gaps[0].topic.trim() ? gaps[0].topic.trim() : null;
+  const gapTopics: string[] = gaps
+    .map((g: unknown) => asRecord(g)?.topic)
+    .filter((t: unknown): t is string => typeof t === 'string' && t.trim().length > 0);
+  const topGap = draftTopic === undefined ? (gapTopics[0]?.trim() ?? null) : matchTopicGap(gapTopics, draftTopic);
   return {
     matrixCharts: Array.isArray(charts) ? charts.length : 0,
     matricesReady: matricesGate(matrices).ok,
@@ -112,13 +121,17 @@ export async function loadFirstPostState(userId: string, workspaceId: string): P
     : { connected: false };
 
   const facts: FirstPostFacts = { accepted, suggestions, items: itemFacts, latestJobByItem, linkedIn };
-  const state = deriveFirstPostState(rows, facts, new Date());
+  const derived = deriveFirstPostState(rows, facts, new Date());
 
-  const draftId = 'contentItemId' in state ? state.contentItemId : null;
+  const draftId = 'contentItemId' in derived ? derived.contentItemId : null;
   const item = draftId ? items.find((i) => i.id === draftId) : undefined;
+  // The run row holds the gate's first answer; Check again, an edit or
+  // "Publish anyway" changed the stored verdict since. The bar reads this.
+  const state: FirstPostState =
+    derived.phase === 'draft' && item ? { ...derived, approved: !isBlockedVerdict(item.qualityVerdict) } : derived;
   const draft: FirstPostDraft | null = item
     ? { id: item.id, content: item.content, topic: item.topic, qualityVerdict: item.qualityVerdict }
     : null;
 
-  return { state, facts, draft, why: whyFactsFrom(workspace?.audienceInsights), otherAnglesUsed };
+  return { state, facts, draft, why: whyFactsFrom(workspace?.audienceInsights, draft ? draft.topic : undefined), otherAnglesUsed };
 }
