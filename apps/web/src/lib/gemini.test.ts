@@ -164,6 +164,14 @@ describe('generateContentDraftWithGemini', () => {
     expect(draft).toBe('A real post.');
   });
 
+  it('tells the model never to print the framework section names as labels', async () => {
+    runAiTaskMock.mockResolvedValue(ok({ text: 'Post', provider: 'anthropic' }));
+    await generateContentDraftWithGemini(brand, 'Topic', 'ctx', 'linkedin', { frameworkId: 'opinion_reason_example', selectionReason: null });
+    const prompt = String(runAiTaskMock.mock.calls[0][1].prompt);
+    expect(prompt).toMatch(/never print the framework's section names/i);
+    expect(prompt).toContain('"Strong Opinion:"');
+  });
+
   it.each(['LINKEDIN', 'EMAIL', 'BLOG'])('returns null for %s when the chain fails — no fallbackDraft template', async (channel) => {
     runAiTaskMock.mockResolvedValue(FAILURE);
     const draft = await generateContentDraftWithGemini(brand, 'Topic', 'Context', channel);

@@ -1096,7 +1096,7 @@ ${wordCountRangeLine}
 Instructions:
 1. Write the content in the tone specified in the brand profile.
 2. Structure it appropriately for the channel (e.g., shorter for Twitter, formatted with spacing for LinkedIn, longer form for Blog).
-3. Do not include commentary like "Here is the post," just write the post itself.
+3. Do not include commentary like "Here is the post," just write the post itself. Never print the framework's section names as labels (no "Hook:", "Strong Opinion:", "Reason:", "Example:", "CTA:"); the reader sees the structure, not its names.
 4. If it is a social post, include 2-3 relevant hashtags at the end.
 ${isPlainTextChannel(channel) ? `Format: ${PLAIN_TEXT_RULE}\n` : ''}
 5. If "Additional Context/Angle" includes USER_NOTES or USER_SOURCE_TEXT, prioritize those user-provided sources.

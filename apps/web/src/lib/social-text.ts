@@ -90,7 +90,44 @@ export function markdownToPlainText(input: string): string {
     .trim();
 }
 
+/**
+ * The section names of the writing frameworks (lib/framework-engine.ts). The
+ * model sometimes prints them as labels ("Strong Opinion: …", "Reason: …"),
+ * which a reader sees as a template (first-post QA, 23 Nov).
+ */
+const FRAMEWORK_LABELS = [
+  'Strong Opinion', 'Opinion', 'Reason', 'Example',
+  'Hook', 'Value', 'CTA', 'Call to Action',
+  'Problem', 'Cause', 'Solution',
+  'What', 'Why', 'How',
+  'Attention', 'Interest', 'Desire', 'Action',
+  'Insight', 'Implication',
+];
+const LABEL_RE = new RegExp(
+  `^(\\s*(?:• |\\d+[.)]\\s+)?)(?:${FRAMEWORK_LABELS.map((l) => l.replace(/ /g, '\\s+')).join('|')})\\s*[:：]\\s*`,
+  'iu',
+);
+
+/**
+ * Narrow on purpose: only a known framework label, only at the start of a
+ * line, only when a colon follows it. "The reason: …" or "Why we bake: …"
+ * are prose and stay. A line that was only a label is dropped.
+ */
+export function stripFrameworkLabels(text: string): string {
+  const out: string[] = [];
+  for (const line of String(text ?? '').split('\n')) {
+    const match = line.match(LABEL_RE);
+    if (!match) {
+      out.push(line);
+      continue;
+    }
+    const rest = line.slice(match[0].length);
+    if (rest.trim()) out.push(`${match[1]}${rest}`);
+  }
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
 /** The body to store or publish for a channel: plain text for social, untouched otherwise. */
 export function textForChannel(channel: unknown, body: string): string {
-  return isPlainTextChannel(channel) ? markdownToPlainText(body) : body;
+  return isPlainTextChannel(channel) ? stripFrameworkLabels(markdownToPlainText(body)) : body;
 }
