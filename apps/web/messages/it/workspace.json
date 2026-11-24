@@ -134,7 +134,8 @@
         "draft": "La scrittura del post non è stata completata"
       },
       "action": "Riprova",
-      "actionWriteOwn": "Lo scrivo io"
+      "actionWriteOwn": "Lo scrivo io",
+      "actionBrand": "Apri Brand Memory"
     },
     "readDraft": {
       "line": "Il tuo primo post è pronto",

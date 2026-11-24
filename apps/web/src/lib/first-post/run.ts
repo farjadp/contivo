@@ -146,7 +146,7 @@ async function matricesStep(ctx: RunCtx, workspace: Workspace): Promise<void> {
   const created = await createMatrixRunRow({ userId: ctx.actor.userId, workspace });
   if (!created.ok) {
     console.warn('runFirstPost: matrix run not created', ctx.runId, created.errorKey);
-    throw new StepFailure('generic');
+    throw new StepFailure(created.errorKey === 'matrixNeedsBrandSummary' ? 'needsBrandSummary' : 'generic');
   }
   // In process, not a second HTTP hop. Never throws: a failure is the run's FAILED status.
   await runMatrixPipeline(created.runId, { autoAxes: FIRST_POST_AUTO_AXES });

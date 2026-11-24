@@ -34,6 +34,8 @@ export const FIRST_POST_ERROR_KINDS = [
   'notEnoughAxes',
   'aiUnavailable',
   'notEnoughCompetitorSignals',
+  /** The company's own site could not be read, so there is no brand summary to build charts from. */
+  'needsBrandSummary',
   'generic',
 ] as const;
 export type FirstPostErrorKind = (typeof FIRST_POST_ERROR_KINDS)[number];

@@ -134,7 +134,8 @@
         "draft": "כתיבת הפוסט לא הושלמה"
       },
       "action": "נסו שוב",
-      "actionWriteOwn": "אכתוב בעצמי"
+      "actionWriteOwn": "אכתוב בעצמי",
+      "actionBrand": "פתיחת זיכרון המותג"
     },
     "readDraft": {
       "line": "הפוסט הראשון שלכם מוכן",

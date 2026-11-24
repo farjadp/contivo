@@ -551,9 +551,11 @@
           "notEnoughAxes": "Non siamo riusciti a creare abbastanza grafici per confrontarti.",
           "aiUnavailable": "Il servizio AI non ha risposto. Riprova tra qualche minuto.",
           "notEnoughCompetitorSignals": "Non siamo riusciti a leggere abbastanza dai siti dei concorrenti. Aggiungi un altro concorrente o scrivi tu il post.",
+          "needsBrandSummary": "Non siamo riusciti a leggere il tuo sito. Rileggilo da Brand Memory o scrivi tu il post.",
           "generic": "Qualcosa è andato storto da parte nostra."
         },
         "retry": "Riprova",
+        "openBrand": "Apri Brand Memory",
         "retrying": "Ripartiamo…",
         "writeOwn": "Preferisco scriverlo io",
         "report": "Segnala un problema"

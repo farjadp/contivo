@@ -134,7 +134,8 @@
         "draft": "La redacción de la publicación no terminó"
       },
       "action": "Reintentar",
-      "actionWriteOwn": "Prefiero escribirla yo"
+      "actionWriteOwn": "Prefiero escribirla yo",
+      "actionBrand": "Abrir Memoria de marca"
     },
     "readDraft": {
       "line": "Tu primera publicación está lista",

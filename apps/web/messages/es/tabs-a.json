@@ -551,9 +551,11 @@
           "notEnoughAxes": "No pudimos crear suficientes gráficos para compararte.",
           "aiUnavailable": "El servicio de IA no respondió. Inténtalo de nuevo en unos minutos.",
           "notEnoughCompetitorSignals": "No pudimos leer lo suficiente de los sitios de tus competidores. Añade otro competidor o escríbela tú.",
+          "needsBrandSummary": "No pudimos leer tu sitio web. Vuelve a leerlo desde Memoria de marca o escribe tú la publicación.",
           "generic": "Algo falló por nuestra parte."
         },
         "retry": "Intentar de nuevo",
+        "openBrand": "Abrir Memoria de marca",
         "retrying": "Empezando de nuevo…",
         "writeOwn": "Prefiero escribirla yo",
         "report": "Informar de un problema"

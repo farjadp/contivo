@@ -112,6 +112,19 @@ describe('buildNextStep, guided mode (spec §5)', () => {
     });
   });
 
+  it('runFailed: an unreadable website sends the user to Brand, whatever the retries left', () => {
+    for (const retriesLeft of [1, 0] as const) {
+      const step = buildNextStep(
+        guided({ phase: 'failed', runId: 'r', done: [], failed: 'matrices', errorKind: 'needsBrandSummary', retriesLeft }),
+      );
+      expect(step?.action).toEqual({
+        kind: 'link',
+        label: { key: 'nextStep.runFailed.actionBrand' },
+        href: `/growth/${WS}?tab=strategy`,
+      });
+    }
+  });
+
   it('runFailed: a second failure offers Write my own instead', () => {
     const step = buildNextStep(
       guided({ phase: 'failed', runId: 'r', done: [], failed: 'draft', errorKind: 'generic', retriesLeft: 0 }),
@@ -292,6 +305,7 @@ const ALL_INPUTS: NextStepInput[] = [
       guided({ phase: 'failed', runId: 'r', done: [], failed, errorKind: 'generic', retriesLeft }),
     ),
   ),
+  guided({ phase: 'failed', runId: 'r', done: [], failed: 'matrices', errorKind: 'needsBrandSummary', retriesLeft: 1 }),
   guided(draft(false)),
   guided(draft(false), { onFirstPostTab: true }),
   guided(draft(true)),

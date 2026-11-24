@@ -134,7 +134,8 @@
         "draft": "Writing the post didn't finish"
       },
       "action": "Try again",
-      "actionWriteOwn": "Write my own instead"
+      "actionWriteOwn": "Write my own instead",
+      "actionBrand": "Open Brand Memory"
     },
     "readDraft": {
       "line": "Your first post is ready",

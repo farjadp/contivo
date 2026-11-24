@@ -16,6 +16,7 @@ import { Check, Loader2, X } from 'lucide-react';
 
 import { startFirstPost } from '@/app/actions/first-post';
 import { useBugReport } from '@/components/bug-report/BugReportProvider';
+import { Link } from '@/i18n/navigation';
 import type { FirstPostState } from '@/lib/first-post/types';
 
 import { WriteOwnButton } from './DraftCard';
@@ -117,7 +118,12 @@ export function RunProgress({
 
       {failed ? (
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-          {failed.retriesLeft > 0 ? (
+          {failed.errorKind === 'needsBrandSummary' ? (
+            // Retrying cannot read a site that could not be read: re-read it from Brand Memory.
+            <Link href={`/growth/${workspaceId}?tab=strategy` as never} className={primaryButton}>
+              {t('failed.openBrand')}
+            </Link>
+          ) : failed.retriesLeft > 0 ? (
             <button type="button" onClick={retry} disabled={retrying} className={primaryButton}>
               {retrying ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
               {retrying ? t('failed.retrying') : t('failed.retry')}
@@ -126,7 +132,7 @@ export function RunProgress({
           <WriteOwnButton
             workspaceId={workspaceId}
             label={t('failed.writeOwn')}
-            className={failed.retriesLeft > 0 ? quietLink : primaryButton}
+            className={failed.retriesLeft > 0 || failed.errorKind === 'needsBrandSummary' ? quietLink : primaryButton}
           />
           {failed.retriesLeft === 0 && report ? (
             <button type="button" onClick={() => report.openReport()} data-action="report-open" className={quietLink}>

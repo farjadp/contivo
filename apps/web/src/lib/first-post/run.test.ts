@@ -283,6 +283,15 @@ describe('runFirstPost: failures stop the run with a closed errorKind', () => {
     expect(rows()).toEqual([{ action: 'FIRST_POST_STEP_FAILED', runId: RUN, step: 'matrices', errorKind: 'notEnoughAxes' }]);
   });
 
+  it('a workspace without a brand summary fails matrices as needsBrandSummary, not generic', async () => {
+    h.startRun.createMatrixRunRow.mockResolvedValue({ ok: false, errorKey: 'matrixNeedsBrandSummary' });
+    await runFirstPost(RUN);
+    expect(rows()).toEqual([
+      { action: 'FIRST_POST_STEP_FAILED', runId: RUN, step: 'matrices', errorKind: 'needsBrandSummary' },
+    ]);
+    expect(h.pipeline.runMatrixPipeline).not.toHaveBeenCalled();
+  });
+
   it('a matrix run that cannot be created fails the step as generic', async () => {
     h.startRun.createMatrixRunRow.mockResolvedValue({ ok: false, errorKey: 'matrixAlreadyRunning' });
     await runFirstPost(RUN);

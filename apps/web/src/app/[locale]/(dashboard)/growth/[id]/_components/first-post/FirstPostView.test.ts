@@ -169,6 +169,15 @@ describe('run', () => {
     expect(html).toContain('Write my own instead');
   });
 
+  it('an unreadable website says so and points at Brand Memory, not a retry', () => {
+    const failed = STATES.failed as Extract<FirstPostState, { phase: 'failed' }>;
+    const html = render({ ...failed, done: [], failed: 'matrices', errorKind: 'needsBrandSummary', retriesLeft: 1 }, 'en');
+    expect(html).toContain('We couldn&#x27;t read your website.');
+    expect(html).toContain('Open Brand Memory');
+    expect(html).toContain('tab=strategy');
+    expect(html).not.toContain('>Try again<');
+  });
+
   it('a first failure offers one retry', () => {
     const html = render({ ...(STATES.failed as Extract<FirstPostState, { phase: 'failed' }>), retriesLeft: 1 }, 'en');
     expect(html).toContain('>Try again<');

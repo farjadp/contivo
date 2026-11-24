@@ -551,9 +551,11 @@
           "notEnoughAxes": "We couldn't build enough charts to compare you.",
           "aiUnavailable": "The AI service didn't answer. Try again in a few minutes.",
           "notEnoughCompetitorSignals": "We couldn't read enough of your competitors' sites. Add another competitor or write your own.",
+          "needsBrandSummary": "We couldn't read your website. Read it again from Brand Memory, or write your own post.",
           "generic": "Something went wrong on our side."
         },
         "retry": "Try again",
+        "openBrand": "Open Brand Memory",
         "retrying": "Starting again…",
         "writeOwn": "Write my own instead",
         "report": "Report a problem"

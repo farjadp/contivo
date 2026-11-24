@@ -51,6 +51,7 @@ export const NEXT_STEP_MESSAGE_KEYS = [
   ...RUN_FAILED_STEPS.map((s) => `nextStep.runFailed.line.${s}`),
   'nextStep.runFailed.action',
   'nextStep.runFailed.actionWriteOwn',
+  'nextStep.runFailed.actionBrand',
   'nextStep.readDraft.line',
   'nextStep.readDraft.action',
   'nextStep.connectLinkedIn.line',
@@ -123,7 +124,10 @@ export function buildNextStep(input: NextStepInput): NextStep | null {
           counter: { n: 2, total: 4 },
           line: { key: `nextStep.runFailed.line.${state.failed}` },
           action:
-            state.retriesLeft > 0
+            // Retrying cannot help when the site itself was unreadable: send them to Brand Memory.
+            state.errorKind === 'needsBrandSummary'
+              ? { kind: 'link', label: k('nextStep.runFailed.actionBrand'), href: `/growth/${ws}?tab=strategy` }
+              : state.retriesLeft > 0
               ? { kind: 'link', label: k('nextStep.runFailed.action'), href: firstPostTab }
               : {
                   kind: 'link',
