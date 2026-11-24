@@ -1,3 +1,4 @@
+import { safeSlice } from '@/lib/text/safe-slice';
 import type { AxisDefinition, MatrixLanguage } from './axes';
 import { type BundleCompany, type EvidenceBundle } from './bundle';
 import { MatrixAiError, callStructured } from './openai';
@@ -99,7 +100,7 @@ function validScore(value: unknown): value is number {
 }
 
 function text(value: unknown): string {
-  return typeof value === 'string' ? value.trim().slice(0, REASON_MAX_CHARS) : '';
+  return typeof value === 'string' ? safeSlice(value.trim(), REASON_MAX_CHARS) : '';
 }
 
 export async function scoreChart(

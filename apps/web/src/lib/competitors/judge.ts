@@ -1,3 +1,4 @@
+import { safeSlice } from '@/lib/text/safe-slice';
 import { randomBytes } from 'node:crypto';
 import { promises as dnsPromises } from 'node:dns';
 import { request as nodeHttpRequest } from 'node:http';
@@ -460,7 +461,7 @@ export async function collectWebsiteEvidence(
   return {
     domain: normalizedDomain,
     pages,
-    evidence: evidenceLines.slice(0, 140).join('\n').slice(0, MAX_SITE_EVIDENCE_CHARS),
+    evidence: safeSlice(evidenceLines.slice(0, 140).join('\n'), MAX_SITE_EVIDENCE_CHARS),
     htmlLang,
   };
 }
@@ -521,7 +522,7 @@ export function buildEnrichedCandidate(
     ...candidate,
     evidence: [...candidate.evidence, ...siteEvidenceItems],
     siteTitle,
-    siteEvidence: site.evidence.slice(0, MAX_SITE_EVIDENCE_CHARS),
+    siteEvidence: safeSlice(site.evidence, MAX_SITE_EVIDENCE_CHARS),
     pageLanguage,
   };
 }
@@ -718,7 +719,7 @@ export const JUDGE_MAX_KEY_FEATURES = 8;
 
 export function capJudgeText(value: string, maxChars: number): string {
   const trimmed = value.trim();
-  return trimmed.length > maxChars ? trimmed.slice(0, maxChars).trimEnd() : trimmed;
+  return trimmed.length > maxChars ? safeSlice(trimmed, maxChars).trimEnd() : trimmed;
 }
 
 const JUDGE_SCHEMA = {

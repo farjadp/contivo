@@ -1,3 +1,4 @@
+import { safeSlice } from '@/lib/text/safe-slice';
 import { extractSignalsFromHtml, fetchHtmlForDomain } from './judge';
 
 /**
@@ -77,6 +78,6 @@ export async function collectSiteSignals(domain: string, options: SiteSignalOpti
   return {
     domain,
     pages_scanned: pagesScanned,
-    evidence: lines.join('\n').slice(0, MAX_SITE_SIGNAL_CHARS),
+    evidence: safeSlice(lines.join('\n'), MAX_SITE_SIGNAL_CHARS),
   };
 }

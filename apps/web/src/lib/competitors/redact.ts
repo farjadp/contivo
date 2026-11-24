@@ -1,3 +1,5 @@
+import { safeSlice } from '@/lib/text/safe-slice';
+
 /**
  * Redact-then-truncate for any text that started as an upstream HTTP
  * response body and might end up persisted (`DiscoveryRun.error`,
@@ -38,7 +40,7 @@ export function redactSecrets(value: string): string {
 }
 
 export function truncateText(value: string, maxLength: number = MAX_UPSTREAM_TEXT_LENGTH): string {
-  return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
+  return value.length > maxLength ? `${safeSlice(value, maxLength)}…` : value;
 }
 
 /**
