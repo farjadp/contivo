@@ -78,6 +78,12 @@ describe('POST /api/matrices/run', () => {
     expect(afterMock).not.toHaveBeenCalled();
   });
 
+  it('rejects, not throws, a non-ASCII secret of the same character length', async () => {
+    process.env.CRON_SECRET = 'the-real-secret';
+    const res = await POST(request({ authorization: `Bearer ${'é'.repeat('the-real-secret'.length)}` }));
+    expect(res.status).toBe(401);
+  });
+
   it('accepts the correct bearer secret, returns 202 immediately, and schedules the pipeline via after()', async () => {
     process.env.CRON_SECRET = 'the-real-secret';
 

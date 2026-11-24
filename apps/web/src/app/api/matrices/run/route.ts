@@ -30,10 +30,9 @@
  * this response does not wait for it. `maxDuration` is this route's own
  * budget for that background work, not for the request itself.
  */
-import { timingSafeEqual } from 'crypto';
-
 import { after, NextResponse } from 'next/server';
 
+import { bearerMatches } from '@/lib/bearer-secret';
 import { runMatrixPipeline } from '@/lib/matrices/pipeline';
 
 export const runtime = 'nodejs';
@@ -49,15 +48,7 @@ export const maxDuration = 300;
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-
-  const header = request.headers.get('authorization') || '';
-  const provided = header.startsWith('Bearer ') ? header.slice(7) : '';
-
-  // Length-check first: timingSafeEqual throws on mismatched buffer
-  // lengths, and the length check itself leaks nothing an attacker doesn't
-  // already know from having sent the header.
-  if (provided.length !== secret.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(secret));
+  return bearerMatches(request.headers.get('authorization'), secret);
 }
 
 export async function POST(request: Request) {

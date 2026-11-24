@@ -15,10 +15,9 @@
  *
  * Returns at once; the run is handed to `after()`.
  */
-import { timingSafeEqual } from 'crypto';
-
 import { after, NextResponse } from 'next/server';
 
+import { bearerMatches } from '@/lib/bearer-secret';
 import { runFirstPost } from '@/lib/first-post/run';
 import { readRunStarted } from '@/lib/first-post/run-log';
 
@@ -33,13 +32,7 @@ export const maxDuration = 300;
 function isAuthorized(request: Request): boolean {
   const secret = process.env.CRON_SECRET;
   if (!secret) return false;
-
-  const header = request.headers.get('authorization') || '';
-  const provided = header.startsWith('Bearer ') ? header.slice(7) : '';
-
-  // timingSafeEqual throws on mismatched lengths; the length itself leaks nothing new.
-  if (provided.length !== secret.length) return false;
-  return timingSafeEqual(Buffer.from(provided), Buffer.from(secret));
+  return bearerMatches(request.headers.get('authorization'), secret);
 }
 
 export async function POST(request: Request) {

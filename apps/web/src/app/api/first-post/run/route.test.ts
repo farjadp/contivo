@@ -56,6 +56,12 @@ describe('POST /api/first-post/run', () => {
     expect(readRunStartedMock).not.toHaveBeenCalled();
   });
 
+  it('401, not 500, for a non-ASCII secret of the same character length', async () => {
+    const res = await POST(request({ authorization: `Bearer ${'é'.repeat(SECRET.length)}` }));
+    expect(res.status).toBe(401);
+    expect(afterMock).not.toHaveBeenCalled();
+  });
+
   it('202 and after() runs runFirstPost with the run id from the row', async () => {
     const res = await POST(request({ authorization: `Bearer ${SECRET}` }));
 
