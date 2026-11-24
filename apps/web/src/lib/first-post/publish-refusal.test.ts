@@ -27,3 +27,12 @@ describe('publish refusal', () => {
     expect(parsePublishRefusal(undefined)).toBeNull();
   });
 });
+
+describe('withoutPublishRefusal', () => {
+  it('drops only the publish param, keeping the rest and the hash', async () => {
+    const { withoutPublishRefusal } = await import('./publish-refusal');
+    expect(withoutPublishRefusal('/fa/growth/w1?tab=first-post&publish=gateBlocked')).toBe('/fa/growth/w1?tab=first-post');
+    expect(withoutPublishRefusal('/growth/w1?publish=noConnection#x')).toBe('/growth/w1#x');
+    expect(withoutPublishRefusal('/growth/w1?tab=first-post')).toBe('/growth/w1?tab=first-post');
+  });
+});

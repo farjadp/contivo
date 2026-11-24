@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl';
 import { getFirstPostState } from '@/app/actions/first-post';
 import { getPublishProgress } from '@/app/actions/publish-now';
 import { useRouter } from '@/i18n/navigation';
+import { withoutPublishRefusal, type PublishRefusal } from '@/lib/first-post/publish-refusal';
 import type { FirstPostDraft, FirstPostState, FirstPostViewProps, FirstPostWhyFacts, LinkedInState } from '@/lib/first-post/types';
 import type { PublishOutcome } from '@/lib/publish-outcome';
 
@@ -45,6 +46,17 @@ export function FirstPostView(props: FirstPostViewProps) {
   const [publishStarted, setPublishStarted] = useState(false);
   const [outcome, setOutcome] = useState<PublishOutcome | null>(null);
   const [slow, setSlow] = useState(false);
+  // `?publish=` is read once, kept here, and cleared from the address bar.
+  const [refusal, setRefusal] = useState<PublishRefusal | null>(props.publishRefusal ?? null);
+
+  useEffect(() => {
+    if (!props.publishRefusal) return;
+    setRefusal(props.publishRefusal);
+    const here = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    const clean = withoutPublishRefusal(here);
+    // history.replaceState, not router.replace: no server round trip, and Next keeps its router in sync.
+    if (clean !== here) window.history.replaceState(window.history.state, '', clean);
+  }, [props.publishRefusal]);
 
   useEffect(() => {
     setPolled(null);
@@ -174,7 +186,7 @@ export function FirstPostView(props: FirstPostViewProps) {
           mode={publishing ? 'publishing' : 'ready'}
           slow={slow}
           outcome={outcome}
-          refusal={props.publishRefusal ?? null}
+          refusal={refusal}
         />
       </DraftCard>
     );

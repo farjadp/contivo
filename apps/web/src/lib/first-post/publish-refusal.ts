@@ -35,3 +35,16 @@ export function parsePublishRefusal(raw: string | string[] | undefined): Publish
   const value = Array.isArray(raw) ? raw[0] : raw;
   return (PUBLISH_REFUSALS as readonly string[]).includes(value ?? '') ? (value as PublishRefusal) : null;
 }
+
+/**
+ * `href` without `?publish=`: the view clears it once the refusal is on
+ * screen, so a reload or a shared link does not repeat an old refusal.
+ */
+export function withoutPublishRefusal(href: string): string {
+  const [beforeHash, hash] = href.split('#', 2);
+  const [path, query = ''] = beforeHash.split('?', 2);
+  const params = new URLSearchParams(query);
+  params.delete(PUBLISH_REFUSAL_PARAM);
+  const rest = params.toString();
+  return `${path}${rest ? `?${rest}` : ''}${hash !== undefined ? `#${hash}` : ''}`;
+}
