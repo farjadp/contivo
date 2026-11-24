@@ -231,7 +231,6 @@ export const SCREEN_KEYS: Record<keyof typeof WORD_BUDGETS, string[]> = {
     'progress.steps.draft',
     'failed.line.keywords',
     'failed.reason.notEnoughCompetitorSignals',
-    'failed.retry',
     'failed.writeOwn',
     'failed.report',
   ],

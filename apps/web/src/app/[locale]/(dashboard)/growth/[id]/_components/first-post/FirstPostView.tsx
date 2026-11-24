@@ -144,7 +144,7 @@ export function FirstPostView(props: FirstPostViewProps) {
   if (state.phase === 'confirm') {
     body = <CompetitorConfirm workspaceId={workspaceId} competitors={competitors} headingId={headingId} onStarted={refresh} />;
   } else if (state.phase === 'running' || state.phase === 'failed') {
-    body = <RunProgress workspaceId={workspaceId} state={state} headingId={headingId} onRestarted={refresh} />;
+    body = <RunProgress workspaceId={workspaceId} state={state} headingId={headingId} />;
   } else if (state.phase === 'published') {
     body = <PublishedCard workspaceId={workspaceId} state={state} headingId={headingId} />;
   } else if (!draft || !contentItemId) {

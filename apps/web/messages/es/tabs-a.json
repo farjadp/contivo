@@ -554,9 +554,6 @@
           "needsBrandSummary": "No pudimos leer tu sitio web. Vuelve a leerlo desde Memoria de marca o escribe tú la publicación.",
           "generic": "Algo falló por nuestra parte."
         },
-        "retry": "Intentar de nuevo",
-        "openBrand": "Abrir Memoria de marca",
-        "retrying": "Empezando de nuevo…",
         "writeOwn": "Prefiero escribirla yo",
         "report": "Informar de un problema"
       },

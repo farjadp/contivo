@@ -554,9 +554,6 @@
           "needsBrandSummary": "We couldn't read your website. Read it again from Brand Memory, or write your own post.",
           "generic": "Something went wrong on our side."
         },
-        "retry": "Try again",
-        "openBrand": "Open Brand Memory",
-        "retrying": "Starting again…",
         "writeOwn": "Write my own instead",
         "report": "Report a problem"
       },

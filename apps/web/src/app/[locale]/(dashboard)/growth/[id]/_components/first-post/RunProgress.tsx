@@ -5,18 +5,16 @@
  *
  * The wait (spec first-post B §4.2): four rows, each finished one saying what
  * it found (stored values only), the current one working. On a failure the
- * failed row says what broke in plain words, with one "Try again"; after a
- * second failure of the same step, "Write my own instead" and "Report a
- * problem". Finished rows stay ticked either way.
+ * failed row says what broke in plain words. The one "Try again" is the
+ * bar's button (B8), so the view adds none; after a second failure of the
+ * same step, "Write my own instead" and "Report a problem". Finished rows
+ * stay ticked either way.
  */
 
-import { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Check, Loader2, X } from 'lucide-react';
 
-import { startFirstPost } from '@/app/actions/first-post';
 import { useBugReport } from '@/components/bug-report/BugReportProvider';
-import { Link } from '@/i18n/navigation';
 import type { FirstPostState } from '@/lib/first-post/types';
 
 import { WriteOwnButton } from './DraftCard';
@@ -34,37 +32,16 @@ export function RunProgress({
   workspaceId,
   state,
   headingId,
-  onRestarted,
 }: {
   workspaceId: string;
   state: Extract<FirstPostState, { phase: 'running' | 'failed' }>;
   headingId: string;
-  /** "Try again" started a new attempt. */
-  onRestarted: () => void;
 }) {
   const t = useTranslations('tabsA.firstPost');
   const report = useBugReport();
-  const [retrying, setRetrying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const rows = runRows(state);
   const failed = state.phase === 'failed' ? state : null;
-
-  const retry = async () => {
-    setRetrying(true);
-    setError(null);
-    try {
-      const res = await startFirstPost(workspaceId);
-      if ('runId' in res) {
-        onRestarted();
-        return;
-      }
-      setError(res.error);
-    } catch {
-      setError(t('failed.reason.generic'));
-    }
-    setRetrying(false);
-  };
 
   return (
     <div className="max-w-3xl">
@@ -118,17 +95,6 @@ export function RunProgress({
 
       {failed ? (
         <div className="mt-6 flex flex-wrap items-center gap-x-5 gap-y-3">
-          {failed.errorKind === 'needsBrandSummary' ? (
-            // Retrying cannot read a site that could not be read: re-read it from Brand Memory.
-            <Link href={`/growth/${workspaceId}?tab=strategy` as never} className={primaryButton}>
-              {t('failed.openBrand')}
-            </Link>
-          ) : failed.retriesLeft > 0 ? (
-            <button type="button" onClick={retry} disabled={retrying} className={primaryButton}>
-              {retrying ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
-              {retrying ? t('failed.retrying') : t('failed.retry')}
-            </button>
-          ) : null}
           <WriteOwnButton
             workspaceId={workspaceId}
             label={t('failed.writeOwn')}
@@ -140,12 +106,6 @@ export function RunProgress({
             </button>
           ) : null}
         </div>
-      ) : null}
-
-      {error ? (
-        <p role="alert" className="mt-3 text-[13.5px] text-red-700">
-          {error}
-        </p>
       ) : null}
     </div>
   );
