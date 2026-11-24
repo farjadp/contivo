@@ -91,7 +91,7 @@ export function NextStepButton({
         setError(result.error);
         return;
       }
-      if (action.kind === 'retryFirstPost' || action.kind === 'otherAngle') {
+      if (action.kind !== 'publishNow') {
         // On the first-post tab: start the run, then refresh so the view polls it.
         const run = action.kind === 'retryFirstPost' ? startFirstPost : firstPostOtherAngle;
         const result = await run(action.workspaceId);
