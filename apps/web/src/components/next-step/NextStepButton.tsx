@@ -7,6 +7,8 @@
  * - link: client navigation; an external link opens a new tab and logs
  *   without waiting, because this page does not unload;
  * - connectLinkedIn: getSocialConnectUrl, then the browser goes to LinkedIn;
+ * - retryFirstPost / otherAngle: startFirstPost / firstPostOtherAngle on the
+ *   first-post tab, then a refresh so the view shows the run;
  * - publishNow: publishNow, then a refresh so the bar and view show
  *   "Publishing…". A refusal opens the first-post tab with `?publish=<refusal>`,
  *   and the view's publish panel says why (no connection, quality gate).
@@ -15,6 +17,7 @@
 import { ArrowRight, ExternalLink, Loader2 } from 'lucide-react';
 import { useState, useTransition } from 'react';
 
+import { firstPostOtherAngle, startFirstPost } from '@/app/actions/first-post';
 import { recordNextStepClick } from '@/app/actions/next-step';
 import { publishNow } from '@/app/actions/publish-now';
 import { getSocialConnectUrl } from '@/app/actions/social-connect';
@@ -26,7 +29,8 @@ import type { NextStepId, NextStepSurface } from '@/lib/first-post/types';
 export type NextStepButtonAction =
   | { kind: 'link'; href: string; external?: true }
   | { kind: 'connectLinkedIn'; workspaceId: string }
-  | { kind: 'publishNow'; contentItemId: string; href: string };
+  | { kind: 'publishNow'; contentItemId: string; href: string }
+  | { kind: 'retryFirstPost' | 'otherAngle'; workspaceId: string; href: string };
 
 const BUTTON =
   'inline-flex min-h-10 shrink-0 items-center justify-center gap-2 bg-moss px-4 py-2 text-[13px] font-semibold text-chalk transition-colors hover:bg-moss-700 disabled:cursor-wait disabled:opacity-70';
@@ -82,6 +86,17 @@ export function NextStepButton({
         const result = await getSocialConnectUrl('linkedin', action.workspaceId);
         if ('url' in result) {
           window.location.assign(result.url);
+          return;
+        }
+        setError(result.error);
+        return;
+      }
+      if (action.kind === 'retryFirstPost' || action.kind === 'otherAngle') {
+        // On the first-post tab: start the run, then refresh so the view polls it.
+        const run = action.kind === 'retryFirstPost' ? startFirstPost : firstPostOtherAngle;
+        const result = await run(action.workspaceId);
+        if ('ok' in result && result.ok) {
+          router.refresh();
           return;
         }
         setError(result.error);

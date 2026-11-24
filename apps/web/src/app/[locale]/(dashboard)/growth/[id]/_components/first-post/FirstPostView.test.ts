@@ -197,6 +197,20 @@ describe('draft and publish', () => {
     expect(html).toContain('Schedule for later');
   });
 
+  it('a held draft: Other angle is the primary button, Check again is a quiet link after it', () => {
+    const verdict = { approved: false, rejectedBy: 'low_score', reasons: [], scores: null, judge: 'j', judgeModel: null, checkedAt: '2026-11-23T10:00:00Z', source: 'pipeline' };
+    const html = render(
+      { phase: 'draft', contentItemId: 'ci_1', approved: false, linkedIn: { connected: false } },
+      'en',
+      { draft: { ...base.draft!, qualityVerdict: verdict } },
+    );
+    const angle = html.match(/<button[^>]*class="([^"]*)"[^>]*>(?:<[^>]+>)*Try another angle/);
+    const check = html.match(/<button[^>]*class="([^"]*)"[^>]*>(?:<[^>]+>)*Check again/);
+    expect(angle?.[1]).toContain('bg-saffron');
+    expect(check?.[1]).toContain('underline');
+    expect(check?.[1]).not.toContain('border');
+  });
+
   it('shows the account once LinkedIn is connected, still with no Publish button', () => {
     const html = render(
       { phase: 'draft', contentItemId: 'ci_1', approved: true, linkedIn: { connected: true, accountName: 'Sara Ahmadi' } },

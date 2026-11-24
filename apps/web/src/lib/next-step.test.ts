@@ -125,6 +125,50 @@ describe('buildNextStep, guided mode (spec §5)', () => {
     }
   });
 
+  it('runFailed on the first-post tab: the bar button retries the run itself (the view shows no second one)', () => {
+    const step = buildNextStep(
+      guided(
+        { phase: 'failed', runId: 'r', done: [], failed: 'keywords', errorKind: 'generic', retriesLeft: 1 },
+        { onFirstPostTab: true },
+      ),
+    );
+    expect(step?.action).toEqual({
+      kind: 'retryFirstPost',
+      label: { key: 'nextStep.runFailed.action' },
+      workspaceId: WS,
+      href: firstPostTab,
+    });
+  });
+
+  it('draftBlocked: a draft the gate held points at the draft, never at Connect or Publish', () => {
+    const blocked = (connected: boolean): FirstPostState => ({ ...draft(connected), approved: false } as FirstPostState);
+    for (const connected of [false, true]) {
+      const onTab = buildNextStep(guided(blocked(connected), { onFirstPostTab: true }));
+      expect(onTab).toEqual({
+        id: 'draftBlocked',
+        counter: { n: 3, total: 4 },
+        line: { key: 'nextStep.draftBlocked.line' },
+        action: { kind: 'otherAngle', label: { key: 'nextStep.draftBlocked.action' }, workspaceId: WS, href: firstPostTab },
+        busy: false,
+      });
+      const offTab = buildNextStep(guided(blocked(connected), { surface: 'today' }));
+      expect(offTab?.id).toBe('draftBlocked');
+      expect(offTab?.action).toEqual({ kind: 'link', label: { key: 'nextStep.draftBlocked.action' }, href: firstPostTab });
+    }
+  });
+
+  it('draftBlocked with no other angle left: says to edit it, no button on the tab', () => {
+    const step = buildNextStep(
+      guided({ ...draft(false), approved: false } as FirstPostState, { onFirstPostTab: true, otherAnglesLeft: false }),
+    );
+    expect(step).toEqual({
+      id: 'draftBlocked',
+      counter: { n: 3, total: 4 },
+      line: { key: 'nextStep.draftBlocked.lineEdit' },
+      busy: false,
+    });
+  });
+
   it('runFailed: a second failure offers Write my own instead', () => {
     const step = buildNextStep(
       guided({ phase: 'failed', runId: 'r', done: [], failed: 'draft', errorKind: 'generic', retriesLeft: 0 }),
@@ -306,6 +350,9 @@ const ALL_INPUTS: NextStepInput[] = [
     ),
   ),
   guided({ phase: 'failed', runId: 'r', done: [], failed: 'matrices', errorKind: 'needsBrandSummary', retriesLeft: 1 }),
+  guided({ phase: 'failed', runId: 'r', done: [], failed: 'idea', errorKind: 'generic', retriesLeft: 1 }, { onFirstPostTab: true }),
+  guided({ ...draft(false), approved: false } as FirstPostState, { onFirstPostTab: true }),
+  guided({ ...draft(false), approved: false } as FirstPostState, { onFirstPostTab: true, otherAnglesLeft: false }),
   guided(draft(false)),
   guided(draft(false), { onFirstPostTab: true }),
   guided(draft(true)),

@@ -20,6 +20,9 @@ export function toButtonAction(action: NextStepAction): NextStepButtonAction {
       return { kind: 'connectLinkedIn', workspaceId: action.workspaceId };
     case 'publishNow':
       return { kind: 'publishNow', contentItemId: action.contentItemId, href: action.href };
+    case 'retryFirstPost':
+    case 'otherAngle':
+      return { kind: action.kind, workspaceId: action.workspaceId, href: action.href };
   }
 }
 

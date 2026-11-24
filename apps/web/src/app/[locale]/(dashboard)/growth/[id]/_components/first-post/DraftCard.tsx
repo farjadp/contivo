@@ -190,6 +190,8 @@ export function DraftCard({
     const res = await recheckContentQuality(draft.id);
     if ('error' in res) throw new Error(res.error);
     setVerdict(res.verdict);
+    // The bar reads the stored verdict: a pass turns it to Connect / Publish.
+    router.refresh();
   };
 
   // "Publish anyway": the override is stamped and audited on the server.
@@ -215,6 +217,7 @@ export function DraftCard({
           <QualityVerdictNotice
             verdict={verdict}
             onCheckAgain={allowEdit ? checkAgain : undefined}
+            checkAgainQuiet={!approved && canTryAngle}
             onPublishAnyway={allowEdit ? publishAnyway : undefined}
           />
         </div>

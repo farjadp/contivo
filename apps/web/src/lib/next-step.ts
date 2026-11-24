@@ -28,6 +28,8 @@ export type NextStepInput = {
   surface: NextStepSurface;
   /** The workspace page is showing `?tab=first-post`. Only read on the workspace surfaces. */
   onFirstPostTab: boolean;
+  /** "Try another angle" is still allowed (under FIRST_POST_OTHER_ANGLE_LIMIT). Absent = true. */
+  otherAnglesLeft?: boolean;
 };
 
 const RUN_FAILED_STEPS: readonly FirstPostStep[] = ['matrices', 'keywords', 'idea', 'draft'];
@@ -54,6 +56,9 @@ export const NEXT_STEP_MESSAGE_KEYS = [
   'nextStep.runFailed.actionBrand',
   'nextStep.readDraft.line',
   'nextStep.readDraft.action',
+  'nextStep.draftBlocked.line',
+  'nextStep.draftBlocked.lineEdit',
+  'nextStep.draftBlocked.action',
   'nextStep.connectLinkedIn.line',
   'nextStep.connectLinkedIn.why',
   'nextStep.connectLinkedIn.action',
@@ -128,7 +133,9 @@ export function buildNextStep(input: NextStepInput): NextStep | null {
             state.errorKind === 'needsBrandSummary'
               ? { kind: 'link', label: k('nextStep.runFailed.actionBrand'), href: `/growth/${ws}?tab=strategy` }
               : state.retriesLeft > 0
-              ? { kind: 'link', label: k('nextStep.runFailed.action'), href: firstPostTab }
+              ? onTab
+                ? { kind: 'retryFirstPost', label: k('nextStep.runFailed.action'), workspaceId: ws, href: firstPostTab }
+                : { kind: 'link', label: k('nextStep.runFailed.action'), href: firstPostTab }
               : {
                   kind: 'link',
                   label: k('nextStep.runFailed.actionWriteOwn'),
@@ -137,6 +144,26 @@ export function buildNextStep(input: NextStepInput): NextStep | null {
           busy: false,
         };
       case 'draft':
+        // A draft the gate held: the next step is the draft, not Connect or Publish (spec §4.3).
+        if (!state.approved) {
+          const anglesLeft = input.otherAnglesLeft !== false;
+          if (onTab && !anglesLeft) {
+            return { id: 'draftBlocked', counter: { n: 3, total: 4 }, line: k('nextStep.draftBlocked.lineEdit'), busy: false };
+          }
+          return {
+            id: 'draftBlocked',
+            counter: { n: 3, total: 4 },
+            line: k(anglesLeft ? 'nextStep.draftBlocked.line' : 'nextStep.draftBlocked.lineEdit'),
+            action: onTab
+              ? { kind: 'otherAngle', label: k('nextStep.draftBlocked.action'), workspaceId: ws, href: firstPostTab }
+              : {
+                  kind: 'link',
+                  label: k(anglesLeft ? 'nextStep.draftBlocked.action' : 'nextStep.readDraft.action'),
+                  href: firstPostTab,
+                },
+            busy: false,
+          };
+        }
         if (state.linkedIn.connected) {
           return {
             id: 'publishNow',

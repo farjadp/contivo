@@ -141,6 +141,11 @@
       "line": "Your first post is ready",
       "action": "Read it"
     },
+    "draftBlocked": {
+      "line": "Your draft needs another angle",
+      "lineEdit": "Your draft needs changes before it can go out. Edit it below.",
+      "action": "Try another angle"
+    },
     "connectLinkedIn": {
       "line": "Publish this on LinkedIn",
       "why": "Your personal profile. Nothing posts until you press Publish.",

@@ -19,7 +19,7 @@ import { countCompetitors } from '@/lib/competitor-counts';
 import { prisma } from '@/lib/db';
 import { loadFirstPostState, type FirstPostLoad } from '@/lib/first-post/load';
 import { loadGuidedMode, readKillSwitch } from '@/lib/first-post/mode';
-import type { NextStepSurface } from '@/lib/first-post/types';
+import { FIRST_POST_OTHER_ANGLE_LIMIT, type NextStepSurface } from '@/lib/first-post/types';
 import type { NextStepInput } from '@/lib/next-step';
 import { matrixFacts, type WorkspaceFacts } from '@/lib/workspace-journey';
 
@@ -139,7 +139,13 @@ export async function loadNextStepInput(
   }
 
   return {
-    input: { guided, facts, firstPost: firstPost?.state ?? null, surface },
+    input: {
+      guided,
+      facts,
+      firstPost: firstPost?.state ?? null,
+      surface,
+      otherAnglesLeft: firstPost ? firstPost.otherAnglesUsed < FIRST_POST_OTHER_ANGLE_LIMIT : true,
+    },
     firstPost,
   };
 }

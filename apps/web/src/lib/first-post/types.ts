@@ -227,6 +227,7 @@ export const NEXT_STEP_IDS = [
   'writing',
   'runFailed',
   'readDraft',
+  'draftBlocked',
   'connectLinkedIn',
   'publishNow',
   'publishing',
@@ -252,7 +253,11 @@ export type NextStepAction =
   /** getSocialConnectUrl('linkedin', workspaceId), after recordNextStepClick. */
   | { kind: 'connectLinkedIn'; label: Msg; workspaceId: string }
   /** publishNow(contentItemId), then show the first-post tab at `href`. */
-  | { kind: 'publishNow'; label: Msg; contentItemId: string; href: string };
+  | { kind: 'publishNow'; label: Msg; contentItemId: string; href: string }
+  /** startFirstPost(workspaceId) on the first-post tab itself (the view shows no second "Try again"). */
+  | { kind: 'retryFirstPost'; label: Msg; workspaceId: string; href: string }
+  /** firstPostOtherAngle(workspaceId) on the first-post tab itself. */
+  | { kind: 'otherAngle'; label: Msg; workspaceId: string; href: string };
 
 export type NextStep = {
   id: NextStepId;

@@ -141,6 +141,11 @@
       "line": "Tu primera publicación está lista",
       "action": "Leerla"
     },
+    "draftBlocked": {
+      "line": "Tu borrador necesita otro enfoque",
+      "lineEdit": "Tu borrador necesita cambios antes de publicarse. Edítalo abajo.",
+      "action": "Probar otro enfoque"
+    },
     "connectLinkedIn": {
       "line": "Publica esto en LinkedIn",
       "why": "En tu perfil personal. No se publica nada hasta que pulses Publicar.",

@@ -141,6 +141,11 @@
       "line": "Il tuo primo post è pronto",
       "action": "Leggilo"
     },
+    "draftBlocked": {
+      "line": "La tua bozza ha bisogno di un altro angolo",
+      "lineEdit": "La bozza va sistemata prima di uscire. Modificala qui sotto.",
+      "action": "Prova un altro angolo"
+    },
     "connectLinkedIn": {
       "line": "Pubblica questo post su LinkedIn",
       "why": "Sul tuo profilo personale. Non esce nulla finché non premi Pubblica.",
