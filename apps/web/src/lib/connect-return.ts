@@ -11,7 +11,7 @@
  * workspace's page, which shows one next action.
  */
 
-import type { Journey, JourneyStep } from '@/lib/workspace-journey';
+import type { JourneyStep } from '@/lib/workspace-journey';
 
 /** Platforms whose connect goes through the provider's consent screen. Mirrors apps/api social/platforms.ts. */
 export const CONNECTED_PLATFORM_NAMES = {
@@ -41,6 +41,14 @@ export function connectReturnHref(workspaceId: string, platform: ConnectedPlatfo
 }
 
 export type ConnectedNextAction =
+  /**
+   * Nothing published yet and a first-post draft is waiting. Its button
+   * ("Publish this post") is open mode's only: in guided mode the notice is
+   * the bar's compact confirmation and the bar's "Publish now" is the one
+   * button. Open mode has no first-post tab (resolveWorkspaceTab), so it
+   * opens the pipeline, where the draft is an item with its own publish.
+   */
+  | { kind: 'firstPostDraft'; href: string }
   /** Nothing published yet: the shortest way to a first post is writing one. */
   | { kind: 'firstPost'; href: string }
   /** Already publishing: carry on with whatever setup step is next. */
@@ -49,16 +57,22 @@ export type ConnectedNextAction =
   | { kind: 'pipeline'; href: string };
 
 /**
- * One action, never a menu. A workspace with nothing published is sent to
- * write its first post — the pipeline's own editor needs no charts or
+ * One action, never a menu. A workspace with nothing published goes to the
+ * AI first-post draft it already has (spec first-post B §5, #69 follow-up);
+ * without one it is sent to write its first post — the pipeline's own editor needs no charts or
  * keywords, so this works whatever state the rest of setup is in.
  */
 export function connectedNextAction(
   workspaceId: string,
-  journey: Pick<Journey, 'next'>,
+  journey: { next: JourneyStep | null },
   publishedCount: number,
+  /** The first-post draft waiting for this connect (FirstPostState phase 'draft'), if any. */
+  firstPostDraftId: string | null = null,
 ): ConnectedNextAction {
   const pipeline = `/growth/${workspaceId}?tab=pipeline`;
+  if (publishedCount <= 0 && firstPostDraftId) {
+    return { kind: 'firstPostDraft', href: pipeline };
+  }
   if (publishedCount <= 0) return { kind: 'firstPost', href: `${pipeline}&write=1` };
   if (journey.next && journey.next.id !== 'channel') return { kind: 'journey', step: journey.next };
   return { kind: 'pipeline', href: pipeline };

@@ -5,14 +5,17 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // without a session, and report the API's "started by another account" as
 // 'foreign' so the page can say nothing was connected.
 
-const { sessionMock, mintMock, localeMock, findWorkspaceMock } = vi.hoisted(() => ({
+const { sessionMock, mintMock, localeMock, findWorkspaceMock, findUserMock, activityLogMock } = vi.hoisted(() => ({
   sessionMock: vi.fn(),
   mintMock: vi.fn(),
   localeMock: vi.fn(),
   findWorkspaceMock: vi.fn(),
+  findUserMock: vi.fn(),
+  activityLogMock: vi.fn(),
 }));
 
-vi.mock('@/lib/db', () => ({ prisma: { workspace: { findFirst: findWorkspaceMock }, user: { findUnique: vi.fn() } } }));
+vi.mock('@/lib/db', () => ({ prisma: { workspace: { findFirst: findWorkspaceMock }, user: { findUnique: findUserMock } } }));
+vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
 vi.mock('next-intl/server', () => ({ getLocale: localeMock }));
 vi.mock('@/lib/auth', () => ({ getSession: sessionMock, mintApiToken: mintMock }));
 vi.mock('@/lib/action-errors', () => ({ actionError: vi.fn(async (key: string) => key) }));
@@ -100,5 +103,56 @@ describe('getSocialConnectUrl locale (B18)', () => {
     expect(await handoffBody()).not.toHaveProperty('locale');
     localeMock.mockRejectedValue(new Error('no request'));
     expect(await handoffBody()).not.toHaveProperty('locale');
+  });
+});
+
+// Funnel (spec §7): CHANNEL_CONNECT_STARTED is written only when a connect
+// URL was actually handed out.
+describe('getSocialConnectUrl CHANNEL_CONNECT_STARTED', () => {
+  const savedSecret = process.env.OAUTH_STATE_SECRET;
+  beforeEach(() => {
+    process.env.OAUTH_STATE_SECRET = 'test-only-secret';
+    sessionMock.mockResolvedValue({ userId: 'user-a' });
+    findWorkspaceMock.mockResolvedValue({ id: 'ws-1' });
+    localeMock.mockResolvedValue('en');
+    activityLogMock.mockReset();
+    activityLogMock.mockResolvedValue(undefined);
+    findUserMock.mockReset();
+  });
+  afterEach(() => {
+    process.env.OAUTH_STATE_SECRET = savedSecret;
+  });
+
+  it('logs the platform for the owner on a successful URL', async () => {
+    const result = await getSocialConnectUrl('LinkedIn', 'ws-1');
+    expect(result).toHaveProperty('url');
+    expect(activityLogMock).toHaveBeenCalledTimes(1);
+    expect(activityLogMock).toHaveBeenCalledWith({
+      userId: 'user-a',
+      workspaceId: 'ws-1',
+      action: 'CHANNEL_CONNECT_STARTED',
+      detail: { platform: 'linkedin' },
+    });
+  });
+
+  it('logs nothing for an unsupported platform or a foreign workspace', async () => {
+    expect(await getSocialConnectUrl('myspace', 'ws-1')).toHaveProperty('error');
+    findWorkspaceMock.mockResolvedValue(null);
+    findUserMock.mockResolvedValue({ role: 'USER' });
+    expect(await getSocialConnectUrl('linkedin', 'ws-other')).toHaveProperty('error');
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
+  it('logs nothing without a session', async () => {
+    sessionMock.mockResolvedValue(null);
+    expect(await getSocialConnectUrl('linkedin', 'ws-1')).toHaveProperty('error');
+    expect(activityLogMock).not.toHaveBeenCalled();
+  });
+
+  it('an admin acting on someone else\'s workspace is not counted in the funnel', async () => {
+    findWorkspaceMock.mockResolvedValue(null);
+    findUserMock.mockResolvedValue({ role: 'ADMIN' });
+    expect(await getSocialConnectUrl('linkedin', 'ws-other')).toHaveProperty('url');
+    expect(activityLogMock).not.toHaveBeenCalled();
   });
 });

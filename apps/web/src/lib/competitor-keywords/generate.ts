@@ -1,0 +1,726 @@
+/**
+ * Competitor keywords: read each selected competitor's site, ask the model for
+ * keywords, clusters and content gaps, and save only what it actually said.
+ *
+ * Session-less core, moved out of `app/actions/growth-keywords.ts` so the
+ * first-post run (lib/first-post/run.ts) can call it in the background. It
+ * takes an actor whose ownership the caller has NOT necessarily checked: the
+ * workspace is loaded by `{ id, userId }`, so someone else's workspace and a
+ * missing one look identical. Errors come back as keys of
+ * `messages/<locale>/errors.json`; the action translates them.
+ */
+import { runAiTask, type AiCallContext, type AiFailure } from '@/lib/ai';
+import { prisma } from '@/lib/db';
+import { writeActivityLog } from '@/lib/activity-log';
+import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
+import { collectSiteSignals, type SiteSignals } from '@/lib/competitors/site-signals';
+
+export type KeywordsActor = { userId: string; workspaceId: string };
+
+export type KeywordsErrorKey =
+  | 'workspaceIdRequired'
+  | 'workspaceNotFound'
+  | 'needTwoReviewed'
+  | 'notEnoughCompetitorSignals'
+  | 'keywordsAiFailed'
+  | 'keywordsFailed';
+
+export type GenerateKeywordsResult =
+  | { ok: true; payload: CompetitorKeywordsPayload }
+  | { ok: false; errorKey: KeywordsErrorKey };
+
+type TokenUsageRun = {
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  created_at: string;
+};
+
+type TokenUsage = {
+  runs: number;
+  lifetime_prompt_tokens: number;
+  lifetime_completion_tokens: number;
+  lifetime_total_tokens: number;
+  last_run: TokenUsageRun | null;
+};
+
+type IntentDistribution = {
+  informational: number;
+  commercial: number;
+  product: number;
+  educational: number;
+};
+
+type KeywordCluster = {
+  cluster: string;
+  keywords: string[];
+};
+
+type StrategySignals = {
+  content_themes: string[];
+  content_goal: string;
+  funnel_distribution: {
+    top_of_funnel: string[];
+    middle_of_funnel: string[];
+    bottom_of_funnel: string[];
+  };
+  content_formats: string[];
+  strategic_strength: string;
+  strategic_weakness: string;
+};
+
+export type CompetitorKeywordIntel = {
+  competitor: string;
+  domain: string;
+  primary_keywords: string[];
+  secondary_keywords: string[];
+  keyword_clusters: KeywordCluster[];
+  /** null when the model gave no usable split — never a guessed one. */
+  intent_distribution: IntentDistribution | null;
+  content_strategy: {
+    main_goal: string;
+    secondary_goals: string[];
+    content_focus: string;
+    publishing_style: string;
+  };
+  strategy_signals: StrategySignals;
+  data_quality_notes: string[];
+};
+
+export type ContentGapOpportunity = {
+  topic: string;
+  competitor_weakness: string;
+  audience_importance: string;
+};
+
+export type KeywordHeatmapRow = {
+  keyword: string;
+  coverage: Record<string, boolean>;
+};
+
+export type CompetitorKeywordsPayload = {
+  generated_at: string;
+  source: 'AI' | 'MANUAL';
+  ai_estimated: boolean;
+  competitor_basis?: SelectionBasis;
+  competitors: CompetitorKeywordIntel[];
+  content_gaps: ContentGapOpportunity[];
+  keyword_heatmap: {
+    keywords: string[];
+    rows: KeywordHeatmapRow[];
+    competitor_domains: string[];
+  };
+  token_usage: TokenUsage;
+};
+
+function trimTo(value: string | null | undefined, max = 400): string {
+  return String(value || '').trim().slice(0, max);
+}
+
+function normalizeDomain(value: string | null | undefined): string {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  const withoutProtocol = raw.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  return withoutProtocol.split('/')[0]?.toLowerCase().trim() || '';
+}
+
+function toNonNegativeInt(value: unknown): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return 0;
+  return Math.max(0, Math.floor(parsed));
+}
+
+function emptyTokenUsage(): TokenUsage {
+  return {
+    runs: 0,
+    lifetime_prompt_tokens: 0,
+    lifetime_completion_tokens: 0,
+    lifetime_total_tokens: 0,
+    last_run: null,
+  };
+}
+
+function normalizeTokenUsage(value: any): TokenUsage {
+  const raw = value && typeof value === 'object' ? value : {};
+  const lastRunRaw = raw.last_run && typeof raw.last_run === 'object' ? raw.last_run : null;
+  return {
+    runs: toNonNegativeInt(raw.runs),
+    lifetime_prompt_tokens: toNonNegativeInt(raw.lifetime_prompt_tokens),
+    lifetime_completion_tokens: toNonNegativeInt(raw.lifetime_completion_tokens),
+    lifetime_total_tokens: toNonNegativeInt(raw.lifetime_total_tokens),
+    last_run: lastRunRaw
+      ? {
+          model: trimTo(lastRunRaw.model, 120) || 'unknown',
+          prompt_tokens: toNonNegativeInt(lastRunRaw.prompt_tokens),
+          completion_tokens: toNonNegativeInt(lastRunRaw.completion_tokens),
+          total_tokens: toNonNegativeInt(lastRunRaw.total_tokens),
+          created_at: trimTo(lastRunRaw.created_at, 80) || new Date().toISOString(),
+        }
+      : null,
+  };
+}
+
+function appendTokenUsage(
+  current: TokenUsage | null | undefined,
+  usage:
+    | {
+        model: string;
+        prompt_tokens: number;
+        completion_tokens: number;
+        total_tokens: number;
+      }
+    | null,
+): TokenUsage {
+  const base = normalizeTokenUsage(current);
+  if (!usage) return base;
+
+  return {
+    runs: base.runs + 1,
+    lifetime_prompt_tokens: base.lifetime_prompt_tokens + toNonNegativeInt(usage.prompt_tokens),
+    lifetime_completion_tokens: base.lifetime_completion_tokens + toNonNegativeInt(usage.completion_tokens),
+    lifetime_total_tokens: base.lifetime_total_tokens + toNonNegativeInt(usage.total_tokens),
+    last_run: {
+      model: trimTo(usage.model, 120) || 'unknown',
+      prompt_tokens: toNonNegativeInt(usage.prompt_tokens),
+      completion_tokens: toNonNegativeInt(usage.completion_tokens),
+      total_tokens: toNonNegativeInt(usage.total_tokens),
+      created_at: new Date().toISOString(),
+    },
+  };
+}
+
+/**
+ * Overall wall-clock budget for reading every reviewed competitor's site in
+ * one "generate keywords" call. Each fetch already has its own timeout
+ * inside the hardened client, but each path now tries https and then http
+ * (fix-wave re-review, "Overall time budget for the Keywords and Offerings
+ * site reads"), which roughly doubled the worst case per path. With up to 8
+ * competitors and 6 paths each, an unbounded loop could hold this server
+ * action open for many minutes against sites a manual-add user controls.
+ * Once the budget is spent, no further competitor's site is read; the
+ * analysis runs on whatever was already collected.
+ */
+const KEYWORDS_ENRICH_BUDGET_MS = 90_000;
+
+/**
+ * Reads a competitor's site through the hardened client in
+ * `@/lib/competitors/site-signals` (pinned DNS with a private-address
+ * blocklist, per-hop redirect checks, capped bodies, bounded parsing).
+ */
+async function collectCompetitorSignals(
+  domain: string,
+  budget: { deadline?: number; now?: () => number } = {},
+): Promise<SiteSignals> {
+  return collectSiteSignals(normalizeDomain(domain), {
+    paths: ['/', '/blog', '/resources', '/use-cases', '/pricing', '/learn'],
+    linesPerPage: 55,
+    maxLines: 320,
+    ...budget,
+  });
+}
+
+function pickCompetitors(workspace: any): {
+  items: Array<{
+    name: string;
+    domain: string;
+    type: string;
+    description: string;
+    category: string;
+    audience: string;
+  }>;
+  basis: SelectionBasis;
+} {
+  const all = Array.isArray(workspace?.competitors) ? workspace.competitors : [];
+  const { competitors, basis } = selectCompetitors(all);
+
+  const items = competitors
+    .map((item: any) => ({
+      name: trimTo(item.name, 120),
+      domain: normalizeDomain(item.domain),
+      type: String(item.type || 'DIRECT'),
+      description: trimTo(item.description, 280),
+      category: trimTo(item.category, 100),
+      audience: trimTo(item.audienceGuess, 140),
+    }))
+    .filter((item: { name: string; domain: string }) => item.name && item.domain)
+    .slice(0, 8);
+
+  return { items, basis };
+}
+
+function buildKeywordAnalysisPrompt(input: {
+  targetCompany: string;
+  targetDomain: string;
+  brandSummary: any;
+  competitorSignals: Array<{
+    name: string;
+    domain: string;
+    type: string;
+    description: string;
+    category: string;
+    audience: string;
+    pages_scanned: string[];
+    evidence: string;
+  }>;
+}): string {
+  return `
+You are an SEO and content intelligence analyst.
+
+Goal: find how competitors actually run content strategy, not just random keyword lists.
+
+You must apply 3 layers:
+1) keyword extraction
+2) topic clustering
+3) content strategy inference
+
+Then generate content gaps across all competitors and a keyword overlap heatmap.
+
+Target company:
+${JSON.stringify(
+    {
+      company: input.targetCompany,
+      domain: input.targetDomain,
+      brand_summary: input.brandSummary,
+    },
+    null,
+    2,
+  )}
+
+Competitor evidence:
+${JSON.stringify(input.competitorSignals, null, 2)}
+
+Rules:
+- only use visible terms/signals from provided evidence
+- do not hallucinate hidden pages or unseen claims
+- if evidence is weak, say so in data_quality_notes
+- use structured output only (JSON)
+
+For each competitor output:
+- competitor
+- domain
+- primary_keywords (top 20)
+- secondary_keywords (20-40)
+- keyword_clusters (array of { cluster, keywords[] })
+- intent_distribution { informational, commercial, product, educational } (sum near 100)
+- content_strategy { main_goal, secondary_goals, content_focus, publishing_style }
+- strategy_signals {
+    content_themes,
+    content_goal,
+    funnel_distribution { top_of_funnel, middle_of_funnel, bottom_of_funnel },
+    content_formats,
+    strategic_strength,
+    strategic_weakness
+  }
+- data_quality_notes (array)
+
+Across all competitors output:
+- content_gaps (10 opportunities):
+  each item = { topic, competitor_weakness, audience_importance }
+- keyword_heatmap:
+  {
+    keywords: array of 10-18 strategic keywords,
+    rows: [
+      {
+        keyword: string,
+        coverage: {
+          "<domain1>": true/false,
+          "<domain2>": true/false
+        }
+      }
+    ]
+  }
+
+Return JSON only with this schema:
+{
+  "competitors": [],
+  "content_gaps": [],
+  "keyword_heatmap": {
+    "keywords": [],
+    "rows": []
+  }
+}
+`;
+}
+
+/** No timeout existed before the failover layer; 60 s per provider attempt. */
+const AI_TIMEOUT_MS = 60_000;
+
+type AiJsonCall = {
+  /** The model's JSON, or null when it answered with something that is not an object. */
+  parsed: any | null;
+  usage: {
+    model: string;
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  } | null;
+  /** Set when no provider answered; `parsed` and `usage` are null then. */
+  failure: AiFailure | null;
+};
+
+/**
+ * One JSON call through the failover layer (task `keywords`). The layer records
+ * usage on success, so this file no longer does.
+ */
+async function callOpenAiKeywords(prompt: string, ctx: AiCallContext): Promise<AiJsonCall> {
+  const result = await runAiTask(
+    'keywords',
+    {
+      system: 'You are rigorous about evidence and uncertainty. Return only valid JSON.',
+      prompt,
+      output: { kind: 'json_object' },
+      timeoutMs: AI_TIMEOUT_MS,
+      temperature: 0.2,
+    },
+    ctx,
+  );
+  if (!result.ok) {
+    console.error('competitor keywords AI call failed:', result.kind, result.firstErrorClass);
+    return { parsed: null, usage: null, failure: result };
+  }
+  const json = result.json;
+  return {
+    parsed: json && typeof json === 'object' ? json : null,
+    usage: {
+      model: result.model,
+      prompt_tokens: toNonNegativeInt(result.usage.promptTokens),
+      completion_tokens: toNonNegativeInt(result.usage.completionTokens),
+      total_tokens: toNonNegativeInt(result.usage.totalTokens),
+    },
+    failure: null,
+  };
+}
+
+/**
+ * The error key for a call no provider answered. Only a genuine rate limit on
+ * every provider gets the "try again in a few minutes" copy; billing, auth or
+ * an outage gets the generic one, because waiting will not fix those.
+ */
+function aiFailureErrorKey<K extends KeywordsErrorKey>(failure: AiFailure, rateLimitedKey: K, genericKey: K): K {
+  return failure.allRateLimited ? rateLimitedKey : genericKey;
+}
+
+function uniqueKeywordList(values: unknown, limit: number): string[] {
+  const source = Array.isArray(values) ? values : [];
+  const set = new Set<string>();
+  const out: string[] = [];
+
+  for (const value of source) {
+    const keyword = trimTo(String(value || ''), 70).toLowerCase();
+    if (!keyword || keyword.length < 3) continue;
+    if (set.has(keyword)) continue;
+    set.add(keyword);
+    out.push(keyword);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function normalizeIntentDistribution(value: any): IntentDistribution | null {
+  const raw = value && typeof value === 'object' ? value : {};
+  const info = toNonNegativeInt(raw.informational);
+  const comm = toNonNegativeInt(raw.commercial);
+  const prod = toNonNegativeInt(raw.product);
+  const edu = toNonNegativeInt(raw.educational);
+  const sum = info + comm + prod + edu;
+
+  if (sum === 0) return null;
+
+  return {
+    informational: Math.round((info / sum) * 100),
+    commercial: Math.round((comm / sum) * 100),
+    product: Math.round((prod / sum) * 100),
+    educational: Math.round((edu / sum) * 100),
+  };
+}
+
+function normalizeKeywordClusters(value: any): KeywordCluster[] {
+  const source = Array.isArray(value) ? value : [];
+  const clusters: KeywordCluster[] = [];
+  const seen = new Set<string>();
+
+  for (const item of source) {
+    const clusterName = trimTo(item?.cluster || item?.name, 80);
+    if (!clusterName) continue;
+    const clusterKey = clusterName.toLowerCase();
+    if (seen.has(clusterKey)) continue;
+    seen.add(clusterKey);
+    clusters.push({
+      cluster: clusterName,
+      keywords: uniqueKeywordList(item?.keywords, 12),
+    });
+    if (clusters.length >= 8) break;
+  }
+
+  return clusters;
+}
+
+function normalizeStrategySignals(value: any): StrategySignals {
+  const raw = value && typeof value === 'object' ? value : {};
+  const funnel = raw.funnel_distribution && typeof raw.funnel_distribution === 'object'
+    ? raw.funnel_distribution
+    : {};
+
+  return {
+    content_themes: uniqueKeywordList(raw.content_themes, 8),
+    content_goal: trimTo(raw.content_goal, 120),
+    funnel_distribution: {
+      top_of_funnel: uniqueKeywordList(funnel.top_of_funnel, 8),
+      middle_of_funnel: uniqueKeywordList(funnel.middle_of_funnel, 8),
+      bottom_of_funnel: uniqueKeywordList(funnel.bottom_of_funnel, 8),
+    },
+    content_formats: uniqueKeywordList(raw.content_formats, 8),
+    strategic_strength: trimTo(raw.strategic_strength, 280),
+    strategic_weakness: trimTo(raw.strategic_weakness, 280),
+  };
+}
+
+function buildKeywordHeatmap(competitors: CompetitorKeywordIntel[]): {
+  keywords: string[];
+  rows: KeywordHeatmapRow[];
+  competitor_domains: string[];
+} {
+  const domains = competitors.map((item) => item.domain);
+  const frequency = new Map<string, number>();
+  const perDomain = new Map<string, Set<string>>();
+
+  for (const competitor of competitors) {
+    const domainSet = new Set<string>([
+      ...competitor.primary_keywords,
+      ...competitor.secondary_keywords,
+      ...competitor.keyword_clusters.flatMap((cluster) => cluster.keywords),
+    ]);
+    perDomain.set(competitor.domain, domainSet);
+
+    for (const keyword of domainSet) {
+      frequency.set(keyword, (frequency.get(keyword) || 0) + 1);
+    }
+  }
+
+  const keywords = [...frequency.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 16)
+    .map(([keyword]) => keyword);
+
+  const rows: KeywordHeatmapRow[] = keywords.map((keyword) => {
+    const coverage: Record<string, boolean> = {};
+    for (const domain of domains) {
+      coverage[domain] = perDomain.get(domain)?.has(keyword) || false;
+    }
+    return { keyword, coverage };
+  });
+
+  return {
+    keywords,
+    rows,
+    competitor_domains: domains,
+  };
+}
+
+function hasAnyKeyword(item: CompetitorKeywordIntel): boolean {
+  return item.primary_keywords.length > 0 || item.secondary_keywords.length > 0;
+}
+
+function normalizePayloadFromAi(raw: any, input: {
+  competitorSignals: Array<{ name: string; domain: string }>;
+}): CompetitorKeywordsPayload {
+  const sourceCompetitors = Array.isArray(raw?.competitors) ? raw.competitors : [];
+  const domainSet = new Set(input.competitorSignals.map((item) => item.domain));
+  const normalized: CompetitorKeywordIntel[] = [];
+  const seen = new Set<string>();
+
+  for (const item of sourceCompetitors) {
+    const competitor = trimTo(item?.competitor || item?.name, 120);
+    const domain = normalizeDomain(item?.domain || item?.website);
+    if (!competitor || !domain || !domainSet.has(domain)) continue;
+    if (seen.has(domain)) continue;
+    seen.add(domain);
+
+    normalized.push({
+      competitor,
+      domain,
+      primary_keywords: uniqueKeywordList(item?.primary_keywords, 20),
+      secondary_keywords: uniqueKeywordList(item?.secondary_keywords, 40),
+      keyword_clusters: normalizeKeywordClusters(item?.keyword_clusters),
+      intent_distribution: normalizeIntentDistribution(item?.intent_distribution),
+      content_strategy: {
+        main_goal: trimTo(item?.content_strategy?.main_goal, 120),
+        secondary_goals: uniqueKeywordList(item?.content_strategy?.secondary_goals, 8),
+        content_focus: trimTo(item?.content_strategy?.content_focus, 280),
+        publishing_style: trimTo(item?.content_strategy?.publishing_style, 280),
+      },
+      strategy_signals: normalizeStrategySignals(item?.strategy_signals),
+      data_quality_notes: uniqueKeywordList(item?.data_quality_notes, 8),
+    });
+  }
+
+  for (const source of input.competitorSignals) {
+    if (normalized.some((item) => item.domain === source.domain)) continue;
+    normalized.push({
+      competitor: source.name,
+      domain: source.domain,
+      primary_keywords: [],
+      secondary_keywords: [],
+      keyword_clusters: [],
+      intent_distribution: null,
+      content_strategy: {
+        main_goal: 'unknown',
+        secondary_goals: [],
+        content_focus: 'Insufficient evidence',
+        publishing_style: 'Insufficient evidence',
+      },
+      strategy_signals: {
+        content_themes: [],
+        content_goal: 'unknown',
+        funnel_distribution: {
+          top_of_funnel: [],
+          middle_of_funnel: [],
+          bottom_of_funnel: [],
+        },
+        content_formats: [],
+        strategic_strength: 'Not enough data',
+        strategic_weakness: 'Not enough data',
+      },
+      data_quality_notes: ['insufficient evidence'],
+    });
+  }
+
+  const rawGaps = Array.isArray(raw?.content_gaps) ? raw.content_gaps : [];
+  const contentGaps: ContentGapOpportunity[] = rawGaps
+    .map((item: any) => ({
+      topic: trimTo(item?.topic, 120),
+      competitor_weakness: trimTo(item?.competitor_weakness, 260),
+      audience_importance: trimTo(item?.audience_importance, 260),
+    }))
+    .filter((item: ContentGapOpportunity) => item.topic && item.competitor_weakness && item.audience_importance)
+    .slice(0, 10);
+
+  const heatmap = buildKeywordHeatmap(normalized);
+
+  return {
+    generated_at: new Date().toISOString(),
+    source: 'AI',
+    ai_estimated: true,
+    competitors: normalized,
+    content_gaps: contentGaps,
+    keyword_heatmap: heatmap,
+    token_usage: emptyTokenUsage(),
+  };
+}
+
+function mergeCompetitorKeywordsInAudienceInsights(currentAudienceInsights: any, payload: CompetitorKeywordsPayload): any {
+  const current = currentAudienceInsights && typeof currentAudienceInsights === 'object' ? currentAudienceInsights : {};
+  return {
+    ...current,
+    competitorKeywordsIntel: payload,
+  };
+}
+
+export async function generateCompetitorKeywordsCore(actor: KeywordsActor): Promise<GenerateKeywordsResult> {
+  const { userId, workspaceId } = actor;
+  if (!workspaceId) return { ok: false, errorKey: 'workspaceIdRequired' };
+
+  try {
+    const workspace = await prisma.workspace.findUnique({
+      where: { id: workspaceId, userId },
+      include: { competitors: true },
+    });
+    if (!workspace) return { ok: false, errorKey: 'workspaceNotFound' };
+
+    const { items: competitors, basis } = pickCompetitors(workspace);
+    if (competitors.length < 2) {
+      return { ok: false, errorKey: 'needTwoReviewed' };
+    }
+
+    const now = Date.now;
+    const deadline = now() + KEYWORDS_ENRICH_BUDGET_MS;
+    const competitorSignals = [];
+    for (const competitor of competitors) {
+      // Checked before starting each competitor's site, not just inside
+      // collectSiteSignals's own path loop: once the shared budget is
+      // spent, no further competitor is read at all.
+      if (now() >= deadline) break;
+      const signals = await collectCompetitorSignals(competitor.domain, { deadline, now });
+      if (!signals.evidence) continue;
+      competitorSignals.push({
+        ...competitor,
+        pages_scanned: signals.pages_scanned,
+        evidence: signals.evidence,
+      });
+    }
+
+    if (competitorSignals.length < 2) {
+      return { ok: false, errorKey: 'notEnoughCompetitorSignals' };
+    }
+
+    const prompt = buildKeywordAnalysisPrompt({
+      targetCompany: workspace.name,
+      targetDomain: normalizeDomain(workspace.websiteUrl || ''),
+      brandSummary: workspace.brandSummary || {},
+      competitorSignals,
+    });
+
+    const openAiResult = await callOpenAiKeywords(prompt, {
+      workspaceId: workspace.id,
+      userId: userId,
+    });
+    const payload =
+      openAiResult?.parsed != null
+        ? normalizePayloadFromAi(openAiResult.parsed, { competitorSignals })
+        : null;
+
+    // A failed or empty analysis is never saved: the previous result stays
+    // as it was, and nothing downstream (content, narrative, report) is fed
+    // an answer the model did not give.
+    if (!payload || !payload.competitors.some(hasAnyKeyword)) {
+      await writeActivityLog({
+        userId: userId,
+        workspaceId: workspace.id,
+        action: 'COMPETITOR_KEYWORDS_FAILED',
+        detail: {
+          reason: openAiResult.failure ? 'ai_unavailable' : payload ? 'no_keywords' : 'no_ai_result',
+          firstErrorClass: openAiResult.failure?.firstErrorClass ?? null,
+          totalTokens: openAiResult.usage?.total_tokens || 0,
+        },
+      });
+      return {
+        ok: false,
+        errorKey: openAiResult.failure
+          ? aiFailureErrorKey(openAiResult.failure, 'keywordsAiFailed', 'keywordsFailed')
+          : 'keywordsAiFailed',
+      };
+    }
+
+    const existingTokenUsage = normalizeTokenUsage(
+      (workspace.audienceInsights as any)?.competitorKeywordsIntel?.token_usage,
+    );
+    payload.token_usage = appendTokenUsage(existingTokenUsage, openAiResult?.usage || null);
+    payload.competitor_basis = basis;
+
+    await prisma.workspace.update({
+      where: { id: workspace.id },
+      data: {
+        audienceInsights: mergeCompetitorKeywordsInAudienceInsights(workspace.audienceInsights, payload),
+      },
+    });
+
+    await writeActivityLog({
+      userId: userId,
+      workspaceId: workspace.id,
+      action: 'COMPETITOR_KEYWORDS_GENERATED',
+      detail: {
+        competitors: payload.competitors.length,
+        gaps: payload.content_gaps.length,
+        promptTokens: payload.token_usage.last_run?.prompt_tokens || 0,
+        completionTokens: payload.token_usage.last_run?.completion_tokens || 0,
+        totalTokens: payload.token_usage.last_run?.total_tokens || 0,
+      },
+    });
+
+    return { ok: true, payload };
+  } catch (error) {
+    console.error('generateCompetitorKeywordsCore failed:', error);
+    return { ok: false, errorKey: 'keywordsFailed' };
+  }
+}

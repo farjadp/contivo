@@ -77,7 +77,9 @@ function AnalyzingContent() {
 
     setCurrentStepIndex(STEPS.length);
 
-    const query = new URLSearchParams({ tab: 'strategy' });
+    // No tab: the workspace page decides. Guided mode opens the first-post
+    // view; open mode reads `from=analyzing` and lands on strategy, as before.
+    const query = new URLSearchParams({ from: 'analyzing' });
     if (result.warnings.length > 0) query.set('setup', 'partial');
     router.replace(`/growth/${workspaceId}?${query.toString()}` as never);
   }, [router, workspaceId, t]);

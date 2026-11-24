@@ -5,6 +5,7 @@
  * either the stable ones stored on the competitor's evidence or `own:` ids
  * derived from the workspace's brand summary. Nothing here is invented.
  */
+import { safeSlice } from '@/lib/text/safe-slice';
 import { createHash } from 'node:crypto';
 
 import { parseStoredEvidence } from '@/lib/competitors/pipeline';
@@ -95,7 +96,7 @@ export function hasBrandSummary(brandSummary: unknown): boolean {
 export function competitorEvidence(stored: unknown): BundleEvidence[] {
   const items: BundleEvidence[] = [];
   for (const item of parseStoredEvidence(stored)) {
-    const text = [item.title, item.snippet].filter(Boolean).join(' — ').slice(0, MAX_TEXT);
+    const text = safeSlice([item.title, item.snippet].filter(Boolean).join(' — '), MAX_TEXT);
     if (text) items.push({ id: item.id, kind: item.kind, text });
   }
   return items.slice(0, MAX_EVIDENCE);

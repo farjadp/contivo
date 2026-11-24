@@ -7,6 +7,7 @@ import { prisma } from '@/lib/db';
 import { parseLocalDateTimeToUtc } from '@/lib/autopilot/schedule';
 import { writeActivityLog } from '@/lib/activity-log';
 import { enforceQualityGate, isBlockedVerdict, notCheckedVerdict, type StoredVerdict } from '@/lib/quality-verdict';
+import { assertPublishTarget, PublishTargetMissingError } from '@/lib/publish-readiness';
 
 /**
  * B8: every action that moves an item to READY or SCHEDULED checks the
@@ -21,7 +22,7 @@ export type GateOverride = { override?: boolean };
 async function loadOwnedItem(contentId: string, userId: string) {
   const item = await prisma.contentItem.findFirst({
     where: { id: contentId, userId },
-    select: { id: true, workspaceId: true, status: true, content: true, qualityVerdict: true },
+    select: { id: true, workspaceId: true, status: true, channel: true, content: true, qualityVerdict: true },
   });
   if (!item) throw new Error('Content item not found');
   return item;
@@ -60,6 +61,17 @@ export async function scheduleContentItem(payload: SchedulePayload) {
   if (!scheduledAtUtc) throw new Error('Could not read that publish date and time.');
 
   const item = await loadOwnedItem(payload.contentId, session.userId);
+
+  /*
+    W2: nothing is scheduled that nothing can publish. Still a throw here, for
+    the existing callers; the message is the code because Next redacts thrown
+    messages in production. New callers use schedulePublish (actions/publish-now.ts),
+    which returns the refusal instead. Checked before the gate, like publishNow,
+    so a "Publish anyway" that cannot publish stamps and audits nothing.
+  */
+  const target = await assertPublishTarget(item.workspaceId, item.channel);
+  if (!target.ok) throw new PublishTargetMissingError(target.platform);
+
   const overridden = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
 
   const updatedContent = await prisma.contentItem.update({
@@ -128,6 +140,7 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
   const gated = item.qualityVerdict !== null && item.qualityVerdict !== undefined;
   let nextVerdict: StoredVerdict | null = null;
   let hold = false;
+  let heldReason: 'no_connection' | undefined;
   if (gated && bodyChanged) {
     const reset = notCheckedVerdict('pipeline');
     nextVerdict =
@@ -142,6 +155,20 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
       hold = true;
     } else {
       nextVerdict = await enforceQualityGate({ item, userId: session.userId, override: payload.override });
+    }
+  }
+
+  /*
+    W2: a schedule the gate allows still needs something that can publish
+    it. Held exactly like the gate hold (text saved, schedule cleared), and
+    the reason is returned, because the editor must say why it did not
+    schedule.
+  */
+  if (wantsSchedule && !hold) {
+    const target = await assertPublishTarget(item.workspaceId, item.channel);
+    if (!target.ok) {
+      hold = true;
+      heldReason = 'no_connection';
     }
   }
 
@@ -179,12 +206,18 @@ export async function updateContentAndSchedule(payload: UpdateContentAndSchedule
         platform: payload.platform,
         scheduledAtUtc: scheduled ? scheduledAtUtc?.toISOString() : undefined,
         timezone: scheduled ? payload.timezone : undefined,
-        held: hold || undefined,
+        // Held = a schedule was asked for, or one was taken away. A plain text
+        // edit of a GENERATED draft resets its verdict but holds nothing (B7).
+        held: hold && (wantsSchedule || wasForward) ? true : undefined,
+        heldReason,
       },
     });
   }
 
-  return updatedContent;
+  const result: typeof updatedContent & { held?: 'no_connection' } = heldReason
+    ? { ...updatedContent, held: heldReason }
+    : updatedContent;
+  return result;
 }
 
 const GATED_STATUSES = new Set(['READY', 'SCHEDULED', 'PUBLISHING', 'PUBLISHED']);
@@ -197,6 +230,11 @@ export async function updateContentStatus(contentId: string, status: string, opt
   let overridden: StoredVerdict | null = null;
   if (GATED_STATUSES.has(status)) {
     const item = await loadOwnedItem(contentId, session.userId);
+    // W2: SCHEDULED is a promise to publish; refuse it when nothing can (connection first, as above).
+    if (status === 'SCHEDULED') {
+      const target = await assertPublishTarget(item.workspaceId, item.channel);
+      if (!target.ok) throw new PublishTargetMissingError(target.platform);
+    }
     overridden = await enforceQualityGate({ item, userId: session.userId, override: options.override });
   }
 

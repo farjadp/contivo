@@ -122,3 +122,69 @@ describe('journey steps agree with the server gate', () => {
     expect(step(f, 'narrative').blockedBy).toBeUndefined();
   });
 });
+
+describe('the firstPost end step', () => {
+  const ready = { competitiveMatrices: { run_id: 'r', charts: charts(3), competitor_basis: 'ACCEPTED' } };
+
+  it('is appended last, after the six setup steps', () => {
+    const j = buildJourney(facts({}));
+    expect(j.steps).toHaveLength(7);
+    expect(j.steps.map((s) => s.id)).toEqual([
+      'brand',
+      'market',
+      'keywords',
+      'narrative',
+      'channel',
+      'autopilot',
+      'firstPost',
+    ]);
+    expect(j.steps[6]).toMatchObject({
+      order: 7,
+      href: '/growth/ws?tab=first-post',
+      title: { key: 'steps.firstPost.title' },
+      why: { key: 'steps.firstPost.why' },
+      action: { key: 'steps.firstPost.action' },
+    });
+  });
+
+  it('is done once anything is published, and never locked', () => {
+    expect(step(facts({}, { publishedCount: 0 }), 'firstPost')).toMatchObject({
+      state: 'available',
+      detail: { key: 'steps.firstPost.detailTodo' },
+    });
+    expect(step(facts({}, { publishedCount: 0 }), 'firstPost').blockedBy).toBeUndefined();
+    expect(step(facts({}, { publishedCount: 2, hasBrandSummary: false }), 'firstPost')).toMatchObject({
+      state: 'done',
+      detail: { key: 'steps.firstPost.detailDone' },
+    });
+  });
+
+  it('leaves completed, total, percent, isComplete and next to the six setup steps', () => {
+    const fixtures: WorkspaceFacts[] = [
+      facts({}),
+      facts({}, { hasBrandSummary: false, acceptedCompetitors: 0, totalCompetitors: 0, keywordCompetitors: 0 }),
+      facts({ competitiveMatrices: { charts: charts(2) } }),
+      facts(ready, { publishedCount: 3 }),
+      facts(ready, { autopilotEnabled: true }),
+      facts(ready, { autopilotEnabled: true, publishedCount: 1 }),
+    ];
+    for (const f of fixtures) {
+      const j = buildJourney(f);
+      const setup = j.steps.filter((s) => s.id !== 'firstPost');
+      const completed = setup.filter((s) => s.state === 'done').length;
+      expect(j.total).toBe(6);
+      expect(j.completed).toBe(completed);
+      expect(j.percent).toBe(Math.round((completed / 6) * 100));
+      expect(j.isComplete).toBe(completed === 6);
+      expect(j.next?.id).not.toBe('firstPost');
+      expect(j.next).toEqual(setup.find((s) => s.state === 'current') ?? null);
+    }
+  });
+
+  it('is never current, even when setup is complete and nothing is published', () => {
+    const j = buildJourney(facts(ready, { autopilotEnabled: true, publishedCount: 0 }));
+    expect(j.isComplete).toBe(true);
+    expect(j.next).toBeNull();
+    expect(j.steps[6].state).toBe('available');
+  });
+});

@@ -84,10 +84,6 @@
       "statContent": "Content",
       "statDiscoveryRuns": "Discovery runs",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "AI calls",
-      "statAiTokens": "AI tokens",
-      "statEstCost": "Est. cost",
-      "trackedNote": "tracked modules only",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Brand Memory",
@@ -117,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices."
+        "competitorDiscoveryEmpty": "Competitor discovery came back empty — the AI provider was unavailable. You can retry it from Market Matrices.",
+        "siteUnreadable": "Could not read the website.",
+        "brandExtractionEmpty": "Reading the brand from the website returned nothing."
       },
       "loop": {
         "label": "Workspace stages",

@@ -84,10 +84,6 @@
       "statContent": "Contenuti",
       "statDiscoveryRuns": "Ricerche",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "Chiamate AI",
-      "statAiTokens": "Token AI",
-      "statEstCost": "Costo stimato",
-      "trackedNote": "solo moduli monitorati",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Brand Memory",
@@ -117,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "La ricerca dei concorrenti non ha dato risultati: il provider AI non era disponibile. Puoi riprovare da Market Matrices."
+        "competitorDiscoveryEmpty": "La ricerca dei concorrenti non ha dato risultati: il provider AI non era disponibile. Puoi riprovare da Market Matrices.",
+        "siteUnreadable": "Non è stato possibile leggere il sito.",
+        "brandExtractionEmpty": "La lettura del brand dal sito non ha restituito nulla."
       },
       "loop": {
         "label": "Fasi del workspace",

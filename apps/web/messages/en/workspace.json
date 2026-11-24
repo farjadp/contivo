@@ -47,6 +47,13 @@
         "actionEnable": "Enable and save the policy",
         "detailOn": "Running",
         "detailOff": "Off"
+      },
+      "firstPost": {
+        "title": "Publish your first post",
+        "why": "One real post, live on your own channel. Everything else in Contivo is there to get you here.",
+        "action": "Write my first post",
+        "detailDone": "Published",
+        "detailTodo": "Nothing published yet"
       }
     },
     "blockers": {
@@ -95,12 +102,75 @@
     "body": {
       "firstPost": "Contivo can now publish to {platform} for you. Write your first post and publish it.",
       "journey": "Contivo can now publish to {platform} for you. Next, carry on with your setup.",
-      "pipeline": "Contivo can now publish to {platform} for you. Your setup is complete."
+      "pipeline": "Contivo can now publish to {platform} for you. Your setup is complete.",
+      "firstPostDraft": "Contivo can now publish to {platform} for you. Your first post is ready to go out."
     },
     "action": {
       "firstPost": "Publish your first post",
-      "pipeline": "Open your pipeline"
+      "pipeline": "Open your pipeline",
+      "firstPostDraft": "Publish this post"
     },
     "dismiss": "Close"
+  },
+  "nextStep": {
+    "counter": "{n, number}/{total, number}",
+    "addCompany": {
+      "line": "Add your company to start",
+      "action": "Add company"
+    },
+    "confirmCompetitors": {
+      "line": "Confirm who you compete with",
+      "why": "Your first post is written against them.",
+      "action": "Confirm competitors"
+    },
+    "writing": {
+      "line": "Writing your first post… about 2 min"
+    },
+    "runFailed": {
+      "line": {
+        "matrices": "The market map didn't finish",
+        "keywords": "Topic gaps didn't finish",
+        "idea": "We couldn't find an angle for your post",
+        "draft": "Writing the post didn't finish"
+      },
+      "action": "Try again",
+      "actionWriteOwn": "Write my own instead",
+      "actionBrand": "Open Brand Memory"
+    },
+    "readDraft": {
+      "line": "Your first post is ready",
+      "action": "Read it"
+    },
+    "draftBlocked": {
+      "line": "Your draft needs another angle",
+      "lineEdit": "Your draft needs changes before it can go out. Edit it below.",
+      "action": "Try another angle"
+    },
+    "connectLinkedIn": {
+      "line": "Publish this on LinkedIn",
+      "why": "Your personal profile. Nothing posts until you press Publish.",
+      "action": "Connect LinkedIn"
+    },
+    "publishNow": {
+      "line": "LinkedIn connected. Publish your first post.",
+      "action": "Publish now"
+    },
+    "publishing": {
+      "line": "Publishing to LinkedIn… under a minute"
+    },
+    "firstPostLive": {
+      "line": "Your first post is live",
+      "action": "View on LinkedIn"
+    },
+    "autopilot": {
+      "line": "Let Contivo post every week",
+      "action": "Set up Autopilot"
+    },
+    "narrative": {
+      "line": "Sharpen what you stand for",
+      "why": "Autopilot writes from it.",
+      "action": "Draft the narrative"
+    },
+    "busy": "Working on it"
   }
 }

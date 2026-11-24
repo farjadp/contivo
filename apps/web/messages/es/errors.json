@@ -135,6 +135,14 @@
     },
     "creditRequestFailed": "No se pudo enviar tu solicitud. Inténtalo de nuevo.",
     "bugReportRateLimited": "Has enviado varios informes en la última hora. Inténtalo de nuevo un poco más tarde.",
-    "bugReportFailed": "No pudimos guardar tu informe. Inténtalo de nuevo."
+    "bugReportFailed": "No pudimos guardar tu informe. Inténtalo de nuevo.",
+    "firstPostAlreadyRunning": "Ya estamos escribiendo tu primera publicación. Aparecerá aquí cuando esté lista.",
+    "firstPostDispatchFailed": "No pudimos empezar. Inténtalo de nuevo.",
+    "firstPostOtherAngleLimit": "Ya usaste todos los otros enfoques para este workspace. Edita este borrador o escribe tu propia publicación.",
+    "firstPostRetryLimit": "Este paso no terminó dos veces. Escribe tu propia publicación o informa del problema.",
+    "firstPostDraftExists": "Tu primera publicación ya está escrita. Ábrela para leerla o editarla.",
+    "firstPostNoDraft": "Todavía no hay un borrador de la primera publicación.",
+    "siteUnreadable": "No pudimos leer {url}. Comprueba que la dirección sea pública y accesible, y vuelve a intentarlo.",
+    "brandReadFailed": "El servicio de IA no respondió al leer tu sitio. No se guardó nada de este intento; vuelve a intentarlo en un momento."
   }
 }

@@ -4,16 +4,21 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // zone they chose, as a UTC instant — independent of the server's own zone.
 // Run with TZ=UTC to match production (Railway).
 
-const { prismaMock, activityLogMock } = vi.hoisted(() => ({
+const { prismaMock, activityLogMock, targetMock } = vi.hoisted(() => ({
   prismaMock: {
     contentItem: { update: vi.fn(), findFirst: vi.fn() },
   },
   activityLogMock: vi.fn(),
+  targetMock: vi.fn(),
 }));
 
 vi.mock('@/lib/db', () => ({ prisma: prismaMock }));
 vi.mock('@/lib/auth', () => ({ getSession: vi.fn(async () => ({ userId: 'user-1' })) }));
 vi.mock('@/lib/activity-log', () => ({ writeActivityLog: activityLogMock }));
+vi.mock('@/lib/publish-readiness', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/publish-readiness')>()),
+  assertPublishTarget: targetMock,
+}));
 
 import { scheduleContentItem, updateContentAndSchedule, updateContentStatus } from './calendar';
 
@@ -40,6 +45,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   prismaMock.contentItem.update.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1' });
   prismaMock.contentItem.findFirst.mockResolvedValue({ id: 'item-1', workspaceId: 'ws-1', content: 'Body', qualityVerdict: null });
+  targetMock.mockResolvedValue({ ok: true });
 });
 
 describe('updateContentAndSchedule time zone', () => {
@@ -209,6 +215,24 @@ describe('editor save never schedules by itself', () => {
     expect(activityLogMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_EDITED' }));
   });
 
+  it('a text edit of a gated draft with no schedule asked logs no held flag (B7)', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status: 'GENERATED', channel: 'linkedin', content: 'Old', qualityVerdict: { approved: true },
+    });
+    await updateContentAndSchedule(payload({ content: 'New', publishDate: '', publishTime: '' }));
+    const detail = activityLogMock.mock.calls[0][0].detail;
+    expect(activityLogMock.mock.calls[0][0].action).toBe('CONTENT_EDITED');
+    expect(detail.held).toBeUndefined();
+  });
+
+  it('a text edit that pulls a gated SCHEDULED item back still says held', async () => {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status: 'SCHEDULED', channel: 'linkedin', content: 'Old', qualityVerdict: { approved: true },
+    });
+    await updateContentAndSchedule(payload({ content: 'New', publishDate: '', publishTime: '' }));
+    expect(activityLogMock.mock.calls[0][0].detail.held).toBe(true);
+  });
+
   it('logs CONTENT_EDITED_AND_SCHEDULED only when a schedule was set', async () => {
     item('READY');
     await updateContentAndSchedule(payload({ content: 'Fixed typo' }));
@@ -221,5 +245,113 @@ describe('editor save never schedules by itself', () => {
     item('GENERATED', { qualityVerdict: { approved: false, rejectedBy: 'low_score' } });
     await updateContentAndSchedule(payload({ content: 'Old body' }));
     expect(activityLogMock).toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_EDITED' }));
+  });
+});
+
+// W2 (spec D7): no schedule without something that can publish it.
+describe('W2: no schedule without a connection', () => {
+  const schedule = { contentId: 'item-1', platform: 'linkedin', publishDate: '2026-11-24', publishTime: '09:00', timezone: 'America/Toronto' };
+  function item(extra: object = {}) {
+    prismaMock.contentItem.findFirst.mockResolvedValue({
+      id: 'item-1', workspaceId: 'ws-1', status: 'READY', channel: 'linkedin', content: 'Body', qualityVerdict: null, ...extra,
+    });
+  }
+  const missing = { ok: false, reason: 'no_connection', platform: 'LINKEDIN' };
+
+  it('scheduleContentItem checks the item channel in its workspace', async () => {
+    item();
+    await scheduleContentItem(schedule);
+    expect(targetMock).toHaveBeenCalledWith('ws-1', 'linkedin');
+    expect(updateData().status).toBe('SCHEDULED');
+  });
+
+  it('scheduleContentItem refuses with a coded no_connection error and writes nothing', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    const err = await scheduleContentItem(schedule).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect((err as Error).message).toBe('no_connection');
+    expect((err as { code?: string }).code).toBe('no_connection');
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'CONTENT_SCHEDULED' }));
+  });
+
+  it('updateContentStatus SCHEDULED without a connection is refused and writes nothing', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    const err = await updateContentStatus('item-1', 'SCHEDULED').catch((e: unknown) => e);
+    expect((err as { code?: string }).code).toBe('no_connection');
+    expect(targetMock).toHaveBeenCalledWith('ws-1', 'linkedin');
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+  });
+
+  it('updateContentStatus READY or back to DRAFT never asks for a connection', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    await updateContentStatus('item-1', 'READY');
+    await updateContentStatus('item-1', 'DRAFT');
+    expect(targetMock).not.toHaveBeenCalled();
+  });
+
+  it('a blocked item without a connection is refused for the connection first, so "Publish anyway" stamps nothing', async () => {
+    item({ qualityVerdict: { approved: false, rejectedBy: 'low_score', reasons: [], judgeModel: 'm', source: 'pipeline' } });
+    targetMock.mockResolvedValue(missing);
+    for (const run of [
+      () => scheduleContentItem({ ...schedule, override: true }),
+      () => updateContentStatus('item-1', 'SCHEDULED', { override: true }),
+    ]) {
+      const err = await run().catch((e: unknown) => e);
+      expect((err as { code?: string }).code).toBe('no_connection');
+    }
+    expect(prismaMock.contentItem.update).not.toHaveBeenCalled();
+    expect(activityLogMock).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'QUALITY_GATE_OVERRIDDEN' }));
+  });
+
+  it('save & schedule without a connection saves the text, holds the schedule, and says why', async () => {
+    item({ content: 'Old body' });
+    targetMock.mockResolvedValue(missing);
+    const result = await updateContentAndSchedule(payload({ content: 'New body', platform: 'linkedin' }));
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data.content).toBe('New body');
+    expect(data.status).toBe('GENERATED');
+    expect(data.scheduledAtUtc).toBeNull();
+    expect(data.scheduledTimezone).toBeNull();
+    expect(result).toMatchObject({ id: 'item-1', held: 'no_connection' });
+    expect(activityLogMock).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'CONTENT_EDITED', detail: expect.objectContaining({ held: true, heldReason: 'no_connection' }) }),
+    );
+  });
+
+  it('a DRAFT held for no connection keeps its status', async () => {
+    item({ status: 'DRAFT' });
+    targetMock.mockResolvedValue(missing);
+    await updateContentAndSchedule(payload({ platform: 'linkedin' }));
+    const data = prismaMock.contentItem.update.mock.calls[0][0].data;
+    expect(data).not.toHaveProperty('status');
+    expect(data.scheduledAtUtc).toBeNull();
+  });
+
+  it('a text-only save never checks the connection and never says held', async () => {
+    item();
+    targetMock.mockResolvedValue(missing);
+    const result = await updateContentAndSchedule(payload({ publishDate: '', publishTime: '' }));
+    expect(targetMock).not.toHaveBeenCalled();
+    expect(result).not.toHaveProperty('held');
+  });
+
+  it('save & schedule with a connection schedules and is not held', async () => {
+    item();
+    const result = await updateContentAndSchedule(payload({ platform: 'linkedin' }));
+    expect(targetMock).toHaveBeenCalledWith('ws-1', 'linkedin');
+    expect(updateData().status).toBe('SCHEDULED');
+    expect(result).not.toHaveProperty('held');
+  });
+
+  it('a gate hold is still a gate hold (no connection lookup, no held field)', async () => {
+    item({ qualityVerdict: { approved: false, rejectedBy: 'low_score' } });
+    targetMock.mockResolvedValue(missing);
+    const result = await updateContentAndSchedule(payload({ platform: 'linkedin' }));
+    expect(targetMock).not.toHaveBeenCalled();
+    expect(result).not.toHaveProperty('held');
   });
 });

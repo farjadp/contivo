@@ -59,4 +59,24 @@ describe('connectedNextAction', () => {
   it('falls back to the pipeline when setup is complete', () => {
     expect(connectedNextAction('w1', { next: null }, 2).kind).toBe('pipeline');
   });
+
+  it('offers "Publish this post" on the pipeline when a first-post draft is waiting and nothing is published', () => {
+    // Open mode only shows this button, and open mode has no first-post tab.
+    expect(connectedNextAction('w1', { next: step('market') }, 0, 'ci1')).toEqual({
+      kind: 'firstPostDraft',
+      href: '/growth/w1?tab=pipeline',
+    });
+  });
+
+  it('keeps the #69 behaviour when there is no first-post draft', () => {
+    expect(connectedNextAction('w1', { next: step('market') }, 0, null)).toEqual(
+      connectedNextAction('w1', { next: step('market') }, 0),
+    );
+  });
+
+  it('ignores a draft id once something is published', () => {
+    const next = step('autopilot');
+    expect(connectedNextAction('w1', { next }, 1, 'ci1')).toEqual({ kind: 'journey', step: next });
+    expect(connectedNextAction('w1', { next: null }, 1, 'ci1').kind).toBe('pipeline');
+  });
 });

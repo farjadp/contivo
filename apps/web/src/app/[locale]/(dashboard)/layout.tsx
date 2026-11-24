@@ -2,6 +2,7 @@ import { redirect } from '@/i18n/navigation';
 
 import { AppShell } from '@/components/layout/app-shell';
 import { getSession } from '@/lib/auth';
+import { loadGuidedMode } from '@/lib/first-post/mode';
 import { touchLastSeen } from '@/lib/last-seen';
 import { getLocale } from 'next-intl/server';
 
@@ -22,5 +23,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   // lastSeenAt + SESSION_STARTED. Never throws; skips the database for 5 min per user.
   await touchLastSeen(session.userId);
 
-  return <AppShell>{children}</AppShell>;
+  // Guided mode (spec first-post B §9) drops the Instant Content nav item;
+  // /instant stays reachable by URL. A nav item is not worth an error page,
+  // so a failed read keeps it.
+  const guided = await loadGuidedMode(session.userId).catch((error) => {
+    console.error('DashboardLayout: guided mode failed to load:', error);
+    return false;
+  });
+
+  return <AppShell hideInstant={guided}>{children}</AppShell>;
 }

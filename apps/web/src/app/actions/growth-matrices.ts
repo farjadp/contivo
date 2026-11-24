@@ -7,25 +7,19 @@ import { getSession } from '@/lib/auth';
 import { writeActivityLog } from '@/lib/activity-log';
 import { actionError } from '@/lib/action-errors';
 import { guardedAction } from '@/lib/bug-report/action-failure';
-import { triggerBackgroundRun } from '@/lib/background-run';
-import { classifyRunError, RUN_ERROR, withRunErrorCode } from '@/lib/competitors/run-errors';
+import { classifyRunError } from '@/lib/competitors/run-errors';
 import { selectCompetitors, type SelectionBasis } from '@/lib/competitors/selection';
 import {
-  languageFromContent,
   normaliseMarketAxes,
   parseStoredMarketAxes,
   type StoredMarketAxis,
 } from '@/lib/matrices/axes';
 import { hasBrandSummary } from '@/lib/matrices/bundle';
-import {
-  countSkipped,
-  parseRunCompetitorIds,
-  snapshotCompetitorIds,
-  snapshotCompetitors,
-} from '@/lib/matrices/competitor-set';
+import { countSkipped, parseRunCompetitorIds, snapshotCompetitorIds } from '@/lib/matrices/competitor-set';
 import { rebuildMatricesProjection } from '@/lib/matrices/persist';
 import { reapStaleMatrixRuns } from '@/lib/matrices/pipeline';
 import { isStale } from '@/lib/matrices/projection';
+import { createMatrixRunRow, dispatchMatrixRun } from '@/lib/matrices/start-run';
 
 export type MatrixRunView = {
   id: string;
@@ -109,77 +103,15 @@ function toRunView(run: {
 }
 
 async function startRun(owned: Owned): Promise<{ runId: string } | { error: string }> {
-  const { userId, workspace } = owned;
-  const workspaceId = workspace.id;
-
-  // A run stuck past the stale window is presumed dead; reap it before the
-  // already-running check so it cannot block new runs forever.
-  await reapStaleMatrixRuns(workspaceId);
-
-  const active = await prisma.matrixRun.findFirst({
-    where: { workspaceId, status: { in: ['PENDING', 'RUNNING'] } },
-    select: { id: true },
+  const created = await createMatrixRunRow(owned);
+  if (!created.ok) return { error: await actionError(created.errorKey) };
+  const dispatched = await dispatchMatrixRun({
+    runId: created.runId,
+    userId: owned.userId,
+    workspaceId: owned.workspace.id,
   });
-  if (active) return { error: await actionError('matrixAlreadyRunning') };
-
-  const rows = await prisma.competitor.findMany({ where: { workspaceId } });
-  const { competitors, basis } = selectCompetitors(rows);
-  if (basis === 'NONE' || competitors.length < 2) return { error: await actionError('needTwoReviewedMatrices') };
-  if (!hasBrandSummary(workspace.brandSummary)) return { error: await actionError('matrixNeedsBrandSummary') };
-
-  const competitorSet = snapshotCompetitors(competitors).map((c) => ({
-    competitorId: c.id,
-    domain: c.domain ?? '',
-    type: c.type ?? 'DIRECT',
-  }));
-
-  let run: { id: string };
-  try {
-    run = await prisma.matrixRun.create({
-      data: {
-        workspaceId,
-        userId,
-        status: 'PENDING',
-        basis,
-        language: languageFromContent(workspace.contentLanguage),
-        competitorSet: competitorSet as unknown as Prisma.InputJsonValue,
-      },
-      select: { id: true },
-    });
-  } catch (error) {
-    // matrix_runs_one_active_per_workspace (partial unique index) is what
-    // actually stops two concurrent starts; this makes them agree on the error.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
-      return { error: await actionError('matrixAlreadyRunning') };
-    }
-    throw error;
-  }
-
-  await writeActivityLog({ userId, workspaceId, action: 'MATRICES_STARTED', detail: { runId: run.id, basis } });
-
-  const dispatch = await triggerBackgroundRun('/api/matrices/run', { runId: run.id });
-  if (!dispatch.ok) {
-    // Only while still PENDING: a timed-out trigger may still have reached the
-    // route, which then owns the run. In that case the run is live.
-    const failed = await prisma.matrixRun.updateMany({
-      where: { id: run.id, status: 'PENDING' },
-      data: {
-        status: 'FAILED',
-        error: withRunErrorCode(RUN_ERROR.DISPATCH_FAILED, dispatch.error),
-        finishedAt: new Date(),
-      },
-    });
-    if (failed.count === 0) return { runId: run.id };
-    await writeActivityLog({
-      userId,
-      workspaceId,
-      action: 'MATRICES_DISPATCH_FAILED',
-      detail: { runId: run.id, error: dispatch.error },
-    });
-    return { error: await actionError('matrixDispatchFailed') };
-  }
-
-  return { runId: run.id };
+  if (!dispatched.ok) return { error: await actionError(dispatched.errorKey) };
+  return { runId: dispatched.runId };
 }
 
 export async function startMatrixRun(

@@ -78,15 +78,16 @@ function BottomLink({
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+/** `hideInstant`: guided mode (first post not yet published) drops the Instant Content item. */
+export function AppShell({ children, hideInstant = false }: { children: ReactNode; hideInstant?: boolean }) {
   return (
     <BugReportProvider>
-      <AppShellFrame>{children}</AppShellFrame>
+      <AppShellFrame hideInstant={hideInstant}>{children}</AppShellFrame>
     </BugReportProvider>
   );
 }
 
-function AppShellFrame({ children }: { children: ReactNode }) {
+function AppShellFrame({ children, hideInstant }: { children: ReactNode; hideInstant: boolean }) {
   const pathname = usePathname();
   const t = useTranslations('shell');
 
@@ -106,7 +107,8 @@ function AppShellFrame({ children }: { children: ReactNode }) {
     return <main className="theme-chalk h-screen w-full overflow-y-auto bg-chalk font-plex text-moss">{children}</main>;
   }
 
-  const primary = NAV_ITEMS.filter((item) => item.href !== '/settings');
+  const navItems = hideInstant ? NAV_ITEMS.filter((item) => item.href !== '/instant') : NAV_ITEMS;
+  const primary = navItems.filter((item) => item.href !== '/settings');
 
   return (
     <div className="theme-chalk flex h-screen flex-col overflow-hidden bg-chalk font-plex text-moss">
@@ -167,9 +169,12 @@ function AppShellFrame({ children }: { children: ReactNode }) {
       {/* ── Phone bar ────────────────────────────────────────────────── */}
       <nav
         aria-label={t('navLabel')}
-        className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-[repeat(5,minmax(0,1fr))] gap-1 border-t border-rule bg-chalk-raised px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:hidden"
+        className={cn(
+          'fixed inset-x-0 bottom-0 z-40 grid gap-1 border-t border-rule bg-chalk-raised px-2 pb-[max(env(safe-area-inset-bottom),8px)] pt-2 md:hidden',
+          hideInstant ? 'grid-cols-[repeat(4,minmax(0,1fr))]' : 'grid-cols-[repeat(5,minmax(0,1fr))]',
+        )}
       >
-        {NAV_ITEMS.map((item) => (
+        {navItems.map((item) => (
           <BottomLink
             key={item.href}
             href={item.href}

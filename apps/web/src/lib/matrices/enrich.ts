@@ -7,6 +7,7 @@
  * and nothing is invented. A site that cannot be read, or yields nothing,
  * simply produces no items: the pipeline then leaves that competitor out.
  */
+import { safeSlice } from '@/lib/text/safe-slice';
 import { createHash } from 'node:crypto';
 
 import { collectSiteSignals } from '@/lib/competitors/site-signals';
@@ -47,7 +48,7 @@ export function siteEvidenceItems(domain: string, evidence: string): EvidenceIte
   const seen = new Set<string>();
   for (const raw of evidence.split('\n')) {
     if (items.length >= MAX_LINES) break;
-    const text = raw.trim().slice(0, MAX_LINE);
+    const text = safeSlice(raw.trim(), MAX_LINE);
     if (!text) continue;
     const id = createHash('sha256').update(`${domain}\n${text}`).digest('hex').slice(0, 8);
     if (seen.has(id)) continue;

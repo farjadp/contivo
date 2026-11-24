@@ -121,6 +121,20 @@ describe('rebuildMatricesProjection', () => {
     expect(b.estimated).toBe(true);
   });
 
+  it('trims evidence titles without splitting an emoji surrogate pair', async () => {
+    const title = `${'a'.repeat(119)}🇨🇦 Detour Coffee`;
+    const r = run();
+    r.charts[0].scores[1].evidenceRefs = ['ab12cd34'] as never;
+    setup({
+      run: r,
+      competitors: [{ ...competitor('a'), evidence: [{ id: 'ab12cd34', url: 'https://a.com/p', title, kind: 'site' }] }, competitor('b')],
+    });
+    const a = (await rebuildMatricesProjection('ws-1'))!.charts[0].companies[1];
+    const stored = a.evidence?.[0]?.title ?? '';
+    expect(stored).toBe('a'.repeat(119));
+    expect(/[\uD800-\uDBFF]$/.test(stored)).toBe(false);
+  });
+
   it('returns null without writing when the run basis is not a valid one', async () => {
     setup({ run: run({ basis: 'NONE' }) });
     expect(await rebuildMatricesProjection('ws-1')).toBeNull();

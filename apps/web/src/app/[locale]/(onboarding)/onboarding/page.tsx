@@ -1,10 +1,23 @@
 import { ArrowRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { getLocale, getTranslations } from 'next-intl/server';
 
-import { Link } from '@/i18n/navigation';
+import { Link, redirect } from '@/i18n/navigation';
+import { getSession } from '@/lib/auth';
+import { loadGuidedMode } from '@/lib/first-post/mode';
+import { logStepView } from '@/lib/step-view';
 
-export default function OnboardingWelcomePage() {
-  const t = useTranslations('onboarding.welcome');
+export default async function OnboardingWelcomePage() {
+  const session = await getSession();
+  if (!session) redirect({ href: '/sign-in', locale: await getLocale() });
+
+  // Guided mode (spec first-post B §9): no fork. The first post starts from
+  // "Your company", so this page logs the view and goes straight there.
+  if (await loadGuidedMode(session.userId)) {
+    logStepView(session.userId, 'onboarding');
+    redirect({ href: '/growth/new', locale: await getLocale() });
+  }
+
+  const t = await getTranslations('onboarding.welcome');
 
   return (
     <div className="w-full min-h-screen flex flex-col lg:flex-row">

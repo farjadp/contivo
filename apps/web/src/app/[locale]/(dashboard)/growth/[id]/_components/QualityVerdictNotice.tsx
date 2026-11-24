@@ -39,10 +39,13 @@ export function QualityVerdictNotice({
   variant = 'card',
   onCheckAgain,
   onPublishAnyway,
+  checkAgainQuiet = false,
 }: {
   verdict: unknown;
   variant?: 'card' | 'preview';
   onCheckAgain?: () => Promise<void>;
+  /** The page has a stronger next action (first post: "Try another angle"): Check again is a quiet link. */
+  checkAgainQuiet?: boolean;
   onPublishAnyway?: () => Promise<void>;
 }) {
   const t = useTranslations('tabsA.quality');
@@ -159,7 +162,11 @@ export function QualityVerdictNotice({
               type="button"
               onClick={handleCheckAgain}
               disabled={isChecking}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-chalk-raised px-3 text-xs font-bold text-moss transition hover:bg-chalk-sunk disabled:opacity-50"
+              className={
+                checkAgainQuiet
+                  ? 'inline-flex h-8 items-center gap-1.5 px-1 text-xs font-bold text-amber-900 underline underline-offset-2 disabled:opacity-50'
+                  : 'inline-flex h-8 items-center gap-1.5 rounded-lg border border-amber-300 bg-chalk-raised px-3 text-xs font-bold text-moss transition hover:bg-chalk-sunk disabled:opacity-50'
+              }
             >
               {isChecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
               {isChecking ? t('checking') : t('checkAgain')}

@@ -28,6 +28,12 @@ import { SitesSection } from './_components/SitesSection';
 import { listSites } from '@/app/actions/sites';
 import { finalizeSocialConnect } from '@/app/actions/social-connect';
 import { connectReturnHref, parseConnectedPlatform } from '@/lib/connect-return';
+import { NextStepBar } from '@/components/next-step/NextStepBar';
+import { writeActivityLog } from '@/lib/activity-log';
+import { CHANNEL_CONNECTED } from '@/lib/first-post/types';
+import { buildNextStep } from '@/lib/next-step';
+import { loadNextStepInput } from '@/lib/next-step-load';
+import { logStepView } from '@/lib/step-view';
 import {
   getPublishJobs,
   getSocialConnections,
@@ -72,10 +78,22 @@ export default async function ConnectionsPage({ searchParams }: Props) {
     // Connected, and we know where: back to that workspace's setup chain,
     // which shows the one next step. Only a workspace this user owns — the
     // API's answer is a hint, the lookup is the check.
-    if (result === 'ok' && connectedTo) {
-      const { workspace: owned } = await resolveWorkspaceScope(session.userId as string, connectedTo, undefined);
-      if (owned?.id === connectedTo) {
-        redirect({ href: connectReturnHref(connectedTo, parseConnectedPlatform(platform)), locale: await getLocale() });
+    if (result === 'ok') {
+      const owned = connectedTo
+        ? (await resolveWorkspaceScope(session.userId as string, connectedTo, undefined)).workspace
+        : null;
+      const ownedId = owned?.id === connectedTo ? connectedTo : null;
+      // Funnel: logged here, at finalize, so reloading the ?connected= landing
+      // cannot count it twice (spec first-post B §7, Q4). Awaited: the
+      // redirect below ends this render. Never throws.
+      await writeActivityLog({
+        userId: session.userId as string,
+        workspaceId: ownedId,
+        action: CHANNEL_CONNECTED,
+        detail: { platform: parseConnectedPlatform(platform) ?? 'unknown' },
+      });
+      if (ownedId) {
+        redirect({ href: connectReturnHref(ownedId, parseConnectedPlatform(platform)), locale: await getLocale() });
       }
     }
     redirect({
@@ -112,6 +130,16 @@ export default async function ConnectionsPage({ searchParams }: Props) {
   );
   const workspaceId = workspace?.id ?? '';
 
+  logStepView(session.userId as string, 'connections', workspace?.id);
+  // The one next-step bar; secondary here, so a failed read drops only the bar.
+  const nextStepLoad = await loadNextStepInput(session.userId as string, workspace?.id ?? null, 'connections').catch(
+    (error) => {
+      console.error('Connections: next step failed to load:', error);
+      return null;
+    },
+  );
+  const nextStep = nextStepLoad ? buildNextStep({ ...nextStepLoad.input, onFirstPostTab: false }) : null;
+
   const [connections, jobs, siteState] = await Promise.all([
     workspaceId ? getSocialConnections(workspaceId) : Promise.resolve([]),
     workspaceId ? getPublishJobs(workspaceId) : Promise.resolve([]),
@@ -123,6 +151,8 @@ export default async function ConnectionsPage({ searchParams }: Props) {
 
   return (
     <div className="max-w-5xl mx-auto space-y-8 pt-8 px-4">
+      <NextStepBar step={nextStep} surface="connections" />
+
       {/* ─── Header ────────────────────────────────────────────────────── */}
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-moss">{t('title')}</h1>

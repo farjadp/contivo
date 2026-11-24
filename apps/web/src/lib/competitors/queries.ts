@@ -1,3 +1,4 @@
+import { safeSlice } from '@/lib/text/safe-slice';
 import { runAiTask, type AiCallContext } from '@/lib/ai';
 import type { AiTokenUsage } from '@/lib/ai-usage';
 
@@ -65,12 +66,12 @@ export function explainRejectionReason(reason: RejectionReasonCode): string {
  */
 export function sanitizePromptField(value: string | null | undefined, max = 100): string {
   const text = String(value ?? '').replace(/[\p{Cc}\u2028\u2029]+/gu, ' ').replace(/\s+/g, ' ').trim();
-  return text.length > max ? `${text.slice(0, max)}…` : text;
+  return text.length > max ? `${safeSlice(text, max)}…` : text;
 }
 
 /** Trim to a max length, coercing anything but a real string to ''. */
 function trimTo(value: unknown, max = 500): string {
-  return typeof value === 'string' ? value.trim().slice(0, max) : '';
+  return typeof value === 'string' ? safeSlice(value.trim(), max) : '';
 }
 
 function normalizeDomain(value: string | null | undefined): string | null {

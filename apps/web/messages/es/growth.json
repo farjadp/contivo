@@ -84,10 +84,6 @@
       "statContent": "Contenido",
       "statDiscoveryRuns": "Búsquedas de competidores",
       "statDiscoveryValue": "{used, number} / {total, number}",
-      "statAiCalls": "Llamadas a la IA",
-      "statAiTokens": "Tokens de IA",
-      "statEstCost": "Coste est.",
-      "trackedNote": "solo módulos con seguimiento",
       "tabTitleGated": "{helper} — {gate}",
       "tabs": {
         "strategyLabel": "Memoria de marca",
@@ -117,7 +113,9 @@
         "progressHelper": "{before} → {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "La búsqueda de competidores no devolvió resultados porque el proveedor de IA no estaba disponible. Puedes reintentarla desde Matrices de mercado."
+        "competitorDiscoveryEmpty": "La búsqueda de competidores no devolvió resultados porque el proveedor de IA no estaba disponible. Puedes reintentarla desde Matrices de mercado.",
+        "siteUnreadable": "No se pudo leer el sitio web.",
+        "brandExtractionEmpty": "La lectura de la marca desde el sitio no devolvió nada."
       },
       "loop": {
         "label": "Etapas del workspace",

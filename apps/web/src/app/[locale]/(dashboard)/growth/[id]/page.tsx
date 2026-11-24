@@ -4,7 +4,6 @@ import { getSession } from '@/lib/auth';
 import { getWorkspaceArchiveState } from '@/lib/admin-state';
 import { prisma } from '@/lib/db';
 import { getLatestPublishJobsByContentItem } from '@/lib/social-data';
-import { matricesTokenUsage as matricesTokenUsageFor } from '@/lib/matrices/token-usage';
 import { notFound } from 'next/navigation';
 import { redirect, Link } from '@/i18n/navigation';
 import {
@@ -12,7 +11,6 @@ import {
   ArrowRight,
   BarChart3,
   Bot,
-  Coins,
   ExternalLink,
   FileText,
   Lightbulb,
@@ -67,6 +65,14 @@ import { getFormatter, getLocale } from 'next-intl/server';
 import { missingReportRequirements } from '@/lib/report-readiness';
 import { countCompetitors } from '@/lib/competitor-counts';
 import { REPORT_LIST_SELECT } from '@/lib/report/list';
+import { NextStepBar } from '@/components/next-step/NextStepBar';
+import { NextStepButton } from '@/components/next-step/NextStepButton';
+import { barText, toButtonAction } from '@/components/next-step/next-step-logic';
+import { buildNextStep } from '@/lib/next-step';
+import { loadNextStepInput } from '@/lib/next-step-load';
+import { parsePublishRefusal } from '@/lib/first-post/publish-refusal';
+import { FirstPostView } from './_components/first-post/FirstPostView';
+import { recordFirstDraftSeen, resolveWorkspaceTab, toFirstPostCompetitors } from './_components/workspace-tab';
 
 export async function generateMetadata() {
   const t = await getTranslations('growth.workspace');
@@ -77,67 +83,6 @@ type Props = {
   params: Promise<{ id: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
-
-type TokenUsageLike = {
-  runs?: number;
-  lifetime_prompt_tokens?: number;
-  lifetime_completion_tokens?: number;
-  lifetime_total_tokens?: number;
-  last_run?: {
-    model?: string;
-  } | null;
-} | null;
-
-type ModelRate = {
-  inputPer1M: number;
-  outputPer1M: number;
-};
-
-const MODEL_RATES: Record<string, ModelRate> = {
-  'gpt-4.1': { inputPer1M: 2, outputPer1M: 8 },
-  'gpt-4.1-mini': { inputPer1M: 0.4, outputPer1M: 1.6 },
-  'gpt-4.1-nano': { inputPer1M: 0.1, outputPer1M: 0.4 },
-  'gpt-4o': { inputPer1M: 2.5, outputPer1M: 10 },
-  'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6 },
-};
-
-function normalizeNumber(value: unknown): number {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return 0;
-  return Math.max(0, Math.floor(parsed));
-}
-
-function estimateUsageCostUsd(tokenUsage: TokenUsageLike): number {
-  if (!tokenUsage) return 0;
-  const promptTokens = normalizeNumber(tokenUsage.lifetime_prompt_tokens);
-  const completionTokens = normalizeNumber(tokenUsage.lifetime_completion_tokens);
-  const model = String(tokenUsage.last_run?.model || process.env.OPENAI_DEFAULT_MODEL || 'gpt-4.1');
-  const rates = MODEL_RATES[model] || MODEL_RATES['gpt-4.1'];
-  const promptCost = (promptTokens / 1_000_000) * rates.inputPer1M;
-  const completionCost = (completionTokens / 1_000_000) * rates.outputPer1M;
-  return promptCost + completionCost;
-}
-
-function resolveTab(rawTab: string | string[] | undefined): string {
-  const value = Array.isArray(rawTab) ? rawTab[0] : rawTab;
-  const allowed = new Set([
-    'pipeline',
-    'ideation',
-    'strategy',
-    'progress',
-    'matrices',
-    'keywords',
-    'offerings',
-    'narrative',
-    'calendar',
-    'seo',
-    'reports',
-    'autopilot',
-  ]);
-  if (!value || !allowed.has(value)) return 'pipeline';
-  return value;
-}
-
 
 export default async function WorkspacePage({ params, searchParams }: Props) {
   const t = await getTranslations('growth.workspace');
@@ -235,7 +180,7 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   startOfMonth.setDate(1);
   startOfMonth.setHours(0, 0, 0, 0);
 
-  const [reportsThisMonth, reportHistory, matrixRunTokens] = await Promise.all([
+  const [reportsThisMonth, reportHistory] = await Promise.all([
     prisma.strategicReport.count({
       where: { userId: session.userId as string, reportDate: { gte: startOfMonth } },
     }),
@@ -244,12 +189,6 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       orderBy: { reportDate: 'desc' },
       take: 20,
       select: REPORT_LIST_SELECT,
-    }),
-    // Runs that spent tokens, summed: the blob only holds the latest run's count.
-    prisma.matrixRun.aggregate({
-      where: { workspaceId: workspace.id, tokensUsed: { gt: 0 } },
-      _count: { _all: true },
-      _sum: { tokensUsed: true },
     }),
   ]);
 
@@ -308,7 +247,21 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const journey = buildJourney(journeyFacts);
   const gates = tabGate(journeyFacts);
 
-  const requestedTab = resolveTab(resolvedSearchParams.tab);
+  // Guided mode and the one next-step bar (spec first-post B). Null = kill switch:
+  // no bar, no hiding, no first-post tab, and the connect landing as in #69.
+  const nextStepLoad = await loadNextStepInput(
+    session.userId as string,
+    workspace.id,
+    parseConnectedPlatform(resolvedSearchParams.connected) ? 'connected' : 'workspace',
+  );
+  const guided = nextStepLoad?.input.guided ?? false;
+  const firstPost = nextStepLoad?.firstPost ?? null;
+
+  const requestedTab = resolveWorkspaceTab(resolvedSearchParams.tab, {
+    guided,
+    firstPostPublished: firstPost?.state.phase === 'published',
+    fromAnalyzing: resolvedSearchParams.from === 'analyzing',
+  });
   const brand = (workspace.brandSummary as any) || {};
   const initialMatrices =
     ((workspace.audienceInsights as any)?.competitiveMatrices as any) || null;
@@ -319,34 +272,8 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
   const initialBrandAssetsPayload =
     ((workspace.audienceInsights as any)?.brandAssets as any) || null;
   const acceptedCompetitors = workspace.competitors.filter((item: any) => item.userDecision === 'ACCEPTED').length;
-
-  // The rebuilt pipeline records tokens per run, so the workspace's runs are
-  // summed; a blob from before the rebuild carries the lifetime object itself.
-  const matricesTokenUsage = matricesTokenUsageFor(
-    { runs: matrixRunTokens._count._all, tokens: matrixRunTokens._sum.tokensUsed ?? 0 },
-    initialMatrices,
-  ) as TokenUsageLike;
-  const keywordsTokenUsage = (initialKeywordPayload?.token_usage as TokenUsageLike) || null;
-  const offeringsTokenUsage = (initialOfferingsPayload?.token_usage as TokenUsageLike) || null;
-  const brandAssetsTokenUsage = (initialBrandAssetsPayload?.token_usage as TokenUsageLike) || null;
-
-  const totalTrackedTokens =
-    normalizeNumber(matricesTokenUsage?.lifetime_total_tokens) +
-    normalizeNumber(keywordsTokenUsage?.lifetime_total_tokens) +
-    normalizeNumber(offeringsTokenUsage?.lifetime_total_tokens) +
-    normalizeNumber(brandAssetsTokenUsage?.lifetime_total_tokens);
-
-  const trackedAiRuns =
-    normalizeNumber(matricesTokenUsage?.runs) +
-    normalizeNumber(keywordsTokenUsage?.runs) +
-    normalizeNumber(offeringsTokenUsage?.runs) +
-    normalizeNumber(brandAssetsTokenUsage?.runs);
-
-  const estimatedCostUsd =
-    estimateUsageCostUsd(matricesTokenUsage) +
-    estimateUsageCostUsd(keywordsTokenUsage) +
-    estimateUsageCostUsd(offeringsTokenUsage) +
-    estimateUsageCostUsd(brandAssetsTokenUsage);
+  // The "AI calls / AI tokens / est. cost" chips are gone for everyone (CPO, spec §15 Q3):
+  // customer-facing telemetry, the same class as W3. Admins have the console.
 
   const progressReport = buildWorkspaceProgressReport({
     workspace: {
@@ -372,7 +299,13 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
     ? await (async () => {
         const tc = await getTranslations('connectedNotice');
         const name = CONNECTED_PLATFORM_NAMES[connectedPlatform];
-        const action = connectedNextAction(workspace.id, journey, journeyFacts.publishedCount);
+        const action = connectedNextAction(
+          workspace.id,
+          journey,
+          journeyFacts.publishedCount,
+          // Under the kill switch nothing is passed, so #69's behaviour holds.
+          firstPost?.state.phase === 'draft' ? firstPost.state.contentItemId : null,
+        );
         return {
           title: tc('title', { platform: name }),
           body: tc(`body.${action.kind}`, { platform: name }),
@@ -387,6 +320,25 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       })()
     : null;
   const openWritePanel = activeTab === 'pipeline' && resolvedSearchParams.write === '1';
+
+  const nextStep = nextStepLoad
+    ? buildNextStep({ ...nextStepLoad.input, onFirstPostTab: activeTab === 'first-post' })
+    : null;
+  const nextStepSurface = connectedPlatform ? 'connected' : 'workspace';
+  // In guided mode the gate banner offers the bar's action instead of its own.
+  const tRoot = await getTranslations();
+  const gateBarText =
+    guided && nextStep?.action && !nextStep.busy
+      ? barText(nextStep, (k, v) => tRoot(k as never, v as never))
+      : null;
+
+  // Funnel: the first time the AI draft is on screen (spec §7). Not awaited, never throws.
+  if (activeTab === 'first-post' && firstPost?.state.phase === 'draft') {
+    void recordFirstDraftSeen(session.userId as string, workspace.id, {
+      contentItemId: firstPost.state.contentItemId,
+      approved: firstPost.state.approved,
+    });
+  }
 
   // Funnel signal: which pipeline step was opened, and whether it was gated.
   // Not awaited and never rejects, so it cannot slow or break the render.
@@ -519,6 +471,15 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 pb-20">
+      {/* ── THE NEXT STEP: one line, one button (guided and open mode) ── */}
+      <NextStepBar
+        step={nextStep}
+        surface={nextStepSurface}
+        confirmation={
+          guided && connectedNotice ? <ChannelConnectedNotice {...connectedNotice} compact /> : undefined
+        }
+      />
+
       {extractionWarnings.length > 0 && (
         <div className="flex items-start gap-3 border border-amber-300 bg-amber-50 px-5 py-4">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
@@ -580,98 +541,93 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
 
           <div className="flex shrink-0 flex-col items-stretch gap-3 lg:items-end">
             <WorkspaceCreditBalance />
-            <Link
-              href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }}
-              className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
-                autopilotAgents.some((a) => a.enabled)
-                  ? 'bg-saffron text-moss hover:bg-moss hover:text-chalk'
-                  : 'bg-moss text-chalk hover:bg-moss-700'
-              }`}
-            >
-              <Bot className="h-4 w-4" />
-              {autopilotPolicy?.enabled
-                ? t('autopilotOn', { posts: autopilotPolicy.postsPerWeek })
-                : t('autopilotOff')}
-            </Link>
-            <Link
-              href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
-              className="inline-flex items-center justify-center gap-2 border border-rule px-4 py-2.5 text-[13px] font-medium text-moss hover:border-rule-strong"
-            >
-              <Sparkles className="h-4 w-4" />
-              {t('ideateByHand')}
-            </Link>
+            {/* Guided mode: the bar is the only call to action. */}
+            {!guided && (
+              <>
+                <Link
+                  href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'autopilot' } }}
+                  className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 text-[13px] font-semibold ${
+                    autopilotAgents.some((a) => a.enabled)
+                      ? 'bg-saffron text-moss hover:bg-moss hover:text-chalk'
+                      : 'bg-moss text-chalk hover:bg-moss-700'
+                  }`}
+                >
+                  <Bot className="h-4 w-4" />
+                  {autopilotPolicy?.enabled
+                    ? t('autopilotOn', { posts: autopilotPolicy.postsPerWeek })
+                    : t('autopilotOff')}
+                </Link>
+                <Link
+                  href={{ pathname: '/growth/[id]', params: { id: workspace.id }, query: { tab: 'ideation' } }}
+                  className="inline-flex items-center justify-center gap-2 border border-rule px-4 py-2.5 text-[13px] font-medium text-moss hover:border-rule-strong"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  {t('ideateByHand')}
+                </Link>
+              </>
+            )}
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-px border-t border-rule bg-rule sm:grid-cols-3 lg:grid-cols-7">
-          <StatChip label={t('statCompetitors')} value={format.number(acceptedCompetitors)} />
-          <StatChip label={t('statContent')} value={format.number(workspace.contentItems.length)} />
-          <StatChip
-            label={t('statDiscoveryRuns')}
-            value={t('statDiscoveryValue', {
-              used: discoveryStats.usedRuns,
-              total: discoveryStats.usedRuns + discoveryStats.remainingRuns,
-            })}
-          />
-          <StatChip label={t('statAiCalls')} value={format.number(trackedAiRuns)} />
-          <StatChip label={t('statAiTokens')} value={format.number(totalTrackedTokens)} />
-          <StatChip label={t('statEstCost')} value={format.number(estimatedCostUsd, {
-              /* Quoted in USD in both languages; only the digits and the
-                 grouping follow the locale. */
-              style: 'currency',
-              currency: 'USD',
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 4,
-            })} />
-          <div className="flex items-center gap-2 bg-chalk-raised px-4 py-3 font-plexmono text-[10.5px] uppercase tracking-widest text-moss-muted">
-            <Coins className="h-3.5 w-3.5 shrink-0" />
-            {t('trackedNote')}
+        {!guided && (
+          <div className="grid grid-cols-2 gap-px border-t border-rule bg-rule sm:grid-cols-3">
+            <StatChip label={t('statCompetitors')} value={format.number(acceptedCompetitors)} />
+            <StatChip label={t('statContent')} value={format.number(workspace.contentItems.length)} />
+            <StatChip
+              label={t('statDiscoveryRuns')}
+              value={t('statDiscoveryValue', {
+                used: discoveryStats.usedRuns,
+                total: discoveryStats.usedRuns + discoveryStats.remainingRuns,
+              })}
+            />
           </div>
-        </div>
+        )}
       </div>
 
       <WorkspaceCreditBanner workspaceId={workspace.id} />
 
       {/* ── BACK FROM AN OAUTH CONNECT: one next action ─────────── */}
-      {connectedNotice && <ChannelConnectedNotice {...connectedNotice} />}
+      {/* Guided mode: it is the bar's confirmation line instead (above). */}
+      {connectedNotice && !guided && <ChannelConnectedNotice {...connectedNotice} />}
 
-      {/* ── SETUP GUIDE ─────────────────────────────────────────── */}
-      <JourneyGuide workspaceId={workspace.id} journey={journey} />
+      {/* ── SETUP GUIDE and THE LOOP: hidden until the first post ── */}
+      {!guided && <JourneyGuide workspaceId={workspace.id} journey={journey} />}
 
-      {/* ── THE LOOP ────────────────────────────────────────────── */}
-      <LoopRail
-        workspaceId={workspace.id}
-        stages={loop}
-        activeStage={stageForTab(activeTab)}
-        activeTab={activeTab}
-        tabs={tabItems.map((item) => {
-          const gate = gates[item.key];
-          return {
-            key: item.key,
-            label: item.label,
-            title: gate ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) }) : item.helper,
-            icon: item.icon,
-            gated: Boolean(gate),
-            live: item.key === 'autopilot' && Boolean(autopilotPolicy?.enabled),
-          };
-        })}
-        names={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.name`)])) as Record<StageId, string>}
-        numbers={
-          Object.fromEntries(loop.map((st) => [st.id, format.number(st.order, { minimumIntegerDigits: 2 })])) as Record<
-            StageId,
-            string
-          >
-        }
-        subs={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.sub`)])) as Record<StageId, string>}
-        stateLabels={{
-          done: t('loop.state.done'),
-          next: t('loop.state.next'),
-          open: t('loop.state.open'),
-          locked: t('loop.state.locked'),
-        }}
-        navLabel={t('loop.tabsLabel')}
-        stagesLabel={t('loop.label')}
-      />
+      {!guided && (
+        <LoopRail
+          workspaceId={workspace.id}
+          stages={loop}
+          activeStage={stageForTab(activeTab)}
+          activeTab={activeTab}
+          tabs={tabItems.map((item) => {
+            const gate = gates[item.key];
+            return {
+              key: item.key,
+              label: item.label,
+              title: gate ? t('tabTitleGated', { helper: item.helper, gate: tj(gate.key, gate.values) }) : item.helper,
+              icon: item.icon,
+              gated: Boolean(gate),
+              live: item.key === 'autopilot' && Boolean(autopilotPolicy?.enabled),
+            };
+          })}
+          names={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.name`)])) as Record<StageId, string>}
+          numbers={
+            Object.fromEntries(loop.map((st) => [st.id, format.number(st.order, { minimumIntegerDigits: 2 })])) as Record<
+              StageId,
+              string
+            >
+          }
+          subs={Object.fromEntries(STAGES.map((st) => [st.id, t(`loop.${st.id}.sub`)])) as Record<StageId, string>}
+          stateLabels={{
+            done: t('loop.state.done'),
+            next: t('loop.state.next'),
+            open: t('loop.state.open'),
+            locked: t('loop.state.locked'),
+          }}
+          navLabel={t('loop.tabsLabel')}
+          stagesLabel={t('loop.label')}
+        />
+      )}
 
       {/* ── ACTIVE TAB CONTENT ────────────────────────────────────── */}
       {gates[activeTab] && (
@@ -682,7 +638,16 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
             </span>{' '}
             {tg('gateConsequence')}
           </p>
-          {journey.next && (
+          {guided ? (
+            gateBarText?.label && nextStep?.action && (
+              <NextStepButton
+                stepId={nextStep.id}
+                surface={nextStepSurface}
+                label={gateBarText.label}
+                action={toButtonAction(nextStep.action)}
+              />
+            )
+          ) : journey.next && (
             <Link
               href={journey.next.href as never}
               className="inline-flex shrink-0 items-center gap-2 bg-amber-900 px-3.5 py-2 text-[12.5px] font-medium text-chalk hover:bg-amber-800"
@@ -695,6 +660,18 @@ export default async function WorkspacePage({ params, searchParams }: Props) {
       )}
 
       <div className="min-h-[50vh]" data-capture="tab">
+        {activeTab === 'first-post' && firstPost && (
+          <FirstPostView
+            workspaceId={workspace.id}
+            state={firstPost.state}
+            competitors={toFirstPostCompetitors(workspace.competitors)}
+            linkedIn={firstPost.facts.linkedIn}
+            draft={firstPost.draft}
+            why={firstPost.why}
+            otherAnglesUsed={firstPost.otherAnglesUsed}
+            publishRefusal={parsePublishRefusal(resolvedSearchParams.publish)}
+          />
+        )}
         {activeTab === 'strategy' && (
           <BrandMemoryTab
             workspace={workspace}

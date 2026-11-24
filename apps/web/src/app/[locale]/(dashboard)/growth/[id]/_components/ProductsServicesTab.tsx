@@ -6,7 +6,6 @@ import {
   AlertTriangle,
   Building2,
   CheckCircle2,
-  Info,
   Layers3,
   Loader2,
   Plus,
@@ -439,7 +438,7 @@ export function ProductsServicesTab({
           </div>
         </div>
 
-        <div className="mt-4 grid gap-3 md:grid-cols-4">
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
           <MetricTile
             icon={<Building2 className="h-4 w-4" />}
             label={t('metricClient')}
@@ -450,16 +449,6 @@ export function ProductsServicesTab({
             label={t('metricCompetitors')}
             value={format.number(payload?.competitor_offerings.length || 0)}
           />
-          <MetricTile
-            icon={<Info className="h-4 w-4" />}
-            label={t('metricLastRunTokens')}
-            value={format.number(payload?.token_usage.last_run?.total_tokens || 0)}
-          />
-          <MetricTile
-            icon={<CheckCircle2 className="h-4 w-4" />}
-            label={t('metricLifetimeTokens')}
-            value={format.number(payload?.token_usage.lifetime_total_tokens || 0)}
-          />
         </div>
       </section>
 
@@ -468,40 +457,6 @@ export function ProductsServicesTab({
       </div>
 
       <CompetitorBasisNote payload={payload} />
-
-      {payload?.token_usage ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          <TokenCard
-            title={t('lastRunUsage')}
-            rows={[
-              [t('tokenPrompt'), format.number(payload.token_usage.last_run?.prompt_tokens || 0)],
-              [t('tokenCompletion'), format.number(payload.token_usage.last_run?.completion_tokens || 0)],
-              [t('tokenTotal'), format.number(payload.token_usage.last_run?.total_tokens || 0)],
-            ]}
-            footer={
-              payload.token_usage.last_run
-                ? t.rich('modelLine', {
-                    model: payload.token_usage.last_run.model,
-                    date: format.dateTime(new Date(payload.token_usage.last_run.created_at), {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }),
-                    m: bdi,
-                  })
-                : t('noTokenData')
-            }
-          />
-          <TokenCard
-            title={t('lifetimeUsage')}
-            rows={[
-              [t('tokenRuns'), format.number(payload.token_usage.runs)],
-              [t('tokenPrompt'), format.number(payload.token_usage.lifetime_prompt_tokens)],
-              [t('tokenCompletion'), format.number(payload.token_usage.lifetime_completion_tokens)],
-              [t('tokenTotal'), format.number(payload.token_usage.lifetime_total_tokens)],
-            ]}
-          />
-        </div>
-      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
@@ -777,31 +732,6 @@ function MetricTile({
         {label}
       </p>
       <p className="mt-1 text-lg font-bold text-moss">{value}</p>
-    </div>
-  );
-}
-
-function TokenCard({
-  title,
-  rows,
-  footer,
-}: {
-  title: string;
-  /** Label plus an already-formatted value. */
-  rows: Array<[string, string]>;
-  footer?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
-      <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{title}</p>
-      <div className="mt-2 space-y-1 text-sm text-moss">
-        {rows.map(([key, value]) => (
-          <p key={`${title}:${key}`}>
-            {key}: <span className="font-semibold">{value}</span>
-          </p>
-        ))}
-      </div>
-      {footer ? <p className="mt-2 text-xs text-moss-muted">{footer}</p> : null}
     </div>
   );
 }

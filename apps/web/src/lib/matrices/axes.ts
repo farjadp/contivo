@@ -6,6 +6,7 @@
  * place; market labels are written by the model in the workspace's language and
  * stored as-is.
  */
+import { safeSlice } from '@/lib/text/safe-slice';
 import en from '../../../messages/en/tabs-b.json';
 import fa from '../../../messages/fa/tabs-b.json';
 import type { ChartKind } from './types';
@@ -52,7 +53,7 @@ const MAX_RATIONALE_LENGTH = 300;
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
 
 const text = (v: unknown, max = Number.POSITIVE_INFINITY): string | null =>
-  typeof v === 'string' && v.trim() ? v.trim().slice(0, max) : null;
+  typeof v === 'string' && v.trim() ? safeSlice(v.trim(), max) : null;
 
 function parseEnd(v: unknown): AxisEnd | null {
   if (!isRecord(v)) return null;

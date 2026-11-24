@@ -236,12 +236,8 @@
       "generateCta": "{count, plural, one {Generar # idea de contenido} other {Generar # ideas de contenido}}",
       "brainstorming": "Generando ideas con IA...",
       "selectedFramework": "Estructura elegida",
-      "overallScore": "Puntuación general: {score}/10",
-      "fallbackApplied": "Se aplicó una alternativa",
       "imagesBadge": "Imagen: {count, number} por publicación",
       "imagesBadgeNone": "Imágenes: no",
-      "calendarAuto": "Calendario: inserción automática (simulada)",
-      "calendarManual": "Calendario: manual",
       "wordsBadge": "Palabras: {count, number}",
       "freshIdeas": "Nuevas ideas generadas",
       "freshIdeasCount": "({count, number})",
@@ -368,6 +364,18 @@
         "noReason": "No se registró ningún motivo.",
         "reconnect": "Volver a conectar en Conexiones",
         "connect": "Abrir Conexiones"
+      },
+      "noConnection": {
+        "title": "Conecta {platform} para publicar",
+        "body": "No se programó nada. Tu texto está guardado.",
+        "action": "Conectar {platform}",
+        "open": "Abrir Conexiones",
+        "held": "Guardado, pero sin programar: conecta {platform} primero."
+      },
+      "scheduleRefused": {
+        "quality_gate_blocked": "El control de calidad retuvo esta publicación. Vuelve a comprobarla o publícala de todos modos.",
+        "not_found": "Esta publicación ya no existe. Actualiza la página.",
+        "failed": "No se programó. Inténtalo de nuevo."
       }
     },
     "calendar": {
@@ -479,6 +487,126 @@
       },
       "writeGenerate": "Crear una imagen a partir de mi texto · {cost, number} créditos",
       "writeGenerateHint": "Las publicaciones de LinkedIn y Telegram pueden llevar una imagen. La verás en la tarjeta de la publicación antes de programarla y allí podrás cambiarla o quitarla."
+    },
+    "firstPost": {
+      "confirm": {
+        "title": "¿Con quién compites?",
+        "titleFew": "Añade los competidores que conoces",
+        "disclaimer": "Encontrados por IA en páginas web públicas. Marca solo los reales.",
+        "disclaimerFew": "Por nuestra cuenta encontramos muy pocos. Añade al menos {min, number} con su sitio web.",
+        "listLabel": "Competidores",
+        "sourceTag": "Fuente",
+        "aiGuess": "Suposición de la IA",
+        "addedByYou": "Añadido por ti",
+        "picked": "{count, number} elegidos · unos {minutes, number} minutos",
+        "pickMore": "Elige al menos {min, number} para empezar.",
+        "start": "Escribir mi primera publicación",
+        "starting": "Empezando…",
+        "add": "Añadir uno que se nos escapó",
+        "addLabel": "Sitio web del competidor",
+        "addPlaceholder": "competidor.com",
+        "addSubmit": "Añadir",
+        "adding": "Añadiéndolo y leyendo su sitio…",
+        "addCancel": "Cancelar",
+        "writeOwn": "Prefiero escribirla yo",
+        "saveFailed": "Esa elección no se guardó. Inténtalo de nuevo."
+      },
+      "progress": {
+        "title": "Escribiendo tu primera publicación",
+        "lede": "Puedes salir de esta página. Sigue en marcha.",
+        "now": "Ahora: {step}",
+        "steps": {
+          "matrices": "Mapa del mercado",
+          "keywords": "Temas sin cubrir",
+          "idea": "El enfoque de tu publicación",
+          "draft": "Escribiendo la publicación"
+        },
+        "summary": {
+          "matrices": "{competitors, plural, one {# competidor situado} other {# competidores situados}} en {charts, plural, one {# gráfico} other {# gráficos}}.",
+          "matricesCharts": "{charts, plural, one {# gráfico listo} other {# gráficos listos}}.",
+          "keywords": "{gaps, plural, one {# tema que tus competidores no cubren} other {# temas que tus competidores no cubren}}.",
+          "keywordsTopGap": "{gaps, plural, one {# tema sin cubrir encontrado} other {# temas sin cubrir encontrados}}. El mayor: {topGap}",
+          "idea": "Enfoque: {topic}",
+          "draft": "{words, plural, one {# palabra escrita} other {# palabras escritas}}.",
+          "skipped": "Ya estaba hecho."
+        },
+        "status": {
+          "done": "Hecho",
+          "current": "En curso",
+          "failed": "No terminó",
+          "pending": "En espera"
+        }
+      },
+      "failed": {
+        "line": {
+          "matrices": "El mapa del mercado no terminó.",
+          "keywords": "Los temas sin cubrir no terminaron.",
+          "idea": "No encontramos un enfoque.",
+          "draft": "La redacción no terminó."
+        },
+        "reason": {
+          "timedOut": "Tardó demasiado y se detuvo.",
+          "dispatch": "No pudimos empezar. Inténtalo de nuevo.",
+          "notEnoughEvidence": "No encontramos suficiente sobre tus competidores en la web.",
+          "notEnoughAxes": "No pudimos crear suficientes gráficos para compararte.",
+          "aiUnavailable": "El servicio de IA no respondió. Inténtalo de nuevo en unos minutos.",
+          "notEnoughCompetitorSignals": "No pudimos leer lo suficiente de los sitios de tus competidores. Añade otro competidor o escríbela tú.",
+          "needsBrandSummary": "No pudimos leer tu sitio web. Vuelve a leerlo desde Memoria de marca o escribe tú la publicación.",
+          "generic": "Algo falló por nuestra parte."
+        },
+        "writeOwn": "Prefiero escribirla yo",
+        "report": "Informar de un problema"
+      },
+      "draft": {
+        "eyebrow": "Tu primera publicación · LinkedIn",
+        "preview": "Vista previa · perfil personal",
+        "edit": "Editar",
+        "otherAngle": "Probar otro enfoque",
+        "otherAngleBusy": "Empezando…",
+        "writeOwn": "Prefiero escribirla yo",
+        "editorLabel": "Texto de la publicación",
+        "save": "Guardar",
+        "saving": "Guardando…",
+        "cancel": "Cancelar",
+        "saveFailed": "Tus cambios no se guardaron. Inténtalo de nuevo.",
+        "saved": "Guardado.",
+        "missing": "Este borrador ya no existe."
+      },
+      "why": {
+        "title": "Por qué esta publicación",
+        "topGapTag": "Tema sin cubrir",
+        "topGap": "Tus competidores no cubren esto: {topGap}",
+        "matrices": "Mapa del mercado · {charts, plural, one {# gráfico} other {# gráficos}}",
+        "matricesView": "Ver el mapa",
+        "keywords": "Palabras clave · {competitors, plural, one {# competidor} other {# competidores}}",
+        "keywordsView": "Ver los temas",
+        "aiTag": "Redacción de la IA",
+        "aiWording": "La redacción es de la IA, no de tus datos. Cambia lo que no sea correcto."
+      },
+      "publish": {
+        "connectedAs": "LinkedIn conectado como <bdi>{name}</bdi>",
+        "scheduleLater": "Programar para más tarde",
+        "whatHappens": "Publicada en menos de un minuto.",
+        "notConnected": "Conecta LinkedIn para publicar. No se publica nada hasta que pulses Publicar.",
+        "noConnection": "Conecta LinkedIn para publicar. No se programó nada.",
+        "gateBlocked": "El control de calidad retuvo esta publicación. Los motivos están arriba.",
+        "notFound": "Esta publicación ya no existe. Actualiza la página."
+      },
+      "publishing": {
+        "line": "Publicando en LinkedIn… menos de un minuto",
+        "slow": "Sigue publicándose. El enlace aparecerá aquí cuando LinkedIn lo confirme."
+      },
+      "published": {
+        "eyebrow": "Publicada · {date}",
+        "eyebrowNoDate": "Publicada",
+        "title": "Tu primera publicación está en línea",
+        "view": "Ver en LinkedIn",
+        "copy": "Copiar enlace",
+        "copied": "Enlace copiado",
+        "noLink": "LinkedIn no devolvió un enlace. La publicación está en tu perfil.",
+        "open": "Tu espacio de trabajo ya está completo.",
+        "toolsLabel": "Tus herramientas"
+      }
     }
   }
 }

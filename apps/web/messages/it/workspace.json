@@ -47,6 +47,13 @@
         "actionEnable": "Attiva e salva le regole",
         "detailOn": "In esecuzione",
         "detailOff": "Spento"
+      },
+      "firstPost": {
+        "title": "Pubblica il tuo primo post",
+        "why": "Un post vero, online sul tuo canale. Tutto il resto di Contivo serve ad arrivare qui.",
+        "action": "Scrivi il tuo primo post",
+        "detailDone": "Pubblicato",
+        "detailTodo": "Ancora niente di pubblicato"
       }
     },
     "blockers": {
@@ -95,12 +102,75 @@
     "body": {
       "firstPost": "Ora Contivo può pubblicare su {platform} al posto tuo. Scrivi il tuo primo post e pubblicalo.",
       "journey": "Ora Contivo può pubblicare su {platform} al posto tuo. Prosegui con il prossimo passo della configurazione.",
-      "pipeline": "Ora Contivo può pubblicare su {platform} al posto tuo. La configurazione è completa."
+      "pipeline": "Ora Contivo può pubblicare su {platform} al posto tuo. La configurazione è completa.",
+      "firstPostDraft": "Ora Contivo può pubblicare su {platform} al posto tuo. Il tuo primo post è pronto per uscire."
     },
     "action": {
       "firstPost": "Pubblica il tuo primo post",
-      "pipeline": "Apri la pipeline"
+      "pipeline": "Apri la pipeline",
+      "firstPostDraft": "Pubblica questo post"
     },
     "dismiss": "Chiudi"
+  },
+  "nextStep": {
+    "counter": "{n, number}/{total, number}",
+    "addCompany": {
+      "line": "Aggiungi la tua azienda per iniziare",
+      "action": "Aggiungi azienda"
+    },
+    "confirmCompetitors": {
+      "line": "Conferma con chi sei in concorrenza",
+      "why": "Il tuo primo post viene scritto pensando a loro.",
+      "action": "Conferma i concorrenti"
+    },
+    "writing": {
+      "line": "Sto scrivendo il tuo primo post… circa 2 minuti"
+    },
+    "runFailed": {
+      "line": {
+        "matrices": "La mappa del mercato non è stata completata",
+        "keywords": "L'analisi dei temi scoperti non è stata completata",
+        "idea": "Non abbiamo trovato un taglio per il tuo post",
+        "draft": "La scrittura del post non è stata completata"
+      },
+      "action": "Riprova",
+      "actionWriteOwn": "Lo scrivo io",
+      "actionBrand": "Apri Brand Memory"
+    },
+    "readDraft": {
+      "line": "Il tuo primo post è pronto",
+      "action": "Leggilo"
+    },
+    "draftBlocked": {
+      "line": "La tua bozza ha bisogno di un altro angolo",
+      "lineEdit": "La bozza va sistemata prima di uscire. Modificala qui sotto.",
+      "action": "Prova un altro angolo"
+    },
+    "connectLinkedIn": {
+      "line": "Pubblica questo post su LinkedIn",
+      "why": "Sul tuo profilo personale. Non esce nulla finché non premi Pubblica.",
+      "action": "Collega LinkedIn"
+    },
+    "publishNow": {
+      "line": "LinkedIn collegato. Pubblica il tuo primo post.",
+      "action": "Pubblica ora"
+    },
+    "publishing": {
+      "line": "Pubblicazione su LinkedIn… meno di un minuto"
+    },
+    "firstPostLive": {
+      "line": "Il tuo primo post è online",
+      "action": "Vedi su LinkedIn"
+    },
+    "autopilot": {
+      "line": "Lascia che Contivo pubblichi ogni settimana",
+      "action": "Configura Autopilot"
+    },
+    "narrative": {
+      "line": "Chiarisci per cosa ti distingui",
+      "why": "Autopilot scrive partendo da qui.",
+      "action": "Scrivi la narrativa"
+    },
+    "busy": "In corso"
   }
 }

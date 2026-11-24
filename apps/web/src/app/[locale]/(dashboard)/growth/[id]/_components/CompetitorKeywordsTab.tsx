@@ -89,9 +89,6 @@ const SECTION_TABS = ['top_keywords', 'clusters', 'strategy', 'gaps'] as const;
 
 type SectionKey = (typeof SECTION_TABS)[number];
 
-/** Brand names stay Latin; isolating them keeps Persian punctuation in place. */
-const bdi = (chunks: React.ReactNode) => <bdi>{chunks}</bdi>;
-
 export function CompetitorKeywordsTab({
   workspaceId,
   initialPayload,
@@ -178,62 +175,6 @@ export function CompetitorKeywordsTab({
       </div>
 
       <CompetitorBasisNote payload={payload} />
-
-      {payload?.token_usage ? (
-        <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('lastRunTokens')}</p>
-            {payload.token_usage.last_run ? (
-              <div className="mt-2 space-y-1 text-sm text-moss">
-                <p>
-                  {t('prompt')}{' '}
-                  <span className="font-semibold">{format.number(payload.token_usage.last_run.prompt_tokens)}</span>
-                </p>
-                <p>
-                  {t('completion')}{' '}
-                  <span className="font-semibold">{format.number(payload.token_usage.last_run.completion_tokens)}</span>
-                </p>
-                <p>
-                  {t('total')}{' '}
-                  <span className="font-semibold">{format.number(payload.token_usage.last_run.total_tokens)}</span>
-                </p>
-                <p className="text-xs text-moss-muted">
-                  {t.rich('modelLine', {
-                    model: payload.token_usage.last_run.model,
-                    date: format.dateTime(new Date(payload.token_usage.last_run.created_at), {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    }),
-                    m: bdi,
-                  })}
-                </p>
-              </div>
-            ) : (
-              <p className="mt-2 text-sm text-moss-muted">{t('noTokenData')}</p>
-            )}
-          </div>
-          <div className="rounded-xl border border-rule bg-chalk-raised px-4 py-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-moss-muted">{t('lifetimeTokens')}</p>
-            <div className="mt-2 space-y-1 text-sm text-moss">
-              <p>
-                {t('runs')} <span className="font-semibold">{format.number(payload.token_usage.runs)}</span>
-              </p>
-              <p>
-                {t('prompt')}{' '}
-                <span className="font-semibold">{format.number(payload.token_usage.lifetime_prompt_tokens)}</span>
-              </p>
-              <p>
-                {t('completion')}{' '}
-                <span className="font-semibold">{format.number(payload.token_usage.lifetime_completion_tokens)}</span>
-              </p>
-              <p>
-                {t('total')}{' '}
-                <span className="font-semibold">{format.number(payload.token_usage.lifetime_total_tokens)}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      ) : null}
 
       {error ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{error}</div>

@@ -14,7 +14,15 @@
 
 import { REQUIRED_MATRIX_CHARTS, matricesGate } from '@/lib/report-readiness';
 
+/** The six setup steps. `completed`, `total`, `percent`, `isComplete` and `next` count only these. */
 export type StepId = 'brand' | 'market' | 'keywords' | 'narrative' | 'channel' | 'autopilot';
+
+/**
+ * Every step in `Journey.steps`: the setup steps plus the `firstPost` end
+ * step (spec 2026-11-23 first-post B §5). It is kept apart from StepId so a
+ * `Record<StepId, ...>` over the setup chain stays exhaustive without it.
+ */
+export type JourneyStepId = StepId | 'firstPost';
 
 export type StepState = 'done' | 'current' | 'locked' | 'available';
 
@@ -36,7 +44,7 @@ export type Msg = {
 };
 
 export type JourneyStep = {
-  id: StepId;
+  id: JourneyStepId;
   /** 1-based position in the setup chain. */
   order: number;
   title: Msg;
@@ -77,10 +85,14 @@ export type WorkspaceFacts = {
   scheduledCount: number;
 };
 
+/** A setup step: what `Journey.next` can be. */
+export type SetupJourneyStep = JourneyStep & { id: StepId };
+
 export type Journey = {
+  /** The six setup steps in order, then `firstPost` (order 7). */
   steps: JourneyStep[];
-  /** The one thing to do next; null when setup is complete. */
-  next: JourneyStep | null;
+  /** The one setup thing to do next; null when setup is complete. Never `firstPost`. */
+  next: SetupJourneyStep | null;
   completed: number;
   total: number;
   /** 0-100 across setup steps only. */
@@ -116,7 +128,7 @@ export function buildJourney(f: WorkspaceFacts): Journey {
 
   // Each step declares whether it is done and what blocks it. Order matters:
   // the first not-done, not-locked step becomes "current".
-  const raw: Array<Omit<JourneyStep, 'state' | 'order'> & { done: boolean; blockedBy?: Msg }> = [
+  const raw: Array<Omit<SetupJourneyStep, 'state' | 'order'> & { done: boolean; blockedBy?: Msg }> = [
     {
       id: 'brand',
       title: m('brand.title'),
@@ -224,7 +236,7 @@ export function buildJourney(f: WorkspaceFacts): Journey {
   ];
 
   let currentAssigned = false;
-  const steps: JourneyStep[] = raw.map((s, i) => {
+  const steps: SetupJourneyStep[] = raw.map((s, i) => {
     let state: StepState;
     if (s.done) {
       state = 'done';
@@ -236,7 +248,7 @@ export function buildJourney(f: WorkspaceFacts): Journey {
     } else {
       state = 'available';
     }
-    const rest: Omit<JourneyStep, 'state' | 'order'> = {
+    const rest: Omit<SetupJourneyStep, 'state' | 'order'> = {
       id: s.id,
       title: s.title,
       why: s.why,
@@ -251,8 +263,24 @@ export function buildJourney(f: WorkspaceFacts): Journey {
   const completed = steps.filter((s) => s.state === 'done').length;
   const next = steps.find((s) => s.state === 'current') ?? null;
 
+  // The end of the chain, not a setup step: publishing anything finishes it,
+  // and writing your own post needs nothing, so it is never locked. It is
+  // never "current" either, so the guide and Today show exactly what they did
+  // before it existed; the first-post bar (lib/next-step.ts) is what points at it.
+  const published = f.publishedCount > 0;
+  const firstPost: JourneyStep = {
+    id: 'firstPost',
+    order: steps.length + 1,
+    title: m('firstPost.title'),
+    why: m('firstPost.why'),
+    href: tab('first-post'),
+    action: m('firstPost.action'),
+    state: published ? 'done' : 'available',
+    detail: published ? m('firstPost.detailDone') : m('firstPost.detailTodo'),
+  };
+
   return {
-    steps,
+    steps: [...steps, firstPost],
     next,
     completed,
     total: steps.length,

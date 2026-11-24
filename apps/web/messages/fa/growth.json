@@ -84,10 +84,6 @@
       "statContent": "محتوا",
       "statDiscoveryRuns": "اجراهای کشف",
       "statDiscoveryValue": "{used, number} از {total, number}",
-      "statAiCalls": "فراخوانی‌های هوش مصنوعی",
-      "statAiTokens": "توکن‌های هوش مصنوعی",
-      "statEstCost": "هزینهٔ تخمینی",
-      "trackedNote": "فقط بخش‌های رصدشده",
       "tabTitleGated": "{helper}؛ {gate}",
       "tabs": {
         "strategyLabel": "حافظهٔ برند",
@@ -117,7 +113,9 @@
         "progressHelper": "{before} ← {now}"
       },
       "warnings": {
-        "competitorDiscoveryEmpty": "جست‌وجوی رقبا بدون نتیجه برگشت؛ سرویس‌دهندهٔ هوش مصنوعی در دسترس نبود. می‌توانید از بخش نمودارهای بازار دوباره اجرایش کنید."
+        "competitorDiscoveryEmpty": "جست‌وجوی رقبا بدون نتیجه برگشت؛ سرویس‌دهندهٔ هوش مصنوعی در دسترس نبود. می‌توانید از بخش نمودارهای بازار دوباره اجرایش کنید.",
+        "siteUnreadable": "سایت خوانده نشد.",
+        "brandExtractionEmpty": "از سایت چیزی دربارهٔ برند به دست نیامد."
       },
       "loop": {
         "label": "مرحله‌های فضای کاری",

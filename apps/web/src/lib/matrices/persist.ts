@@ -1,3 +1,4 @@
+import { safeSlice } from '@/lib/text/safe-slice';
 import { prisma } from '@/lib/db';
 import { parseStoredEvidence } from '@/lib/competitors/pipeline';
 import { parseStoredBasis, selectCompetitors } from '@/lib/competitors/selection';
@@ -48,7 +49,7 @@ function parseRefs(value: unknown): string[] {
 }
 
 function trimTitle(value: string): string {
-  return value.trim().slice(0, 120);
+  return safeSlice(value.trim(), 120);
 }
 
 export async function rebuildMatricesProjection(workspaceId: string): Promise<Projection | null> {

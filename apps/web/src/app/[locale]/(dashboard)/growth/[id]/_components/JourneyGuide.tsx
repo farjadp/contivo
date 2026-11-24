@@ -54,6 +54,8 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
   }
 
   const next = journey.next;
+  // The first-post end step is the next-step bar's to point at, not the setup chain's.
+  const setupSteps = journey.steps.filter((s) => s.id !== 'firstPost');
 
   return (
     <div className="border border-rule bg-chalk-raised" data-capture="setup-chain">
@@ -79,7 +81,7 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
       {/* Column count follows the chain length; hardcoding 5 left an empty
           cell the moment Narrative made it six. */}
       <ol className="grid gap-px bg-chalk-sunk sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6">
-        {journey.steps.map((s) => {
+        {setupSteps.map((s) => {
           const isCurrent = s.state === 'current';
           const isDone = s.state === 'done';
           const isLocked = s.state === 'locked';
@@ -95,7 +97,7 @@ export function JourneyGuide({ workspaceId, journey }: { workspaceId: string; jo
                         : 'bg-chalk-sunk text-moss-muted'
                   }`}
                 >
-                  {isDone ? <Check className="h-3 w-3" /> : isLocked ? <Lock className="h-3 w-3" /> : s.order}
+                  {isDone ? <Check className="h-3 w-3" /> : isLocked ? <Lock className="h-3 w-3" /> : format.number(s.order)}
                 </span>
                 <span
                   className={`text-[13px] ${isCurrent ? 'font-semibold text-moss' : isDone ? 'text-moss-muted' : 'text-moss-muted'}`}
