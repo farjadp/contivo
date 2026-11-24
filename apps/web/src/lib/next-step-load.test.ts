@@ -84,7 +84,7 @@ describe('loadNextStepInput', () => {
   it('has no facts for a user with no workspace, and the bar asks for a company', async () => {
     const load = await loadNextStepInput('u1', null, 'today');
     expect(load).not.toBeNull();
-    expect(load!.input).toEqual({ guided: true, facts: null, firstPost: null, surface: 'today' });
+    expect(load!.input).toEqual({ guided: true, facts: null, firstPost: null, surface: 'today', otherAnglesLeft: true });
     expect(m.workspaceFindFirst).not.toHaveBeenCalled();
     expect(buildNextStep({ ...load!.input, onFirstPostTab: false })?.id).toBe('addCompany');
   });
