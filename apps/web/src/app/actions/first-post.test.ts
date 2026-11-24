@@ -107,6 +107,47 @@ describe('startFirstPost', () => {
     expect(h.backgroundRun.triggerBackgroundRun).toHaveBeenCalledTimes(1);
   });
 
+  it('two tabs: the attempt number is read before the state, so a racing second start reuses the same run id', async () => {
+    // Tab B's state read happens before tab A's insert (it sees confirm), and
+    // tab A's insert lands before tab B would have counted attempts. Counting
+    // first means B still computes attempt 1 → same id → P2002.
+    let inserted = 0;
+    h.runLog.insertRunStarted.mockImplementation(async ({ attempt }: { attempt: number }) => {
+      if (attempt <= inserted) return { ok: false, reason: 'alreadyRunning', runId: `fpr_ws1_${attempt}` };
+      inserted = attempt;
+      return { ok: true, runId: `fpr_ws1_${attempt}` };
+    });
+    const order: string[] = [];
+    h.runLog.nextAttempt.mockImplementation(async () => {
+      order.push('attempt');
+      return inserted + 1;
+    });
+    h.loadMock.loadFirstPostState.mockImplementation(async () => {
+      order.push('load');
+      return loaded(CONFIRM);
+    });
+
+    const [a, b] = await Promise.all([startFirstPost('ws1'), startFirstPost('ws1')]);
+
+    expect(order.slice(0, 2)).toEqual(['attempt', 'attempt']);
+    expect([a, b].filter((r) => 'ok' in r && r.ok)).toHaveLength(1);
+    expect(h.backgroundRun.triggerBackgroundRun).toHaveBeenCalledTimes(1);
+  });
+
+  it('other angle reads the attempt number before the state too', async () => {
+    const order: string[] = [];
+    h.runLog.nextAttempt.mockImplementation(async () => {
+      order.push('attempt');
+      return 2;
+    });
+    h.loadMock.loadFirstPostState.mockImplementation(async () => {
+      order.push('load');
+      return loaded(DRAFT);
+    });
+    await firstPostOtherAngle('ws1');
+    expect(order).toEqual(['attempt', 'load']);
+  });
+
   it('a run already active in the state → alreadyRunning without a new row', async () => {
     h.loadMock.loadFirstPostState.mockResolvedValue(
       loaded({ phase: 'running', runId: 'fpr_ws1_3', done: [], current: 'keywords', startedAt: '' }),

@@ -93,10 +93,16 @@ async function dispatch(owner: Owner, runId: string, kind: RunKind): Promise<Fir
   return fail('dispatchFailed', runId);
 }
 
-async function start(owner: Owner, load: FirstPostLoad, kind: RunKind): Promise<FirstPostActionResult> {
+/**
+ * `attempt` must be counted BEFORE loadFirstPostState. Two tabs that both
+ * read the state before either inserts then compute the same attempt, so
+ * the same deterministic run id, and the second insert gets P2002. Counted
+ * after the read, the second tab would see attempt N+1 and start a second run.
+ */
+async function start(owner: Owner, load: FirstPostLoad, kind: RunKind, attempt: number): Promise<FirstPostActionResult> {
   const inserted = await insertRunStarted({
     ...owner,
-    attempt: await nextAttempt(owner.workspaceId),
+    attempt,
     accepted: load.facts.accepted,
     kind,
   });
@@ -109,6 +115,7 @@ export async function startFirstPost(workspaceId: string): Promise<FirstPostActi
     const owner = await authorise(workspaceId);
     if ('code' in owner) return fail(owner.code);
 
+    const attempt = await nextAttempt(owner.workspaceId);
     const load = await loadFirstPostState(owner.userId, owner.workspaceId);
     const { state } = load;
     if (state.phase === 'running') return fail('alreadyRunning', state.runId);
@@ -117,7 +124,7 @@ export async function startFirstPost(workspaceId: string): Promise<FirstPostActi
     if (state.phase === 'failed' && state.retriesLeft === 0) return fail('retryLimit', state.runId);
     if (load.facts.accepted < MIN_ACCEPTED) return fail('needTwoReviewed');
 
-    const started = await start(owner, load, 'start');
+    const started = await start(owner, load, 'start', attempt);
     if (!('ok' in started) || !started.ok) return started;
     return dispatch(owner, started.runId, 'start');
   });
@@ -137,13 +144,14 @@ export async function firstPostOtherAngle(workspaceId: string): Promise<FirstPos
     const owner = await authorise(workspaceId);
     if ('code' in owner) return fail(owner.code);
 
+    const attempt = await nextAttempt(owner.workspaceId);
     const load = await loadFirstPostState(owner.userId, owner.workspaceId);
     const { state } = load;
     if (state.phase === 'running') return fail('alreadyRunning', state.runId);
     if (state.phase !== 'draft') return fail('noDraft');
     if (load.otherAnglesUsed >= FIRST_POST_OTHER_ANGLE_LIMIT) return fail('otherAngleLimit');
 
-    const started = await start(owner, load, 'otherAngle');
+    const started = await start(owner, load, 'otherAngle', attempt);
     if (!('ok' in started) || !started.ok) return started;
 
     // Awaited (it is the cap's counter) but never throws: writeActivityLog logs and swallows.
